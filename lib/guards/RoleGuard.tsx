@@ -10,6 +10,7 @@
  * ```
  */
 
+import React from 'react'
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
 import { hasRole } from '@/lib/auth/permissions'
@@ -48,8 +49,8 @@ export function RoleGuard<P extends object>(
         return <Fallback />
       }
 
-      // Si no, redirigir
-      redirect(config.redirectTo!)
+      // Si no, redirigir (redirectTo siempre tiene valor por defecto)
+      redirect(config.redirectTo ?? '/unauthorized')
     }
 
     // Usuario autorizado, renderizar componente

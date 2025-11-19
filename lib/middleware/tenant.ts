@@ -5,7 +5,6 @@
 
 import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
-import { env } from '@/lib/env'
 
 /**
  * Cache en memoria para resolución de tenants (evitar DB en cada request)
