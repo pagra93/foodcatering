@@ -79,6 +79,38 @@ else
   fi
 fi
 
+# Verificar si la base de datos está vacía y ejecutar seed
+echo "🔍 Verificando si la base de datos necesita datos iniciales..."
+TENANT_COUNT=$(node -e "
+  const { PrismaClient } = require('@prisma/client');
+  const prisma = new PrismaClient();
+  prisma.tenant.count().then(count => {
+    console.log(count);
+    prisma.\$disconnect();
+  }).catch(err => {
+    console.log('0');
+    prisma.\$disconnect();
+  });
+" 2>/dev/null || echo "0")
+
+if [ "$TENANT_COUNT" = "0" ]; then
+  echo "📦 Base de datos vacía, ejecutando seed..."
+  if [ -f "prisma/seed.ts" ]; then
+    # Usar tsx de node_modules local
+    if [ -f "node_modules/.bin/tsx" ]; then
+      echo "   Ejecutando seed con tsx..."
+      node_modules/.bin/tsx prisma/seed.ts 2>&1 || echo "   ⚠️  Error al ejecutar seed, pero continuando..."
+    else
+      echo "   ⚠️  tsx no encontrado en node_modules"
+      echo "   Puedes ejecutarlo manualmente conectándote al contenedor y ejecutando: npm run db:seed"
+    fi
+  else
+    echo "   ⚠️  Archivo seed.ts no encontrado"
+  fi
+else
+  echo "✅ Base de datos ya contiene $TENANT_COUNT tenant(s)"
+fi
+
 # Verificar que server.js existe
 echo "🔍 Verificando archivos del servidor..."
 if [ ! -f "server.js" ]; then
