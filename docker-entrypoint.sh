@@ -50,7 +50,21 @@ while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
   fi
 done
 
+# Verificar que server.js existe
+if [ ! -f "server.js" ]; then
+  echo "❌ ERROR: server.js no encontrado"
+  echo "   El build de Next.js en modo standalone debería generar server.js"
+  echo "   Verificando estructura del directorio..."
+  ls -la
+  exit 1
+fi
+
 # Iniciar el servidor Next.js
 echo "🌐 Iniciando servidor Next.js..."
+echo "   Puerto: ${PORT:-3000}"
+echo "   Hostname: ${HOSTNAME:-0.0.0.0}"
+echo "   Archivo: server.js"
+
+# Usar exec para que el proceso principal sea node
 exec node server.js
 
