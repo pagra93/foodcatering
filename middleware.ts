@@ -147,7 +147,7 @@ export async function middleware(req: NextRequest) {
 
   // 4. VERIFICAR PERMISOS POR TIPO DE PORTAL
   
-  // Portal Admin (admin.comida.com)
+  // Portal Admin (admin.sintupper.com)
   if (pathname.startsWith('/admin')) {
     const allowedRoles = ['SUPER_ADMIN', 'ROOT']
     if (!allowedRoles.includes(session.user.role as string)) {
@@ -155,7 +155,7 @@ export async function middleware(req: NextRequest) {
     }
   }
   
-  // Portal Empresa ({empresa}.comida.com/empresa/*)
+  // Portal Empresa ({empresa}.sintupper.com/empresa/*)
   if (pathname.startsWith('/empresa')) {
     if (!tenant) {
       return new NextResponse('Se requiere subdomain para portal empresa', { status: 400 })
@@ -171,7 +171,7 @@ export async function middleware(req: NextRequest) {
     }
   }
   
-  // Portal Catering ({catering}.comida.com/catering/*)
+  // Portal Catering ({catering}.sintupper.com/catering/*)
   if (pathname.startsWith('/catering')) {
     if (!tenant) {
       return new NextResponse('Se requiere subdomain para portal catering', { status: 400 })
@@ -187,7 +187,7 @@ export async function middleware(req: NextRequest) {
     }
   }
   
-  // Portal Empleado ({empresa}.comida.com/empleado/*)
+  // Portal Empleado ({empresa}.sintupper.com/empleado/*)
   if (pathname.startsWith('/empleado')) {
     if (!tenant) {
       return new NextResponse('Se requiere subdomain para portal empleado', { status: 400 })

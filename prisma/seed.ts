@@ -39,13 +39,13 @@ async function main() {
     where: { 
       tenantId_email: {
         tenantId: rootTenant.id,
-        email: 'admin@comida.com'
+        email: 'admin@sintupper.com'
       }
     },
     update: {},
     create: {
       tenantId: rootTenant.id,
-      email: 'admin@comida.com',
+      email: 'admin@sintupper.com',
       passwordHash: await hash('Admin123!', 10),
       nameEnc: 'Súper Administrador', // TODO: cifrar en producción
       role: 'SUPER_ADMIN',
@@ -487,7 +487,7 @@ async function main() {
   
   console.log('\n👥 USUARIOS CREADOS:')
   console.log('  ROOT:')
-  console.log('    📧 admin@comida.com / Admin123!')
+  console.log('    📧 admin@sintupper.com / Admin123!')
   console.log('\n  ACME (Empresa):')
   console.log('    📧 rrhh@acme.com / Rrhh123!')
   console.log('    📧 finanzas@acme.com / Finanzas123!')

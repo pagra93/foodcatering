@@ -29,12 +29,12 @@ export function getSubdomainFromRequest(req: NextRequest): string | null {
   const host = req.headers.get('host')
   if (!host) return null
 
-  // Desarrollo: admin.comida.localhost → admin
-  // Producción: admin.comida.com → admin
+  // Desarrollo: admin.sintupper.localhost → admin
+  // Producción: admin.sintupper.com → admin
 
   const parts = host.split('.')
 
-  // Si no hay subdomain (ej: comida.localhost)
+  // Si no hay subdomain (ej: sintupper.localhost)
   if (parts.length < 3) return null
 
   // Extraer el primer segmento

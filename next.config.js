@@ -19,7 +19,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.comida.com',
+        hostname: '**.sintupper.com',
       },
     ],
   },
