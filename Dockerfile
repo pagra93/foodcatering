@@ -46,6 +46,9 @@ RUN adduser --system --uid 1001 nextjs
 # El modo standalone incluye node_modules necesarios en .next/standalone/node_modules
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Crear directorio public y copiar si existe en builder
+RUN mkdir -p ./public
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copiar Prisma schema y migrations (necesario para migrate deploy)
