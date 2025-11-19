@@ -1,7 +1,9 @@
 #!/bin/sh
-set -e
+# No usar set -e para permitir que el servidor inicie incluso si hay errores menores
 
 echo "🚀 Iniciando aplicación..."
+echo "   Directorio de trabajo: $(pwd)"
+echo "   Usuario: $(whoami)"
 
 # Verificar que DATABASE_URL esté configurada
 if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "postgresql://usuario:contraseña@host:5432/database" ]; then
@@ -28,8 +30,16 @@ if [ -d "$MIGRATIONS_DIR" ]; then
   MIGRATION_COUNT=$(find "$MIGRATIONS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
   if [ "$MIGRATION_COUNT" -gt 0 ]; then
     HAS_VALID_MIGRATIONS=true
+    echo "📋 Encontradas $MIGRATION_COUNT migraciones válidas"
+  else
+    echo "📋 No se encontraron directorios de migración en $MIGRATIONS_DIR"
   fi
+else
+  echo "📋 Directorio de migraciones no existe: $MIGRATIONS_DIR"
 fi
+
+# Intentar aplicar migraciones o sincronizar schema (no crítico para iniciar el servidor)
+MIGRATION_SUCCESS=false
 
 if [ "$HAS_VALID_MIGRATIONS" = true ]; then
   # Intentar ejecutar migraciones con reintentos
@@ -41,6 +51,7 @@ if [ "$HAS_VALID_MIGRATIONS" = true ]; then
     echo "   Intento $((RETRY_COUNT + 1))/$MAX_RETRIES..."
     if prisma migrate deploy 2>&1; then
       echo "✅ Migraciones aplicadas correctamente"
+      MIGRATION_SUCCESS=true
       break
     else
       RETRY_COUNT=$((RETRY_COUNT + 1))
@@ -48,27 +59,20 @@ if [ "$HAS_VALID_MIGRATIONS" = true ]; then
         echo "⚠️  Intento $RETRY_COUNT falló, reintentando en 5 segundos..."
         sleep 5
       else
-        echo ""
-        echo "❌ ERROR: No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
-        echo ""
-        echo "   Verifica que:"
-        echo "   1. La base de datos PostgreSQL esté corriendo"
-        echo "   2. DATABASE_URL sea correcta (usa la URL interna si estás en la misma red Docker)"
-        echo "   3. El usuario tenga permisos para crear/modificar tablas"
-        echo "   4. El host de la base de datos sea accesible desde el contenedor"
-        echo ""
-        echo "   URL configurada: ${DATABASE_URL%%@*}@***"
-        exit 1
+        echo "⚠️  No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
+        echo "   Continuando con el inicio del servidor..."
+        echo "   Verifica los logs anteriores para más detalles"
       fi
     fi
   done
 else
   # No hay migraciones válidas, usar db push para sincronizar el schema
   echo "⚠️  No se encontraron migraciones válidas de Prisma"
-  echo "📦 Sincronizando schema con prisma db push..."
+  echo "📦 Intentando sincronizar schema con prisma db push..."
   
   if prisma db push --accept-data-loss --skip-generate 2>&1; then
     echo "✅ Schema sincronizado correctamente"
+    MIGRATION_SUCCESS=true
   else
     echo "⚠️  Error al sincronizar schema, pero continuando..."
     echo "   Esto puede ser normal si la base de datos ya está actualizada"
@@ -76,20 +80,38 @@ else
 fi
 
 # Verificar que server.js existe
+echo "🔍 Verificando archivos del servidor..."
 if [ ! -f "server.js" ]; then
-  echo "❌ ERROR: server.js no encontrado"
-  echo "   El build de Next.js en modo standalone debería generar server.js"
+  echo "❌ ERROR: server.js no encontrado en $(pwd)"
   echo "   Verificando estructura del directorio..."
+  echo "   Contenido del directorio actual:"
   ls -la
+  echo ""
+  echo "   Buscando server.js en subdirectorios..."
+  find . -name "server.js" -type f 2>/dev/null || echo "   No se encontró server.js en ningún lugar"
   exit 1
 fi
 
+echo "✅ server.js encontrado"
+
+# Verificar que node_modules existe
+if [ ! -d "node_modules" ]; then
+  echo "⚠️  ADVERTENCIA: node_modules no encontrado"
+  echo "   Esto puede causar problemas al iniciar el servidor"
+else
+  echo "✅ node_modules encontrado"
+fi
+
 # Iniciar el servidor Next.js
+echo ""
 echo "🌐 Iniciando servidor Next.js..."
 echo "   Puerto: ${PORT:-3000}"
 echo "   Hostname: ${HOSTNAME:-0.0.0.0}"
 echo "   Archivo: server.js"
+echo "   Ruta completa: $(pwd)/server.js"
+echo ""
 
 # Usar exec para que el proceso principal sea node
+# Esto reemplaza el proceso shell con node, permitiendo que reciba señales correctamente
 exec node server.js
 
