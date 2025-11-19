@@ -1,0 +1,43 @@
+#!/bin/sh
+set -e
+
+echo "🚀 Iniciando aplicación..."
+
+# Verificar que DATABASE_URL esté configurada
+if [ -z "$DATABASE_URL" ] || [ "$DATABASE_URL" = "postgresql://usuario:contraseña@host:5432/database" ]; then
+  echo "❌ ERROR: DATABASE_URL no está configurada correctamente"
+  echo "   Por favor, configura DATABASE_URL en Coolify con la URL real de PostgreSQL"
+  exit 1
+fi
+
+echo "✅ DATABASE_URL configurada"
+
+# Intentar ejecutar migraciones con reintentos
+echo "📦 Ejecutando migraciones de Prisma..."
+MAX_RETRIES=3
+RETRY_COUNT=0
+
+while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+  if prisma migrate deploy; then
+    echo "✅ Migraciones aplicadas correctamente"
+    break
+  else
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+      echo "⚠️  Intento $RETRY_COUNT falló, reintentando en 5 segundos..."
+      sleep 5
+    else
+      echo "❌ ERROR: No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
+      echo "   Verifica que:"
+      echo "   1. La base de datos PostgreSQL esté corriendo"
+      echo "   2. DATABASE_URL sea correcta"
+      echo "   3. El usuario tenga permisos para crear/modificar tablas"
+      exit 1
+    fi
+  fi
+done
+
+# Iniciar el servidor Next.js
+echo "🌐 Iniciando servidor Next.js..."
+exec node server.js
+

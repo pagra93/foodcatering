@@ -68,6 +68,10 @@ RUN echo '{"name":"app","version":"1.0.0"}' > package.json
 # Instalar Prisma CLI localmente (como root, luego cambiaremos a nextjs)
 RUN pnpm add -D prisma@5.22.0
 
+# Copiar y hacer ejecutable el script de entrada
+COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Cambiar ownership de node_modules a nextjs
 RUN chown -R nextjs:nodejs /app/node_modules
 
@@ -81,5 +85,5 @@ ENV HOSTNAME="0.0.0.0"
 # Añadir node_modules/.bin al PATH para que prisma sea accesible
 ENV PATH="/app/node_modules/.bin:$PATH"
 
-# Script de inicio: ejecutar migraciones y luego iniciar Next.js
-CMD ["sh", "-c", "prisma migrate deploy && node server.js"]
+# Usar script de entrada con manejo de errores mejorado
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
