@@ -3,7 +3,7 @@
  * Resuelve tenant_id desde el subdominio
  */
 
-import { NextRequest } from 'next/server'
+import type { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
 import { env } from '@/lib/env'
 
@@ -33,7 +33,6 @@ export function getSubdomainFromRequest(req: NextRequest): string | null {
   // Desarrollo: admin.comida.localhost → admin
   // Producción: admin.comida.com → admin
 
-  const domain = env.WILDCARD_DOMAIN.replace('.', '') // comida.localhost o comida.com
   const parts = host.split('.')
 
   // Si no hay subdomain (ej: comida.localhost)

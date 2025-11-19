@@ -188,3 +188,11 @@ export function isRootRole(role: UserRole): boolean {
   return ['SUPER_ADMIN', 'AUDITOR'].includes(role)
 }
 
+/**
+ * Verificar si un usuario tiene un rol específico
+ * Útil para guards y validaciones
+ */
+export function hasRole(userRole: UserRole, allowedRoles: UserRole[]): boolean {
+  return allowedRoles.includes(userRole)
+}
+

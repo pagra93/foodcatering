@@ -91,3 +91,8 @@ export const isCateringTenant = cache(async () => {
   return tenantType === 'CATERING'
 })
 
+/**
+ * Alias para getCurrentTenant (compatibilidad)
+ */
+export const getTenant = getCurrentTenant
+
