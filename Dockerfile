@@ -1,9 +1,11 @@
 # Dockerfile para Next.js 15 con Prisma
 FROM node:20-alpine AS base
 
-# Instalar pnpm y OpenSSL (necesario para Prisma)
-# En Alpine 3.22+, openssl ya está incluido, solo necesitamos libc6-compat
-RUN apk add --no-cache libc6-compat
+# Instalar pnpm, OpenSSL y crear symlinks para compatibilidad con Prisma
+# Prisma necesita libssl.so.1.1 pero Alpine 3.22 viene con OpenSSL 3.x (libssl.so.3)
+RUN apk add --no-cache libc6-compat openssl && \
+    ln -sf /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 2>/dev/null || true && \
+    ln -sf /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 2>/dev/null || true
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Instalar dependencias solo cuando sea necesario
@@ -38,12 +40,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-
-# Instalar OpenSSL y crear symlinks para compatibilidad con Prisma
-# Prisma necesita libssl.so.1.1 pero Alpine 3.22 viene con OpenSSL 3.x (libssl.so.3)
-RUN apk add --no-cache openssl && \
-    ln -sf /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 2>/dev/null || true && \
-    ln -sf /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 2>/dev/null || true
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
