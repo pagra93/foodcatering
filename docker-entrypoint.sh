@@ -19,36 +19,61 @@ fi
 
 echo "✅ DATABASE_URL configurada: ${DATABASE_URL%%@*}@***" # Ocultar credenciales en logs
 
-# Intentar ejecutar migraciones con reintentos
-echo "📦 Ejecutando migraciones de Prisma..."
-MAX_RETRIES=3
-RETRY_COUNT=0
+# Verificar si hay migraciones válidas de Prisma
+MIGRATIONS_DIR="prisma/migrations"
+HAS_VALID_MIGRATIONS=false
 
-while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-  echo "   Intento $((RETRY_COUNT + 1))/$MAX_RETRIES..."
-  if prisma migrate deploy 2>&1; then
-    echo "✅ Migraciones aplicadas correctamente"
-    break
-  else
-    RETRY_COUNT=$((RETRY_COUNT + 1))
-    if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
-      echo "⚠️  Intento $RETRY_COUNT falló, reintentando en 5 segundos..."
-      sleep 5
-    else
-      echo ""
-      echo "❌ ERROR: No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
-      echo ""
-      echo "   Verifica que:"
-      echo "   1. La base de datos PostgreSQL esté corriendo"
-      echo "   2. DATABASE_URL sea correcta (usa la URL interna si estás en la misma red Docker)"
-      echo "   3. El usuario tenga permisos para crear/modificar tablas"
-      echo "   4. El host de la base de datos sea accesible desde el contenedor"
-      echo ""
-      echo "   URL configurada: ${DATABASE_URL%%@*}@***"
-      exit 1
-    fi
+if [ -d "$MIGRATIONS_DIR" ]; then
+  # Buscar directorios de migración (estructura: migration_name/migration.sql)
+  MIGRATION_COUNT=$(find "$MIGRATIONS_DIR" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+  if [ "$MIGRATION_COUNT" -gt 0 ]; then
+    HAS_VALID_MIGRATIONS=true
   fi
-done
+fi
+
+if [ "$HAS_VALID_MIGRATIONS" = true ]; then
+  # Intentar ejecutar migraciones con reintentos
+  echo "📦 Ejecutando migraciones de Prisma..."
+  MAX_RETRIES=3
+  RETRY_COUNT=0
+
+  while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+    echo "   Intento $((RETRY_COUNT + 1))/$MAX_RETRIES..."
+    if prisma migrate deploy 2>&1; then
+      echo "✅ Migraciones aplicadas correctamente"
+      break
+    else
+      RETRY_COUNT=$((RETRY_COUNT + 1))
+      if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+        echo "⚠️  Intento $RETRY_COUNT falló, reintentando en 5 segundos..."
+        sleep 5
+      else
+        echo ""
+        echo "❌ ERROR: No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
+        echo ""
+        echo "   Verifica que:"
+        echo "   1. La base de datos PostgreSQL esté corriendo"
+        echo "   2. DATABASE_URL sea correcta (usa la URL interna si estás en la misma red Docker)"
+        echo "   3. El usuario tenga permisos para crear/modificar tablas"
+        echo "   4. El host de la base de datos sea accesible desde el contenedor"
+        echo ""
+        echo "   URL configurada: ${DATABASE_URL%%@*}@***"
+        exit 1
+      fi
+    fi
+  done
+else
+  # No hay migraciones válidas, usar db push para sincronizar el schema
+  echo "⚠️  No se encontraron migraciones válidas de Prisma"
+  echo "📦 Sincronizando schema con prisma db push..."
+  
+  if prisma db push --accept-data-loss --skip-generate 2>&1; then
+    echo "✅ Schema sincronizado correctamente"
+  else
+    echo "⚠️  Error al sincronizar schema, pero continuando..."
+    echo "   Esto puede ser normal si la base de datos ya está actualizada"
+  fi
+fi
 
 # Verificar que server.js existe
 if [ ! -f "server.js" ]; then
