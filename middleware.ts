@@ -14,6 +14,7 @@ import {
   isTenantActive,
 } from '@/lib/middleware/tenant'
 import { auth } from '@/lib/auth'
+import { getDashboardPath } from '@/lib/utils/dashboard'
 
 /**
  * Rutas públicas (no requieren auth ni tenant)
@@ -119,9 +120,10 @@ export async function middleware(req: NextRequest) {
 
   // Rutas públicas (permitir sin auth)
   if (isPublicRoute(pathname)) {
-    // Si ya está autenticado y va a login, redirigir al dashboard
+    // Si ya está autenticado y va a login, redirigir al dashboard apropiado
     if (session && pathname === '/auth/login') {
-      return NextResponse.redirect(new URL('/dashboard', req.url))
+      const dashboardPath = getDashboardPath(session.user.role, session.user.tenantType)
+      return NextResponse.redirect(new URL(dashboardPath, req.url))
     }
     return NextResponse.next()
   }

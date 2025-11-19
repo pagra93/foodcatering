@@ -30,10 +30,10 @@ export const authConfig = {
 
   // Páginas personalizadas
   pages: {
-    signIn: '/login',
-    signOut: '/login',
-    error: '/error',
-    verifyRequest: '/verify',
+    signIn: '/auth/login',
+    signOut: '/auth/login',
+    error: '/auth/error',
+    verifyRequest: '/auth/verify',
   },
 
   // Session strategy
