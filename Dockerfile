@@ -1,11 +1,16 @@
 # Dockerfile para Next.js 15 con Prisma
-FROM node:20-alpine AS base
+# Usar node:20-slim (Debian) en lugar de Alpine para mejor compatibilidad con Prisma
+# Alpine 3.22 tiene problemas conocidos con OpenSSL y Prisma
+FROM node:20-slim AS base
 
-# Instalar pnpm, OpenSSL y crear symlinks para compatibilidad con Prisma
-# Prisma necesita libssl.so.1.1 pero Alpine 3.22 viene con OpenSSL 3.x (libssl.so.3)
-RUN apk add --no-cache libc6-compat openssl && \
-    ln -sf /usr/lib/libssl.so.3 /usr/lib/libssl.so.1.1 2>/dev/null || true && \
-    ln -sf /usr/lib/libcrypto.so.3 /usr/lib/libcrypto.so.1.1 2>/dev/null || true
+# Instalar dependencias del sistema necesarias para Prisma y pnpm
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Habilitar pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Instalar dependencias solo cuando sea necesario
@@ -41,8 +46,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Crear usuario no-root para seguridad (compatible con Debian)
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs --shell /bin/bash nextjs
 
 # Copiar archivos del build standalone
 # El modo standalone incluye node_modules necesarios en .next/standalone/node_modules
