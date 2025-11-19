@@ -19,7 +19,7 @@ WORKDIR /app
 
 # Copiar archivos de dependencias
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Rebuild el código fuente solo cuando sea necesario
 FROM base AS builder
