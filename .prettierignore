@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Generated files
+*.tsbuildinfo
+next-env.d.ts
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Prisma (no formatear migraciones)
+prisma/migrations
+
+# Testing
+coverage
+test-results
+playwright-report
+
+# Cache
+.cache
+.turbo
+
+# Misc
+*.log
+.vercel
+.env*
+
+# Documentación (ya tiene formato específico)
+prd.md
+README.md
+CHANGELOG.md

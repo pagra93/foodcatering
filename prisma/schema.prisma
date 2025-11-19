@@ -1,0 +1,1281 @@
+// Prisma Schema - Plataforma de Gestión de Menús Corporativos
+// Modelo multi-tenant con trazabilidad completa
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgcrypto]
+}
+
+// ============================================================================
+// CORE: Multi-tenancy y Usuarios
+// ============================================================================
+
+enum TenantType {
+  ROOT     @map("root")
+  EMPRESA  @map("empresa")
+  CATERING @map("catering")
+
+  @@map("tenant_type")
+}
+
+enum TenantStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  INACTIVE  @map("inactive")
+
+  @@map("tenant_status")
+}
+
+model Tenant {
+  id        String       @id @default(uuid())
+  type      TenantType
+  name      String
+  subdomain String       @unique
+  config    Json         @default("{}")
+  status    TenantStatus @default(ACTIVE)
+
+  // Información de contacto y branding
+  primaryColor String? @map("primary_color")
+  logoUrl      String? @map("logo_url")
+  contactEmail String? @map("contact_email")
+  contactPhone String? @map("contact_phone")
+
+  // Dirección
+  address    String?
+  city       String?
+  postalCode String? @map("postal_code")
+  country    String? @default("ES")
+
+  // Configuración regional
+  timezone String? @default("Europe/Madrid")
+  currency String? @default("EUR")
+  language String? @default("es")
+
+  // Notas internas
+  notes String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relaciones
+  users       User[]
+  companies   Company[]
+  restaurants Restaurant[]
+
+  @@index([type, status])
+  @@index([subdomain])
+  @@map("tenants")
+}
+
+enum UserRole {
+  // Roles super admin
+  SUPER_ADMIN @map("super_admin")
+  AUDITOR     @map("auditor")
+
+  // Roles empresa
+  ADMIN_EMPRESA @map("admin_empresa")
+  RRHH          @map("rrhh")
+  FINANZAS      @map("finanzas")
+  MANAGER_SEDE  @map("manager_sede")
+  EMPLEADO      @map("empleado")
+
+  // Roles catering
+  ADMIN_CATERING    @map("admin_catering")
+  CHEF              @map("chef")
+  COCINERO          @map("cocinero")
+  REPARTIDOR        @map("repartidor")
+  FINANZAS_CATERING @map("finanzas_catering")
+
+  @@map("user_role")
+}
+
+enum UserStatus {
+  ACTIVE   @map("active")
+  DISABLED @map("disabled")
+  PENDING  @map("pending")
+
+  @@map("user_status")
+}
+
+model User {
+  id           String     @id @default(uuid())
+  tenantId     String     @map("tenant_id")
+  email        String
+  passwordHash String?    @map("password_hash")
+  nameEnc      String     @map("name_enc") // Cifrado
+  phoneEnc     String?    @map("phone_enc") // Cifrado
+  role         UserRole
+  mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  // Relaciones
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  employees Employee[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@index([email])
+  @@map("users")
+}
+
+// ============================================================================
+// EMPRESAS
+// ============================================================================
+
+enum CompanyPlan {
+  STARTER    @map("starter")
+  GROWTH     @map("growth")
+  ENTERPRISE @map("enterprise")
+
+  @@map("company_plan")
+}
+
+model Company {
+  id             String      @id @default(uuid())
+  tenantId       String      @unique @map("tenant_id")
+  legalName      String      @map("legal_name")
+  cif            String      @unique
+  billingAddress String      @map("billing_address")
+  plan           CompanyPlan @default(STARTER)
+
+  // ===== CONTACTOS =====
+  contactRrhhName     String? @map("contact_rrhh_name")
+  contactRrhhEmail    String? @map("contact_rrhh_email")
+  contactRrhhPhone    String? @map("contact_rrhh_phone")
+  contactFinanceName  String? @map("contact_finance_name")
+  contactFinanceEmail String? @map("contact_finance_email")
+  contactFinancePhone String? @map("contact_finance_phone")
+
+  // ===== INFORMACIÓN DE NEGOCIO =====
+  sector        String? // Ej: "Tecnología", "Consultoría", "Retail"
+  employeeCount Int?    @default(0) @map("employee_count")
+
+  // ===== DOCUMENTACIÓN Y CONTRATO =====
+  contractSignedAt      DateTime? @map("contract_signed_at")
+  contractUrl           String?   @map("contract_url")
+  digitalCertificateUrl String?   @map("digital_certificate_url")
+  cifDocumentUrl        String?   @map("cif_document_url")
+  contractAnnexes       Json      @default("[]") @map("contract_annexes") // [{name, url, uploadedAt}]
+
+  // ===== MÉTRICAS Y ESTADO (calculadas pero cacheadas) =====
+  lastOrderDate     DateTime? @map("last_order_date") @db.Date
+  monthlySpend      Decimal?  @default(0) @map("monthly_spend") @db.Decimal(10, 2)
+  deductibilityRate Decimal?  @default(100.00) @map("deductibility_rate") @db.Decimal(5, 2) // %
+  adoptionRate      Decimal?  @default(0) @map("adoption_rate") @db.Decimal(5, 2) // %
+  statusNotes       String?   @map("status_notes")
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  tenant              Tenant                      @relation(fields: [tenantId], references: [id])
+  sites               CompanySite[]
+  policy              CompanyPolicy?
+  policyHistory       CompanyPolicyHistory[]
+  cateringAssignments CompanyCateringAssignment[]
+  settings            CompanySettings? // Preferencias operativas del portal
+
+  @@index([tenantId])
+  @@index([deductibilityRate])
+  @@index([plan])
+  @@map("companies")
+}
+
+model CompanySite {
+  id        String @id @default(uuid())
+  tenantId  String @map("tenant_id")
+  companyId String @map("company_id")
+  name      String
+  address   String
+
+  // ===== INFORMACIÓN ADICIONAL =====
+  postalCode   String? @map("postal_code")
+  city         String?
+  contactName  String? @map("contact_name")
+  contactPhone String? @map("contact_phone")
+
+  // ===== OPERACIÓN =====
+  deliveryWindow String? @map("delivery_window")
+  notes          String? // Notas internas
+  deliveryNotes  String? @map("delivery_notes") // Instrucciones de entrega
+
+  // ===== ESTADO =====
+  active Boolean @default(true)
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  company   Company    @relation(fields: [companyId], references: [id])
+  employees Employee[]
+
+  @@index([tenantId, active])
+  @@index([companyId])
+  @@index([postalCode])
+  @@map("company_sites")
+}
+
+enum NoShowRule {
+  CHARGE    @map("charge")
+  NO_CHARGE @map("no_charge")
+  PARTIAL   @map("partial")
+
+  @@map("no_show_rule")
+}
+
+model CompanyPolicy {
+  id        String @id @default(uuid())
+  tenantId  String @map("tenant_id")
+  companyId String @unique @map("company_id")
+
+  // ===== CONFIGURACIÓN =====
+  cutoffTime    String     @map("cutoff_time") // formato "HH:mm"
+  daysActive    Json       @default("[\"monday\",\"tuesday\",\"wednesday\",\"thursday\"]") @map("days_active")
+  limitPerDay   Decimal    @map("limit_per_day") @db.Decimal(8, 2)
+  copayCompany  Decimal    @map("copay_company") @db.Decimal(8, 2)
+  copayEmployee Decimal    @map("copay_employee") @db.Decimal(8, 2)
+  noShowRule    NoShowRule @default(NO_CHARGE) @map("no_show_rule")
+
+  // ===== VIGENCIA =====
+  effectiveFrom DateTime? @map("effective_from")
+  effectiveTo   DateTime? @map("effective_to")
+
+  // ===== AUDITORÍA =====
+  version      Int     @default(1)
+  changedBy    String? @map("changed_by") // User ID
+  changeReason String? @map("change_reason")
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  company Company                @relation(fields: [companyId], references: [id])
+  history CompanyPolicyHistory[]
+
+  @@index([tenantId])
+  @@index([effectiveFrom, effectiveTo])
+  @@map("company_policies")
+}
+
+model Employee {
+  id       String @id @default(uuid())
+  tenantId String @map("tenant_id")
+  userId   String @map("user_id")
+  siteId   String @map("site_id")
+
+  // ===== INFORMACIÓN LABORAL =====
+  employeeNumber String?   @map("employee_number") // Número de empleado interno
+  department     String? // Departamento
+  position       String? // Cargo
+  startDate      DateTime? @map("start_date") @db.Date
+  endDate        DateTime? @map("end_date") @db.Date
+
+  // ===== CONFIGURACIÓN DE MENÚ =====
+  dietPrefs      Json     @default("{}") @map("diet_prefs") // Preferencias dietéticas/alergias
+  weeklyMenuDays Int?     @default(4) @map("weekly_menu_days") // Días con menú por semana
+  monthlyLimit   Decimal? @map("monthly_limit") @db.Decimal(8, 2) // Límite mensual personalizado
+
+  // ===== NOTAS =====
+  notes String? // Notas internas
+
+  // ===== ESTADO =====
+  status UserStatus @default(ACTIVE)
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relaciones
+  user    User          @relation(fields: [userId], references: [id])
+  site    CompanySite   @relation(fields: [siteId], references: [id])
+  ratings OrderRating[] // Valoraciones de pedidos
+
+  @@index([tenantId, status])
+  @@index([userId])
+  @@index([siteId])
+  @@index([department])
+  @@index([startDate])
+  @@map("employees")
+}
+
+// ============================================================================
+// ASIGNACIÓN EMPRESA ↔ CATERING
+// ============================================================================
+
+enum AssignmentType {
+  PRIMARY @map("primary")
+  BACKUP  @map("backup")
+
+  @@map("assignment_type")
+}
+
+model CompanyCateringAssignment {
+  id             String @id @default(uuid())
+  tenantEmpresa  String @map("tenant_empresa")
+  tenantCatering String @map("tenant_catering")
+  companyId      String @map("company_id")
+
+  // ===== TIPO Y CONFIGURACIÓN =====
+  type     AssignmentType @default(PRIMARY)
+  zones    Json           @default("[]") // [{name, postalCodes: [...]}]
+  priority Int            @default(1) // 1 = mayor prioridad
+
+  // ===== SLAs ESPECÍFICOS =====
+  slaPunctuality  Decimal? @map("sla_punctuality") @db.Decimal(5, 2) // % mínimo
+  slaIncidentRate Decimal? @map("sla_incident_rate") @db.Decimal(5, 2) // % máximo
+
+  // ===== ESTADO Y TRACKING =====
+  active             Boolean   @default(true)
+  assignedAt         DateTime  @default(now()) @map("assigned_at")
+  assignedBy         String    @map("assigned_by") // User ID
+  deactivatedAt      DateTime? @map("deactivated_at")
+  deactivatedBy      String?   @map("deactivated_by") // User ID
+  deactivationReason String?   @map("deactivation_reason")
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, tenantCatering])
+  @@index([tenantEmpresa])
+  @@index([tenantCatering])
+  @@index([companyId, active])
+  @@index([type, active])
+  @@map("company_catering_assignments")
+}
+
+// ============================================================================
+// HISTORIAL DE POLÍTICAS (Auditoría)
+// ============================================================================
+
+model CompanyPolicyHistory {
+  id        String @id @default(uuid())
+  policyId  String @map("policy_id")
+  companyId String @map("company_id")
+
+  // ===== SNAPSHOT DE CAMBIOS =====
+  previousValues Json @map("previous_values")
+  newValues      Json @map("new_values")
+
+  // ===== AUDITORÍA =====
+  version      Int
+  changedAt    DateTime @default(now()) @map("changed_at")
+  changedBy    String   @map("changed_by") // User ID
+  changeReason String?  @map("change_reason")
+
+  // ===== TIMESTAMPS =====
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  policy  CompanyPolicy @relation(fields: [policyId], references: [id])
+  company Company       @relation(fields: [companyId], references: [id])
+
+  @@index([policyId])
+  @@index([companyId])
+  @@index([changedAt])
+  @@map("company_policy_history")
+}
+
+// ============================================================================
+// CATERINGS/RESTAURANTES
+// ============================================================================
+
+enum DocumentStatus {
+  OK      @map("ok")
+  WARNING @map("warning")
+  BLOCKED @map("blocked")
+
+  @@map("document_status")
+}
+
+model Restaurant {
+  id          String @id @default(uuid())
+  tenantId    String @unique @map("tenant_id")
+  displayName String @map("display_name")
+
+  // ===== INFORMACIÓN LEGAL =====
+  legalName      String  @map("legal_name")
+  cif            String  @unique
+  billingAddress String  @map("billing_address")
+  iban           String? // Opcional
+  contactPerson  String  @map("contact_person")
+  contactEmail   String  @map("contact_email")
+  contactPhone   String  @map("contact_phone")
+
+  // ===== CAPACIDAD Y OPERACIÓN =====
+  dailyCapacity     Int     @default(100) @map("daily_capacity") // Platos por día
+  preparationWindow String? @map("preparation_window") // "08:00-11:00"
+  deliveryWindow    String? @map("delivery_window") // "12:00-14:00"
+  cutoffTime        String  @default("11:00") @map("cutoff_time") // HH:mm
+  leadTimeMinutes   Int     @default(180) @map("lead_time_minutes") // Minutos antes del servicio
+  operationalDays   Json    @default("[\"monday\",\"tuesday\",\"wednesday\",\"thursday\",\"friday\"]") @map("operational_days")
+
+  // ===== ZONAS DE SERVICIO =====
+  zones Json @default("[]") // [{name, postalCodes: [...], maxDistance, operator}]
+
+  // ===== ECONÓMICO =====
+  commission     Decimal @default(0.05) @db.Decimal(5, 4) // 0.05 = 5%
+  minimumBilling Decimal @default(0) @map("minimum_billing") @db.Decimal(8, 2)
+  paymentCycle   String  @default("MENSUAL") @map("payment_cycle") // SEMANAL, QUINCENAL, MENSUAL
+
+  // ===== SLAs Y MÉTRICAS (calculados, pero almacenados para dashboard) =====
+  punctualityRate Decimal? @map("punctuality_rate") @db.Decimal(5, 2) // % entregas a tiempo
+  incidentRate    Decimal? @map("incident_rate") @db.Decimal(5, 2) // % incidencias
+  averageRating   Decimal? @map("average_rating") @db.Decimal(3, 2) // Rating promedio
+
+  // ===== ESTADO =====
+  documentsStatus   DocumentStatus @default(WARNING) @map("documents_status")
+  operationalStatus String         @default("ACTIVE") @map("operational_status") // ACTIVE, SUSPENDED, UNDER_REVIEW
+
+  // ===== TIMESTAMPS =====
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  suspendedAt     DateTime? @map("suspended_at")
+  suspendedReason String?   @map("suspended_reason")
+
+  // Relaciones
+  tenant    Tenant               @relation(fields: [tenantId], references: [id])
+  documents RestaurantDocument[]
+  dishes    Dish[]
+
+  @@index([tenantId])
+  @@index([operationalStatus])
+  @@index([documentsStatus])
+  @@map("restaurants")
+}
+
+enum DocumentType {
+  REGISTRO_SANITARIO @map("registro_sanitario")
+  RC                 @map("rc")
+  MANIPULADORES      @map("manipuladores")
+  OTROS              @map("otros")
+
+  @@map("document_type")
+}
+
+enum DocumentValidityStatus {
+  VALID    @map("valid")
+  EXPIRING @map("expiring")
+  EXPIRED  @map("expired")
+
+  @@map("document_validity_status")
+}
+
+model RestaurantDocument {
+  id           String                 @id @default(uuid())
+  tenantId     String                 @map("tenant_id")
+  restaurantId String                 @map("restaurant_id")
+  type         DocumentType
+  fileUrl      String                 @map("file_url")
+  issuedAt     DateTime               @map("issued_at")
+  expiresAt    DateTime               @map("expires_at")
+  status       DocumentValidityStatus @default(VALID)
+  verifiedBy   String?                @map("verified_by")
+  verifiedAt   DateTime?              @map("verified_at")
+  createdAt    DateTime               @default(now()) @map("created_at")
+
+  // Relaciones
+  restaurant Restaurant @relation(fields: [restaurantId], references: [id])
+
+  @@index([tenantId, status])
+  @@index([restaurantId])
+  @@index([expiresAt])
+  @@map("restaurant_documents")
+}
+
+// ============================================================================
+// PLATOS Y MENÚS
+// ============================================================================
+
+enum DishCourse {
+  FIRST   @map("first")
+  SECOND  @map("second")
+  DESSERT @map("dessert")
+
+  @@map("dish_course")
+}
+
+model Dish {
+  id           String     @id @default(uuid())
+  tenantId     String     @map("tenant_id")
+  restaurantId String     @map("restaurant_id")
+  name         String
+  course       DishCourse
+  labels       Json       @default("[]") // [alérgenos, etiquetas nutricionales]
+  nutrition    Json       @default("{}") @map("nutrition") // {kcal, protein, carbs, fat}
+  basePrice    Decimal    @map("base_price") @db.Decimal(8, 2)
+  active       Boolean    @default(true)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+  deletedAt    DateTime?  @map("deleted_at")
+
+  // Relaciones
+  restaurant Restaurant     @relation(fields: [restaurantId], references: [id])
+  schedules  DishSchedule[]
+
+  @@index([tenantId, course, active])
+  @@index([restaurantId])
+  @@map("dishes")
+}
+
+enum ScheduleStatus {
+  PUBLISHED @map("published")
+  HIDDEN    @map("hidden")
+
+  @@map("schedule_status")
+}
+
+model DishSchedule {
+  id            String         @id @default(uuid())
+  tenantId      String         @map("tenant_id")
+  dishId        String         @map("dish_id")
+  date          DateTime       @db.Date
+  stockLimit    Int?           @map("stock_limit")
+  visibleTo     Json           @default("\"all\"") @map("visible_to") // "all" | {companies: [], zones: []}
+  priceOverride Decimal?       @map("price_override") @db.Decimal(8, 2)
+  status        ScheduleStatus @default(PUBLISHED)
+  createdAt     DateTime       @default(now()) @map("created_at")
+
+  // Relaciones
+  dish Dish @relation(fields: [dishId], references: [id])
+
+  @@unique([tenantId, dishId, date])
+  @@index([date, tenantId])
+  @@index([dishId])
+  @@map("dish_schedules")
+}
+
+// ============================================================================
+// AUDITORÍA Y LOGS
+// ============================================================================
+
+enum AuditAction {
+  CREATE        @map("create")
+  UPDATE        @map("update")
+  DELETE        @map("delete")
+  IMPERSONATE   @map("impersonate")
+  POLICY_CHANGE @map("policy_change")
+  BILLING_RUN   @map("billing_run")
+
+  @@map("audit_action")
+}
+
+model AuditLog {
+  id        String      @id @default(uuid())
+  tenantId  String?     @map("tenant_id") // nullable para acciones root
+  actorId   String      @map("actor_id")
+  action    AuditAction
+  entity    String // tabla afectada
+  entityId  String      @map("entity_id")
+  diff      Json? // {before: {...}, after: {...}}
+  ip        String?
+  userAgent String?     @map("user_agent")
+  timestamp DateTime    @default(now())
+  hash      String // SHA-256 para tamper-evidence
+
+  @@index([tenantId, entity, entityId])
+  @@index([timestamp])
+  @@map("audit_logs")
+}
+
+// ============================================================================
+// PEDIDOS (Núcleo del sistema)
+// ============================================================================
+
+enum OrderStatus {
+  DRAFT                   @map("draft")
+  CONFIRMED               @map("confirmed")
+  CANCELLED_BEFORE_CUTOFF @map("cancelled_before_cutoff")
+  LOCKED_AFTER_CUTOFF     @map("locked_after_cutoff")
+  DELIVERED               @map("delivered")
+  NO_SHOW                 @map("no_show")
+  ISSUE_REPORTED          @map("issue_reported")
+  COMPENSATED             @map("compensated")
+  REJECTED                @map("rejected")
+
+  @@map("order_status")
+}
+
+enum MenuType {
+  FULL @map("full")
+  HALF @map("half")
+
+  @@map("menu_type")
+}
+
+model Order {
+  id             String   @id @default(uuid())
+  tenantEmpresa  String   @map("tenant_empresa")
+  tenantCatering String   @map("tenant_catering")
+  employeeId     String   @map("employee_id")
+  serviceDate    DateTime @map("service_date") @db.Date
+  siteId         String   @map("site_id")
+
+  // Selección de platos (JSON con dish_ids)
+  selection Json @default("{}")
+
+  // Pricing y tipo
+  price    Decimal  @db.Decimal(8, 2)
+  menuType MenuType @default(FULL) @map("menu_type")
+
+  // Estado y control
+  status          OrderStatus @default(DRAFT)
+  statusChangedAt DateTime?   @map("status_changed_at")
+  lockedAt        DateTime?   @map("locked_at")
+
+  // Auditoría
+  createdBy      String @map("created_by")
+  lastModifiedBy String @map("last_modified_by")
+  version        Int    @default(1)
+  integrityHash  String @map("integrity_hash")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Relaciones
+  history        OrderHistory[]
+  deliveryEvents DeliveryEvent[]
+  incidents      Incident[]
+  deliveryProof  DeliveryProof? // Justificante de entrega
+  rating         OrderRating? // Valoración del empleado
+
+  @@unique([tenantEmpresa, employeeId, serviceDate])
+  @@index([tenantCatering, serviceDate])
+  @@index([tenantEmpresa, serviceDate])
+  @@index([serviceDate, status])
+  @@index([employeeId, serviceDate])
+  @@map("orders")
+}
+
+enum ChangeReason {
+  USER_EDIT            @map("user_edit")
+  RRHH_OVERRIDE        @map("rrhh_override")
+  STOCK_SUBSTITUTION   @map("stock_substitution")
+  CANCEL_BEFORE_CUTOFF @map("cancel_before_cutoff")
+  CANCEL_AFTER_CUTOFF  @map("cancel_after_cutoff")
+  DELIVERY_MARK        @map("delivery_mark")
+  SYSTEM_ADJUSTMENT    @map("system_adjustment")
+
+  @@map("change_reason")
+}
+
+model OrderHistory {
+  id           String       @id @default(uuid())
+  orderId      String       @map("order_id")
+  version      Int
+  changedAt    DateTime     @default(now()) @map("changed_at")
+  changedBy    String       @map("changed_by")
+  changeReason ChangeReason @map("change_reason")
+
+  // Diff de cambios
+  prevValues Json? @map("prev_values")
+  newValues  Json  @map("new_values")
+
+  // Hash de integridad
+  integrityHash String @map("integrity_hash")
+
+  // Relación
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId, version])
+  @@index([changedAt])
+  @@map("order_history")
+}
+
+// ============================================================================
+// CONSOLIDACIÓN Y OPERACIÓN
+// ============================================================================
+
+model KitchenSheet {
+  id             String   @id @default(uuid())
+  tenantCatering String   @map("tenant_catering")
+  serviceDate    DateTime @map("service_date") @db.Date
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  // Contenido: lista de platos con cantidades
+  content Json @default("[]")
+
+  // Firma digital
+  signatureHash String @map("signature_hash")
+
+  @@unique([tenantCatering, serviceDate])
+  @@index([serviceDate])
+  @@map("kitchen_sheets")
+}
+
+model PackingSheet {
+  id             String   @id @default(uuid())
+  tenantCatering String   @map("tenant_catering")
+  tenantEmpresa  String   @map("tenant_empresa")
+  serviceDate    DateTime @map("service_date") @db.Date
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  // Contenido: lista de pedidos por empleado
+  content Json @default("[]")
+
+  // Firma digital
+  signatureHash String @map("signature_hash")
+
+  @@unique([tenantCatering, tenantEmpresa, serviceDate])
+  @@index([serviceDate])
+  @@map("packing_sheets")
+}
+
+enum DeliveryEventType {
+  PACKED           @map("packed")
+  OUT_FOR_DELIVERY @map("out_for_delivery")
+  DELIVERED        @map("delivered")
+  FAILED           @map("failed")
+
+  @@map("delivery_event_type")
+}
+
+model DeliveryEvent {
+  id        String            @id @default(uuid())
+  orderId   String            @map("order_id")
+  timestamp DateTime          @default(now())
+  markedBy  String            @map("marked_by")
+  event     DeliveryEventType
+  notes     String?
+
+  // Relación
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([orderId])
+  @@index([timestamp])
+  @@map("delivery_events")
+}
+
+// ============================================================================
+// FACTURACIÓN
+// ============================================================================
+
+enum InvoiceStatus {
+  DRAFT  @map("draft")
+  ISSUED @map("issued")
+  SENT   @map("sent")
+  PAID   @map("paid")
+  VOID   @map("void")
+
+  @@map("invoice_status")
+}
+
+model Invoice {
+  id             String @id @default(uuid())
+  tenantCatering String @map("tenant_catering")
+  tenantEmpresa  String @map("tenant_empresa")
+  period         String // "YYYY-MM"
+  number         String // Serie + correlativo
+
+  // Fechas
+  issueDate DateTime @map("issue_date")
+  dueDate   DateTime @map("due_date")
+
+  // Montos
+  subtotal  Decimal @db.Decimal(10, 2)
+  taxRate   Decimal @map("tax_rate") @db.Decimal(5, 2) // Ej: 10.00 para IVA 10%
+  taxAmount Decimal @map("tax_amount") @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+
+  // Estado y archivo
+  status InvoiceStatus @default(DRAFT)
+  pdfUrl String?       @map("pdf_url")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  lines InvoiceLine[]
+
+  @@unique([tenantCatering, tenantEmpresa, period])
+  @@index([tenantEmpresa, period])
+  @@index([status])
+  @@map("invoices")
+}
+
+enum FacturableFlag {
+  FULL @map("full")
+  HALF @map("half")
+  NONE @map("none")
+
+  @@map("facturable_flag")
+}
+
+model InvoiceLine {
+  id         String   @id @default(uuid())
+  invoiceId  String   @map("invoice_id")
+  date       DateTime @db.Date
+  orderId    String   @map("order_id")
+  employeeId String   @map("employee_id")
+
+  // Descripción y monto
+  concept        String // Ej: "Gazpacho + Merluza + Yogur"
+  amount         Decimal        @db.Decimal(8, 2)
+  facturableFlag FacturableFlag @map("facturable_flag")
+  note           String? // Motivo si no es full
+
+  // Relación
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([invoiceId])
+  @@index([date])
+  @@index([orderId])
+  @@map("invoice_lines")
+}
+
+enum ExportType {
+  ERP_CSV     @map("erp_csv")
+  PAYROLL_CSV @map("payroll_csv")
+  SUMMARY_PDF @map("summary_pdf")
+
+  @@map("export_type")
+}
+
+model CompanyExport {
+  id            String     @id @default(uuid())
+  tenantEmpresa String     @map("tenant_empresa")
+  period        String // "YYYY-MM"
+  type          ExportType
+  fileUrl       String     @map("file_url")
+  createdAt     DateTime   @default(now()) @map("created_at")
+
+  @@index([tenantEmpresa, period])
+  @@map("company_exports")
+}
+
+// ============================================================================
+// INCIDENCIAS Y CALIDAD
+// ============================================================================
+
+enum IncidentSeverity {
+  LOW    @map("low")
+  MEDIUM @map("medium")
+  HIGH   @map("high")
+
+  @@map("incident_severity")
+}
+
+enum IncidentStatus {
+  OPEN        @map("open")
+  IN_PROGRESS @map("in_progress")
+  RESOLVED    @map("resolved")
+  COMPENSATED @map("compensated")
+
+  @@map("incident_status")
+}
+
+model Incident {
+  id             String  @id @default(uuid())
+  tenantEmpresa  String  @map("tenant_empresa")
+  tenantCatering String  @map("tenant_catering")
+  orderId        String? @map("order_id")
+
+  // Tipo y severidad
+  type     String // De catálogo
+  severity IncidentSeverity @default(LOW)
+
+  // Estado y tracking
+  status     IncidentStatus @default(OPEN)
+  openedBy   String         @map("opened_by")
+  assignedTo String?        @map("assigned_to")
+
+  // Resolución
+  resolution Json? // {type, amount, details}
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  resolvedAt DateTime? @map("resolved_at")
+
+  // Relación
+  order Order? @relation(fields: [orderId], references: [id])
+
+  @@index([tenantEmpresa, status])
+  @@index([tenantCatering, status])
+  @@index([orderId])
+  @@map("incidents")
+}
+
+enum AuditType {
+  SANITARIA    @map("sanitaria")
+  OPERATIVA    @map("operativa")
+  SATISFACCION @map("satisfaccion")
+
+  @@map("audit_type")
+}
+
+model RestaurantAudit {
+  id             String    @id @default(uuid())
+  tenantCatering String    @map("tenant_catering")
+  auditType      AuditType @map("audit_type")
+  score          Int
+  reportUrl      String?   @map("report_url")
+  auditedAt      DateTime  @map("audited_at")
+  auditedBy      String    @map("audited_by")
+  notes          String?
+
+  @@index([tenantCatering, auditedAt])
+  @@map("restaurant_audits")
+}
+
+// ============================================================================
+// SNAPSHOTS DIARIOS (Compliance Fiscal)
+// ============================================================================
+
+model DailySnapshot {
+  id             String   @id @default(uuid())
+  tenantEmpresa  String   @map("tenant_empresa")
+  tenantCatering String   @map("tenant_catering")
+  serviceDate    DateTime @map("service_date") @db.Date
+  generatedAt    DateTime @default(now()) @map("generated_at")
+
+  // Resumen agregado
+  ordersSummary Json @map("orders_summary")
+
+  // Firma digital para compliance
+  signHash String @map("sign_hash")
+
+  // Archivo PDF/CSV
+  fileUrl String @map("file_url")
+
+  @@unique([tenantEmpresa, tenantCatering, serviceDate])
+  @@index([serviceDate])
+  @@map("daily_snapshots")
+}
+
+// ============================================================================
+// INTEGRACIONES Y WEBHOOKS
+// ============================================================================
+
+enum IntegrationType {
+  ERP       @map("erp")
+  SSO       @map("sso")
+  PAYMENTS  @map("payments")
+  MESSAGING @map("messaging")
+
+  @@map("integration_type")
+}
+
+enum IntegrationStatus {
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
+  ERROR    @map("error")
+
+  @@map("integration_status")
+}
+
+model Integration {
+  id        String            @id @default(uuid())
+  tenantId  String            @map("tenant_id")
+  type      IntegrationType
+  config    Json              @default("{}")
+  status    IntegrationStatus @default(INACTIVE)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  @@index([tenantId, type])
+  @@map("integrations")
+}
+
+model Webhook {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  event     String // orders.consolidated, delivery.marked, etc.
+  targetUrl String   @map("target_url")
+  secret    String
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relaciones
+  deliveries WebhookDelivery[]
+
+  @@index([tenantId, event])
+  @@map("webhooks")
+}
+
+model WebhookDelivery {
+  id            String   @id @default(uuid())
+  webhookId     String   @map("webhook_id")
+  eventId       String   @map("event_id")
+  status        Int // HTTP status code
+  retries       Int      @default(0)
+  lastAttemptAt DateTime @map("last_attempt_at")
+  payload       Json
+  response      Json?
+
+  // Relación
+  webhook Webhook @relation(fields: [webhookId], references: [id])
+
+  @@index([webhookId])
+  @@index([eventId])
+  @@map("webhook_deliveries")
+}
+
+// ============================================================================
+// PORTAL DE EMPRESA - Módulos adicionales
+// ============================================================================
+
+// ============================================================================
+// INFORMES FISCALES
+// ============================================================================
+
+model FiscalReport {
+  id           String @id @default(uuid())
+  tenantEmpresa String @map("tenant_empresa")
+  
+  // Período
+  periodYear  Int @map("period_year")
+  periodMonth Int @map("period_month") // 1-12
+  
+  // Métricas
+  totalOrders           Int     @default(0) @map("total_orders")
+  totalAmount           Decimal @default(0) @map("total_amount") @db.Decimal(10, 2)
+  deductibleAmount      Decimal @default(0) @map("deductible_amount") @db.Decimal(10, 2)
+  nonDeductibleAmount   Decimal @default(0) @map("non_deductible_amount") @db.Decimal(10, 2)
+  deductibilityRate     Decimal @map("deductibility_rate") @db.Decimal(5, 2)
+  
+  // Empleados
+  employeesServed  Int @default(0) @map("employees_served")
+  daysWithService  Int @default(0) @map("days_with_service")
+  
+  // Cumplimiento fiscal
+  ordersAboveLimit    Int @default(0) @map("orders_above_limit")
+  ordersWithoutProof  Int @default(0) @map("orders_without_proof")
+  ordersWithIssues    Int @default(0) @map("orders_with_issues")
+  
+  // Archivo generado
+  fileUrl       String? @map("file_url")
+  signatureHash String  @map("signature_hash")
+  
+  // Timestamps
+  generatedAt DateTime @default(now()) @map("generated_at")
+  generatedBy String   @map("generated_by") // User ID
+  
+  @@unique([tenantEmpresa, periodYear, periodMonth])
+  @@index([tenantEmpresa])
+  @@index([periodYear, periodMonth])
+  @@map("fiscal_reports")
+}
+
+// ============================================================================
+// JUSTIFICANTES DE ENTREGA
+// ============================================================================
+
+model DeliveryProof {
+  id      String @id @default(uuid())
+  orderId String @unique @map("order_id")
+  
+  // Información de entrega
+  deliveredAt     DateTime @map("delivered_at")
+  deliveredBy     String?  @map("delivered_by") // Nombre del repartidor
+  deliveryMethod  String?  @map("delivery_method") // 'in_person', 'locker', 'reception'
+  
+  // Evidencia
+  signatureImageUrl String? @map("signature_image_url")
+  geoLocation       Json?   @map("geo_location") // {lat, lng}
+  notes             String?
+  
+  // Verificación
+  verifiedBy       String?   @map("verified_by") // User ID
+  verifiedAt       DateTime? @map("verified_at")
+  verificationHash String    @map("verification_hash")
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([deliveredAt])
+  @@map("delivery_proofs")
+}
+
+// ============================================================================
+// NOTIFICACIONES
+// ============================================================================
+
+enum NotificationType {
+  INVOICE  @map("invoice")
+  INCIDENT @map("incident")
+  ALERT    @map("alert")
+  REMINDER @map("reminder")
+  INFO     @map("info")
+
+  @@map("notification_type")
+}
+
+enum NotificationPriority {
+  LOW    @map("low")
+  NORMAL @map("normal")
+  HIGH   @map("high")
+  URGENT @map("urgent")
+
+  @@map("notification_priority")
+}
+
+model Notification {
+  id       String               @id @default(uuid())
+  tenantId String               @map("tenant_id")
+  userId   String?              @map("user_id") // NULL = para todos
+  
+  // Tipo y contenido
+  type     NotificationType
+  priority NotificationPriority @default(NORMAL)
+  
+  title     String
+  message   String
+  actionUrl String? @map("action_url")
+  
+  // Estado
+  read   Boolean   @default(false)
+  readAt DateTime? @map("read_at")
+  
+  // Timestamps
+  createdAt DateTime  @default(now()) @map("created_at")
+  expiresAt DateTime? @map("expires_at")
+  
+  @@index([tenantId])
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+// ============================================================================
+// CONFIGURACIÓN DE EMPRESA
+// ============================================================================
+
+model CompanySettings {
+  id        String @id @default(uuid())
+  tenantId  String @unique @map("tenant_id")
+  companyId String @unique @map("company_id")
+  
+  // Preferencias operativas
+  deliveryLocation     String? @map("delivery_location")
+  deliveryInstructions String? @map("delivery_instructions")
+  
+  // Notificaciones
+  notificationsEmail    String[] @map("notifications_email")
+  notifyDailySummary    Boolean  @default(false) @map("notify_daily_summary")
+  notifyIncidents       Boolean  @default(true) @map("notify_incidents")
+  notifyInvoices        Boolean  @default(true) @map("notify_invoices")
+  notifyLowAdoption     Boolean  @default(true) @map("notify_low_adoption")
+  
+  // Preferencias de visualización
+  defaultViewEmployees  String @default("table") @map("default_view_employees")
+  defaultPeriodReports  String @default("month") @map("default_period_reports")
+  
+  // Límites y alertas
+  alertCancellationRate  Decimal @default(20.00) @map("alert_cancellation_rate") @db.Decimal(5, 2)
+  alertAdoptionRate      Decimal @default(50.00) @map("alert_adoption_rate") @db.Decimal(5, 2)
+  alertDeductibilityRate Decimal @default(85.00) @map("alert_deductibility_rate") @db.Decimal(5, 2)
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  // Relaciones
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  @@index([tenantId])
+  @@map("company_settings")
+}
+
+// ============================================================================
+// VALORACIONES DE PEDIDOS
+// ============================================================================
+
+model OrderRating {
+  id         String @id @default(uuid())
+  orderId    String @unique @map("order_id")
+  employeeId String @map("employee_id")
+  
+  // Valoración general
+  rating Int // 1-5
+  
+  // Valoraciones detalladas (opcional)
+  tasteRating        Int? @map("taste_rating") // 1-5
+  portionRating      Int? @map("portion_rating") // 1-5
+  presentationRating Int? @map("presentation_rating") // 1-5
+  
+  // Comentario
+  comment String?
+  
+  // Timestamps
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  // Relaciones
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  
+  @@index([orderId])
+  @@index([employeeId])
+  @@index([rating])
+  @@map("order_ratings")
+}
+
+// ============================================================================
+// INVITACIONES DE EMPLEADOS
+// ============================================================================
+
+enum InvitationStatus {
+  PENDING   @map("pending")
+  ACCEPTED  @map("accepted")
+  EXPIRED   @map("expired")
+  CANCELLED @map("cancelled")
+
+  @@map("invitation_status")
+}
+
+model EmployeeInvitation {
+  id        String @id @default(uuid())
+  tenantId  String @map("tenant_id")
+  companyId String @map("company_id")
+  
+  // Datos del invitado
+  email      String
+  name       String
+  department String?
+  position   String?
+  
+  // Token
+  token String @unique
+  
+  // Estado
+  status InvitationStatus @default(PENDING)
+  
+  // Aceptación
+  acceptedAt DateTime? @map("accepted_at")
+  userId     String?   @map("user_id")
+  employeeId String?   @map("employee_id")
+  
+  // Timestamps
+  sentAt    DateTime @default(now()) @map("sent_at")
+  expiresAt DateTime @map("expires_at")
+  createdBy String   @map("created_by") // User ID
+  
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@index([token])
+  @@index([status])
+  @@index([email])
+  @@map("employee_invitations")
+}

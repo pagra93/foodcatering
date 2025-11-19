@@ -1,0 +1,40 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.js
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Generated files
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma
+prisma/migrations
+.prisma
+
+# Testing
+coverage
+test-results
+playwright-report
+.playwright
+
+# Cache
+.cache
+.turbo
+
+# Misc
+*.log
+.vercel
+.env*
+
+# Config files
+*.config.js
+*.config.ts
+!playwright.config.ts
+!vitest.config.ts
+

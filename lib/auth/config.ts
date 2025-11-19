@@ -1,0 +1,256 @@
+/**
+ * Configuración de NextAuth v5
+ * Multi-tenant con Prisma Adapter
+ */
+
+import { NextAuthConfig } from 'next-auth'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import CredentialsProvider from 'next-auth/providers/credentials'
+import { compare } from 'bcryptjs'
+import { z } from 'zod'
+import { prisma } from '@/lib/db'
+import type { UserRole, TenantType } from '@prisma/client'
+import type { ImpersonationToken } from './impersonation'
+
+/**
+ * Schema de validación para login
+ */
+const loginSchema = z.object({
+  email: z.string().email('Email inválido'),
+  password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
+  tenantSubdomain: z.string().optional(), // Para multi-tenant
+})
+
+/**
+ * Configuración de NextAuth
+ */
+export const authConfig = {
+  // Adapter de Prisma
+  adapter: PrismaAdapter(prisma),
+
+  // Páginas personalizadas
+  pages: {
+    signIn: '/login',
+    signOut: '/login',
+    error: '/error',
+    verifyRequest: '/verify',
+  },
+
+  // Session strategy
+  session: {
+    strategy: 'jwt',
+    maxAge: 30 * 24 * 60 * 60, // 30 días
+  },
+
+  // Providers
+  providers: [
+    CredentialsProvider({
+      id: 'credentials',
+      name: 'Credentials',
+      credentials: {
+        email: { label: 'Email', type: 'email' },
+        password: { label: 'Password', type: 'password' },
+        tenantSubdomain: { label: 'Tenant', type: 'text' },
+      },
+      async authorize(credentials) {
+        try {
+          // Validar input
+          const { email, password, tenantSubdomain } = loginSchema.parse(
+            credentials
+          )
+
+          // Buscar usuario
+          const user = await prisma.user.findFirst({
+            where: {
+              email,
+              status: 'ACTIVE',
+              deletedAt: null,
+            },
+            include: {
+              tenant: true,
+            },
+          })
+
+          if (!user || !user.passwordHash) {
+            return null
+          }
+
+          // Verificar tenant (si se especificó)
+          if (tenantSubdomain && user.tenant.subdomain !== tenantSubdomain) {
+            return null
+          }
+
+          // Verificar contraseña
+          const isPasswordValid = await compare(password, user.passwordHash)
+          if (!isPasswordValid) {
+            return null
+          }
+
+          // Retornar user info (se pasará al JWT)
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.nameEnc, // TODO: descifrar en producción
+            role: user.role as UserRole,
+            tenantId: user.tenantId,
+            tenantType: user.tenant.type as TenantType,
+            mfaEnabled: user.mfaEnabled,
+            status: user.status,
+          }
+        } catch (error) {
+          console.error('Error en authorize:', error)
+          return null
+        }
+      },
+    }),
+  ],
+
+  // Callbacks
+  callbacks: {
+    /**
+     * JWT Callback - Enriquecer el token con datos del usuario
+     */
+    async jwt({ token, user, trigger, session }) {
+      // Initial sign in
+      if (user) {
+        token.id = user.id
+        token.email = user.email
+        token.name = user.name
+        token.role = user.role
+        token.tenantId = user.tenantId
+        token.tenantType = user.tenantType
+        token.mfaEnabled = user.mfaEnabled
+      }
+
+      // Update session (cuando se llama a update())
+      if (trigger === 'update' && session) {
+        token.name = session.name
+        
+        // Manejar impersonación
+        if (session.impersonationToken) {
+          token.impersonationToken = session.impersonationToken as ImpersonationToken
+          
+          // Sobrescribir datos del usuario con los del usuario impersonado
+          token.id = session.impersonationToken.targetUserId
+          token.role = session.impersonationToken.targetRole
+          token.tenantId = session.impersonationToken.targetTenantId
+          
+          // Cargar datos completos del usuario impersonado
+          const targetUser = await prisma.user.findUnique({
+            where: { id: session.impersonationToken.targetUserId },
+            select: { nameEnc: true, email: true, tenant: { select: { type: true } } },
+          })
+          
+          if (targetUser) {
+            token.name = targetUser.nameEnc
+            token.email = targetUser.email
+            token.tenantType = targetUser.tenant.type
+          }
+        } else if (token.impersonationToken) {
+          // Si se removió el token de impersonación, restaurar usuario original
+          const impToken = token.impersonationToken as ImpersonationToken
+          
+          // Restaurar datos del usuario original
+          const originalUser = await prisma.user.findUnique({
+            where: { id: impToken.originalUserId },
+            select: {
+              nameEnc: true,
+              email: true,
+              role: true,
+              tenantId: true,
+              tenant: { select: { type: true } },
+            },
+          })
+          
+          if (originalUser) {
+            token.id = impToken.originalUserId
+            token.name = originalUser.nameEnc
+            token.email = originalUser.email
+            token.role = originalUser.role
+            token.tenantId = originalUser.tenantId
+            token.tenantType = originalUser.tenant.type
+          }
+          
+          // Remover token de impersonación
+          delete token.impersonationToken
+        }
+      }
+
+      return token
+    },
+
+    /**
+     * Session Callback - Pasar datos del JWT a la sesión
+     */
+    async session({ session, token }) {
+      if (session.user) {
+        session.user.id = token.id
+        session.user.email = token.email
+        session.user.name = token.name
+        session.user.role = token.role
+        session.user.tenantId = token.tenantId
+        session.user.tenantType = token.tenantType
+        session.user.mfaEnabled = token.mfaEnabled
+        
+        // Incluir token de impersonación si existe
+        if (token.impersonationToken) {
+          ;(session.user as any).impersonationToken = token.impersonationToken
+        }
+      }
+
+      return session
+    },
+
+    /**
+     * SignIn Callback - Control adicional en el login
+     */
+    async signIn({ user, account, profile }) {
+      // Permitir login solo si el usuario está activo
+      if (user.status !== 'ACTIVE') {
+        return false
+      }
+
+      // TODO: Verificar MFA si está habilitado
+      if (user.mfaEnabled) {
+        // Aquí iría la lógica de MFA
+        // Por ahora, permitimos el login
+      }
+
+      return true
+    },
+
+    /**
+     * Redirect Callback - Redirigir según el tipo de tenant
+     */
+    async redirect({ url, baseUrl }) {
+      // Si la URL es relativa, usar baseUrl
+      if (url.startsWith('/')) {
+        return `${baseUrl}${url}`
+      }
+      // Si la URL es del mismo dominio, permitir
+      else if (new URL(url).origin === baseUrl) {
+        return url
+      }
+      // Sino, redirigir a baseUrl
+      return baseUrl
+    },
+  },
+
+  // Events (para logging)
+  events: {
+    async signIn({ user }) {
+      console.log(`✅ Login exitoso: ${user.email}`)
+      // TODO: Registrar en audit_logs
+    },
+    async signOut({ token }) {
+      console.log(`👋 Logout: ${token.email}`)
+      // TODO: Registrar en audit_logs
+    },
+  },
+
+  // Debug en desarrollo
+  debug: process.env.NODE_ENV === 'development',
+} satisfies NextAuthConfig
+
+export default authConfig
+

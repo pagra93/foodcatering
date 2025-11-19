@@ -1,0 +1,449 @@
+# Cursor Rules - Plataforma de Gestión de Menús Corporativos
+
+## 🎯 Contexto del Proyecto
+
+Esta es una plataforma SaaS multi-tenant para gestionar beneficios de comida corporativa entre empresas, empleados y caterings. El sistema debe cumplir con requisitos fiscales españoles (exención IRPF ≤11€/día nominativo).
+
+## 🏗️ Arquitectura y Principios
+
+### Multi-tenancy
+- **CRÍTICO**: Toda query debe filtrar por `tenant_id` salvo para rol `root`
+- Usar middleware para inyectar `tenant_id` en el contexto
+- Nunca exponer datos de un tenant a otro
+- Validar aislamiento en tests E2E
+
+### Seguridad First
+- PII siempre cifrada (nombres, emails, teléfonos)
+- Hash de integridad en pedidos y snapshots (SHA-256)
+- Logs inmutables (append-only)
+- Rotación de tokens cada 15 min en impersonación
+- Rate limiting por tenant
+
+### Trazabilidad
+- Nunca borrar, siempre versionar (soft delete con `deleted_at`)
+- Tabla `order_history` para versionado de pedidos
+- Tabla `audit_logs` para acciones administrativas
+- Snapshots diarios firmados (compliance fiscal 4 años)
+
+## 📝 Convenciones de Código
+
+### TypeScript
+- Modo estricto siempre: `strict: true`, `noImplicitAny: true`
+- Preferir `type` sobre `interface` salvo para extensión
+- Usar `Zod` para validación en runtime + type inference
+- Nunca `any`, usar `unknown` y narrowing
+
+### Naming
+- **DB**: snake_case (`tenant_id`, `service_date`, `created_at`)
+- **TypeScript**: camelCase para variables, PascalCase para tipos/componentes
+- **Componentes**: PascalCase descriptivos (`OrderHistoryTimeline.tsx`)
+- **Hooks**: prefijo `use` (`useTenantContext`, `useOrderMutations`)
+- **Utils**: camelCase verbos (`calculateOrderPrice`, `validateCutoffTime`)
+
+### Estructura de Archivos
+```
+/app
+  /(auth)          # Auth routes (login, register)
+  /(tenant)        # Multi-tenant routes
+    /[subdomain]   # Dynamic tenant routing
+  /api             # API routes
+/components
+  /ui              # shadcn components
+  /features        # Feature-specific components
+  /layouts         # Layout components
+/lib
+  /db              # Prisma client, queries
+  /auth            # NextAuth config
+  /validations     # Zod schemas
+  /utils           # Utilities
+/types             # TypeScript types
+/hooks             # Custom hooks
+```
+
+### Componentes React
+- **Server Components por defecto** (Next.js 15)
+- Client Components solo cuando sea necesario (`'use client'`)
+- Props tipadas con `type` explícito
+- Preferir composición sobre props booleanas
+- Usar `React.FC` solo si necesitas `children` tipados
+
+```tsx
+// ✅ BIEN
+type OrderCardProps = {
+  order: Order
+  onEdit?: (id: string) => void
+}
+
+export default function OrderCard({ order, onEdit }: OrderCardProps) {
+  return <div>...</div>
+}
+
+// ❌ MAL
+export default function OrderCard(props: any) {
+  return <div>...</div>
+}
+```
+
+### Estado y Datos
+- **Server State**: React Query (TanStack Query) para cache
+- **Client State**: Zustand para estado global ligero
+- **Form State**: React Hook Form + Zod
+- No usar Redux (innecesario con RSC)
+
+### Fetching de Datos
+- Server Components: `fetch` directo con cache de Next.js
+- Client Components: React Query con `staleTime` apropiado
+- Siempre tipar las responses
+
+```tsx
+// Server Component
+async function OrdersList() {
+  const orders = await getOrders() // Prisma query
+  return <OrdersTable orders={orders} />
+}
+
+// Client Component
+'use client'
+function OrdersListClient() {
+  const { data: orders } = useQuery({
+    queryKey: ['orders'],
+    queryFn: getOrdersAPI
+  })
+  return <OrdersTable orders={orders} />
+}
+```
+
+## 🎨 UI/UX Guidelines
+
+### Diseño
+- Mobile-first pero optimizado para desktop
+- Espaciado consistente (usar escala Tailwind: 4, 8, 12, 16, 24, 32)
+- Colores semánticos del sistema (success, warning, error, info)
+- Dark mode preparado desde día 1
+
+### Componentes shadcn/ui
+- Importar solo lo necesario
+- Customizar en `/components/ui` según diseño
+- Mantener accesibilidad (aria-labels, keyboard navigation)
+
+### Formularios
+- Validación en tiempo real con Zod
+- Mensajes de error claros y en español
+- Loading states visibles
+- Confirmación antes de acciones destructivas
+
+### Estados
+- **Loading**: Skeleton loaders (no spinners genéricos)
+- **Empty**: Ilustraciones + CTA claro
+- **Error**: Mensaje + botón "Reintentar"
+- **Success**: Toast notification (no modales para todo)
+
+## 🗄️ Base de Datos
+
+### Prisma Schema
+- Siempre `@@map("table_name")` en snake_case
+- IDs como `String @id @default(uuid())`
+- Timestamps: `createdAt`, `updatedAt` (camelCase en Prisma)
+- Relaciones explícitas con `onDelete`, `onUpdate`
+- Índices en columnas frecuentes: `@@index([tenant_id, created_at])`
+
+```prisma
+model Order {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  employeeId    String   @map("employee_id")
+  serviceDate   DateTime @map("service_date") @db.Date
+  status        OrderStatus
+  price         Decimal  @db.Decimal(8, 2)
+  integrityHash String   @map("integrity_hash")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id])
+
+  @@unique([tenantId, employeeId, serviceDate])
+  @@index([tenantId, serviceDate])
+  @@index([serviceDate, status])
+  @@map("orders")
+}
+```
+
+### Queries
+- Usar transacciones para operaciones multi-tabla
+- Siempre incluir `tenant_id` en where (salvo root)
+- Usar `select` para optimizar (no traer todo)
+- Soft delete: `where: { deletedAt: null }`
+
+```ts
+// ✅ BIEN: filtro por tenant + select específico
+async function getOrders(tenantId: string) {
+  return prisma.order.findMany({
+    where: { 
+      tenantId,
+      deletedAt: null 
+    },
+    select: {
+      id: true,
+      serviceDate: true,
+      status: true,
+      price: true
+    },
+    orderBy: { serviceDate: 'desc' }
+  })
+}
+
+// ❌ MAL: sin filtro tenant, trae todo
+async function getOrders() {
+  return prisma.order.findMany()
+}
+```
+
+## 🔐 Autenticación y Autorización
+
+### NextAuth v5
+- JWT con `tenant_id`, `role`, `scope`
+- Session callbacks para enriquecer token
+- Middleware para proteger rutas por rol
+
+```ts
+// Enriquecer JWT
+async jwt({ token, user }) {
+  if (user) {
+    token.tenantId = user.tenantId
+    token.role = user.role
+  }
+  return token
+}
+
+// Verificar permisos en API
+if (!canAccessTenant(session.tenantId, targetTenantId)) {
+  return new Response('Forbidden', { status: 403 })
+}
+```
+
+### RBAC
+- Roles: `super_admin`, `admin_empresa`, `finanzas`, `rrhh`, `manager_sede`, `empleado`, `admin_catering`, `chef`, `cocinero`, `repartidor`
+- Permisos granulares en JSONB
+- Middleware de permisos reutilizable
+
+## ⚡ Performance
+
+### Optimizaciones
+- Usar `loading.tsx` para suspense boundaries
+- Prefetch en `<Link>` (automático en Next.js)
+- Imágenes con `next/image` siempre
+- Bundle analysis periódico (`@next/bundle-analyzer`)
+
+### Cache
+- Server Components: `revalidate` apropiado
+- React Query: `staleTime` según frecuencia de cambio
+  - Menús del día: 5 min
+  - Pedidos: 30 seg
+  - Usuarios: 10 min
+- Redis para cache por tenant (theming, config)
+
+## 🧪 Testing
+
+### Estrategia
+- **Unitarios**: utils, validaciones (Vitest)
+- **Integración**: API routes, DB queries
+- **E2E**: flujos críticos (Playwright)
+  - Flujo empleado: selección → cutoff → factura
+  - Aislamiento tenant (no data leak)
+
+### Tests E2E Críticos
+```
+✓ Empleado no puede ver pedidos de otro tenant
+✓ Cutoff 11:00 bloquea cambios correctamente
+✓ Consolidación genera kitchen/packing sheets
+✓ Factura solo incluye pedidos delivered
+✓ Export ERP tiene formato correcto
+```
+
+## 🚨 Manejo de Errores
+
+### Estrategia
+- `try/catch` en API routes + log estructurado
+- Error boundaries en UI
+- Validación Zod antes de Prisma
+- Mensajes de error en español, claros
+
+```ts
+// API Route
+try {
+  const validated = orderSchema.parse(body)
+  const order = await createOrder(validated)
+  return Response.json(order)
+} catch (error) {
+  if (error instanceof ZodError) {
+    return Response.json({ error: error.errors }, { status: 400 })
+  }
+  logger.error('Order creation failed', { error, userId })
+  return Response.json({ error: 'Error al crear pedido' }, { status: 500 })
+}
+```
+
+## 📅 Eventos Críticos del Sistema
+
+### Cron Jobs (Vercel Cron o similar)
+- **10:30**: Recordatorio selección menú
+- **11:00**: CUTOFF - cierre pedidos (update masivo status)
+- **11:05**: Consolidación (kitchen + packing sheets)
+- **23:59**: Snapshot diario firmado
+- **01:00 día 1**: Generación facturas mensuales
+
+### Estados de Pedido (FSM)
+```
+DRAFT → CONFIRMED → [CANCELLED_BEFORE_CUTOFF | LOCKED_AFTER_CUTOFF]
+LOCKED_AFTER_CUTOFF → [DELIVERED | NO_SHOW | ISSUE_REPORTED]
+ISSUE_REPORTED → [COMPENSATED | REJECTED]
+```
+
+## 📦 Dependencias Permitidas
+
+### Core
+- next (^15.0.0)
+- react, react-dom (^19.0.0)
+- typescript (^5.3.0)
+
+### UI
+- @radix-ui/* (primitivos)
+- tailwindcss (^3.4.0)
+- tailwind-merge, clsx (utils)
+- framer-motion (animaciones)
+- lucide-react (iconos)
+
+### Forms & Validation
+- react-hook-form (^7.49.0)
+- zod (^3.22.0)
+- @hookform/resolvers
+
+### Data
+- @prisma/client (^5.8.0)
+- @tanstack/react-query (^5.17.0)
+- zustand (^4.4.0)
+
+### Auth
+- next-auth (^5.0.0-beta)
+
+### Utils
+- date-fns (fechas, mejor que moment)
+- nanoid (IDs cortos)
+
+### Evitar
+- ❌ lodash (usar utils nativos de ES6)
+- ❌ moment (obsoleto, usar date-fns)
+- ❌ axios (usar fetch nativo)
+- ❌ redux (innecesario con RSC)
+
+## 🌐 Internacionalización
+
+### Idioma
+- **Español peninsular** por defecto
+- UI en español (botones, mensajes, validaciones)
+- Comentarios en código: español o inglés técnico
+- Commits: español
+
+### Formato
+- Fechas: `dd/MM/yyyy` (formato español)
+- Moneda: EUR con 2 decimales
+- Hora: 24h formato (`13:00`)
+
+## 🔧 Variables de Entorno
+
+### Estructura
+```env
+# Database
+DATABASE_URL="postgresql://..."
+
+# Auth
+NEXTAUTH_SECRET="..."
+NEXTAUTH_URL="http://localhost:3000"
+
+# Tenant
+WILDCARD_DOMAIN=".comida.com"
+
+# Features
+FEATURE_AI_NUTRITION=false
+FEATURE_AUTO_SELECTION=false
+```
+
+### Validación
+- Validar todas las env vars al inicio (Zod)
+- Fallar rápido si falta algo crítico
+- Documentar cada variable en `.env.example`
+
+## 📚 Documentación
+
+### Comentarios
+- TSDoc para funciones públicas
+- Comentarios inline solo si la lógica no es obvia
+- README por módulo complejo
+
+```ts
+/**
+ * Calcula el precio total de un pedido basado en los platos seleccionados.
+ * Aplica el límite fiscal de 11€ si está configurado.
+ * 
+ * @param selection - Platos seleccionados (1º, 2º, postre)
+ * @param policy - Política de la empresa
+ * @returns Precio total en euros
+ * @throws {Error} Si algún plato no existe o está inactivo
+ */
+export function calculateOrderPrice(
+  selection: OrderSelection,
+  policy: CompanyPolicy
+): number {
+  // ...
+}
+```
+
+## 🚀 Deploy y CI/CD
+
+### Pre-commit
+- Lint (ESLint)
+- Format (Prettier)
+- Type check (tsc --noEmit)
+- Tests unitarios
+
+### Pre-deploy
+- Build success
+- Tests E2E en staging
+- Verificar migraciones Prisma
+
+### Staging
+- Réplica exacta de prod
+- Datos sintéticos (seeds)
+- Testing manual antes de prod
+
+## ⚠️ Warnings y Prohibiciones
+
+### NUNCA
+- ❌ Hardcodear tenant_id
+- ❌ Exponer datos sin validar tenant
+- ❌ Borrar físicamente (siempre soft delete)
+- ❌ Commits sin tipo (`feat:`, `fix:`, `refactor:`)
+- ❌ Código sin tipos (any)
+- ❌ Secrets en código
+
+### SIEMPRE
+- ✅ Validar tenant_id en cada query
+- ✅ Usar transacciones para operaciones multi-tabla
+- ✅ Logs estructurados con contexto (userId, tenantId)
+- ✅ Tests para flujos críticos (cutoff, facturación)
+- ✅ Versionado en orden (order_history)
+
+## 🎯 Prioridades en Decisiones
+
+1. **Seguridad** > Performance > DX
+2. **Compliance fiscal** > Features
+3. **Simplicidad** > Abstracción prematura
+4. **Type safety** > Flexibilidad
+5. **Trazabilidad** > Velocidad
+
+---
+
+**Última actualización**: Enero 2025
+**Versión**: 1.0.0
+
