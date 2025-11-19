@@ -2,6 +2,9 @@
 const nextConfig = {
   reactStrictMode: true,
   
+  // Output mode para Docker
+  output: 'standalone',
+  
   // Experimental features
   experimental: {
     typedRoutes: true,
