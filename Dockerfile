@@ -2,7 +2,8 @@
 FROM node:20-alpine AS base
 
 # Instalar pnpm y OpenSSL (necesario para Prisma)
-RUN apk add --no-cache openssl1.1-compat libc6-compat
+# En Alpine 3.22+, openssl ya está incluido, solo necesitamos libc6-compat
+RUN apk add --no-cache libc6-compat
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
 # Instalar dependencias solo cuando sea necesario
