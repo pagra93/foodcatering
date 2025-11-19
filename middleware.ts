@@ -16,7 +16,7 @@ import {
 import { auth } from '@/lib/auth'
 
 /**
- * Rutas públicas (no requieren auth)
+ * Rutas públicas (no requieren auth ni tenant)
  */
 const PUBLIC_ROUTES = [
   '/auth/login',
@@ -24,6 +24,20 @@ const PUBLIC_ROUTES = [
   '/auth/error',
   '/auth/verify',
   '/api/auth',
+]
+
+/**
+ * Rutas que no requieren tenant (landing, etc)
+ */
+const NO_TENANT_ROUTES = [
+  '/', // Landing page
+  '/login', // Login sin subdomain
+  '/forgot-password',
+  '/reset-password',
+  '/verify',
+  '/privacy',
+  '/terms',
+  '/contact',
 ]
 
 /**
@@ -45,6 +59,13 @@ function isPublicRoute(pathname: string): boolean {
 }
 
 /**
+ * Verificar si una ruta no requiere tenant
+ */
+function noTenantRequired(pathname: string): boolean {
+  return NO_TENANT_ROUTES.some((route) => pathname === route || pathname.startsWith(route + '/'))
+}
+
+/**
  * Verificar si debe ignorarse
  */
 function shouldIgnore(pathname: string): boolean {
@@ -59,6 +80,11 @@ export async function middleware(req: NextRequest) {
 
   // Ignorar rutas estáticas y API de Next.js
   if (shouldIgnore(pathname)) {
+    return NextResponse.next()
+  }
+
+  // Permitir rutas que no requieren tenant (landing page, etc)
+  if (noTenantRequired(pathname)) {
     return NextResponse.next()
   }
 
