@@ -55,18 +55,16 @@ RUN groupadd --system --gid 1001 nodejs && \
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+# Copiar node_modules del builder si no existen en standalone
+# Esto es necesario porque a veces el standalone no incluye todas las dependencias
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+
 # Crear directorio public y copiar si existe en builder
 RUN mkdir -p ./public
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 # Copiar Prisma schema y migrations (necesario para migrate deploy)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-
-# Crear package.json mínimo para instalar Prisma CLI localmente
-RUN echo '{"name":"app","version":"1.0.0"}' > package.json
-
-# Instalar Prisma CLI localmente (como root, luego cambiaremos a nextjs)
-RUN pnpm add -D prisma@5.22.0
 
 # Copiar y hacer ejecutable el script de entrada
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
