@@ -60,7 +60,7 @@ export default function AuthErrorPage({
             {/* Actions con shadcn Button */}
             <div className="space-y-3">
               <Button asChild className="w-full" size="lg">
-                <Link href="/auth/login">
+                <Link href="/login">
                   Volver a intentar
                 </Link>
               </Button>

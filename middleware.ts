@@ -20,10 +20,10 @@ import { getDashboardPath } from '@/lib/utils/dashboard'
  * Rutas públicas (no requieren auth ni tenant)
  */
 const PUBLIC_ROUTES = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/error',
-  '/auth/verify',
+  '/login',
+  '/register',
+  '/error',
+  '/verify',
   '/api/auth',
 ]
 
@@ -108,10 +108,10 @@ export async function middleware(req: NextRequest) {
       return new NextResponse('Tenant suspendido', { status: 403 })
     }
 
-    // Si accede a la ruta raíz con subdomain, redirigir a /auth/login
+    // Si accede a la ruta raíz con subdomain, redirigir a /login
     // El login se encargará de redirigir al dashboard apropiado
     if (pathname === '/') {
-      return NextResponse.redirect(new URL('/auth/login', req.url))
+      return NextResponse.redirect(new URL('/login', req.url))
     }
   }
   
@@ -127,7 +127,7 @@ export async function middleware(req: NextRequest) {
   // Rutas públicas (permitir sin auth)
   if (isPublicRoute(pathname)) {
     // Si ya está autenticado y va a login, redirigir al dashboard apropiado
-    if (session?.user && pathname === '/auth/login') {
+    if (session?.user && pathname === '/login') {
       const dashboardPath = getDashboardPath(session.user.role, session.user.tenantType)
       return NextResponse.redirect(new URL(dashboardPath, req.url))
     }
@@ -136,7 +136,7 @@ export async function middleware(req: NextRequest) {
 
   // Si no hay sesión o user, redirigir a login
   if (!session || !session.user) {
-    const loginUrl = new URL('/auth/login', req.url)
+    const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
   }

@@ -32,10 +32,10 @@ export const authConfig = {
 
   // Páginas personalizadas
   pages: {
-    signIn: '/auth/login',
-    signOut: '/auth/login',
-    error: '/auth/error',
-    verifyRequest: '/auth/verify',
+    signIn: '/login',
+    signOut: '/login',
+    error: '/error',
+    verifyRequest: '/verify',
   },
 
   // Session strategy (JWT es necesario para Credentials)

@@ -27,7 +27,7 @@ export default function LandingPage() {
           </nav>
 
           <Link
-            href="/auth/login"
+            href="/login"
             className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
           >
             Acceder
@@ -224,7 +224,7 @@ export default function LandingPage() {
             Únete a empresas que ya confían en nuestra plataforma
           </p>
           <Link
-            href="/auth/login"
+            href="/login"
             className="inline-flex items-center gap-2 rounded-lg bg-white px-6 py-3 text-base font-medium text-blue-600 transition-colors hover:bg-blue-50"
           >
             Empezar gratis

@@ -77,7 +77,7 @@ export default async function UnauthorizedPage() {
             </>
           ) : (
             <Link
-              href="/auth/login"
+              href="/login"
               className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
             >
               Iniciar Sesión
