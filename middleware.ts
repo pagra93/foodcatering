@@ -83,8 +83,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
-  // Permitir rutas que no requieren tenant (landing page, etc)
-  if (noTenantRequired(pathname)) {
+  // Permitir rutas que no requieren tenant SOLO si NO hay subdomain
+  // Si hay subdomain, siempre debe verificar tenant
+  if (noTenantRequired(pathname) && !subdomain) {
     return NextResponse.next()
   }
 
@@ -105,6 +106,26 @@ export async function middleware(req: NextRequest) {
     // Tenant suspendido
     if (!isTenantActive(tenant.status)) {
       return new NextResponse('Tenant suspendido', { status: 403 })
+    }
+
+    // Si accede a la ruta raíz con subdomain, redirigir al portal apropiado
+    if (pathname === '/') {
+      let redirectPath = '/auth/login'
+      
+      // Si ya está autenticado, redirigir a su dashboard
+      const session = await auth()
+      if (session?.user) {
+        const tenantType = tenant.type.toUpperCase()
+        if (tenantType === 'ROOT') {
+          redirectPath = '/admin'
+        } else if (tenantType === 'EMPRESA') {
+          redirectPath = '/empresa/dashboard'
+        } else if (tenantType === 'CATERING') {
+          redirectPath = '/catering/dashboard'
+        }
+      }
+      
+      return NextResponse.redirect(new URL(redirectPath, req.url))
     }
   }
   
@@ -162,7 +183,7 @@ export async function middleware(req: NextRequest) {
       return new NextResponse('Se requiere subdomain para portal empresa', { status: 400 })
     }
     
-    if (tenant.type !== 'EMPRESA') {
+    if (tenant.type.toUpperCase() !== 'EMPRESA') {
       return new NextResponse('Este tenant no es una empresa', { status: 403 })
     }
     
@@ -178,7 +199,7 @@ export async function middleware(req: NextRequest) {
       return new NextResponse('Se requiere subdomain para portal catering', { status: 400 })
     }
     
-    if (tenant.type !== 'CATERING') {
+    if (tenant.type.toUpperCase() !== 'CATERING') {
       return new NextResponse('Este tenant no es un catering', { status: 403 })
     }
     
@@ -194,7 +215,7 @@ export async function middleware(req: NextRequest) {
       return new NextResponse('Se requiere subdomain para portal empleado', { status: 400 })
     }
     
-    if (tenant.type !== 'EMPRESA') {
+    if (tenant.type.toUpperCase() !== 'EMPRESA') {
       return new NextResponse('El portal de empleado solo está disponible para empresas', { status: 403 })
     }
     
