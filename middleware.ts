@@ -6,6 +6,9 @@
  * 3. Proteger rutas según rol
  */
 
+// Forzar Node.js runtime (no Edge) porque bcryptjs no es compatible con Edge
+export const runtime = 'nodejs'
+
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import {

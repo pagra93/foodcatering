@@ -6,7 +6,8 @@
 import { NextAuthConfig } from 'next-auth'
 import { PrismaAdapter } from '@auth/prisma-adapter'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { compare } from 'bcryptjs'
+// NO importar bcryptjs aquí (causa problemas con Edge Runtime)
+// Se importará dinámicamente dentro de authorize()
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import type { UserRole, TenantType } from '@prisma/client'
@@ -82,6 +83,8 @@ export const authConfig = {
           }
 
           // Verificar contraseña
+          // Importación dinámica de bcryptjs para evitar problemas con Edge Runtime
+          const { compare } = await import('bcryptjs')
           const isPasswordValid = await compare(password, user.passwordHash)
           if (!isPasswordValid) {
             return null
