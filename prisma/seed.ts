@@ -576,15 +576,16 @@ async function main() {
         tenantEmpresa: empresaTenant.id,
         tenantCatering: cateringTenant.id,
         orderId: pedido.id,
-        employeeId: pedido.employeeId,
         type: 'LATE_DELIVERY',
         severity: 'MEDIUM',
-        description: 'Entrega con 20 minutos de retraso',
-        reportedAt: new Date(pedido.serviceDate.getTime() + 14 * 60 * 60 * 1000),
-        reportedBy: pedido.employeeId,
         status: 'RESOLVED',
+        openedBy: pedido.employeeId,
         resolvedAt: new Date(pedido.serviceDate.getTime() + 15 * 60 * 60 * 1000),
-        resolution: 'Compensación aplicada',
+        resolution: {
+          type: 'COMPENSATION',
+          amount: 5.0,
+          details: 'Compensación aplicada por retraso de 20 minutos',
+        },
       },
     })
   }
