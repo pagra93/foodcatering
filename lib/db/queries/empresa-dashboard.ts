@@ -130,7 +130,7 @@ export async function getCompanyDashboardData(tenantId: string) {
       where: {
         tenantEmpresa: tenantId,
         serviceDate: { gte: startOfCurrentWeek },
-        status: { in: ['CANCELLED_BEFORE_CUTOFF', 'CANCELLED_AFTER_CUTOFF'] },
+        status: 'CANCELLED_BEFORE_CUTOFF',
         deletedAt: null,
       },
     }),
@@ -143,21 +143,15 @@ export async function getCompanyDashboardData(tenantId: string) {
       },
     }),
     
-    // Catering asignado
+    // Catering asignado (obtener solo el assignment)
     prisma.companyCateringAssignment.findFirst({
       where: {
         tenantEmpresa: tenantId,
         type: 'PRIMARY',
         active: true,
       },
-      include: {
-        catering: {
-          select: {
-            id: true,
-            name: true,
-            subdomain: true,
-          },
-        },
+      select: {
+        tenantCatering: true,
       },
     }),
   ])
@@ -307,9 +301,7 @@ export async function getCompanyDashboardData(tenantId: string) {
     },
     recentActivity,
     catering: cateringAssignment ? {
-      id: cateringAssignment.catering.id,
-      name: cateringAssignment.catering.name,
-      subdomain: cateringAssignment.catering.subdomain,
+      tenantId: cateringAssignment.tenantCatering,
     } : null,
   }
 }
