@@ -509,20 +509,24 @@ async function main() {
           },
           specialInstructions: Math.random() > 0.8 ? 'Sin cebolla por favor' : null,
           status: estado,
+          createdBy: empleado.userId,
+          lastModifiedBy: empleado.userId,
           integrityHash: `hash-${Date.now()}-${Math.random()}`,
       },
     })
 
       // Si fue entregado, crear delivery proof y rating
       if (estado === 'DELIVERED') {
+        const deliveredAt = new Date(fecha.getTime() + 13 * 60 * 60 * 1000) // 13:00
         await prisma.deliveryProof.create({
       data: {
             orderId: order.id,
-            type: 'PHOTO',
-            fileUrl: `/proofs/${order.id}.jpg`,
-            photoLocation: { lat: 40.4168, lon: -3.7038 },
-            photoTimestamp: new Date(fecha.getTime() + 13 * 60 * 60 * 1000), // 13:00
+            deliveredAt,
             deliveredBy: repartidorUser.id,
+            deliveryMethod: 'in_person',
+            signatureImageUrl: `/proofs/${order.id}.jpg`,
+            geoLocation: { lat: 40.4168, lon: -3.7038 },
+            verificationHash: `hash-${Date.now()}-${Math.random()}`,
       },
     })
 
