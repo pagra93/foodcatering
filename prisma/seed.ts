@@ -234,23 +234,28 @@ async function main() {
       },
     })
 
-    const employee = await prisma.employee.upsert({
+    // Verificar si el empleado ya existe
+    let employee = await prisma.employee.findFirst({
       where: { userId: user.id },
-      update: {},
-      create: {
-        tenantId: empresaTenant.id,
-        userId: user.id,
-        siteId: site.id,
-        department: emp.departamento,
-        dietPrefs: {
-          restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
-          preferences: [],
-          allergies: emp.alergias,
-          calorieTarget: 2000,
-        },
-        status: 'ACTIVE',
-      },
     })
+
+    if (!employee) {
+      employee = await prisma.employee.create({
+        data: {
+          tenantId: empresaTenant.id,
+          userId: user.id,
+          siteId: site.id,
+          department: emp.departamento,
+          dietPrefs: {
+            restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
+            preferences: [],
+            allergies: emp.alergias,
+            calorieTarget: 2000,
+          },
+          status: 'ACTIVE',
+        },
+      })
+    }
 
     empleadosCreados.push(employee)
   }
