@@ -25,8 +25,9 @@ const loginSchema = z.object({
  * Configuración de NextAuth
  */
 export const authConfig = {
-  // Adapter de Prisma
-  adapter: PrismaAdapter(prisma),
+  // NO usar adapter con Credentials provider
+  // El adapter es solo para OAuth/Email providers
+  // adapter: PrismaAdapter(prisma),
 
   // Páginas personalizadas
   pages: {
@@ -36,7 +37,7 @@ export const authConfig = {
     verifyRequest: '/auth/verify',
   },
 
-  // Session strategy
+  // Session strategy (JWT es necesario para Credentials)
   session: {
     strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 días
@@ -205,15 +206,12 @@ export const authConfig = {
      * SignIn Callback - Control adicional en el login
      */
     async signIn({ user, account, profile }) {
-      // Permitir login solo si el usuario está activo
-      if (user.status !== 'ACTIVE') {
+      // Con Credentials provider, la validación ya se hizo en authorize()
+      // Este callback es principalmente para OAuth providers
+      
+      // Validación adicional solo si tenemos acceso al status
+      if (user && 'status' in user && user.status !== 'ACTIVE') {
         return false
-      }
-
-      // TODO: Verificar MFA si está habilitado
-      if (user.mfaEnabled) {
-        // Aquí iría la lógica de MFA
-        // Por ahora, permitimos el login
       }
 
       return true
