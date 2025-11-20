@@ -91,13 +91,17 @@ export const authConfig = {
           }
 
           // Retornar user info (se pasará al JWT)
+          // Normalizar role y tenantType a mayúsculas (BD guarda en minúscula, enum es mayúscula)
+          const normalizedRole = user.role.toUpperCase() as UserRole
+          const normalizedTenantType = user.tenant.type.toUpperCase() as TenantType
+          
           return {
             id: user.id,
             email: user.email,
             name: user.nameEnc, // TODO: descifrar en producción
-            role: user.role as UserRole,
+            role: normalizedRole,
             tenantId: user.tenantId,
-            tenantType: user.tenant.type as TenantType,
+            tenantType: normalizedTenantType,
             mfaEnabled: user.mfaEnabled,
             status: user.status,
           }
