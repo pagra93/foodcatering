@@ -474,9 +474,13 @@ async function main() {
     if (diaSemana === 0 || diaSemana === 6) continue
 
     // 70% de los empleados piden cada día (aprox 7 de 10)
-    const empleadosQuePiden = empleadosCreados
-      .sort(() => Math.random() - 0.5)
-      .slice(0, 7 + Math.floor(Math.random() * 3))
+    // Fisher-Yates shuffle para garantizar unicidad
+    const shuffled = [...empleadosCreados]
+    for (let j = shuffled.length - 1; j > 0; j--) {
+      const k = Math.floor(Math.random() * (j + 1));
+      [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]]
+    }
+    const empleadosQuePiden = shuffled.slice(0, 7 + Math.floor(Math.random() * 3))
 
     for (const empleado of empleadosQuePiden) {
       // Seleccionar platos aleatorios
