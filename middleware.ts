@@ -108,24 +108,10 @@ export async function middleware(req: NextRequest) {
       return new NextResponse('Tenant suspendido', { status: 403 })
     }
 
-    // Si accede a la ruta raíz con subdomain, redirigir al portal apropiado
+    // Si accede a la ruta raíz con subdomain, redirigir a /auth/login
+    // El login se encargará de redirigir al dashboard apropiado
     if (pathname === '/') {
-      let redirectPath = '/auth/login'
-      
-      // Si ya está autenticado, redirigir a su dashboard
-      const session = await auth()
-      if (session?.user) {
-        const tenantType = tenant.type.toUpperCase()
-        if (tenantType === 'ROOT') {
-          redirectPath = '/admin'
-        } else if (tenantType === 'EMPRESA') {
-          redirectPath = '/empresa/dashboard'
-        } else if (tenantType === 'CATERING') {
-          redirectPath = '/catering/dashboard'
-        }
-      }
-      
-      return NextResponse.redirect(new URL(redirectPath, req.url))
+      return NextResponse.redirect(new URL('/auth/login', req.url))
     }
   }
   
