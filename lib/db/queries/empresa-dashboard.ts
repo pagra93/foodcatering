@@ -150,7 +150,7 @@ export async function getCompanyDashboardData(tenantId: string) {
         type: 'PRIMARY',
         active: true,
       },
-      select: {
+          select: {
         tenantCatering: true,
       },
     }),

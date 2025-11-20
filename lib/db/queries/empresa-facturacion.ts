@@ -152,7 +152,7 @@ export async function getMonthlyBreakdown(
         active: true,
         type: 'PRIMARY',
       },
-      select: {
+          select: {
         tenantCatering: true,
       },
     }),

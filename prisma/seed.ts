@@ -219,20 +219,20 @@ async function main() {
     const user = await prisma.user.upsert({
       where: {
         tenantId_email: {
-          tenantId: empresaTenant.id,
+      tenantId: empresaTenant.id,
           email: emp.email,
-        },
+    },
       },
       update: {},
       create: {
-        tenantId: empresaTenant.id,
+      tenantId: empresaTenant.id,
         email: emp.email,
-        passwordHash: await hash('Empleado123!', 10),
+      passwordHash: await hash('Empleado123!', 10),
         nameEnc: emp.nombre,
-        role: 'EMPLEADO',
-        status: 'ACTIVE',
-      },
-    })
+      role: 'EMPLEADO',
+      status: 'ACTIVE',
+    },
+  })
 
     // Verificar si el empleado ya existe
     let employee = await prisma.employee.findFirst({
@@ -241,20 +241,20 @@ async function main() {
 
     if (!employee) {
       employee = await prisma.employee.create({
-        data: {
-          tenantId: empresaTenant.id,
+    data: {
+      tenantId: empresaTenant.id,
           userId: user.id,
-          siteId: site.id,
+      siteId: site.id,
           department: emp.departamento,
-          dietPrefs: {
+      dietPrefs: {
             restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
-            preferences: [],
+        preferences: [],
             allergies: emp.alergias,
             calorieTarget: 2000,
-          },
-          status: 'ACTIVE',
-        },
-      })
+      },
+      status: 'ACTIVE',
+    },
+  })
     }
 
     empleadosCreados.push(employee)
@@ -389,7 +389,7 @@ async function main() {
         companyId: company.id,
         tenantCatering: cateringTenant.id,
       },
-    },
+      },
     update: {},
     create: {
       tenantEmpresa: empresaTenant.id,
@@ -435,16 +435,8 @@ async function main() {
 
   const platosCreados = []
   for (const p of platos) {
-    const dish = await prisma.dish.upsert({
-      where: {
-        tenantId_restaurantId_name: {
-          tenantId: cateringTenant.id,
-          restaurantId: restaurant.id,
-          name: p.nombre,
-        },
-      },
-      update: {},
-      create: {
+    const dish = await prisma.dish.create({
+      data: {
         tenantId: cateringTenant.id,
         restaurantId: restaurant.id,
         name: p.nombre,
@@ -502,7 +494,7 @@ async function main() {
       else estado = 'NO_SHOW'
 
       const order = await prisma.order.create({
-        data: {
+      data: {
           tenantEmpresa: empresaTenant.id,
           tenantCatering: cateringTenant.id,
           employeeId: empleado.id,
@@ -518,27 +510,27 @@ async function main() {
           specialInstructions: Math.random() > 0.8 ? 'Sin cebolla por favor' : null,
           status: estado,
           integrityHash: `hash-${Date.now()}-${Math.random()}`,
-        },
-      })
+      },
+    })
 
       // Si fue entregado, crear delivery proof y rating
       if (estado === 'DELIVERED') {
         await prisma.deliveryProof.create({
-          data: {
+      data: {
             orderId: order.id,
             type: 'PHOTO',
             fileUrl: `/proofs/${order.id}.jpg`,
             photoLocation: { lat: 40.4168, lon: -3.7038 },
             photoTimestamp: new Date(fecha.getTime() + 13 * 60 * 60 * 1000), // 13:00
             deliveredBy: repartidorUser.id,
-          },
-        })
+      },
+    })
 
         // 60% de los usuarios dejan rating
         if (Math.random() < 0.6) {
           const rating = 3 + Math.floor(Math.random() * 3) // 3-5 estrellas
           await prisma.orderRating.create({
-            data: {
+      data: {
               orderId: order.id,
               employeeId: empleado.id,
               rating,
@@ -546,8 +538,8 @@ async function main() {
               portionRating: rating,
               presentationRating: rating,
               comment: rating >= 4 ? 'Muy rico' : 'Correcto',
-            },
-          })
+      },
+    })
         }
       }
 
@@ -570,10 +562,10 @@ async function main() {
     where: {
       tenantEmpresa: empresaTenant.id,
       status: 'DELIVERED',
-    },
+      },
     take: 3,
     orderBy: { serviceDate: 'desc' },
-  })
+    })
 
   for (const pedido of pedidosConIncidencia) {
     await prisma.incident.create({
