@@ -507,7 +507,6 @@ async function main() {
             second: { dishId: segundo.id, name: segundo.name },
             dessert: { dishId: postre.id, name: postre.name },
           },
-          specialInstructions: Math.random() > 0.8 ? 'Sin cebolla por favor' : null,
           status: estado,
           createdBy: empleado.userId,
           lastModifiedBy: empleado.userId,
