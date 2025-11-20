@@ -1,6 +1,6 @@
 /**
- * Middleware Simplificado
- * Solo maneja subdominios y redirecciones básicas
+ * Middleware Simplificado con Inyección de Tenant
+ * Maneja subdominios, redirecciones y tenant headers
  */
 
 import { NextResponse } from 'next/server'
@@ -42,6 +42,22 @@ export async function middleware(req: NextRequest) {
     const session = await auth()
     if (!session?.user) {
       return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    // Inyectar tenant ID en headers desde la sesión
+    if (session?.user?.tenantId) {
+      const requestHeaders = new Headers(req.headers)
+      requestHeaders.set('x-tenant-id', session.user.tenantId)
+      
+      if (session.user.tenantType) {
+        requestHeaders.set('x-tenant-type', session.user.tenantType)
+      }
+      
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
     }
   }
 
