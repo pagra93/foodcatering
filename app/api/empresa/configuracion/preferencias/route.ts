@@ -4,22 +4,18 @@ import { updateCompanySettings } from '@/lib/db/queries/empresa-configuracion'
 import { z } from 'zod'
 
 const updateSettingsSchema = z.object({
-  emailNotifications: z.boolean().optional(),
-  smsNotifications: z.boolean().optional(),
-  notifyOnOrderConfirmed: z.boolean().optional(),
-  notifyOnOrderDelivered: z.boolean().optional(),
-  notifyOnIncident: z.boolean().optional(),
-  notifyOnInvoice: z.boolean().optional(),
-  weeklyDigest: z.boolean().optional(),
-  monthlyReport: z.boolean().optional(),
-  preferredLanguage: z.string().optional(),
-  timezone: z.string().optional(),
-  currency: z.string().optional(),
-  dateFormat: z.string().optional(),
-  fiscalDocRetention: z.number().min(4).max(10).optional(),
-  autoApproveOrders: z.boolean().optional(),
-  requirePhotoProof: z.boolean().optional(),
-  allowEmployeeFeedback: z.boolean().optional(),
+  deliveryLocation: z.string().optional(),
+  deliveryInstructions: z.string().optional(),
+  notificationsEmail: z.array(z.string().email()).optional(),
+  notifyDailySummary: z.boolean().optional(),
+  notifyIncidents: z.boolean().optional(),
+  notifyInvoices: z.boolean().optional(),
+  notifyLowAdoption: z.boolean().optional(),
+  defaultViewEmployees: z.string().optional(),
+  defaultPeriodReports: z.string().optional(),
+  alertCancellationRate: z.number().optional(),
+  alertAdoptionRate: z.number().optional(),
+  alertDeductibilityRate: z.number().optional(),
 })
 
 /**

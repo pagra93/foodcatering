@@ -4,19 +4,14 @@ import { updateCompanyPolicy } from '@/lib/db/queries/empresa-configuracion'
 import { z } from 'zod'
 
 const updatePolicySchema = z.object({
-  dailyLimit: z.number().positive().optional(),
-  monthlyLimit: z.number().positive().optional(),
-  subsidyPercentage: z.number().min(0).max(100).optional(),
-  allowWeekends: z.boolean().optional(),
-  allowHolidays: z.boolean().optional(),
+  limitPerDay: z.number().positive().optional(),
+  copayCompany: z.number().positive().optional(),
+  copayEmployee: z.number().positive().optional(),
   cutoffTime: z.string().optional(),
-  cancellationDeadlineHours: z.number().optional(),
-  penaltyForNoShow: z.number().optional(),
-  penaltyForLateCancellation: z.number().optional(),
-  allowDietaryPreferences: z.boolean().optional(),
-  requiresManagerApproval: z.boolean().optional(),
-  maxAdvanceOrderDays: z.number().optional(),
-  minAdvanceOrderDays: z.number().optional(),
+  daysActive: z.any().optional(), // JSON
+  noShowRule: z.enum(['CHARGE', 'NO_CHARGE', 'PARTIAL']).optional(),
+  effectiveFrom: z.string().optional(), // ISO date
+  effectiveTo: z.string().optional(), // ISO date
   changeReason: z.string().min(10, 'Razón requerida'),
 })
 
