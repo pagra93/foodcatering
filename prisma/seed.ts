@@ -1,17 +1,18 @@
 /**
- * Seed inicial de la base de datos
- * Crea datos de prueba para desarrollo
+ * Seed completo de la base de datos
+ * Crea datos realistas para testing
  */
 
 import { PrismaClient } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
+import { subDays, addDays, startOfDay } from 'date-fns'
 
 const { hash } = bcryptjs
 
 const prisma = new PrismaClient()
 
 async function main() {
-  console.log('🌱 Iniciando seed...')
+  console.log('🌱 Iniciando seed completo...')
 
   // ============================================================================
   // 1. TENANT ROOT (Súper Admin)
@@ -35,7 +36,7 @@ async function main() {
   })
 
   // Usuario súper admin
-  const superAdminUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { 
       tenantId_email: {
         tenantId: rootTenant.id,
@@ -47,9 +48,9 @@ async function main() {
       tenantId: rootTenant.id,
       email: 'admin@sintupper.com',
       passwordHash: await hash('Admin123!', 10),
-      nameEnc: 'Súper Administrador', // TODO: cifrar en producción
+      nameEnc: 'Súper Administrador',
       role: 'SUPER_ADMIN',
-      mfaEnabled: true,
+      mfaEnabled: false,
       status: 'ACTIVE',
     },
   })
@@ -57,9 +58,9 @@ async function main() {
   console.log('✅ Root tenant y admin creados')
 
   // ============================================================================
-  // 2. TENANT EMPRESA DE PRUEBA
+  // 2. TENANT EMPRESA - ACME CORPORATION
   // ============================================================================
-  console.log('📦 Creando empresa de prueba...')
+  console.log('📦 Creando empresa ACME Corporation...')
 
   const empresaTenant = await prisma.tenant.upsert({
     where: { subdomain: 'acme' },
@@ -80,45 +81,97 @@ async function main() {
   })
 
   // Company data
-  const company = await prisma.company.create({
-    data: {
+  const company = await prisma.company.upsert({
+    where: { tenantId: empresaTenant.id },
+    update: {},
+    create: {
       tenantId: empresaTenant.id,
       legalName: 'ACME Corporation S.L.',
       cif: 'B12345678',
       billingAddress: 'Calle Gran Vía 1, 28013 Madrid',
       plan: 'GROWTH',
+      sector: 'Tecnología',
+      employeeCount: 50,
+      contactRrhhName: 'María García',
+      contactRrhhEmail: 'rrhh@acme.com',
+      contactRrhhPhone: '+34 91 123 45 67',
+      contactFinanceName: 'Carlos López',
+      contactFinanceEmail: 'finanzas@acme.com',
+      contactFinancePhone: '+34 91 123 45 68',
+      contractSignedAt: new Date('2024-01-15'),
+      adoptionRate: 0,
+      deductibilityRate: 100,
     },
   })
 
   // Company policy
-  await prisma.companyPolicy.create({
-    data: {
+  await prisma.companyPolicy.upsert({
+    where: { companyId: company.id },
+    update: {},
+    create: {
       tenantId: empresaTenant.id,
       companyId: company.id,
       cutoffTime: '11:00',
-      daysActive: ['monday', 'tuesday', 'wednesday', 'thursday'],
+      daysActive: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
       limitPerDay: 11.0,
-      copayCompany: 6.0,
-      copayEmployee: 5.0,
+      copayCompany: 8.5,
+      copayEmployee: 2.5,
       noShowRule: 'NO_CHARGE',
     },
   })
 
+  // Company settings
+  await prisma.companySettings.upsert({
+    where: { companyId: company.id },
+    update: {},
+    create: {
+      tenantId: empresaTenant.id,
+      companyId: company.id,
+      deliveryLocation: 'Recepción - Planta Baja',
+      deliveryInstructions: 'Llamar al timbre de entrega',
+      notificationsEmail: ['rrhh@acme.com', 'finanzas@acme.com'],
+      notifyDailySummary: true,
+      notifyIncidents: true,
+      notifyInvoices: true,
+      notifyLowAdoption: true,
+      defaultViewEmployees: 'table',
+      defaultPeriodReports: 'month',
+      alertCancellationRate: 20.0,
+      alertAdoptionRate: 50.0,
+      alertDeductibilityRate: 85.0,
+    },
+  })
+
   // Company site
-  const site = await prisma.companySite.create({
-    data: {
+  const site = await prisma.companySite.upsert({
+    where: { id: 'acme-sede-central' },
+    update: {},
+    create: {
+      id: 'acme-sede-central',
       tenantId: empresaTenant.id,
       companyId: company.id,
       name: 'Sede Central Madrid',
-      address: 'Calle Gran Vía 1, 28013 Madrid',
+      address: 'Calle Gran Vía 1',
+      postalCode: '28013',
+      city: 'Madrid',
+      contactName: 'María García',
+      contactPhone: '+34 91 123 45 67',
       deliveryWindow: '13:00-14:00',
+      deliveryNotes: 'Entregar en recepción',
       active: true,
     },
   })
 
   // Usuarios empresa
-  const rrhhUser = await prisma.user.create({
-    data: {
+  const rrhhUser = await prisma.user.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: empresaTenant.id,
+        email: 'rrhh@acme.com',
+      },
+    },
+    update: {},
+    create: {
       tenantId: empresaTenant.id,
       email: 'rrhh@acme.com',
       passwordHash: await hash('Rrhh123!', 10),
@@ -128,8 +181,15 @@ async function main() {
     },
   })
 
-  const finanzasUser = await prisma.user.create({
-    data: {
+  const finanzasUser = await prisma.user.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: empresaTenant.id,
+        email: 'finanzas@acme.com',
+      },
+    },
+    update: {},
+    create: {
       tenantId: empresaTenant.id,
       email: 'finanzas@acme.com',
       passwordHash: await hash('Finanzas123!', 10),
@@ -139,65 +199,68 @@ async function main() {
     },
   })
 
-  // Empleados de prueba
-  const empleado1User = await prisma.user.create({
-    data: {
-      tenantId: empresaTenant.id,
-      email: 'laura.gomez@acme.com',
-      passwordHash: await hash('Empleado123!', 10),
-      nameEnc: 'Laura Gómez',
-      role: 'EMPLEADO',
-      status: 'ACTIVE',
-    },
-  })
+  // Crear 10 empleados realistas
+  const empleados = [
+    { nombre: 'Laura Gómez', email: 'laura.gomez@acme.com', departamento: 'Desarrollo', alergias: [] },
+    { nombre: 'Pedro Martínez', email: 'pedro.martinez@acme.com', departamento: 'Diseño', alergias: ['nuts'] },
+    { nombre: 'Ana Rodríguez', email: 'ana.rodriguez@acme.com', departamento: 'Marketing', alergias: [] },
+    { nombre: 'Miguel Torres', email: 'miguel.torres@acme.com', departamento: 'Ventas', alergias: [] },
+    { nombre: 'Carmen Sánchez', email: 'carmen.sanchez@acme.com', departamento: 'Desarrollo', alergias: ['lactose'] },
+    { nombre: 'David López', email: 'david.lopez@acme.com', departamento: 'Desarrollo', alergias: [] },
+    { nombre: 'Elena Fernández', email: 'elena.fernandez@acme.com', departamento: 'RRHH', alergias: [] },
+    { nombre: 'Javier García', email: 'javier.garcia@acme.com', departamento: 'Operaciones', alergias: [] },
+    { nombre: 'Sofía Martín', email: 'sofia.martin@acme.com', departamento: 'Finanzas', alergias: ['gluten'] },
+    { nombre: 'Alberto Ruiz', email: 'alberto.ruiz@acme.com', departamento: 'Ventas', alergias: [] },
+  ]
 
-  await prisma.employee.create({
-    data: {
-      tenantId: empresaTenant.id,
-      userId: empleado1User.id,
-      siteId: site.id,
-      dietPrefs: {
-        restrictions: ['gluten_free'],
-        preferences: ['vegetarian_friendly'],
-        allergies: [],
-        calorieTarget: 2000,
+  const empleadosCreados = []
+
+  for (const emp of empleados) {
+    const user = await prisma.user.upsert({
+      where: {
+        tenantId_email: {
+          tenantId: empresaTenant.id,
+          email: emp.email,
+        },
       },
-      status: 'ACTIVE',
-    },
-  })
-
-  const empleado2User = await prisma.user.create({
-    data: {
-      tenantId: empresaTenant.id,
-      email: 'pedro.martinez@acme.com',
-      passwordHash: await hash('Empleado123!', 10),
-      nameEnc: 'Pedro Martínez',
-      role: 'EMPLEADO',
-      status: 'ACTIVE',
-    },
-  })
-
-  await prisma.employee.create({
-    data: {
-      tenantId: empresaTenant.id,
-      userId: empleado2User.id,
-      siteId: site.id,
-      dietPrefs: {
-        restrictions: [],
-        preferences: [],
-        allergies: ['nuts'],
-        calorieTarget: 2200,
+      update: {},
+      create: {
+        tenantId: empresaTenant.id,
+        email: emp.email,
+        passwordHash: await hash('Empleado123!', 10),
+        nameEnc: emp.nombre,
+        role: 'EMPLEADO',
+        status: 'ACTIVE',
       },
-      status: 'ACTIVE',
-    },
-  })
+    })
 
-  console.log('✅ Empresa ACME y usuarios creados')
+    const employee = await prisma.employee.upsert({
+      where: { userId: user.id },
+      update: {},
+      create: {
+        tenantId: empresaTenant.id,
+        userId: user.id,
+        siteId: site.id,
+        department: emp.departamento,
+        dietPrefs: {
+          restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
+          preferences: [],
+          allergies: emp.alergias,
+          calorieTarget: 2000,
+        },
+        status: 'ACTIVE',
+      },
+    })
+
+    empleadosCreados.push(employee)
+  }
+
+  console.log('✅ Empresa ACME, usuarios y 10 empleados creados')
 
   // ============================================================================
-  // 3. TENANT CATERING DE PRUEBA
+  // 3. TENANT CATERING - DELICIAS EXPRESS
   // ============================================================================
-  console.log('📦 Creando catering de prueba...')
+  console.log('📦 Creando catering Delicias Express...')
 
   const cateringTenant = await prisma.tenant.upsert({
     where: { subdomain: 'deliciasexpress' },
@@ -217,31 +280,52 @@ async function main() {
   })
 
   // Restaurant data
-  const restaurant = await prisma.restaurant.create({
-    data: {
+  const restaurant = await prisma.restaurant.upsert({
+    where: { tenantId: cateringTenant.id },
+    update: {},
+    create: {
       tenantId: cateringTenant.id,
       legalName: 'Delicias Express S.L.',
       displayName: 'Delicias Express Madrid',
-      zones: ['28001', '28002', '28003', '28013'],
+      cif: 'B87654321',
+      billingAddress: 'Calle de la Cocina 5, 28020 Madrid',
+      contactPerson: 'Ana Rodríguez',
+      contactEmail: 'chef@deliciasexpress.com',
+      contactPhone: '+34 91 987 65 43',
+      dailyCapacity: 200,
+      zones: [
+        { name: 'Centro', postalCodes: ['28001', '28002', '28003', '28013'], maxDistance: 5 },
+      ],
+      commission: 0.10, // 10%
+      punctualityRate: 95.5,
+      incidentRate: 2.1,
+      averageRating: 4.3,
       documentsStatus: 'OK',
+      operationalStatus: 'ACTIVE',
     },
   })
 
   // Documentos del catering
-  await prisma.restaurantDocument.create({
-    data: {
+  await prisma.restaurantDocument.upsert({
+    where: { id: 'doc-delicias-sanitario' },
+    update: {},
+    create: {
+      id: 'doc-delicias-sanitario',
       tenantId: cateringTenant.id,
       restaurantId: restaurant.id,
       type: 'REGISTRO_SANITARIO',
       fileUrl: '/docs/registro-sanitario.pdf',
       issuedAt: new Date('2024-01-01'),
-      expiresAt: new Date('2025-12-31'),
+      expiresAt: new Date('2026-12-31'),
       status: 'VALID',
     },
   })
 
-  await prisma.restaurantDocument.create({
-    data: {
+  await prisma.restaurantDocument.upsert({
+    where: { id: 'doc-delicias-rc' },
+    update: {},
+    create: {
+      id: 'doc-delicias-rc',
       tenantId: cateringTenant.id,
       restaurantId: restaurant.id,
       type: 'RC',
@@ -253,8 +337,15 @@ async function main() {
   })
 
   // Usuarios catering
-  const chefUser = await prisma.user.create({
-    data: {
+  const chefUser = await prisma.user.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: cateringTenant.id,
+        email: 'chef@deliciasexpress.com',
+      },
+    },
+    update: {},
+    create: {
       tenantId: cateringTenant.id,
       email: 'chef@deliciasexpress.com',
       passwordHash: await hash('Chef123!', 10),
@@ -264,8 +355,15 @@ async function main() {
     },
   })
 
-  const repartidorUser = await prisma.user.create({
-    data: {
+  const repartidorUser = await prisma.user.upsert({
+    where: {
+      tenantId_email: {
+        tenantId: cateringTenant.id,
+        email: 'reparto@deliciasexpress.com',
+      },
+    },
+    update: {},
+    create: {
       tenantId: cateringTenant.id,
       email: 'reparto@deliciasexpress.com',
       passwordHash: await hash('Reparto123!', 10),
@@ -275,237 +373,284 @@ async function main() {
     },
   })
 
-  // Platos del catering
-  const gazpacho = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Gazpacho andaluz',
-      course: 'FIRST',
-      labels: ['vegan', 'gluten_free', 'low_calorie'],
-      nutrition: {
-        kcal: 120,
-        protein: 2,
-        carbs: 15,
-        fat: 6,
+  // ============================================================================
+  // 4. ASIGNACIÓN CATERING ↔ EMPRESA (¡CRÍTICO!)
+  // ============================================================================
+  console.log('🔗 Creando relación ACME ↔ Delicias Express...')
+
+  await prisma.companyCateringAssignment.upsert({
+    where: {
+      companyId_tenantCatering: {
+        companyId: company.id,
+        tenantCatering: cateringTenant.id,
       },
-      basePrice: 3.5,
+    },
+    update: {},
+    create: {
+      tenantEmpresa: empresaTenant.id,
+      tenantCatering: cateringTenant.id,
+      companyId: company.id,
+      type: 'PRIMARY',
+      zones: [{ name: 'Centro Madrid', postalCodes: ['28013'] }],
+      priority: 1,
+      slaPunctuality: 95.0,
+      slaIncidentRate: 5.0,
       active: true,
+      assignedAt: new Date('2024-01-15'),
+      assignedBy: rrhhUser.id,
     },
   })
 
-  const ensaladaCesar = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Ensalada César',
-      course: 'FIRST',
-      labels: ['contains_gluten', 'contains_egg'],
-      nutrition: {
-        kcal: 280,
-        protein: 12,
-        carbs: 20,
-        fat: 18,
-      },
-      basePrice: 4.0,
-      active: true,
-    },
-  })
+  console.log('✅ Relación ACME ↔ Delicias creada')
 
-  const polloHorno = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Pollo al horno con patatas',
-      course: 'SECOND',
-      labels: ['gluten_free', 'high_protein'],
-      nutrition: {
-        kcal: 420,
-        protein: 35,
-        carbs: 30,
-        fat: 15,
-      },
-      basePrice: 6.5,
-      active: true,
-    },
-  })
+  // ============================================================================
+  // 5. PLATOS DEL CATERING
+  // ============================================================================
+  console.log('🍽️ Creando menú de platos...')
 
-  const merluzaPlancha = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Merluza a la plancha',
-      course: 'SECOND',
-      labels: ['gluten_free', 'low_fat', 'omega3'],
-      nutrition: {
-        kcal: 180,
-        protein: 28,
-        carbs: 0,
-        fat: 7,
-      },
-      basePrice: 7.0,
-      active: true,
-    },
-  })
-
-  const yogur = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Yogur natural',
-      course: 'DESSERT',
-      labels: ['vegetarian', 'probiotic'],
-      nutrition: {
-        kcal: 80,
-        protein: 4,
-        carbs: 12,
-        fat: 2,
-      },
-      basePrice: 1.0,
-      active: true,
-    },
-  })
-
-  const fruta = await prisma.dish.create({
-    data: {
-      tenantId: cateringTenant.id,
-      restaurantId: restaurant.id,
-      name: 'Fruta de temporada',
-      course: 'DESSERT',
-      labels: ['vegan', 'gluten_free', 'seasonal'],
-      nutrition: {
-        kcal: 90,
-        protein: 1,
-        carbs: 22,
-        fat: 0,
-      },
-      basePrice: 1.0,
-      active: true,
-    },
-  })
-
-  // Programar platos para la semana que viene
-  const nextMonday = new Date()
-  nextMonday.setDate(nextMonday.getDate() + ((1 + 7 - nextMonday.getDay()) % 7) + 7)
-
-  for (let i = 0; i < 4; i++) {
-    const serviceDate = new Date(nextMonday)
-    serviceDate.setDate(serviceDate.getDate() + i)
-
+  const platos = [
     // Primeros
-    await prisma.dishSchedule.create({
-      data: {
-        tenantId: cateringTenant.id,
-        dishId: gazpacho.id,
-        date: serviceDate,
-        stockLimit: 50,
-        status: 'PUBLISHED',
-      },
-    })
-
-    await prisma.dishSchedule.create({
-      data: {
-        tenantId: cateringTenant.id,
-        dishId: ensaladaCesar.id,
-        date: serviceDate,
-        stockLimit: 50,
-        status: 'PUBLISHED',
-      },
-    })
-
+    { nombre: 'Gazpacho andaluz', curso: 'FIRST', precio: 3.5, etiquetas: ['vegan', 'gluten_free', 'low_calorie'], kcal: 120 },
+    { nombre: 'Ensalada César', curso: 'FIRST', precio: 4.0, etiquetas: ['contains_gluten'], kcal: 280 },
+    { nombre: 'Crema de verduras', curso: 'FIRST', precio: 3.2, etiquetas: ['vegan', 'gluten_free'], kcal: 150 },
+    { nombre: 'Pasta carbonara', curso: 'FIRST', precio: 4.5, etiquetas: ['contains_gluten', 'contains_egg'], kcal: 380 },
+    
     // Segundos
-    await prisma.dishSchedule.create({
-      data: {
-        tenantId: cateringTenant.id,
-        dishId: polloHorno.id,
-        date: serviceDate,
-        stockLimit: 40,
-        status: 'PUBLISHED',
-      },
-    })
-
-    await prisma.dishSchedule.create({
-      data: {
-        tenantId: cateringTenant.id,
-        dishId: merluzaPlancha.id,
-        date: serviceDate,
-        stockLimit: 30,
-        status: 'PUBLISHED',
-      },
-    })
-
+    { nombre: 'Pollo al horno con patatas', curso: 'SECOND', precio: 6.5, etiquetas: ['gluten_free', 'high_protein'], kcal: 420 },
+    { nombre: 'Merluza a la plancha', curso: 'SECOND', precio: 7.0, etiquetas: ['gluten_free', 'low_fat', 'omega3'], kcal: 180 },
+    { nombre: 'Ternera guisada', curso: 'SECOND', precio: 7.5, etiquetas: ['gluten_free', 'high_protein'], kcal: 450 },
+    { nombre: 'Lasaña de verduras', curso: 'SECOND', precio: 6.0, etiquetas: ['vegetarian', 'contains_gluten'], kcal: 320 },
+    
     // Postres
-    await prisma.dishSchedule.create({
-      data: {
+    { nombre: 'Yogur natural', curso: 'DESSERT', precio: 1.0, etiquetas: ['vegetarian', 'probiotic'], kcal: 80 },
+    { nombre: 'Fruta de temporada', curso: 'DESSERT', precio: 1.0, etiquetas: ['vegan', 'gluten_free', 'seasonal'], kcal: 90 },
+    { nombre: 'Flan casero', curso: 'DESSERT', precio: 1.5, etiquetas: ['vegetarian', 'contains_egg'], kcal: 180 },
+    { nombre: 'Helado', curso: 'DESSERT', precio: 1.2, etiquetas: ['vegetarian'], kcal: 150 },
+  ]
+
+  const platosCreados = []
+  for (const p of platos) {
+    const dish = await prisma.dish.upsert({
+      where: {
+        tenantId_restaurantId_name: {
+          tenantId: cateringTenant.id,
+          restaurantId: restaurant.id,
+          name: p.nombre,
+        },
+      },
+      update: {},
+      create: {
         tenantId: cateringTenant.id,
-        dishId: yogur.id,
-        date: serviceDate,
-        status: 'PUBLISHED',
+        restaurantId: restaurant.id,
+        name: p.nombre,
+        course: p.curso as any,
+        labels: p.etiquetas,
+        nutrition: {
+          kcal: p.kcal,
+          protein: 20,
+          carbs: 30,
+          fat: 10,
+        },
+        basePrice: p.precio,
+        active: true,
       },
     })
+    platosCreados.push(dish)
+  }
 
-    await prisma.dishSchedule.create({
+  console.log(`✅ ${platosCreados.length} platos creados`)
+
+  // ============================================================================
+  // 6. PEDIDOS HISTÓRICOS (Últimos 20 días laborables)
+  // ============================================================================
+  console.log('📦 Generando pedidos históricos...')
+
+  const hoy = startOfDay(new Date())
+  let pedidosCreados = 0
+
+  // Generar pedidos para los últimos 20 días laborables (L-V)
+  for (let i = 1; i <= 30; i++) {
+    const fecha = subDays(hoy, i)
+    const diaSemana = fecha.getDay()
+    
+    // Saltar fines de semana
+    if (diaSemana === 0 || diaSemana === 6) continue
+
+    // 70% de los empleados piden cada día (aprox 7 de 10)
+    const empleadosQuePiden = empleadosCreados
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 7 + Math.floor(Math.random() * 3))
+
+    for (const empleado of empleadosQuePiden) {
+      // Seleccionar platos aleatorios
+      const primero = platosCreados.filter((p) => p.course === 'FIRST')[Math.floor(Math.random() * 4)]
+      const segundo = platosCreados.filter((p) => p.course === 'SECOND')[Math.floor(Math.random() * 4)]
+      const postre = platosCreados.filter((p) => p.course === 'DESSERT')[Math.floor(Math.random() * 4)]
+
+      const precioTotal = Number(primero.basePrice) + Number(segundo.basePrice) + Number(postre.basePrice)
+
+      // 95% entregados, 3% cancelados antes, 2% no show
+      const rand = Math.random()
+      let estado: string
+      if (rand < 0.95) estado = 'DELIVERED'
+      else if (rand < 0.98) estado = 'CANCELLED_BEFORE_CUTOFF'
+      else estado = 'NO_SHOW'
+
+      const order = await prisma.order.create({
+        data: {
+          tenantEmpresa: empresaTenant.id,
+          tenantCatering: cateringTenant.id,
+          employeeId: empleado.id,
+          siteId: site.id,
+          serviceDate: fecha,
+          menuType: 'FULL',
+          price: precioTotal,
+          selection: {
+            first: { dishId: primero.id, name: primero.name },
+            second: { dishId: segundo.id, name: segundo.name },
+            dessert: { dishId: postre.id, name: postre.name },
+          },
+          specialInstructions: Math.random() > 0.8 ? 'Sin cebolla por favor' : null,
+          status: estado,
+          integrityHash: `hash-${Date.now()}-${Math.random()}`,
+        },
+      })
+
+      // Si fue entregado, crear delivery proof y rating
+      if (estado === 'DELIVERED') {
+        await prisma.deliveryProof.create({
+          data: {
+            orderId: order.id,
+            type: 'PHOTO',
+            fileUrl: `/proofs/${order.id}.jpg`,
+            photoLocation: { lat: 40.4168, lon: -3.7038 },
+            photoTimestamp: new Date(fecha.getTime() + 13 * 60 * 60 * 1000), // 13:00
+            deliveredBy: repartidorUser.id,
+          },
+        })
+
+        // 60% de los usuarios dejan rating
+        if (Math.random() < 0.6) {
+          const rating = 3 + Math.floor(Math.random() * 3) // 3-5 estrellas
+          await prisma.orderRating.create({
+            data: {
+              orderId: order.id,
+              employeeId: empleado.id,
+              rating,
+              tasteRating: rating,
+              portionRating: rating,
+              presentationRating: rating,
+              comment: rating >= 4 ? 'Muy rico' : 'Correcto',
+            },
+          })
+        }
+      }
+
+      pedidosCreados++
+    }
+
+    if (pedidosCreados % 50 === 0) {
+      console.log(`  ... ${pedidosCreados} pedidos creados`)
+    }
+  }
+
+  console.log(`✅ ${pedidosCreados} pedidos históricos creados`)
+
+  // ============================================================================
+  // 7. INCIDENCIAS (3-4 incidencias de ejemplo)
+  // ============================================================================
+  console.log('⚠️ Creando incidencias de ejemplo...')
+
+  const pedidosConIncidencia = await prisma.order.findMany({
+    where: {
+      tenantEmpresa: empresaTenant.id,
+      status: 'DELIVERED',
+    },
+    take: 3,
+    orderBy: { serviceDate: 'desc' },
+  })
+
+  for (const pedido of pedidosConIncidencia) {
+    await prisma.incident.create({
       data: {
-        tenantId: cateringTenant.id,
-        dishId: fruta.id,
-        date: serviceDate,
-        status: 'PUBLISHED',
+        tenantEmpresa: empresaTenant.id,
+        tenantCatering: cateringTenant.id,
+        orderId: pedido.id,
+        employeeId: pedido.employeeId,
+        type: 'LATE_DELIVERY',
+        severity: 'MEDIUM',
+        description: 'Entrega con 20 minutos de retraso',
+        reportedAt: new Date(pedido.serviceDate.getTime() + 14 * 60 * 60 * 1000),
+        reportedBy: pedido.employeeId,
+        status: 'RESOLVED',
+        resolvedAt: new Date(pedido.serviceDate.getTime() + 15 * 60 * 60 * 1000),
+        resolution: 'Compensación aplicada',
       },
     })
   }
 
-  console.log('✅ Catering Delicias Express y menús creados')
+  console.log('✅ 3 incidencias creadas')
 
   // ============================================================================
-  // 4. LOG DE AUDITORÍA INICIAL
+  // 8. AUDIT LOG
   // ============================================================================
   await prisma.auditLog.create({
     data: {
       tenantId: rootTenant.id,
-      actorId: superAdminUser.id,
+      actorId: rrhhUser.id,
       action: 'CREATE',
       entity: 'system',
-      entityId: 'initial_seed',
+      entityId: 'complete_seed',
       diff: {
-        action: 'initial_database_seed',
+        action: 'complete_database_seed',
         timestamp: new Date().toISOString(),
+        orders: pedidosCreados,
       },
-      hash: 'initial-seed-hash',
+      hash: `seed-${Date.now()}`,
     },
   })
 
-  console.log('✅ Log de auditoría creado')
-
   // ============================================================================
-  // RESUMEN
+  // RESUMEN FINAL
   // ============================================================================
-  console.log('\n📊 RESUMEN DEL SEED:')
-  console.log('='.repeat(50))
+  console.log('\n' + '='.repeat(60))
+  console.log('📊 RESUMEN DEL SEED COMPLETO')
+  console.log('='.repeat(60))
   console.log('\n🏢 TENANTS:')
-  console.log('  - Root (admin.comida.localhost)')
-  console.log('  - ACME Corporation (acme.comida.localhost)')
-  console.log('  - Delicias Express (deliciasexpress.comida.localhost)')
+  console.log('  ✅ Root (admin.sintupper.com)')
+  console.log('  ✅ ACME Corporation (acme.sintupper.com)')
+  console.log('  ✅ Delicias Express (deliciasexpress.sintupper.com)')
   
-  console.log('\n👥 USUARIOS CREADOS:')
+  console.log('\n👥 USUARIOS:')
   console.log('  ROOT:')
   console.log('    📧 admin@sintupper.com / Admin123!')
   console.log('\n  ACME (Empresa):')
   console.log('    📧 rrhh@acme.com / Rrhh123!')
   console.log('    📧 finanzas@acme.com / Finanzas123!')
   console.log('    📧 laura.gomez@acme.com / Empleado123!')
-  console.log('    📧 pedro.martinez@acme.com / Empleado123!')
+  console.log(`    ... +9 empleados más`)
   console.log('\n  DELICIAS EXPRESS (Catering):')
   console.log('    📧 chef@deliciasexpress.com / Chef123!')
   console.log('    📧 reparto@deliciasexpress.com / Reparto123!')
   
-  console.log('\n🍽️ MENÚS:')
-  console.log(`  - 6 platos creados (2 primeros, 2 segundos, 2 postres)`)
-  console.log(`  - Programados para los próximos 4 días (L-J)`)
+  console.log('\n📊 DATOS GENERADOS:')
+  console.log(`  ✅ 10 empleados`)
+  console.log(`  ✅ ${platosCreados.length} platos`)
+  console.log(`  ✅ ${pedidosCreados} pedidos (últimos 20 días laborables)`)
+  console.log(`  ✅ ~${Math.floor(pedidosCreados * 0.6)} ratings`)
+  console.log(`  ✅ 3 incidencias`)
+  console.log(`  ✅ 1 relación catering activa`)
   
-  console.log('\n' + '='.repeat(50))
+  console.log('\n🔗 RELACIONES:')
+  console.log('  ✅ ACME ↔ Delicias Express (PRIMARY)')
+  
+  console.log('\n' + '='.repeat(60))
   console.log('✅ Seed completado exitosamente!')
-  console.log('\n💡 Ahora puedes ejecutar: pnpm dev')
-  console.log('   y acceder con cualquiera de los usuarios de arriba.\n')
+  console.log('\n💡 Ahora puedes:')
+  console.log('   1. Desplegar en Coolify')
+  console.log('   2. Acceder a acme.sintupper.com/login')
+  console.log('   3. Ver datos reales en todas las páginas')
+  console.log('='.repeat(60) + '\n')
 }
 
 main()
@@ -516,4 +661,3 @@ main()
   .finally(async () => {
     await prisma.$disconnect()
   })
-
