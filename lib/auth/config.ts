@@ -251,6 +251,9 @@ export const authConfig = {
 
   // Debug en desarrollo
   debug: process.env.NODE_ENV === 'development',
+
+  // Trust host para producción (requerido en NextAuth v5)
+  trustHost: true,
 } satisfies NextAuthConfig
 
 export default authConfig

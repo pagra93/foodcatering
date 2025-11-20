@@ -6,9 +6,6 @@
  * 3. Proteger rutas según rol
  */
 
-// Forzar Node.js runtime (no Edge) porque bcryptjs no es compatible con Edge
-export const runtime = 'nodejs'
-
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import {
@@ -124,15 +121,15 @@ export async function middleware(req: NextRequest) {
   // Rutas públicas (permitir sin auth)
   if (isPublicRoute(pathname)) {
     // Si ya está autenticado y va a login, redirigir al dashboard apropiado
-    if (session && pathname === '/auth/login') {
+    if (session?.user && pathname === '/auth/login') {
       const dashboardPath = getDashboardPath(session.user.role, session.user.tenantType)
       return NextResponse.redirect(new URL(dashboardPath, req.url))
     }
     return NextResponse.next()
   }
 
-  // Si no hay sesión, redirigir a login
-  if (!session) {
+  // Si no hay sesión o user, redirigir a login
+  if (!session || !session.user) {
     const loginUrl = new URL('/auth/login', req.url)
     loginUrl.searchParams.set('callbackUrl', pathname)
     return NextResponse.redirect(loginUrl)
