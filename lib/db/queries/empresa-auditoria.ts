@@ -209,7 +209,7 @@ export async function checkFiscalCompliance(
     // Política de la empresa
     prisma.companyPolicy.findUnique({
       where: { companyId },
-      select: { dailyLimit: true },
+      select: { limitPerDay: true },
     }),
   ])
 
@@ -239,9 +239,9 @@ export async function checkFiscalCompliance(
   }
 
   // 3. Pedidos que exceden límite de política
-  if (policy?.dailyLimit) {
+  if (policy?.limitPerDay) {
     const exceedPolicy = orders.filter(
-      (o) => Number(o.price) > Number(policy.dailyLimit)
+      (o) => Number(o.price) > Number(policy.limitPerDay)
     ).length
     if (exceedPolicy > 0) {
       issues.push({

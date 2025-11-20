@@ -56,11 +56,13 @@ export async function getBillingSum(tenantId: string) {
     // Política de empresa para calcular split
     prisma.companyPolicy.findUnique({
       where: { companyId: tenantId },
-      select: { subsidyPercentage: true },
+      select: { copayCompany: true, copayEmployee: true },
     }),
   ])
 
-  const subsidyPercentage = policy?.subsidyPercentage || 100
+  // Calcular porcentaje de subsidio basado en copayCompany y copayEmployee
+  const totalCopay = Number(policy?.copayCompany || 0) + Number(policy?.copayEmployee || 0)
+  const subsidyPercentage = totalCopay > 0 ? (Number(policy?.copayCompany || 0) / totalCopay) * 100 : 100
 
   return {
     thisMonth: {
@@ -140,35 +142,44 @@ export async function getMonthlyBreakdown(
     // Política de empresa
     prisma.companyPolicy.findUnique({
       where: { companyId: tenantId },
-      select: { subsidyPercentage: true },
+      select: { copayCompany: true, copayEmployee: true },
     }),
 
-    // Catering asignado (para comisión)
+    // Catering asignado
     prisma.companyCateringAssignment.findFirst({
       where: {
         companyId: tenantId,
         active: true,
         type: 'PRIMARY',
       },
-      include: {
-        restaurant: {
-          select: {
-            legalName: true,
-            commissionRate: true,
-          },
-        },
+      select: {
+        tenantCatering: true,
       },
     }),
   ])
 
-  const subsidyPercentage = policy?.subsidyPercentage || 100
-  const commissionRate = cateringAssignment?.restaurant.commissionRate || 0
+  // Obtener restaurant info si hay assignment
+  let restaurant = null
+  if (cateringAssignment) {
+    restaurant = await prisma.restaurant.findUnique({
+      where: { tenantId: cateringAssignment.tenantCatering },
+      select: {
+        legalName: true,
+        commission: true,
+      },
+    })
+  }
+
+  // Calcular porcentaje de subsidio basado en copayCompany y copayEmployee
+  const totalCopay = Number(policy?.copayCompany || 0) + Number(policy?.copayEmployee || 0)
+  const subsidyPercentage = totalCopay > 0 ? (Number(policy?.copayCompany || 0) / totalCopay) * 100 : 100
+  const commissionRate = restaurant ? Number(restaurant.commission) * 100 : 0 // Convertir decimal a porcentaje
 
   // Calcular totales
   const subtotal = orders.reduce((sum, o) => sum + Number(o.price), 0)
   const companyPart = subtotal * (subsidyPercentage / 100)
   const employeePart = subtotal * ((100 - subsidyPercentage) / 100)
-  const commission = subtotal * (Number(commissionRate) / 100)
+  const commission = subtotal * (Number(restaurant?.commission || 0))
 
   // Agrupar por empleado
   const byEmployee = orders.reduce((acc, order) => {
@@ -196,7 +207,7 @@ export async function getMonthlyBreakdown(
       commissionRate: Number(commissionRate),
     },
     catering: {
-      name: cateringAssignment?.restaurant.legalName || 'No asignado',
+      name: restaurant?.legalName || 'No asignado',
     },
     byEmployee: Object.values(byEmployee),
   }

@@ -18,13 +18,8 @@ export async function getCompanyConfiguration(tenantId: string) {
         id: true,
         legalName: true,
         cif: true,
-        address: true,
-        postalCode: true,
-        city: true,
-        province: true,
-        phone: true,
-        email: true,
-        website: true,
+        billingAddress: true,
+        plan: true,
         sector: true,
         employeeCount: true,
         contactRrhhName: true,
@@ -38,9 +33,13 @@ export async function getCompanyConfiguration(tenantId: string) {
         digitalCertificateUrl: true,
         cifDocumentUrl: true,
         contractAnnexes: true,
-        status: true,
         statusNotes: true,
+        lastOrderDate: true,
+        monthlySpend: true,
+        deductibilityRate: true,
+        adoptionRate: true,
         createdAt: true,
+        updatedAt: true,
       },
     }),
 
@@ -49,20 +48,14 @@ export async function getCompanyConfiguration(tenantId: string) {
       where: { companyId: tenantId },
       select: {
         id: true,
-        dailyLimit: true,
-        monthlyLimit: true,
-        subsidyPercentage: true,
-        allowWeekends: true,
-        allowHolidays: true,
         cutoffTime: true,
-        cancellationDeadlineHours: true,
-        penaltyForNoShow: true,
-        penaltyForLateCancellation: true,
-        allowDietaryPreferences: true,
-        requiresManagerApproval: true,
-        maxAdvanceOrderDays: true,
-        minAdvanceOrderDays: true,
-        fiscalYearStart: true,
+        daysActive: true,
+        limitPerDay: true,
+        copayCompany: true,
+        copayEmployee: true,
+        noShowRule: true,
+        effectiveFrom: true,
+        effectiveTo: true,
         version: true,
         changedBy: true,
         changeReason: true,
@@ -85,6 +78,7 @@ export async function getCompanyConfiguration(tenantId: string) {
         contactName: true,
         contactPhone: true,
         deliveryWindow: true,
+        deliveryNotes: true,
         notes: true,
       },
       orderBy: { name: 'asc' },
@@ -95,24 +89,18 @@ export async function getCompanyConfiguration(tenantId: string) {
       where: { companyId: tenantId },
       select: {
         id: true,
-        emailNotifications: true,
-        smsNotifications: true,
-        notifyOnOrderConfirmed: true,
-        notifyOnOrderDelivered: true,
-        notifyOnIncident: true,
-        notifyOnInvoice: true,
-        weeklyDigest: true,
-        monthlyReport: true,
-        preferredLanguage: true,
-        timezone: true,
-        currency: true,
-        dateFormat: true,
-        fiscalDocRetention: true,
-        autoApproveOrders: true,
-        requirePhotoProof: true,
-        allowEmployeeFeedback: true,
-        publicHolidays: true,
-        customCutoffRules: true,
+        deliveryLocation: true,
+        deliveryInstructions: true,
+        notificationsEmail: true,
+        notifyDailySummary: true,
+        notifyIncidents: true,
+        notifyInvoices: true,
+        notifyLowAdoption: true,
+        defaultViewEmployees: true,
+        defaultPeriodReports: true,
+        alertCancellationRate: true,
+        alertAdoptionRate: true,
+        alertDeductibilityRate: true,
       },
     }),
   ])
@@ -148,13 +136,7 @@ export async function getCompanyConfiguration(tenantId: string) {
 export type UpdateCompanyGeneralData = {
   legalName?: string
   cif?: string
-  address?: string
-  postalCode?: string
-  city?: string
-  province?: string
-  phone?: string
-  email?: string
-  website?: string
+  billingAddress?: string
   sector?: string
   employeeCount?: number
   contactRrhhName?: string
@@ -180,20 +162,14 @@ export async function updateCompanyGeneral(
 // ============================================================================
 
 export type UpdateCompanyPolicyData = {
-  dailyLimit?: number
-  monthlyLimit?: number
-  subsidyPercentage?: number
-  allowWeekends?: boolean
-  allowHolidays?: boolean
   cutoffTime?: string
-  cancellationDeadlineHours?: number
-  penaltyForNoShow?: number
-  penaltyForLateCancellation?: number
-  allowDietaryPreferences?: boolean
-  requiresManagerApproval?: boolean
-  maxAdvanceOrderDays?: number
-  minAdvanceOrderDays?: number
-  fiscalYearStart?: Date
+  daysActive?: any // JSON
+  limitPerDay?: number
+  copayCompany?: number
+  copayEmployee?: number
+  noShowRule?: 'CHARGE' | 'NO_CHARGE' | 'PARTIAL'
+  effectiveFrom?: Date
+  effectiveTo?: Date
   changedBy: string
   changeReason: string
 }
@@ -213,6 +189,7 @@ export async function updateCompanyPolicy(
   // Crear historial antes de actualizar
   await prisma.companyPolicyHistory.create({
     data: {
+      policyId: currentPolicy.id,
       companyId: tenantId,
       previousValues: currentPolicy as any,
       newValues: data as any,
@@ -237,24 +214,18 @@ export async function updateCompanyPolicy(
 // ============================================================================
 
 export type UpdateCompanySettingsData = {
-  emailNotifications?: boolean
-  smsNotifications?: boolean
-  notifyOnOrderConfirmed?: boolean
-  notifyOnOrderDelivered?: boolean
-  notifyOnIncident?: boolean
-  notifyOnInvoice?: boolean
-  weeklyDigest?: boolean
-  monthlyReport?: boolean
-  preferredLanguage?: string
-  timezone?: string
-  currency?: string
-  dateFormat?: string
-  fiscalDocRetention?: number
-  autoApproveOrders?: boolean
-  requirePhotoProof?: boolean
-  allowEmployeeFeedback?: boolean
-  publicHolidays?: any
-  customCutoffRules?: any
+  deliveryLocation?: string
+  deliveryInstructions?: string
+  notificationsEmail?: string[]
+  notifyDailySummary?: boolean
+  notifyIncidents?: boolean
+  notifyInvoices?: boolean
+  notifyLowAdoption?: boolean
+  defaultViewEmployees?: string
+  defaultPeriodReports?: string
+  alertCancellationRate?: number
+  alertAdoptionRate?: number
+  alertDeductibilityRate?: number
 }
 
 export async function updateCompanySettings(
@@ -274,7 +245,9 @@ export async function updateCompanySettings(
   } else {
     return prisma.companySettings.create({
       data: {
+        tenantId,
         companyId: tenantId,
+        notificationsEmail: [],
         ...data,
       },
     })
@@ -286,6 +259,7 @@ export async function updateCompanySettings(
 // ============================================================================
 
 export type CreateSiteData = {
+  companyId: string
   name: string
   address: string
   postalCode?: string
@@ -293,6 +267,7 @@ export type CreateSiteData = {
   contactName?: string
   contactPhone?: string
   deliveryWindow?: string
+  deliveryNotes?: string
   notes?: string
 }
 
@@ -343,4 +318,3 @@ export async function getPolicyHistory(tenantId: string) {
     take: 20,
   })
 }
-
