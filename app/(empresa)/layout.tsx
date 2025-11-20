@@ -15,9 +15,7 @@ export default async function EmpresaRootLayout({
   
   // Verificar que el usuario tiene permisos para portal empresa
   const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH', 'FINANZAS', 'MANAGER_SEDE', 'VIEWER']
-  const userRole = (session.user.role as string).toUpperCase().replace(/_/g, '_')
-  
-  if (!allowedRoles.includes(userRole)) {
+  if (!allowedRoles.includes(session.user.role as string)) {
     redirect('/acceso-denegado')
   }
 
