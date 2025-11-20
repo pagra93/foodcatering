@@ -32,7 +32,6 @@ const PUBLIC_ROUTES = [
  */
 const NO_TENANT_ROUTES = [
   '/', // Landing page
-  '/login', // Login sin subdomain
   '/forgot-password',
   '/reset-password',
   '/verify',

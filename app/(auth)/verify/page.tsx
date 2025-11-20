@@ -84,7 +84,7 @@ export default function VerifyEmailPage({
               size="lg"
               className="w-full"
             >
-              <Link href="/login">
+              <Link href="/auth/login">
                 Volver al inicio de sesión
               </Link>
             </Button>

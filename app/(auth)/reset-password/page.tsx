@@ -92,7 +92,7 @@ export default async function ResetPasswordPage({
         {/* Footer */}
         <p className="mt-6 text-center text-sm text-gray-600">
           <Link
-            href="/login"
+            href="/auth/login"
             className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
           >
             Volver al inicio de sesión

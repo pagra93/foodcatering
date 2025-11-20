@@ -220,6 +220,7 @@ async function main() {
   const restaurant = await prisma.restaurant.create({
     data: {
       tenantId: cateringTenant.id,
+      legalName: 'Delicias Express S.L.',
       displayName: 'Delicias Express Madrid',
       zones: ['28001', '28002', '28003', '28013'],
       documentsStatus: 'OK',
