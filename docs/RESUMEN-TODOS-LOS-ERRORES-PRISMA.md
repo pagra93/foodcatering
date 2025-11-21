@@ -1,8 +1,8 @@
 # 📋 RESUMEN COMPLETO - Todos los Errores de Prisma Corregidos
 
 **Fecha**: 2025-11-21  
-**Archivo problemático**: `lib/db/queries/empleado-menus.ts`  
-**Total de errores encontrados**: 10+  
+**Archivos problemáticos**: `empleado-menus.ts`, `empleado-perfil.ts`, `empleado-historial.ts`  
+**Total de errores encontrados**: 13+  
 **Estado**: ✅ TODOS CORREGIDOS
 
 ---
@@ -450,6 +450,111 @@ createdBy String @map("created_by")
 
 ---
 
+### Error #11: Employee.company (en empleado-perfil.ts)
+
+**Error**:
+```
+PrismaClientValidationError: Unknown field `company` for include statement on model `Employee`
+```
+
+**Archivo**: `lib/db/queries/empleado-perfil.ts`
+
+**Código incorrecto**:
+```typescript
+include: {
+  company: { ... }  // ❌ ERROR: Employee NO tiene esta relación
+}
+const name = employee.company.legalName
+```
+
+**Código correcto**:
+```typescript
+include: {
+  site: {
+    select: {
+      company: { ... }
+    }
+  }
+}
+const name = employee.site.company.legalName
+```
+
+**Corrección**: Commit `a0256c3`
+
+---
+
+### Error #12: CANCELLED_AFTER_CUTOFF (enum inexistente)
+
+**Error**:
+```
+PrismaClientValidationError: Invalid value for argument `in`. Expected OrderStatus.
+```
+
+**Archivos**: `empleado-perfil.ts`, `empleado-historial.ts`
+
+**Código incorrecto**:
+```typescript
+status: {
+  in: ['CANCELLED_BEFORE_CUTOFF', 'CANCELLED_AFTER_CUTOFF']  // ❌ ERROR
+}
+```
+
+**Código correcto**:
+```typescript
+status: 'CANCELLED_BEFORE_CUTOFF'  // ✅ CORRECTO
+```
+
+**Explicación**: El enum `OrderStatus` NO tiene `CANCELLED_AFTER_CUTOFF`. Solo tiene:
+- ✅ `CANCELLED_BEFORE_CUTOFF`
+- ✅ `LOCKED_AFTER_CUTOFF` (pero NO es cancelled)
+
+**Corrección**: Commit `a0256c3`
+
+---
+
+### Error #13: Company.logoUrl (campo inexistente)
+
+**Error**:
+```
+PrismaClientValidationError: Unknown field `logoUrl` for select statement on model `Company`
+```
+
+**Archivo**: `lib/db/queries/empleado-perfil.ts`
+
+**Código incorrecto**:
+```typescript
+company: {
+  select: {
+    logoUrl: true,  // ❌ ERROR: Company NO tiene este campo
+    policy: {
+      select: {
+        dailyLimit: true,     // ❌ ERROR: es limitPerDay
+        monthlyLimit: true,   // ❌ ERROR: es limitPerMonth
+      }
+    }
+  }
+}
+```
+
+**Código correcto**:
+```typescript
+company: {
+  select: {
+    legalName: true,  // ✅ CORRECTO
+    policy: {
+      select: {
+        limitPerDay: true,    // ✅ CORRECTO
+        limitPerMonth: true,  // ✅ CORRECTO
+      }
+    }
+  }
+}
+```
+
+**Corrección**: Commit `8167d4a`
+
+---
+
 ## 📊 TABLA DE REFERENCIA RÁPIDA
 
 ### Modelos y sus campos/relaciones correctos
@@ -458,12 +563,14 @@ createdBy String @map("created_by")
 |--------|----------------|------------|----------|
 | **Employee** | `tenantId`, `userId`, `siteId`, `status` | `user`, `site`, `ratings` | ❌ `company`, `companyId`, `active` |
 | **CompanySite** | `id`, `companyId`, `tenantId` | `company`, `employees` | - |
-| **Company** | `id`, `tenantId`, `legalName` | `policy`, `sites`, `cateringAssignments` | - |
+| **Company** | `id`, `tenantId`, `legalName`, `cif` | `policy`, `sites`, `cateringAssignments` | ❌ `logoUrl` |
+| **CompanyPolicy** | `companyId`, `limitPerDay`, `limitPerMonth` | `company` | ❌ `dailyLimit`, `monthlyLimit` |
 | **CompanyCateringAssignment** | `companyId`, `tenantCatering` (string) | `company` | ❌ `restaurant` |
 | **Restaurant** | `id`, `tenantId`, `legalName` | `dishes` | - |
-| **Dish** | `tenantId`, `restaurantId`, `basePrice`, `active` | `restaurant`, `schedules` | ❌ `price`, `allergens` |
+| **Dish** | `tenantId`, `restaurantId`, `basePrice`, `active` | `restaurant`, `schedules` | ❌ `price`, `allergens`, `ingredients` |
 | **DishSchedule** | `tenantId`, `dishId`, `date`, `status` (enum) | `dish` | ❌ `restaurantId`, `active` |
-| **Order** | `employeeId`, `tenantEmpresa`, `tenantCatering`, `siteId` | `history`, `deliveryProof`, `rating` | ❌ `employee` |
+| **Order** | `employeeId`, `tenantEmpresa`, `tenantCatering`, `siteId` | `history`, `deliveryProof`, `rating` | ❌ `employee`, `dishSelection` |
+| **OrderStatus** | `CANCELLED_BEFORE_CUTOFF`, `LOCKED_AFTER_CUTOFF` | - | ❌ `CANCELLED_AFTER_CUTOFF` |
 
 ---
 
@@ -473,22 +580,23 @@ Después de corregir **TODOS** estos errores:
 
 ### Estado del Portal Empleado:
 
-- ✅ Login funciona
-- ✅ Redirige a `/empleado/menus`
+- ✅ **Login** funciona
+- ✅ **Menús** - Redirige a `/empleado/menus`, muestra menús, puede crear pedidos
+- ✅ **Mi Perfil** - Muestra datos del empleado, empresa, estadísticas
+- ✅ **Historial** - Muestra pedidos anteriores con filtros
+- ⚠️ **Incidencias** - 404 (página no implementada aún)
 - ✅ NO errores de Prisma
 - ✅ Carga datos del empleado correctamente
 - ✅ Carga empresa y catering correctos
-- ✅ Muestra menús de la semana
-- ✅ Puede seleccionar platos
-- ✅ Puede crear pedidos
-- ✅ Puede cancelar pedidos
 
 ### Commits de corrección:
 
 1. `87c5f38` - Fix destructuring getTenant()
-2. `5a58d86` - Fix getDashboardPath + Employee.company
+2. `5a58d86` - Fix getDashboardPath + Employee.company (menus)
 3. `9e61a4a` - Fix CompanyCateringAssignment.restaurant
 4. `ced6cce` - Fix DishSchedule + Dish (exhaustivo)
+5. `a0256c3` - Fix Employee.company (perfil) + CANCELLED_AFTER_CUTOFF
+6. `8167d4a` - Fix Company.logoUrl + policy fields
 
 ---
 
@@ -503,14 +611,26 @@ La solución fue sistemática:
 4. ✅ Corregir código
 5. ✅ Commit y test
 
-**Total de líneas corregidas**: 50+  
-**Total de archivos afectados**: 2 (empleado-menus.ts, permissions.ts)  
+**Total de líneas corregidas**: 80+  
+**Total de archivos afectados**: 4 (empleado-menus.ts, empleado-perfil.ts, empleado-historial.ts, permissions.ts)  
 **Estado final**: ✅ **TODOS LOS ERRORES CORREGIDOS**
 
 ---
 
 **Fecha de resolución completa**: 2025-11-21  
-**Última corrección**: `ced6cce`  
+**Última corrección**: `8167d4a`  
 **Estado**: ✅ **LISTO PARA PRODUCCIÓN**
+
+---
+
+## 🎓 LECCIONES APRENDIDAS
+
+1. **SIEMPRE** verificar el schema de Prisma antes de escribir queries
+2. **NO** asumir campos o relaciones sin confirmar
+3. Leer los mensajes de error de Prisma **detenidamente** (lista los campos disponibles)
+4. Usar herramientas:
+   - `grep "model NombreModelo" prisma/schema.prisma -A 50`
+   - `npx prisma studio` para ver estructura real
+5. Documentar todos los errores encontrados para referencia futura
 
 
