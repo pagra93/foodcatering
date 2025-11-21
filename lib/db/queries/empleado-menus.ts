@@ -33,9 +33,6 @@ export async function getWeekMenusForEmployee(
                   active: true,
                   type: 'PRIMARY',
                 },
-                include: {
-                  restaurant: true,
-                },
               },
             },
           },
@@ -48,10 +45,19 @@ export async function getWeekMenusForEmployee(
     throw new Error('Empleado no encontrado')
   }
 
-  const catering = employee.site.company.cateringAssignments[0]?.restaurant
+  const cateringAssignment = employee.site.company.cateringAssignments[0]
+
+  if (!cateringAssignment) {
+    throw new Error('No hay catering asignado a esta empresa')
+  }
+
+  // Obtener el restaurant por separado usando tenantCatering
+  const catering = await prisma.restaurant.findUnique({
+    where: { tenantId: cateringAssignment.tenantCatering },
+  })
 
   if (!catering) {
-    throw new Error('No hay catering asignado a esta empresa')
+    throw new Error('Catering no encontrado')
   }
 
   // Obtener pedidos existentes del empleado en esta semana
@@ -199,9 +205,6 @@ export async function getDayMenuForEmployee(
                   active: true,
                   type: 'PRIMARY',
                 },
-                include: {
-                  restaurant: true,
-                },
               },
             },
           },
@@ -214,10 +217,19 @@ export async function getDayMenuForEmployee(
     throw new Error('Empleado no encontrado')
   }
 
-  const catering = employee.site.company.cateringAssignments[0]?.restaurant
+  const cateringAssignment = employee.site.company.cateringAssignments[0]
+
+  if (!cateringAssignment) {
+    throw new Error('No hay catering asignado')
+  }
+
+  // Obtener el restaurant por separado usando tenantCatering
+  const catering = await prisma.restaurant.findUnique({
+    where: { tenantId: cateringAssignment.tenantCatering },
+  })
 
   if (!catering) {
-    throw new Error('No hay catering asignado')
+    throw new Error('Catering no encontrado')
   }
 
   // Verificar cutoff
