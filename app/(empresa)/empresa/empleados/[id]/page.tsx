@@ -1,70 +1,88 @@
-import { Suspense } from 'react'
-import { notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Edit, Mail } from 'lucide-react'
-import { getCurrentTenant } from '@/lib/tenant/get-tenant'
-import { getEmployeeById } from '@/lib/db/queries/empresa-empleados'
-import { Button } from '@/components/ui/button'
+import { notFound, redirect } from 'next/navigation'
+import { auth } from '@/lib/auth'
+import { getTenant } from '@/lib/auth/get-tenant'
+import { prisma } from '@/lib/db/prisma'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Card } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { EmployeeOverview } from '@/components/empresa/empleados/EmployeeOverview'
-import { EmployeeOrders} from '@/components/empresa/empleados/EmployeeOrders'
-import { EmployeeIncidents } from '@/components/empresa/empleados/EmployeeIncidents'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft, Edit, Mail } from 'lucide-react'
+import Link from 'next/link'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 
-/**
- * Página de detalle de empleado
- * FASE 2 - Ver información completa, pedidos, incidencias
- */
+// ============================================================================
+// Página de Detalle de Empleado
+// ============================================================================
 
-async function EmployeeDetailData({ id }: { id: string }) {
-  const tenant = await getCurrentTenant()
-  const employee = await getEmployeeById(id, tenant.id)
+type Props = {
+  params: {
+    id: string
+  }
+}
+
+export default async function EmpleadoDetallePage({ params }: Props) {
+  const session = await auth()
+  if (!session) {
+    redirect('/login')
+  }
+
+  const tenant = getTenant()
+  if (tenant.type !== 'EMPRESA') {
+    redirect('/unauthorized')
+  }
+
+  // Obtener empleado
+  const employee = await prisma.employee.findFirst({
+    where: {
+      id: params.id,
+      tenantId: tenant.id,
+    },
+    include: {
+      user: {
+        select: {
+          email: true,
+          nameEnc: true,
+          phoneEnc: true,
+        },
+      },
+      site: {
+        select: {
+          name: true,
+          address: true,
+          city: true,
+        },
+      },
+    },
+  })
 
   if (!employee) {
     notFound()
   }
 
-  const statusMap = {
-    ACTIVE: { label: 'Activo', variant: 'success' as const },
-    SUSPENDED: { label: 'Suspendido', variant: 'warning' as const },
-    DISABLED: { label: 'Deshabilitado', variant: 'destructive' as const },
+  const statusMap: Record<string, { label: string; variant: any }> = {
+    ACTIVE: { label: 'Activo', variant: 'default' },
+    INACTIVE: { label: 'Inactivo', variant: 'secondary' },
+    SUSPENDED: { label: 'Suspendido', variant: 'destructive' },
   }
 
-  const statusInfo = statusMap[employee.status as keyof typeof statusMap]
+  const statusInfo = statusMap[employee.status] || { label: employee.status, variant: 'outline' }
 
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/empresa/empleados">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{employee.name}</h1>
-            <p className="mt-1 text-sm text-gray-500">{employee.email}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
-              {employee.employeeNumber && (
-                <Badge variant="outline">#{employee.employeeNumber}</Badge>
-              )}
-              {employee.department && (
-                <Badge variant="outline">{employee.department}</Badge>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <div className="container py-8">
+      <div className="mb-6 flex items-center justify-between">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/empresa/empleados">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver a Empleados
+          </Link>
+        </Button>
+        <div className="flex gap-2">
           <Button variant="outline" size="sm">
             <Mail className="mr-2 h-4 w-4" />
-            Reenviar invitación
+            Enviar Email
           </Button>
-          <Button size="sm" asChild>
-            <Link href={`/empresa/empleados/${id}/editar`}>
+          <Button asChild>
+            <Link href={`/empresa/empleados/${employee.id}/editar`}>
               <Edit className="mr-2 h-4 w-4" />
               Editar
             </Link>
@@ -72,54 +90,77 @@ async function EmployeeDetailData({ id }: { id: string }) {
         </div>
       </div>
 
-      {/* Tabs */}
-      <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="pedidos">
-            Pedidos ({employee.recentOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value="incidencias">
-            Incidencias ({employee.incidents.length})
-          </TabsTrigger>
-        </TabsList>
+      <div className="grid gap-6">
+        {/* Información Personal */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle className="text-2xl">{employee.user.nameEnc}</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">{employee.user.email}</p>
+              </div>
+              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Número de Empleado</p>
+              <p className="text-sm mt-1">{employee.employeeNumber || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Teléfono</p>
+              <p className="text-sm mt-1">{employee.user.phoneEnc || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Departamento</p>
+              <p className="text-sm mt-1">{employee.department || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Puesto</p>
+              <p className="text-sm mt-1">{employee.position || '-'}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Fecha de Alta</p>
+              <p className="text-sm mt-1">
+                {employee.startDate
+                  ? format(new Date(employee.startDate), 'dd/MM/yyyy', { locale: es })
+                  : '-'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Sede</p>
+              <p className="text-sm mt-1">{employee.site.name}</p>
+            </div>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="overview">
-          <EmployeeOverview employee={employee} />
-        </TabsContent>
-
-        <TabsContent value="pedidos">
-          <EmployeeOrders orders={employee.recentOrders} />
-        </TabsContent>
-
-        <TabsContent value="incidencias">
-          <EmployeeIncidents incidents={employee.incidents} />
-        </TabsContent>
-      </Tabs>
-    </>
-  )
-}
-
-function PageSkeleton() {
-  return (
-    <div className="space-y-6">
-      <Skeleton className="h-20 w-full" />
-      <Skeleton className="h-96 w-full" />
+        {/* Preferencias Dietéticas */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Preferencias Dietéticas</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Días de Menú por Semana</p>
+                <p className="text-sm mt-1">{employee.weeklyMenuDays || 4} días</p>
+              </div>
+              {employee.monthlyLimit && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Límite Mensual</p>
+                  <p className="text-sm mt-1">{Number(employee.monthlyLimit).toFixed(2)}€</p>
+                </div>
+              )}
+            </div>
+            {employee.notes && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-muted-foreground">Notas</p>
+                <p className="text-sm mt-1">{employee.notes}</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
-
-export default async function EmployeeDetailPage({
-  params,
-}: {
-  params: { id: string }
-}) {
-  return (
-    <div className="space-y-6">
-      <Suspense fallback={<PageSkeleton />}>
-        <EmployeeDetailData id={params.id} />
-      </Suspense>
-    </div>
-  )
-}
-

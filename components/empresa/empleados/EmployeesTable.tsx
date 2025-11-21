@@ -63,6 +63,52 @@ const statusMap = {
 
 export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
   const router = useRouter()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleToggleStatus = async (employeeId: string, currentStatus: string) => {
+    if (isLoading) return
+    setIsLoading(true)
+
+    try {
+      const newStatus = currentStatus === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
+      const res = await fetch(`/api/empresa/empleados/${employeeId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (!res.ok) throw new Error('Error al actualizar estado')
+
+      router.refresh()
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al actualizar el estado del empleado')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleDelete = async (employeeId: string) => {
+    if (isLoading) return
+    if (!confirm('¿Estás seguro de eliminar este empleado?')) return
+
+    setIsLoading(true)
+
+    try {
+      const res = await fetch(`/api/empresa/empleados/${employeeId}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) throw new Error('Error al eliminar')
+
+      router.refresh()
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al eliminar el empleado')
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   if (employees.length === 0) {
     return (
@@ -209,23 +255,35 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
                             Editar
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem disabled>
                           <Mail className="mr-2 h-4 w-4" />
                           Reenviar invitación
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {employee.status === 'ACTIVE' ? (
-                          <DropdownMenuItem className="text-yellow-600">
+                          <DropdownMenuItem
+                            className="text-yellow-600"
+                            onClick={() => handleToggleStatus(employee.id, employee.status)}
+                            disabled={isLoading}
+                          >
                             <UserX className="mr-2 h-4 w-4" />
                             Suspender
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem className="text-green-600">
+                          <DropdownMenuItem
+                            className="text-green-600"
+                            onClick={() => handleToggleStatus(employee.id, employee.status)}
+                            disabled={isLoading}
+                          >
                             <UserX className="mr-2 h-4 w-4" />
                             Activar
                           </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDelete(employee.id)}
+                          disabled={isLoading}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Eliminar
                         </DropdownMenuItem>

@@ -5,13 +5,13 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import { EmployeeForm } from '@/components/empresa/empleados/EmployeeForm'
+import { NewIncidentForm } from '@/components/empresa/incidencias/NewIncidentForm'
 
 // ============================================================================
-// Página de Nuevo Empleado
+// Página de Nueva Incidencia
 // ============================================================================
 
-export default async function NuevoEmpleadoPage() {
+export default async function NuevaIncidenciaPage() {
   const session = await auth()
   if (!session) {
     redirect('/login')
@@ -26,19 +26,20 @@ export default async function NuevoEmpleadoPage() {
     <div className="container py-8">
       <div className="mb-6">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/empresa/empleados">
+          <Link href="/empresa/incidencias">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Empleados
+            Volver a Incidencias
           </Link>
         </Button>
       </div>
 
       <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6">Nuevo Empleado</h1>
+        <h1 className="text-2xl font-bold mb-6">Nueva Incidencia</h1>
         <Card className="p-6">
-          <EmployeeForm mode="create" />
+          <NewIncidentForm />
         </Card>
       </div>
     </div>
   )
 }
+

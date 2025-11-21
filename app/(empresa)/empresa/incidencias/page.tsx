@@ -3,6 +3,7 @@
  * ♻️ Reutiliza estructura del portal de Admin (IncidentsTab)
  */
 
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import {
@@ -99,9 +100,11 @@ export default function IncidentsPage({ searchParams }: { searchParams: any }) {
           </p>
         </div>
 
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Incidencia
+        <Button asChild>
+          <Link href="/empresa/incidencias/nueva">
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Incidencia
+          </Link>
         </Button>
       </div>
 
