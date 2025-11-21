@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
-import { getTenant } from '@/lib/auth/get-tenant'
+import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getEmployeeIncidents, getEmployeeIncidentStats } from '@/lib/db/queries/empleado-incidencias'
 import { IncidentsList } from '@/components/empleado/incidencias/IncidentsList'
@@ -13,13 +12,8 @@ export const metadata = {
 }
 
 export default async function IncidenciasEmpleadoPage() {
-  const session = await getSession()
+  const session = await auth()
   if (!session || !session.user) {
-    redirect('/login')
-  }
-
-  const tenant = await getTenant()
-  if (!tenant) {
     redirect('/login')
   }
 
@@ -27,7 +21,7 @@ export default async function IncidenciasEmpleadoPage() {
   const employee = await prisma.employee.findFirst({
     where: {
       userId: session.user.id,
-      tenantId: tenant.id,
+      tenantId: session.user.tenantId,
       status: 'ACTIVE',
     },
   })

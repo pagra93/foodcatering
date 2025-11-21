@@ -72,7 +72,7 @@ export async function getIncidentsKPIs(tenantId: string) {
       select: {
         createdAt: true,
         resolvedAt: true,
-        compensation: true,
+        resolution: true,
       },
       orderBy: { resolvedAt: 'desc' },
       take: 50,
@@ -92,9 +92,13 @@ export async function getIncidentsKPIs(tenantId: string) {
         }, 0) / all.length
       : 0
 
-  // Calcular compensaciones totales
+  // Calcular compensaciones totales (extraer de resolution JSON)
   const totalCompensations = all.reduce((sum, inc) => {
-    return sum + (inc.compensation ? Number(inc.compensation) : 0)
+    if (inc.resolution && typeof inc.resolution === 'object') {
+      const resolution = inc.resolution as any
+      return sum + (resolution.amount ? Number(resolution.amount) : 0)
+    }
+    return sum
   }, 0)
 
   return {
@@ -164,16 +168,7 @@ export async function getIncidents(tenantId: string, filters: IncidentFilters = 
           select: {
             id: true,
             serviceDate: true,
-            employee: {
-              select: {
-                user: {
-                  select: {
-                    nameEnc: true,
-                    email: true,
-                  },
-                },
-              },
-            },
+            employeeId: true,
           },
         },
       },
@@ -193,10 +188,17 @@ export async function getIncidents(tenantId: string, filters: IncidentFilters = 
         )
       : null
 
+    // Extraer compensation de resolution JSON si existe
+    let compensation = null
+    if (inc.resolution && typeof inc.resolution === 'object') {
+      const resolution = inc.resolution as any
+      compensation = resolution.amount ? Number(resolution.amount) : null
+    }
+
     return {
       ...inc,
       resolutionTime,
-      compensation: inc.compensation ? Number(inc.compensation) : null,
+      compensation,
     }
   })
 
@@ -247,10 +249,17 @@ export async function getIncidentById(tenantId: string, incidentId: string) {
       )
     : null
 
+  // Extraer compensation de resolution JSON si existe
+  let compensation = null
+  if (incident.resolution && typeof incident.resolution === 'object') {
+    const resolution = incident.resolution as any
+    compensation = resolution.amount ? Number(resolution.amount) : null
+  }
+
   return {
     ...incident,
     resolutionTime,
-    compensation: incident.compensation ? Number(incident.compensation) : null,
+    compensation,
   }
 }
 
@@ -262,8 +271,7 @@ export type CreateIncidentInput = {
   orderId: string
   type: string
   severity: string
-  description: string
-  reportedBy: string
+  openedBy: string
 }
 
 export async function createIncident(
@@ -290,8 +298,7 @@ export async function createIncident(
       type: data.type,
       severity: data.severity,
       status: 'OPEN',
-      description: data.description,
-      reportedBy: data.reportedBy,
+      openedBy: data.openedBy,
     },
   })
 
@@ -303,13 +310,14 @@ export async function createIncident(
 // ============================================================================
 
 export type ResolveIncidentInput = {
-  resolution: string
-  compensation?: number
+  resolutionDetails: string
+  compensationAmount?: number
 }
 
 export async function resolveIncident(
   tenantId: string,
   incidentId: string,
+  userId: string,
   data: ResolveIncidentInput
 ) {
   // Verificar que la incidencia pertenece a la empresa
@@ -324,13 +332,21 @@ export async function resolveIncident(
     throw new Error('Incidencia no encontrada')
   }
 
+  // Crear objeto resolution con estructura correcta
+  const resolution = {
+    details: data.resolutionDetails,
+    amount: data.compensationAmount || null,
+    resolvedBy: userId,
+    resolvedAt: new Date().toISOString(),
+  }
+
   const updated = await prisma.incident.update({
     where: { id: incidentId },
     data: {
-      status: 'RESOLVED',
-      resolution: data.resolution,
-      compensation: data.compensation || null,
+      status: data.compensationAmount ? 'COMPENSATED' : 'RESOLVED',
+      resolution,
       resolvedAt: new Date(),
+      assignedTo: userId,
     },
   })
 

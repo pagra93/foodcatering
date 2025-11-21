@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
-import { getTenant } from '@/lib/auth/get-tenant'
+import { auth } from '@/lib/auth'
 import { resolveIncident } from '@/lib/db/queries/catering-incidencias'
 import { z } from 'zod'
 
@@ -20,30 +19,18 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getSession()
+    const session = await auth()
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    const tenant = await getTenant()
-    if (!tenant) {
-      return NextResponse.json({ error: 'Tenant no encontrado' }, { status: 404 })
-    }
-
     const body = await request.json()
     const validated = updateIncidentSchema.parse(body)
 
-    // Determinar el status final basado en si hay compensación
-    const finalStatus = validated.compensationAmount
-      ? 'COMPENSATED'
-      : validated.status === 'RESOLVED'
-      ? 'RESOLVED'
-      : 'IN_PROGRESS'
-
     const incident = await resolveIncident(
       params.id,
-      tenant.id,
+      session.user.tenantId,
       session.user.id,
       {
         resolutionType: validated.resolutionType,

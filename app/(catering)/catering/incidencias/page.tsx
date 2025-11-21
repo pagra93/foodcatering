@@ -1,6 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getSession } from '@/lib/auth/session'
-import { getTenant } from '@/lib/auth/get-tenant'
+import { auth } from '@/lib/auth'
 import { getCateringIncidents, getCateringIncidentStats } from '@/lib/db/queries/catering-incidencias'
 import { CateringIncidentsStats } from '@/components/catering/incidencias/CateringIncidentsStats'
 import { CateringIncidentsList } from '@/components/catering/incidencias/CateringIncidentsList'
@@ -20,20 +19,15 @@ type PageProps = {
 }
 
 export default async function CateringIncidenciasPage({ searchParams }: PageProps) {
-  const session = await getSession()
+  const session = await auth()
   if (!session || !session.user) {
-    redirect('/login')
-  }
-
-  const tenant = await getTenant()
-  if (!tenant) {
     redirect('/login')
   }
 
   // Obtener stats e incidencias
   const [stats, incidents] = await Promise.all([
-    getCateringIncidentStats(tenant.id),
-    getCateringIncidents(tenant.id, {
+    getCateringIncidentStats(session.user.tenantId),
+    getCateringIncidents(session.user.tenantId, {
       status: searchParams.status,
       type: searchParams.type,
       severity: searchParams.severity,
