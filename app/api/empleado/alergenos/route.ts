@@ -5,7 +5,6 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getTenant } from '@/lib/auth/get-tenant'
 import { z } from 'zod'
 
 // ============================================================================
@@ -30,15 +29,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
     }
 
-    // Verificar tenant
-    const tenant = getTenant()
-    if (tenant.type !== 'EMPRESA') {
-      return NextResponse.json(
-        { error: 'Este endpoint solo está disponible para empresas' },
-        { status: 403 }
-      )
-    }
-
     // Parsear y validar body
     const body = await req.json()
     const validated = allergensSchema.parse(body)
@@ -49,12 +39,11 @@ export async function POST(req: NextRequest) {
       where: {
         id: validated.employeeId,
         userId: session.user.id,
-        tenantId: tenant.id,
         status: 'ACTIVE',
       },
     })
 
-    if (!employee && session.user.role !== 'SUPER_ADMIN') {
+    if (!employee) {
       return NextResponse.json(
         { error: 'No tienes permiso para actualizar este perfil' },
         { status: 403 }

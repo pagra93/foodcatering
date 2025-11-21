@@ -83,12 +83,12 @@ export default async function IncidentDetailPage({ params }: Props) {
   return (
     <div className="container py-8">
       <div className="mb-6">
-        <Link href="/empresa/incidencias">
-          <Button variant="ghost" size="sm">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/empresa/incidencias">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver a Incidencias
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
 
       <div className="grid gap-6">
