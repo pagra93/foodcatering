@@ -28,9 +28,9 @@ type PageProps = {
 
 async function DaySelectorData({ dateString }: { dateString: string }) {
   const session = await auth()
-  const { tenantId } = await getTenant()
+  const tenant = await getTenant()
 
-  if (!session || !tenantId) {
+  if (!session || !tenant.id) {
     redirect('/login')
   }
 
@@ -39,8 +39,8 @@ async function DaySelectorData({ dateString }: { dateString: string }) {
   const employee = await prisma.employee.findFirst({
     where: {
       userId: session.user.id,
-      companyId: tenantId,
-      active: true,
+      tenantId: tenant.id,
+      status: 'ACTIVE',
     },
   })
 

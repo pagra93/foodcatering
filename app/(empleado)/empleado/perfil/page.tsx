@@ -22,9 +22,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 
 async function ProfileData() {
   const session = await auth()
-  const { tenantId } = await getTenant()
+  const tenant = await getTenant()
 
-  if (!session || !tenantId) {
+  if (!session || !tenant.id) {
     redirect('/login')
   }
 
@@ -33,8 +33,8 @@ async function ProfileData() {
   const employee = await prisma.employee.findFirst({
     where: {
       userId: session.user.id,
-      companyId: tenantId,
-      active: true,
+      tenantId: tenant.id,
+      status: 'ACTIVE',
     },
   })
 

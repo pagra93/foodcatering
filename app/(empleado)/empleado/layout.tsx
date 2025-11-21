@@ -14,13 +14,13 @@ export default async function EmpleadoLayout({
   children: React.ReactNode
 }) {
   const session = await auth()
-  const { tenantId, tenantType, tenantStatus } = await getTenant()
+  const tenant = await getTenant()
 
   if (!session) {
     redirect('/login')
   }
 
-  if (tenantType !== 'EMPRESA') {
+  if (tenant.type !== 'EMPRESA') {
     redirect('/login')
   }
 
