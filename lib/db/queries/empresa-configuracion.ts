@@ -10,42 +10,43 @@ import { prisma } from '@/lib/db/prisma'
 // ============================================================================
 
 export async function getCompanyConfiguration(tenantId: string) {
-  const [company, policy, sites, settings] = await Promise.all([
-    // Información general de la empresa
-    prisma.company.findUnique({
-      where: { id: tenantId },
-      select: {
-        id: true,
-        legalName: true,
-        cif: true,
-        billingAddress: true,
-        plan: true,
-        sector: true,
-        employeeCount: true,
-        contactRrhhName: true,
-        contactRrhhEmail: true,
-        contactRrhhPhone: true,
-        contactFinanceName: true,
-        contactFinanceEmail: true,
-        contactFinancePhone: true,
-        contractSignedAt: true,
-        contractUrl: true,
-        digitalCertificateUrl: true,
-        cifDocumentUrl: true,
-        contractAnnexes: true,
-        statusNotes: true,
-        lastOrderDate: true,
-        monthlySpend: true,
-        deductibilityRate: true,
-        adoptionRate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    }),
+  // Primero obtener la company para tener su ID
+  const company = await prisma.company.findUnique({
+    where: { tenantId },
+    select: {
+      id: true,
+      tenantId: true,
+      legalName: true,
+      cif: true,
+      billingAddress: true,
+      plan: true,
+      sector: true,
+      employeeCount: true,
+      contactRrhhName: true,
+      contactRrhhEmail: true,
+      contactRrhhPhone: true,
+      contactFinanceName: true,
+      contactFinanceEmail: true,
+      contactFinancePhone: true,
+      contractSignedAt: true,
+      contractUrl: true,
+      digitalCertificateUrl: true,
+      cifDocumentUrl: true,
+      contractAnnexes: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  })
 
-    // Política y plan
+  if (!company) {
+    return null
+  }
+
+  // Ahora buscar policy, settings y sites con los IDs correctos
+  const [policy, sites, settings] = await Promise.all([
+    // Política y plan (usa company.id)
     prisma.companyPolicy.findUnique({
-      where: { companyId: tenantId },
+      where: { companyId: company.id },
       select: {
         id: true,
         cutoffTime: true,
@@ -63,7 +64,7 @@ export async function getCompanyConfiguration(tenantId: string) {
       },
     }),
 
-    // Sedes
+    // Sedes (usa tenantId)
     prisma.companySite.findMany({
       where: {
         tenantId,
@@ -84,9 +85,9 @@ export async function getCompanyConfiguration(tenantId: string) {
       orderBy: { name: 'asc' },
     }),
 
-    // Settings adicionales
+    // Settings adicionales (usa company.id)
     prisma.companySettings.findUnique({
-      where: { companyId: tenantId },
+      where: { companyId: company.id },
       select: {
         id: true,
         deliveryLocation: true,
@@ -104,10 +105,6 @@ export async function getCompanyConfiguration(tenantId: string) {
       },
     }),
   ])
-
-  if (!company) {
-    return null
-  }
 
   // Obtener estadísticas de uso
   const stats = await prisma.employee.aggregate({
