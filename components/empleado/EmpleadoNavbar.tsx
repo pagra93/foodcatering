@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { LogoutButton } from '@/components/LogoutButton'
 
 type EmpleadoNavbarProps = {
   user: {
@@ -157,10 +158,7 @@ export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
                   )}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/api/auth/signout" className="cursor-pointer text-red-600">
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Cerrar Sesión
-                    </Link>
+                    <LogoutButton />
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

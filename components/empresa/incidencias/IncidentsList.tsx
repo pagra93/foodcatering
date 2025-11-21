@@ -37,21 +37,16 @@ type IncidentsListProps = {
     type: string
     severity: string
     status: string
-    description: string
-    reportedBy: string
+    openedBy: string
+    resolution: any
     compensation: number | null
     resolutionTime: number | null
     createdAt: Date
     order: {
       id: string
       serviceDate: Date
-      employee: {
-        user: {
-          nameEnc: string
-          email: string
-        }
-      }
-    }
+      employeeId: string
+    } | null
   }>
   pagination: {
     page: number
@@ -71,8 +66,9 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
   // Aplicar filtros (client-side para demo, idealmente server-side)
   const filteredIncidents = incidents.filter((incident) => {
     const matchesSearch =
-      incident.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.reportedBy.toLowerCase().includes(searchTerm.toLowerCase())
+      searchTerm === '' ||
+      incident.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incident.type.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = filterType === 'all' || incident.type === filterType
     const matchesSeverity = filterSeverity === 'all' || incident.severity === filterSeverity
     const matchesStatus = filterStatus === 'all' || incident.status === filterStatus
@@ -162,24 +158,30 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <div className="max-w-xs truncate">{incident.description}</div>
+                  <div className="max-w-xs truncate">
+                    {incident.resolution && typeof incident.resolution === 'object'
+                      ? (incident.resolution as any).details || 'Sin detalles'
+                      : 'Pendiente'}
+                  </div>
                   <div className="text-xs text-muted-foreground">
-                    Pedido #{incident.order.id.slice(-8)}
+                    {incident.order ? `Pedido #${incident.order.id.slice(-8)}` : 'Sin pedido'}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <div className="font-medium">{incident.order.employee.user.nameEnc}</div>
+                  <div className="font-medium">
+                    {incident.order?.employeeId || 'N/A'}
+                  </div>
                   <div className="text-xs text-muted-foreground">
-                    {incident.order.employee.user.email}
+                    ID: {incident.order?.employeeId?.slice(-8) || '-'}
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.variant}>
+                  <Badge variant={SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.badgeVariant}>
                     {SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.label}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.variant}>
+                  <Badge variant={INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.badgeVariant}>
                     {INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.label}
                   </Badge>
                 </TableCell>
