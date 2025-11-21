@@ -9,7 +9,7 @@ const updateGeneralSchema = z.object({
   cif: z.string().min(9).optional(),
   billingAddress: z.string().optional(),
   sector: z.string().optional().or(z.literal('')),
-  employeeCount: z.number().optional(),
+  employeeCount: z.coerce.number().optional(),
   contactRrhhName: z.string().optional().or(z.literal('')),
   contactRrhhEmail: z.string().email().optional().or(z.literal('')),
   contactRrhhPhone: z.string().optional().or(z.literal('')),

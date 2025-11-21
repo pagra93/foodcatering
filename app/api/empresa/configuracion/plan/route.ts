@@ -4,11 +4,11 @@ import { updateCompanyPolicy } from '@/lib/db/queries/empresa-configuracion'
 import { z } from 'zod'
 
 const updatePolicySchema = z.object({
-  limitPerDay: z.number().positive().optional(),
-  copayCompany: z.number().positive().optional(),
-  copayEmployee: z.number().positive().optional(),
+  limitPerDay: z.coerce.number().positive().optional(),
+  copayCompany: z.coerce.number().positive().optional(),
+  copayEmployee: z.coerce.number().positive().optional(),
   cutoffTime: z.string().optional(),
-  daysActive: z.any().optional(), // JSON
+  daysActive: z.array(z.string()).optional(), // ['monday', 'tuesday', ...]
   noShowRule: z.enum(['CHARGE', 'NO_CHARGE', 'PARTIAL']).optional(),
   effectiveFrom: z.string().optional(), // ISO date
   effectiveTo: z.string().optional(), // ISO date

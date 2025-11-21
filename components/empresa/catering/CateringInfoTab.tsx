@@ -359,15 +359,15 @@ export function CateringInfoTab({
           </div>
         </div>
 
-        {assignment.zones && Array.isArray(assignment.zones) && (
+        {assignment.zones && Array.isArray(assignment.zones) && assignment.zones.length > 0 && (
           <div className="mt-4">
             <p className="text-sm font-medium text-gray-700 mb-2">
               Zonas de Servicio
             </p>
             <div className="flex flex-wrap gap-2">
-              {assignment.zones.map((zone: string, index: number) => (
+              {assignment.zones.map((zone: any, index: number) => (
                 <Badge key={index} variant="outline">
-                  {zone}
+                  {typeof zone === 'string' ? zone : zone.name || 'Zona sin nombre'}
                 </Badge>
               ))}
             </div>
