@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSession } from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
 import { createIncident } from '@/lib/db/queries/empleado-incidencias'
 import { z } from 'zod'
 
@@ -23,7 +23,7 @@ const createIncidentSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await getSession()
+    const session = await auth()
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })

@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getTenant } from '@/lib/tenant/get-tenant'
+import { getTenant } from '@/lib/auth/get-tenant'
 import { z } from 'zod'
 
 // ============================================================================
@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar tenant
-    const { tenantId, tenantType } = await getTenant()
-    if (tenantType !== 'EMPRESA') {
+    const tenant = getTenant()
+    if (tenant.type !== 'EMPRESA') {
       return NextResponse.json(
         { error: 'Este endpoint solo está disponible para empresas' },
         { status: 403 }
@@ -49,8 +49,8 @@ export async function POST(req: NextRequest) {
       where: {
         id: validated.employeeId,
         userId: session.user.id,
-        companyId: tenantId,
-        active: true,
+        tenantId: tenant.id,
+        status: 'ACTIVE',
       },
     })
 
@@ -61,12 +61,22 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Actualizar alérgenos
+    // Actualizar alérgenos en dietPrefs (JSON)
+    const currentEmployee = await prisma.employee.findUnique({
+      where: { id: validated.employeeId },
+      select: { dietPrefs: true },
+    })
+
+    const currentDietPrefs = (currentEmployee?.dietPrefs as any) || {}
+
     await prisma.employee.update({
       where: { id: validated.employeeId },
       data: {
-        allergens: validated.allergens,
-        blockAllergensEnabled: validated.blockEnabled,
+        dietPrefs: {
+          ...currentDietPrefs,
+          allergens: validated.allergens,
+          blockAllergensEnabled: validated.blockEnabled,
+        },
       },
     })
 
