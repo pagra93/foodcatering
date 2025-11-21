@@ -149,7 +149,7 @@ export async function updateCompanyGeneral(
   data: UpdateCompanyGeneralData
 ) {
   return prisma.company.update({
-    where: { id: tenantId },
+    where: { tenantId: tenantId },
     data,
   })
 }

@@ -4,23 +4,18 @@ import { updateCompanyGeneral } from '@/lib/db/queries/empresa-configuracion'
 import { z } from 'zod'
 
 const updateGeneralSchema = z.object({
+  // Campos del modelo Company
   legalName: z.string().min(2).optional(),
   cif: z.string().min(9).optional(),
-  address: z.string().optional(),
-  postalCode: z.string().optional(),
-  city: z.string().optional(),
-  province: z.string().optional(),
-  phone: z.string().optional(),
-  email: z.string().email().optional(),
-  website: z.string().url().optional().or(z.literal('')),
-  sector: z.string().optional(),
+  billingAddress: z.string().optional(),
+  sector: z.string().optional().or(z.literal('')),
   employeeCount: z.number().optional(),
-  contactRrhhName: z.string().optional(),
+  contactRrhhName: z.string().optional().or(z.literal('')),
   contactRrhhEmail: z.string().email().optional().or(z.literal('')),
-  contactRrhhPhone: z.string().optional(),
-  contactFinanceName: z.string().optional(),
+  contactRrhhPhone: z.string().optional().or(z.literal('')),
+  contactFinanceName: z.string().optional().or(z.literal('')),
   contactFinanceEmail: z.string().email().optional().or(z.literal('')),
-  contactFinancePhone: z.string().optional(),
+  contactFinancePhone: z.string().optional().or(z.literal('')),
 })
 
 /**

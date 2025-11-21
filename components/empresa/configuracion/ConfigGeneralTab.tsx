@@ -15,21 +15,12 @@ import { Loader2, Building2, Users, MapPin, Plus } from 'lucide-react'
 import { SiteDialog } from './SiteDialog'
 
 const generalSchema = z.object({
-  // Campos OBLIGATORIOS
+  // Campos OBLIGATORIOS (según schema de Company)
   legalName: z.string().min(2, 'Requerido'),
   cif: z.string().min(9, 'CIF inválido'),
-  address: z.string().min(5, 'Requerido'),
-  email: z.string().email('Email inválido'),
+  billingAddress: z.string().min(5, 'Requerido'),
   
-  // Campos OPCIONALES
-  postalCode: z.string().optional().or(z.literal('')),
-  city: z.string().optional().or(z.literal('')),
-  province: z.string().optional().or(z.literal('')),
-  phone: z.string().optional().or(z.literal('')),
-  website: z.string().optional().or(z.literal('')).refine(
-    (val) => !val || val === '' || /^https?:\/\/.+/.test(val),
-    { message: 'URL inválida' }
-  ),
+  // Campos OPCIONALES (según schema de Company)
   sector: z.string().optional().or(z.literal('')),
   employeeCount: z.string().optional().or(z.literal('')).transform((val) => {
     if (!val || val === '') return undefined
@@ -56,13 +47,7 @@ type ConfigGeneralTabProps = {
   company: {
     legalName: string
     cif: string
-    address: string | null
-    postalCode: string | null
-    city: string | null
-    province: string | null
-    phone: string | null
-    email: string
-    website: string | null
+    billingAddress: string
     sector: string | null
     employeeCount: number | null
     contactRrhhName: string | null
@@ -95,15 +80,9 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
     defaultValues: {
       legalName: company.legalName,
       cif: company.cif,
-      address: company.address || '',
-      postalCode: company.postalCode || '',
-      city: company.city || '',
-      province: company.province || '',
-      phone: company.phone || '',
-      email: company.email,
-      website: company.website || '',
+      billingAddress: company.billingAddress,
       sector: company.sector || '',
-      employeeCount: company.employeeCount || undefined,
+      employeeCount: company.employeeCount?.toString() || '',
       contactRrhhName: company.contactRrhhName || '',
       contactRrhhEmail: company.contactRrhhEmail || '',
       contactRrhhPhone: company.contactRrhhPhone || '',
@@ -172,55 +151,12 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="address">
-              Dirección <span className="text-red-500">*</span>
+            <Label htmlFor="billingAddress">
+              Dirección de Facturación <span className="text-red-500">*</span>
             </Label>
-            <Input id="address" {...register('address')} />
-            {errors.address && (
-              <p className="text-sm text-red-600">{errors.address.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="postalCode">Código Postal</Label>
-            <Input id="postalCode" {...register('postalCode')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="city">Ciudad</Label>
-            <Input id="city" {...register('city')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="province">Provincia</Label>
-            <Input id="province" {...register('province')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone">Teléfono</Label>
-            <Input id="phone" type="tel" {...register('phone')} />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="email">
-              Email <span className="text-red-500">*</span>
-            </Label>
-            <Input id="email" type="email" {...register('email')} />
-            {errors.email && (
-              <p className="text-sm text-red-600">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="website">Sitio Web</Label>
-            <Input
-              id="website"
-              type="url"
-              {...register('website')}
-              placeholder="https://..."
-            />
-            {errors.website && (
-              <p className="text-sm text-red-600">{errors.website.message}</p>
+            <Input id="billingAddress" {...register('billingAddress')} />
+            {errors.billingAddress && (
+              <p className="text-sm text-red-600">{errors.billingAddress.message}</p>
             )}
           </div>
 
