@@ -30,12 +30,9 @@ export async function getDishes(tenantId: string, filters: DishFilters) {
     deletedAt: null,
   }
 
-  // Filtro por búsqueda (nombre o ingredientes)
+  // Filtro por búsqueda (solo nombre, ingredients no existe en schema)
   if (search) {
-    where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { ingredients: { contains: search, mode: 'insensitive' } },
-    ]
+    where.name = { contains: search, mode: 'insensitive' }
   }
 
   // Filtro por tipo de plato
@@ -105,7 +102,6 @@ export async function getDishes(tenantId: string, filters: DishFilters) {
     id: dish.id,
     name: dish.name,
     course: dish.course,
-    ingredients: dish.ingredients,
     labels: dish.labels as string[],
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),
@@ -170,7 +166,6 @@ export async function getDishById(dishId: string, tenantId: string) {
     id: dish.id,
     name: dish.name,
     course: dish.course,
-    ingredients: dish.ingredients,
     labels: dish.labels as string[],
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),
@@ -206,7 +201,6 @@ export async function createDish(tenantId: string, data: CreateDishInput) {
       restaurantId: restaurant.id,
       name: data.name,
       course: data.course,
-      ingredients: data.ingredients,
       labels,
       nutrition: data.nutrition || {},
       basePrice: data.basePrice,
@@ -218,7 +212,6 @@ export async function createDish(tenantId: string, data: CreateDishInput) {
     id: dish.id,
     name: dish.name,
     course: dish.course,
-    ingredients: dish.ingredients,
     labels: dish.labels as string[],
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),
@@ -254,9 +247,10 @@ export async function updateDish(
 
   if (data.name !== undefined) updateData.name = data.name
   if (data.course !== undefined) updateData.course = data.course
-  if (data.ingredients !== undefined) updateData.ingredients = data.ingredients
   if (data.basePrice !== undefined) updateData.basePrice = data.basePrice
   if (data.active !== undefined) updateData.active = data.active
+  if (data.labels !== undefined) updateData.labels = data.labels
+  if (data.nutrition !== undefined) updateData.nutrition = data.nutrition
   if (data.nutrition !== undefined) updateData.nutrition = data.nutrition
 
   // Si se actualizan alérgenos o tags, reconstruir labels
@@ -281,7 +275,6 @@ export async function updateDish(
     id: dish.id,
     name: dish.name,
     course: dish.course,
-    ingredients: dish.ingredients,
     labels: dish.labels as string[],
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),

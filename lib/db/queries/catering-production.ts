@@ -18,7 +18,7 @@ export async function consolidateProduction(tenantId: string, date: Date) {
   // Obtener todos los pedidos confirmados del día
   const orders = await prisma.order.findMany({
     where: {
-      tenantId,
+      tenantCatering: tenantId,
       serviceDate: {
         gte: dayStart,
         lte: dayEnd,
@@ -26,12 +26,12 @@ export async function consolidateProduction(tenantId: string, date: Date) {
       status: 'CONFIRMED',
       deletedAt: null,
     },
-    include: {
-      dishSelection: true,
-      employee: {
-        select: {
-          id: true,
-          firstName: true,
+    select: {
+      id: true,
+      employeeId: true,
+      siteId: true,
+      selection: true,
+      price: true,
           lastName: true,
         },
       },
