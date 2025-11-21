@@ -4,7 +4,7 @@
  */
 
 import { redirect } from 'next/navigation'
-import { getTenant } from '@/lib/tenant/get-tenant'
+import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import {
   getOrGenerateFiscalReport,
   getAnnualFiscalSummary,
@@ -31,11 +31,8 @@ import {
 // ============================================================================
 
 async function AuditoriaData() {
-  const { tenantId, tenantType } = await getTenant()
-
-  if (!tenantId || tenantType !== 'EMPRESA') {
-    redirect('/login')
-  }
+  const tenant = await getCurrentTenant()
+  const tenantId = tenant.id
 
   const today = new Date()
   const currentYear = today.getFullYear()

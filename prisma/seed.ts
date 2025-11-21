@@ -199,6 +199,49 @@ async function main() {
     },
   })
 
+  // Crear Employee para RRHH y Finanzas (dual-role: pueden gestionar Y pedir comida)
+  const rrhhEmployee = await prisma.employee.findFirst({
+    where: { userId: rrhhUser.id },
+  })
+  if (!rrhhEmployee) {
+    await prisma.employee.create({
+      data: {
+        tenantId: empresaTenant.id,
+        userId: rrhhUser.id,
+        siteId: site.id,
+        department: 'Recursos Humanos',
+        dietPrefs: {
+          restrictions: [],
+          preferences: [],
+          allergies: [],
+          calorieTarget: 2000,
+        },
+        status: 'ACTIVE',
+      },
+    })
+  }
+
+  const finanzasEmployee = await prisma.employee.findFirst({
+    where: { userId: finanzasUser.id },
+  })
+  if (!finanzasEmployee) {
+    await prisma.employee.create({
+      data: {
+        tenantId: empresaTenant.id,
+        userId: finanzasUser.id,
+        siteId: site.id,
+        department: 'Finanzas',
+        dietPrefs: {
+          restrictions: [],
+          preferences: [],
+          allergies: [],
+          calorieTarget: 2000,
+        },
+        status: 'ACTIVE',
+      },
+    })
+  }
+
   // Crear 10 empleados realistas
   const empleados = [
     { nombre: 'Laura Gómez', email: 'laura.gomez@acme.com', departamento: 'Desarrollo', alergias: [] },
