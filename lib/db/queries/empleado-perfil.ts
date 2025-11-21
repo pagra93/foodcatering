@@ -32,11 +32,10 @@ export async function getEmployeeProfile(employeeId: string) {
             select: {
               id: true,
               legalName: true,
-              logoUrl: true,
               policy: {
                 select: {
-                  dailyLimit: true,
-                  monthlyLimit: true,
+                  limitPerDay: true,
+                  limitPerMonth: true,
                   allowCancellation: true,
                   cancellationHours: true,
                 },
@@ -172,9 +171,9 @@ export async function getEmployeeProfile(employeeId: string) {
     },
     company: {
       name: employee.site.company.legalName,
-      logoUrl: employee.site.company.logoUrl,
-      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
-      monthlyLimit: employee.site.company.policy?.monthlyLimit ? Number(employee.site.company.policy.monthlyLimit) : null,
+      logoUrl: null,
+      dailyLimit: employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11,
+      monthlyLimit: employee.site.company.policy?.limitPerMonth ? Number(employee.site.company.policy.limitPerMonth) : null,
     },
     site: employee.site ? {
       name: employee.site.name,
