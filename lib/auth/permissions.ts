@@ -141,7 +141,7 @@ export function getDashboardPath(
   // Empresa
   if (tenantType === 'EMPRESA') {
     if (role === 'EMPLEADO') {
-      return '/dashboard' // Portal empleado
+      return '/empleado/menus' // ✅ Portal empleado
     }
     return '/empresa/dashboard' // RRHH, Finanzas, Manager
   }

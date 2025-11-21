@@ -21,8 +21,6 @@ export default function LoginForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/admin'
-
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setIsLoading(true)
@@ -46,8 +44,9 @@ export default function LoginForm() {
       }
 
       if (result?.ok) {
-        router.push(callbackUrl)
-        router.refresh()
+        // ✅ Recargar la página completa para que el Server Component
+        // detecte la sesión y redirija al dashboard correcto
+        window.location.href = '/login'
       }
     } catch (error) {
       console.error('Error en login:', error)
