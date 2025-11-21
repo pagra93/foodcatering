@@ -11,10 +11,20 @@ import { startOfMonth, endOfMonth, subDays } from 'date-fns'
 // ============================================================================
 
 export async function getAssignedCatering(tenantId: string) {
+  // Primero obtener el company.id desde tenantId
+  const company = await prisma.company.findUnique({
+    where: { tenantId },
+    select: { id: true },
+  })
+
+  if (!company) {
+    return null
+  }
+
   // Obtener asignación activa principal
   const assignment = await prisma.companyCateringAssignment.findFirst({
     where: {
-      companyId: tenantId,
+      companyId: company.id,  // Usar company.id, NO tenantId
       active: true,
       type: 'PRIMARY',
     },
