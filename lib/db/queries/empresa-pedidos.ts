@@ -200,7 +200,6 @@ export async function getOrderById(orderId: string, tenantId: string) {
           type: true,
           severity: true,
           status: true,
-          description: true,
           resolution: true,
           createdAt: true,
         },

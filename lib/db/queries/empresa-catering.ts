@@ -18,38 +18,32 @@ export async function getAssignedCatering(tenantId: string) {
       active: true,
       type: 'PRIMARY',
     },
-    include: {
-      restaurant: {
-        select: {
-          id: true,
-          legalName: true,
-          tradeName: true,
-          cif: true,
-          address: true,
-          city: true,
-          phone: true,
-          email: true,
-          website: true,
-          logoUrl: true,
-          sanitaryRegistration: true,
-          sanitaryRegistrationExpiry: true,
-          rcInsurance: true,
-          rcInsuranceExpiry: true,
-          dailyCapacity: true,
-          cutoffTime: true,
-          preparationWindow: true,
-          deliveryWindow: true,
-          serviceZones: true,
-          commissionRate: true,
-          status: true,
-        },
-      },
-    },
   })
 
   if (!assignment) {
     return null
   }
+
+  // Obtener el restaurant por separado usando tenantCatering
+  const restaurant = await prisma.restaurant.findUnique({
+    where: { tenantId: assignment.tenantCatering },
+    select: {
+      id: true,
+      tenantId: true,
+      displayName: true,
+      legalName: true,
+      cif: true,
+      billingAddress: true,
+      contactPerson: true,
+      contactEmail: true,
+      contactPhone: true,
+      dailyCapacity: true,
+      cutoffTime: true,
+      preparationWindow: true,
+      deliveryWindow: true,
+      zones: true,
+    },
+  })
 
   // Calcular métricas de SLA (últimos 30 días)
   const thirtyDaysAgo = subDays(new Date(), 30)
@@ -59,7 +53,7 @@ export async function getAssignedCatering(tenantId: string) {
     prisma.order.count({
       where: {
         tenantEmpresa: tenantId,
-        tenantCatering: assignment.restaurantId,
+        tenantCatering: assignment.tenantCatering,
         serviceDate: { gte: thirtyDaysAgo },
         status: { in: ['DELIVERED', 'NO_SHOW'] },
       },
@@ -69,7 +63,7 @@ export async function getAssignedCatering(tenantId: string) {
     prisma.order.count({
       where: {
         tenantEmpresa: tenantId,
-        tenantCatering: assignment.restaurantId,
+        tenantCatering: assignment.tenantCatering,
         serviceDate: { gte: thirtyDaysAgo },
         status: 'DELIVERED',
       },
@@ -79,7 +73,7 @@ export async function getAssignedCatering(tenantId: string) {
     prisma.incident.count({
       where: {
         tenantEmpresa: tenantId,
-        tenantCatering: assignment.restaurantId,
+        tenantCatering: assignment.tenantCatering,
         createdAt: { gte: thirtyDaysAgo },
       },
     }),
@@ -89,7 +83,7 @@ export async function getAssignedCatering(tenantId: string) {
       where: {
         order: {
           tenantEmpresa: tenantId,
-          tenantCatering: assignment.restaurantId,
+          tenantCatering: assignment.tenantCatering,
           serviceDate: { gte: thirtyDaysAgo },
         },
       },
@@ -108,7 +102,7 @@ export async function getAssignedCatering(tenantId: string) {
       priority: assignment.priority,
       assignedAt: assignment.assignedAt,
     },
-    restaurant: assignment.restaurant,
+    restaurant,
     metrics: {
       totalOrders,
       deliveredOnTime,
@@ -144,15 +138,11 @@ export async function getWeeklyMenus(cateringId: string, startDate: Date, endDat
         select: {
           id: true,
           name: true,
-          description: true,
           course: true,
-          price: true,
-          imageUrl: true,
-          allergens: true,
-          nutritionData: true,
-          isVegetarian: true,
-          isVegan: true,
-          isGlutenFree: true,
+          basePrice: true,
+          labels: true,
+          nutrition: true,
+          active: true,
         },
       },
     },
@@ -332,9 +322,9 @@ export async function getCateringIncidents(
         type: true,
         severity: true,
         status: true,
-        description: true,
+        openedBy: true,
+        assignedTo: true,
         resolution: true,
-        slaDeadline: true,
         createdAt: true,
         resolvedAt: true,
         order: {
