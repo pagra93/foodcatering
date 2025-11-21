@@ -67,17 +67,23 @@ const envSchema = z.object({
 
 type Env = z.infer<typeof envSchema>
 
-// Validar al importar
+// Validar solo en el servidor (no en el cliente/browser)
 let env: Env
 
-try {
-  env = envSchema.parse(process.env)
-} catch (error) {
-  console.error('❌ Variables de entorno inválidas:')
-  if (error instanceof z.ZodError) {
-    console.error(error.errors)
+// En el servidor, validar todas las variables
+if (typeof window === 'undefined') {
+  try {
+    env = envSchema.parse(process.env)
+  } catch (error) {
+    console.error('❌ Variables de entorno inválidas:')
+    if (error instanceof z.ZodError) {
+      console.error(error.errors)
+    }
+    throw new Error('Configuración de entorno inválida')
   }
-  throw new Error('Configuración de entorno inválida')
+} else {
+  // En el cliente, crear un objeto vacío (no se usa)
+  env = {} as Env
 }
 
 export { env }
