@@ -30,8 +30,8 @@ async function MenusData() {
   const employee = await prisma.employee.findFirst({
     where: {
       userId: session.user.id,
-      companyId: tenantId,
-      active: true,
+      tenantId: tenantId,
+      status: 'ACTIVE',
     },
   })
 
