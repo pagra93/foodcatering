@@ -34,8 +34,8 @@ export const RESOURCE_TYPES = {
 
 export type ActivityFilters = {
   action?: string
-  resourceType?: string
-  userId?: string
+  entity?: string      // Cambiado de resourceType
+  actorId?: string     // Cambiado de userId
   search?: string
   page?: number
   limit?: number
@@ -45,7 +45,7 @@ export async function getActivityLog(
   tenantId: string,
   filters: ActivityFilters = {}
 ) {
-  const { action, resourceType, userId, search, page = 1, limit = 50 } = filters
+  const { action, entity, actorId, search, page = 1, limit = 50 } = filters
 
   const where: any = {
     tenantId,
@@ -53,15 +53,15 @@ export async function getActivityLog(
 
   // Filtros
   if (action && action !== 'all') where.action = action
-  if (resourceType && resourceType !== 'all') where.resourceType = resourceType
-  if (userId && userId !== 'all') where.userId = userId
+  if (entity && entity !== 'all') where.entity = entity  // Cambiado
+  if (actorId && actorId !== 'all') where.actorId = actorId  // Cambiado
 
   // Búsqueda
   if (search) {
     where.OR = [
       { action: { contains: search, mode: 'insensitive' } },
-      { resourceType: { contains: search, mode: 'insensitive' } },
-      { resourceId: { contains: search, mode: 'insensitive' } },
+      { entity: { contains: search, mode: 'insensitive' } },     // Cambiado
+      { entityId: { contains: search, mode: 'insensitive' } },   // Cambiado
     ]
   }
 
@@ -70,17 +70,16 @@ export async function getActivityLog(
       where,
       select: {
         id: true,
-        userId: true,
+        actorId: true,        // Cambiado de userId
         action: true,
-        resourceType: true,
-        resourceId: true,
-        prevState: true,
-        newState: true,
-        ipAddress: true,
+        entity: true,         // Cambiado de resourceType
+        entityId: true,       // Cambiado de resourceId
+        diff: true,           // Cambiado de prevState/newState
+        ip: true,             // Cambiado de ipAddress
         userAgent: true,
-        createdAt: true,
+        timestamp: true,      // Cambiado de createdAt
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { timestamp: 'desc' },  // Cambiado
       skip: (page - 1) * limit,
       take: limit,
     }),
@@ -89,9 +88,9 @@ export async function getActivityLog(
   ])
 
   // Obtener nombres de usuarios
-  const userIds = [...new Set(logs.map((l) => l.userId))]
+  const actorIds = [...new Set(logs.map((l) => l.actorId))]  // Cambiado
   const users = await prisma.user.findMany({
-    where: { id: { in: userIds } },
+    where: { id: { in: actorIds } },  // Cambiado
     select: {
       id: true,
       nameEnc: true,
@@ -103,7 +102,7 @@ export async function getActivityLog(
 
   const logsWithUsers = logs.map((log) => ({
     ...log,
-    user: userMap.get(log.userId),
+    user: userMap.get(log.actorId),  // Cambiado
   }))
 
   return {
@@ -130,7 +129,7 @@ export async function getActivityStats(tenantId: string) {
     prisma.auditLog.count({
       where: {
         tenantId,
-        createdAt: { gte: last30Days },
+        timestamp: { gte: last30Days },  // Cambiado de createdAt
       },
     }),
 
@@ -139,22 +138,22 @@ export async function getActivityStats(tenantId: string) {
       by: ['action'],
       where: {
         tenantId,
-        createdAt: { gte: last30Days },
+        timestamp: { gte: last30Days },  // Cambiado de createdAt
       },
       _count: true,
     }),
 
     // Por usuario
     prisma.auditLog.groupBy({
-      by: ['userId'],
+      by: ['actorId'],  // Cambiado de userId
       where: {
         tenantId,
-        createdAt: { gte: last30Days },
+        timestamp: { gte: last30Days },  // Cambiado de createdAt
       },
       _count: true,
       orderBy: {
         _count: {
-          userId: 'desc',
+          actorId: 'desc',  // Cambiado de userId
         },
       },
       take: 5,
@@ -169,9 +168,8 @@ export async function getActivityStats(tenantId: string) {
       label: ACTION_TYPES[item.action as keyof typeof ACTION_TYPES]?.label || item.action,
     })),
     topUsers: actionsByUser.map((item) => ({
-      userId: item.userId,
+      actorId: item.actorId,  // Cambiado de userId
       count: item._count,
     })),
   }
 }
-
