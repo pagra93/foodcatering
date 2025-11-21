@@ -35,9 +35,7 @@ export async function getEmployeeProfile(employeeId: string) {
               policy: {
                 select: {
                   limitPerDay: true,
-                  limitPerMonth: true,
-                  allowCancellation: true,
-                  cancellationHours: true,
+                  cutoffTime: true,
                 },
               },
             },
@@ -173,7 +171,7 @@ export async function getEmployeeProfile(employeeId: string) {
       name: employee.site.company.legalName,
       logoUrl: null,
       dailyLimit: employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11,
-      monthlyLimit: employee.site.company.policy?.limitPerMonth ? Number(employee.site.company.policy.limitPerMonth) : null,
+      monthlyLimit: null,
     },
     site: employee.site ? {
       name: employee.site.name,
