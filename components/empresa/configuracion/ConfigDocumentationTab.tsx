@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { FileText, Download, Upload, CheckCircle2, Clock } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { DocumentUploadDialog } from './DocumentUploadDialog'
 
 type ConfigDocumentationTabProps = {
   company: {
@@ -19,6 +22,13 @@ type ConfigDocumentationTabProps = {
 }
 
 export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps) {
+  const router = useRouter()
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [selectedDocument, setSelectedDocument] = useState<{
+    type: 'contract' | 'cif' | 'certificate' | 'annex'
+    name: string
+  } | null>(null)
+
   const documents = [
     {
       id: 'contract',
@@ -95,13 +105,32 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
                         Descargar
                       </a>
                     </Button>
-                    <Button variant="ghost" size="sm">
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => {
+                        setSelectedDocument({
+                          type: doc.id as 'contract' | 'cif' | 'certificate',
+                          name: doc.name,
+                        })
+                        setUploadDialogOpen(true)
+                      }}
+                    >
                       <Upload className="mr-2 h-4 w-4" />
                       Reemplazar
                     </Button>
                   </>
                 ) : (
-                  <Button size="sm">
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setSelectedDocument({
+                        type: doc.id as 'contract' | 'cif' | 'certificate',
+                        name: doc.name,
+                      })
+                      setUploadDialogOpen(true)
+                    }}
+                  >
                     <Upload className="mr-2 h-4 w-4" />
                     Subir
                   </Button>
@@ -119,7 +148,17 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
             <FileText className="h-5 w-5 text-purple-600" />
             Anexos del Contrato
           </h3>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedDocument({
+                type: 'annex',
+                name: 'Anexo del Contrato',
+              })
+              setUploadDialogOpen(true)
+            }}
+          >
             <Upload className="mr-2 h-4 w-4" />
             Añadir Anexo
           </Button>
@@ -282,6 +321,17 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
           </div>
         </div>
       </Card>
+
+      {/* Diálogo de Subida */}
+      {selectedDocument && (
+        <DocumentUploadDialog
+          open={uploadDialogOpen}
+          onOpenChange={setUploadDialogOpen}
+          onSuccess={() => router.refresh()}
+          documentType={selectedDocument.type}
+          documentName={selectedDocument.name}
+        />
+      )}
     </div>
   )
 }

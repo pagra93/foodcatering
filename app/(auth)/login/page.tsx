@@ -1,7 +1,6 @@
 /**
  * Página de Login General
- * Layout 50/50: Izquierda (branding) | Derecha (formulario)
- * Adaptable al tenant con colores y logo personalizados
+ * Layout 50/50: Izquierda (formulario) | Derecha (imagen)
  */
 
 import { Metadata } from 'next'
@@ -13,8 +12,8 @@ import { getTenantFromHeaders } from '@/lib/middleware/headers'
 import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
-  title: 'Iniciar Sesión | Comidas',
-  description: 'Accede a tu portal de Comidas',
+  title: 'Iniciar Sesión | BonSanté',
+  description: 'Accede a tu portal de gestión de menús corporativos',
 }
 
 export default async function LoginPage() {
@@ -31,105 +30,93 @@ export default async function LoginPage() {
 
   // Obtener información del tenant (si viene de subdominio)
   const tenantContext = getTenantFromHeaders()
-  
-  // Branding por defecto (general) o personalizado por tenant
-  const branding = {
-    bgColor: tenantContext?.id ? 'from-blue-600 to-blue-700' : 'from-blue-600 to-purple-600',
-    logo: tenantContext?.id ? tenantContext.name : 'Comidas',
-    tagline: tenantContext?.id 
-      ? `Bienvenido a ${tenantContext.name}`
-      : 'Gestión de menús corporativos con compliance fiscal automático',
-    accentColor: 'blue',
-  }
 
   return (
     <div className="flex min-h-screen">
-      {/* Lado Izquierdo: Branding */}
-      <div className={`hidden w-1/2 bg-gradient-to-br ${branding.bgColor} lg:flex lg:flex-col lg:justify-between lg:p-12`}>
-        <div>
-          {/* Logo y marca */}
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-                <span className="text-2xl font-bold text-white">
-                  {branding.logo[0]?.toUpperCase() || 'C'}
-                </span>
-              </div>
-              <span className="text-2xl font-bold text-white">{branding.logo}</span>
+      {/* LADO IZQUIERDO: Formulario */}
+      <div className="flex w-full flex-col justify-center px-6 py-12 lg:w-1/2 lg:px-20">
+        <div className="mx-auto w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2">
+              <span className="text-2xl font-bold text-gray-900">Bon</span>
+              <span className="text-2xl font-bold text-green-600">Santé</span>
+            </div>
+            <div className="mt-2 flex items-center gap-1 text-sm">
+              <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
+              </svg>
+              <span className="text-gray-500">fr</span>
             </div>
           </div>
 
-          {/* Contenido central */}
-          <div className="space-y-6 text-white">
-            <h1 className="text-4xl font-bold leading-tight lg:text-5xl">
-              {branding.tagline}
-            </h1>
-            
-            <p className="text-lg text-white/90">
-              Plataforma segura y compliant para gestionar el beneficio de comida diaria.
+          {/* Título */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Bonjour!</h1>
+            <p className="mt-2 text-sm text-gray-600">
+              Pour vous connecter à votre compte, renseignez votre adresse email ainsi que votre mot de passe.
             </p>
-
-            <ul className="space-y-3">
-              <li className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white/90">Compliance IRPF automático</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white/90">Trazabilidad completa</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
-                  <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <span className="text-white/90">Multi-tenant seguro</span>
-              </li>
-            </ul>
           </div>
+
+          {/* Formulario */}
+          <LoginForm />
 
           {/* Footer */}
-          <div className="text-sm text-white/70">
-            <p>© 2025 {branding.logo}. Todos los derechos reservados.</p>
+          <div className="mt-8 text-center">
+            <Link 
+              href="/forgot-password" 
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              Mot de passe oublié ?
+            </Link>
+          </div>
+
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-600">
+              N'avez pas vous créé votre compte ?{' '}
+              <Link 
+                href="/register" 
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
+                s'identifier sur BonSante.com
+              </Link>
+            </p>
+          </div>
+
+          {/* Copyright */}
+          <div className="mt-12 text-center text-xs text-gray-400">
+            All copyrights reserved Tous les droits de reproduction 2022
           </div>
         </div>
+      </div>
 
-        {/* Lado Derecho: Formulario */}
-        <div className="flex w-full items-center justify-center p-8 lg:w-1/2 lg:p-12">
-          <div className="w-full max-w-md">
-            {/* Header */}
-            <div className="mb-8">
-              {/* Logo móvil (solo visible en mobile) */}
-              <div className="mb-6 flex items-center justify-center gap-3 lg:hidden">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600">
-                  <span className="text-xl font-bold text-white">
-                    {branding.logo[0]?.toUpperCase() || 'C'}
-                  </span>
-                </div>
-                <span className="text-xl font-bold text-gray-900">{branding.logo}</span>
+      {/* LADO DERECHO: Imagen */}
+      <div className="relative hidden w-1/2 bg-gray-100 lg:block">
+        {/* Imagen de fondo */}
+        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+          {/* Contenedor de imagen con plantas */}
+          <div className="relative h-full w-full">
+            {/* Simulación de imagen con plantas - reemplazar con imagen real */}
+            <div className="flex h-full flex-col items-center justify-center p-12">
+              {/* Plantas decorativas (placeholder) */}
+              <div className="mb-8 text-center">
+                <div className="mx-auto mb-6 h-64 w-64 rounded-full bg-white/50 backdrop-blur-sm" />
+                <div className="mx-auto h-32 w-48 rounded-2xl bg-amber-100/50" />
               </div>
 
-              <h1 className="text-2xl font-bold text-gray-900">Iniciar Sesión</h1>
-              <p className="mt-2 text-sm text-gray-600">
-                Accede a tu portal con tus credenciales
-              </p>
+              {/* Texto superpuesto */}
+              <div className="max-w-md text-center">
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Precision medicine is the new gold standard for cancer treatment
+                </h2>
+                <p className="mt-4 text-sm text-gray-600">
+                  This moulding information expert includes validated recommendation examples, research consensus on dosing and much more
+                </p>
+              </div>
             </div>
-
-            {/* Form */}
-            <LoginForm />
           </div>
         </div>
       </div>
     </div>
   )
 }
-

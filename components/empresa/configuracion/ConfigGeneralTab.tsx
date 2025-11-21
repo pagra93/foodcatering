@@ -12,25 +12,42 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
 import { Loader2, Building2, Users, MapPin, Plus } from 'lucide-react'
+import { SiteDialog } from './SiteDialog'
 
 const generalSchema = z.object({
+  // Campos OBLIGATORIOS
   legalName: z.string().min(2, 'Requerido'),
   cif: z.string().min(9, 'CIF inválido'),
   address: z.string().min(5, 'Requerido'),
-  postalCode: z.string().optional(),
-  city: z.string().optional(),
-  province: z.string().optional(),
-  phone: z.string().optional(),
   email: z.string().email('Email inválido'),
-  website: z.string().url('URL inválida').optional().or(z.literal('')),
-  sector: z.string().optional(),
-  employeeCount: z.coerce.number().positive().optional(),
-  contactRrhhName: z.string().optional(),
-  contactRrhhEmail: z.string().email('Email inválido').optional().or(z.literal('')),
-  contactRrhhPhone: z.string().optional(),
-  contactFinanceName: z.string().optional(),
-  contactFinanceEmail: z.string().email('Email inválido').optional().or(z.literal('')),
-  contactFinancePhone: z.string().optional(),
+  
+  // Campos OPCIONALES
+  postalCode: z.string().optional().or(z.literal('')),
+  city: z.string().optional().or(z.literal('')),
+  province: z.string().optional().or(z.literal('')),
+  phone: z.string().optional().or(z.literal('')),
+  website: z.string().optional().or(z.literal('')).refine(
+    (val) => !val || val === '' || /^https?:\/\/.+/.test(val),
+    { message: 'URL inválida' }
+  ),
+  sector: z.string().optional().or(z.literal('')),
+  employeeCount: z.string().optional().or(z.literal('')).transform((val) => {
+    if (!val || val === '') return undefined
+    const num = parseInt(val)
+    return isNaN(num) ? undefined : num
+  }),
+  contactRrhhName: z.string().optional().or(z.literal('')),
+  contactRrhhEmail: z.string().optional().or(z.literal('')).refine(
+    (val) => !val || val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: 'Email inválido' }
+  ),
+  contactRrhhPhone: z.string().optional().or(z.literal('')),
+  contactFinanceName: z.string().optional().or(z.literal('')),
+  contactFinanceEmail: z.string().optional().or(z.literal('')).refine(
+    (val) => !val || val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
+    { message: 'Email inválido' }
+  ),
+  contactFinancePhone: z.string().optional().or(z.literal('')),
 })
 
 type GeneralFormData = z.infer<typeof generalSchema>
@@ -66,6 +83,8 @@ type ConfigGeneralTabProps = {
 export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [siteDialogOpen, setSiteDialogOpen] = useState(false)
+  const [selectedSite, setSelectedSite] = useState<typeof sites[0] | undefined>(undefined)
 
   const {
     register,
@@ -310,7 +329,15 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
             <MapPin className="h-5 w-5 text-gray-600" />
             Sedes ({sites.length})
           </h3>
-          <Button type="button" variant="outline" size="sm">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => {
+              setSelectedSite(undefined)
+              setSiteDialogOpen(true)
+            }}
+          >
             <Plus className="mr-2 h-4 w-4" />
             Añadir Sede
           </Button>
@@ -330,7 +357,15 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
                     {site.city && `, ${site.city}`}
                   </p>
                 </div>
-                <Button type="button" variant="ghost" size="sm">
+                <Button 
+                  type="button" 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setSelectedSite(site)
+                    setSiteDialogOpen(true)
+                  }}
+                >
                   Editar
                 </Button>
               </div>
@@ -359,6 +394,14 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
           {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
         </Button>
       </div>
+
+      {/* Diálogo de Sede */}
+      <SiteDialog
+        open={siteDialogOpen}
+        onOpenChange={setSiteDialogOpen}
+        onSuccess={() => router.refresh()}
+        site={selectedSite}
+      />
     </form>
   )
 }
