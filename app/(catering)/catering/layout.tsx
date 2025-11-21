@@ -64,7 +64,7 @@ export default async function CateringInnerLayout({
       <CateringSidebar tenant={tenantData} user={userData} />
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden lg:ml-64">
         {/* Impersonation Banner (si aplica) */}
         {session?.user?.isImpersonating && <ImpersonationBanner />}
 
