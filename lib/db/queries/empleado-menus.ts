@@ -22,16 +22,21 @@ export async function getWeekMenusForEmployee(
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
-      company: {
+      user: true,
+      site: {
         include: {
-          policy: true,
-          cateringAssignments: {
-            where: {
-              active: true,
-              type: 'PRIMARY',
-            },
+          company: {
             include: {
-              restaurant: true,
+              policy: true,
+              cateringAssignments: {
+                where: {
+                  active: true,
+                  type: 'PRIMARY',
+                },
+                include: {
+                  restaurant: true,
+                },
+              },
             },
           },
         },
@@ -43,7 +48,7 @@ export async function getWeekMenusForEmployee(
     throw new Error('Empleado no encontrado')
   }
 
-  const catering = employee.company.cateringAssignments[0]?.restaurant
+  const catering = employee.site.company.cateringAssignments[0]?.restaurant
 
   if (!catering) {
     throw new Error('No hay catering asignado a esta empresa')
@@ -106,7 +111,7 @@ export async function getWeekMenusForEmployee(
     )
 
     // Verificar si ya pasó el cutoff
-    const cutoffTime = employee.company.policy?.cutoffTime || '11:00:00'
+    const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
     const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
     const cutoffDate = new Date(day)
     cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
@@ -155,8 +160,8 @@ export async function getWeekMenusForEmployee(
       dietPrefs: employee.dietPrefs || [],
     },
     company: {
-      name: employee.company.legalName,
-      dailyLimit: employee.company.policy?.dailyLimit ? Number(employee.company.policy.dailyLimit) : 11,
+      name: employee.site.company.legalName,
+      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
     },
     catering: {
       name: catering.legalName,
@@ -184,16 +189,20 @@ export async function getDayMenuForEmployee(
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
-      company: {
+      site: {
         include: {
-          policy: true,
-          cateringAssignments: {
-            where: {
-              active: true,
-              type: 'PRIMARY',
-            },
+          company: {
             include: {
-              restaurant: true,
+              policy: true,
+              cateringAssignments: {
+                where: {
+                  active: true,
+                  type: 'PRIMARY',
+                },
+                include: {
+                  restaurant: true,
+                },
+              },
             },
           },
         },
@@ -205,14 +214,14 @@ export async function getDayMenuForEmployee(
     throw new Error('Empleado no encontrado')
   }
 
-  const catering = employee.company.cateringAssignments[0]?.restaurant
+  const catering = employee.site.company.cateringAssignments[0]?.restaurant
 
   if (!catering) {
     throw new Error('No hay catering asignado')
   }
 
   // Verificar cutoff
-  const cutoffTime = employee.company.policy?.cutoffTime || '11:00:00'
+  const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
   const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
   const cutoffDate = new Date(date)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
@@ -284,7 +293,7 @@ export async function getDayMenuForEmployee(
       blockAllergensEnabled: employee.blockAllergensEnabled || false,
     },
     limits: {
-      dailyLimit: employee.company.policy?.dailyLimit ? Number(employee.company.policy.dailyLimit) : 11,
+      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
     },
   }
 }
@@ -313,9 +322,13 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
     include: {
-      company: {
+      site: {
         include: {
-          policy: true,
+          company: {
+            include: {
+              policy: true,
+            },
+          },
         },
       },
     },
@@ -325,7 +338,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     throw new Error('Empleado no encontrado')
   }
 
-  const cutoffTime = employee.company.policy?.cutoffTime || '11:00:00'
+  const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
   const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
   const cutoffDate = new Date(date)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
@@ -346,7 +359,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.price), 0)
 
   // Verificar límite diario
-  const dailyLimit = employee.company.policy?.dailyLimit ? Number(employee.company.policy.dailyLimit) : 11
+  const dailyLimit = employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11
 
   if (totalPrice > dailyLimit) {
     throw new Error(`El precio total (${totalPrice}€) excede el límite diario de ${dailyLimit}€`)
@@ -379,12 +392,15 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     return prisma.order.create({
       data: {
         employeeId,
-        tenantEmpresa: employee.companyId,
+        tenantEmpresa: employee.tenantId,
         serviceDate: date,
         menuType: 'DIARIO',
         selection,
         price: totalPrice,
         status: 'CONFIRMED',
+        createdBy: employee.userId,
+        lastModifiedBy: employee.userId,
+        integrityHash: `hash-${Date.now()}-${Math.random()}`,
       },
     })
   }
@@ -401,8 +417,17 @@ export async function cancelOrder(employeeId: string, orderId: string) {
       id: orderId,
       employeeId,
     },
+  })
+
+  if (!order) {
+    throw new Error('Pedido no encontrado')
+  }
+
+  // Obtener employee para verificar cutoff
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
     include: {
-      employee: {
+      site: {
         include: {
           company: {
             include: {
@@ -414,12 +439,12 @@ export async function cancelOrder(employeeId: string, orderId: string) {
     },
   })
 
-  if (!order) {
-    throw new Error('Pedido no encontrado')
+  if (!employee) {
+    throw new Error('Empleado no encontrado')
   }
 
   // Verificar cutoff
-  const cutoffTime = order.employee.company.policy?.cutoffTime || '11:00:00'
+  const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
   const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
   const cutoffDate = new Date(order.serviceDate)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)

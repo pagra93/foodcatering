@@ -135,7 +135,7 @@ export function getDashboardPath(
 ): string {
   // Root admin
   if (role === 'SUPER_ADMIN' || role === 'AUDITOR') {
-    return '/admin/dashboard'
+    return '/admin'
   }
 
   // Empresa
@@ -152,7 +152,7 @@ export function getDashboardPath(
   }
 
   // Fallback
-  return '/dashboard'
+  return '/admin'
 }
 
 /**
