@@ -52,14 +52,20 @@ type MonthlyBreakdownProps = {
       total: number
     }>
   }
-  onExport: (format: string) => void
+  currentYear: number
+  currentMonth: number
 }
 
 export function BillingMonthlyBreakdown({
   breakdown,
-  onExport,
+  currentYear,
+  currentMonth,
 }: MonthlyBreakdownProps) {
   const [exportFormat, setExportFormat] = useState<string>('GENERIC')
+
+  const handleExport = () => {
+    window.location.href = `/api/empresa/facturacion/export?year=${currentYear}&month=${currentMonth}&format=${exportFormat}`
+  }
 
   const { period, summary, catering, byEmployee } = breakdown
 
@@ -92,7 +98,7 @@ export function BillingMonthlyBreakdown({
               <SelectItem value="SAP">SAP</SelectItem>
             </SelectContent>
           </Select>
-          <Button onClick={() => onExport(exportFormat)}>
+          <Button onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Exportar
           </Button>

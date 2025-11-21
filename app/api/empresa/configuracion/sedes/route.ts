@@ -15,7 +15,7 @@ const createSiteSchema = z.object({
   postalCode: z.string().optional(),
   contactName: z.string().optional(),
   contactPhone: z.string().optional(),
-  deliveryInstructions: z.string().optional(),
+  deliveryNotes: z.string().optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
         postalCode: validated.postalCode || null,
         contactName: validated.contactName || null,
         contactPhone: validated.contactPhone || null,
-        deliveryInstructions: validated.deliveryInstructions || null,
+        deliveryNotes: validated.deliveryNotes || null,
         active: true,
       },
     })

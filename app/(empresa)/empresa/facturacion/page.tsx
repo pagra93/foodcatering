@@ -76,10 +76,8 @@ async function BillingData() {
       <TabsContent value="desglose">
         <BillingMonthlyBreakdown
           breakdown={breakdown}
-          onExport={(format) => {
-            // Handle export client-side
-            window.location.href = `/api/empresa/facturacion/export?year=${currentYear}&month=${currentMonth}&format=${format}`
-          }}
+          currentYear={currentYear}
+          currentMonth={currentMonth}
         />
       </TabsContent>
 

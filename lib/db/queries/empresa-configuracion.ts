@@ -91,7 +91,7 @@ export async function getCompanyConfiguration(tenantId: string) {
       select: {
         id: true,
         deliveryLocation: true,
-        deliveryInstructions: true,
+        deliveryNotes: true,
         notificationsEmail: true,
         notifyDailySummary: true,
         notifyIncidents: true,
@@ -212,7 +212,7 @@ export async function updateCompanyPolicy(
 
 export type UpdateCompanySettingsData = {
   deliveryLocation?: string
-  deliveryInstructions?: string
+  deliveryNotes?: string
   notificationsEmail?: string[]
   notifyDailySummary?: boolean
   notifyIncidents?: boolean

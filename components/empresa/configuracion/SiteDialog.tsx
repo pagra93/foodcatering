@@ -25,7 +25,7 @@ const siteSchema = z.object({
   postalCode: z.string().optional().or(z.literal('')),
   contactName: z.string().optional().or(z.literal('')),
   contactPhone: z.string().optional().or(z.literal('')),
-  deliveryInstructions: z.string().optional().or(z.literal('')),
+  deliveryNotes: z.string().optional().or(z.literal('')),
 })
 
 type SiteFormData = z.infer<typeof siteSchema>
@@ -42,7 +42,7 @@ type SiteDialogProps = {
     postalCode: string | null
     contactName: string | null
     contactPhone: string | null
-    deliveryInstructions: string | null
+    deliveryNotes: string | null
   }
 }
 
@@ -64,7 +64,7 @@ export function SiteDialog({ open, onOpenChange, onSuccess, site }: SiteDialogPr
       postalCode: site.postalCode || '',
       contactName: site.contactName || '',
       contactPhone: site.contactPhone || '',
-      deliveryInstructions: site.deliveryInstructions || '',
+      deliveryNotes: site.deliveryNotes || '',
     } : undefined,
   })
 
@@ -78,7 +78,7 @@ export function SiteDialog({ open, onOpenChange, onSuccess, site }: SiteDialogPr
         postalCode: site.postalCode || '',
         contactName: site.contactName || '',
         contactPhone: site.contactPhone || '',
-        deliveryInstructions: site.deliveryInstructions || '',
+        deliveryNotes: site.deliveryNotes || '',
       })
     } else if (open && !site) {
       reset({
@@ -88,7 +88,7 @@ export function SiteDialog({ open, onOpenChange, onSuccess, site }: SiteDialogPr
         postalCode: '',
         contactName: '',
         contactPhone: '',
-        deliveryInstructions: '',
+        deliveryNotes: '',
       })
     }
   }, [open, site, reset])
@@ -227,10 +227,10 @@ export function SiteDialog({ open, onOpenChange, onSuccess, site }: SiteDialogPr
 
           {/* Instrucciones de entrega */}
           <div className="space-y-2">
-            <Label htmlFor="deliveryInstructions">Instrucciones de Entrega</Label>
+            <Label htmlFor="deliveryNotes">Instrucciones de Entrega</Label>
             <Input
-              id="deliveryInstructions"
-              {...register('deliveryInstructions')}
+              id="deliveryNotes"
+              {...register('deliveryNotes')}
               placeholder="Portería - Planta 2"
               disabled={isSubmitting}
             />

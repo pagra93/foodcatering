@@ -128,7 +128,7 @@ async function main() {
       tenantId: empresaTenant.id,
       companyId: company.id,
       deliveryLocation: 'Recepción - Planta Baja',
-      deliveryInstructions: 'Llamar al timbre de entrega',
+      deliveryNotes: 'Llamar al timbre de entrega',
       notificationsEmail: ['rrhh@acme.com', 'finanzas@acme.com'],
       notifyDailySummary: true,
       notifyIncidents: true,
