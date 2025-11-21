@@ -34,6 +34,17 @@ async function AuditoriaData() {
   const tenant = await getCurrentTenant()
   const tenantId = tenant.id
 
+  // Obtener company para sacar el companyId
+  const { prisma } = await import('@/lib/db/prisma')
+  const company = await prisma.company.findUnique({
+    where: { tenantId },
+    select: { id: true },
+  })
+
+  if (!company) {
+    throw new Error('Company not found')
+  }
+
   const today = new Date()
   const currentYear = today.getFullYear()
   const currentMonth = today.getMonth() + 1
@@ -42,7 +53,7 @@ async function AuditoriaData() {
   const [monthlyReport, annualSummary, compliance] = await Promise.all([
     getOrGenerateFiscalReport(tenantId, currentYear, currentMonth),
     getAnnualFiscalSummary(tenantId, currentYear),
-    checkFiscalCompliance(tenantId, currentYear, currentMonth),
+    checkFiscalCompliance(tenantId, company.id, currentYear, currentMonth),  // Añadido company.id
   ])
 
   return (
