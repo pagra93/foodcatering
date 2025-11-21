@@ -161,9 +161,7 @@ export async function getOrderHistoryKPIs(employeeId: string) {
     prisma.order.count({
       where: {
         employeeId,
-        status: {
-          in: ['CANCELLED_BEFORE_CUTOFF', 'CANCELLED_AFTER_CUTOFF'],
-        },
+        status: 'CANCELLED_BEFORE_CUTOFF',
       },
     }),
 

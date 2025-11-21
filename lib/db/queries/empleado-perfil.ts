@@ -23,26 +23,26 @@ export async function getEmployeeProfile(employeeId: string) {
           createdAt: true,
         },
       },
-      company: {
-        select: {
-          id: true,
-          legalName: true,
-          logoUrl: true,
-          policy: {
-            select: {
-              dailyLimit: true,
-              monthlyLimit: true,
-              allowCancellation: true,
-              cancellationHours: true,
-            },
-          },
-        },
-      },
       site: {
         select: {
           name: true,
           address: true,
           city: true,
+          company: {
+            select: {
+              id: true,
+              legalName: true,
+              logoUrl: true,
+              policy: {
+                select: {
+                  dailyLimit: true,
+                  monthlyLimit: true,
+                  allowCancellation: true,
+                  cancellationHours: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -100,9 +100,7 @@ export async function getEmployeeProfile(employeeId: string) {
           gte: startMonth,
           lte: endMonth,
         },
-        status: {
-          in: ['CANCELLED_BEFORE_CUTOFF', 'CANCELLED_AFTER_CUTOFF'],
-        },
+        status: 'CANCELLED_BEFORE_CUTOFF',
       },
     }),
   ])
@@ -167,16 +165,16 @@ export async function getEmployeeProfile(employeeId: string) {
       department: employee.department,
       position: employee.position,
       startDate: employee.startDate,
-      active: employee.active,
+      active: employee.status === 'ACTIVE',
       memberSince: employee.user.createdAt,
       allergens: employee.allergens || [],
       blockAllergensEnabled: employee.blockAllergensEnabled || false,
     },
     company: {
-      name: employee.company.legalName,
-      logoUrl: employee.company.logoUrl,
-      dailyLimit: employee.company.policy?.dailyLimit ? Number(employee.company.policy.dailyLimit) : 11,
-      monthlyLimit: employee.company.policy?.monthlyLimit ? Number(employee.company.policy.monthlyLimit) : null,
+      name: employee.site.company.legalName,
+      logoUrl: employee.site.company.logoUrl,
+      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
+      monthlyLimit: employee.site.company.policy?.monthlyLimit ? Number(employee.site.company.policy.monthlyLimit) : null,
     },
     site: employee.site ? {
       name: employee.site.name,
