@@ -83,19 +83,15 @@ export async function getWeekMenusForEmployee(
   // Obtener menús programados para esta semana
   const dishSchedules = await prisma.dishSchedule.findMany({
     where: {
-      restaurantId: catering.id,
+      tenantId: catering.tenantId,
       date: {
         gte: startDate,
         lte: endDate,
       },
-      active: true,
+      status: 'PUBLISHED',
     },
     include: {
-      dish: {
-        include: {
-          allergens: true,
-        },
-      },
+      dish: true,
     },
   })
 
@@ -253,12 +249,12 @@ export async function getDayMenuForEmployee(
   // Obtener platos disponibles
   const dishSchedules = await prisma.dishSchedule.findMany({
     where: {
-      restaurantId: catering.id,
+      tenantId: catering.tenantId,
       date: {
         gte: dayStart,
         lte: dayEnd,
       },
-      active: true,
+      status: 'PUBLISHED',
     },
     include: {
       dish: true,
@@ -270,19 +266,19 @@ export async function getDayMenuForEmployee(
       .filter((d) => d.dish.course === 'STARTER')
       .map((d) => ({
         ...d.dish,
-        price: Number(d.dish.price),
+        price: Number(d.dish.basePrice),
       })),
     mains: dishSchedules
       .filter((d) => d.dish.course === 'MAIN')
       .map((d) => ({
         ...d.dish,
-        price: Number(d.dish.price),
+        price: Number(d.dish.basePrice),
       })),
     desserts: dishSchedules
       .filter((d) => d.dish.course === 'DESSERT')
       .map((d) => ({
         ...d.dish,
-        price: Number(d.dish.price),
+        price: Number(d.dish.basePrice),
       })),
   }
 
@@ -368,7 +364,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     },
   })
 
-  const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.price), 0)
+  const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.basePrice), 0)
 
   // Verificar límite diario
   const dailyLimit = employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11
