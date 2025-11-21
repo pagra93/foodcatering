@@ -51,7 +51,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/auth/login"
+              href="/login"
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-blue-700"
             >
               Empezar ahora

@@ -25,7 +25,7 @@ async function ProfileData() {
   const { tenantId } = await getTenant()
 
   if (!session || !tenantId) {
-    redirect('/auth/login')
+    redirect('/login')
   }
 
   // Buscar el empleado

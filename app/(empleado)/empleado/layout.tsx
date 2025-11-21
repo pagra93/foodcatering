@@ -17,11 +17,11 @@ export default async function EmpleadoLayout({
   const { tenantId, tenantType, tenantStatus } = await getTenant()
 
   if (!session) {
-    redirect('/auth/login')
+    redirect('/login')
   }
 
   if (tenantType !== 'EMPRESA') {
-    redirect('/auth/login')
+    redirect('/login')
   }
 
   return (
