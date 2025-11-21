@@ -22,11 +22,7 @@ const generalSchema = z.object({
   
   // Campos OPCIONALES (según schema de Company)
   sector: z.string().optional().or(z.literal('')),
-  employeeCount: z.string().optional().or(z.literal('')).transform((val) => {
-    if (!val || val === '') return undefined
-    const num = parseInt(val)
-    return isNaN(num) ? undefined : num
-  }),
+  employeeCount: z.coerce.number().optional().or(z.literal('').transform(() => undefined)),
   contactRrhhName: z.string().optional().or(z.literal('')),
   contactRrhhEmail: z.string().optional().or(z.literal('')).refine(
     (val) => !val || val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),

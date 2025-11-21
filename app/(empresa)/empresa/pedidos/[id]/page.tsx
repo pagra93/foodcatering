@@ -62,7 +62,7 @@ async function OrderDetailData({ id }: { id: string }) {
             </div>
           </div>
         </div>
-        <Button variant="outline" size="sm">
+        <Button variant="outline" size="sm" disabled>
           <Download className="mr-2 h-4 w-4" />
           Descargar Justificante
         </Button>

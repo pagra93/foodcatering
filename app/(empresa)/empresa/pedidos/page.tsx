@@ -47,7 +47,7 @@ export default async function PedidosPage({
               Export CSV
             </a>
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" disabled>
             <FileDown className="mr-2 h-4 w-4" />
             Informe Mensual
           </Button>

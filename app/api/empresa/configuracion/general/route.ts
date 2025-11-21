@@ -8,14 +8,28 @@ const updateGeneralSchema = z.object({
   legalName: z.string().min(2).optional(),
   cif: z.string().min(9).optional(),
   billingAddress: z.string().optional(),
-  sector: z.string().optional().or(z.literal('')),
-  employeeCount: z.coerce.number().optional(),
-  contactRrhhName: z.string().optional().or(z.literal('')),
-  contactRrhhEmail: z.string().email().optional().or(z.literal('')),
-  contactRrhhPhone: z.string().optional().or(z.literal('')),
-  contactFinanceName: z.string().optional().or(z.literal('')),
-  contactFinanceEmail: z.string().email().optional().or(z.literal('')),
-  contactFinancePhone: z.string().optional().or(z.literal('')),
+  sector: z.string().optional().nullable().transform(val => val === '' || !val ? null : val),
+  employeeCount: z.coerce.number().optional().nullable(),
+  contactRrhhName: z.string().optional().nullable().transform(val => val === '' || !val ? null : val),
+  contactRrhhEmail: z.string().optional().nullable().transform(val => {
+    if (!val || val === '') return null
+    // Validar email solo si no está vacío
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      throw new Error('Email RRHH inválido')
+    }
+    return val
+  }),
+  contactRrhhPhone: z.string().optional().nullable().transform(val => val === '' || !val ? null : val),
+  contactFinanceName: z.string().optional().nullable().transform(val => val === '' || !val ? null : val),
+  contactFinanceEmail: z.string().optional().nullable().transform(val => {
+    if (!val || val === '') return null
+    // Validar email solo si no está vacío
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      throw new Error('Email Finanzas inválido')
+    }
+    return val
+  }),
+  contactFinancePhone: z.string().optional().nullable().transform(val => val === '' || !val ? null : val),
 })
 
 /**

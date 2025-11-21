@@ -77,7 +77,7 @@ export default async function EmpleadoDetallePage({ params }: Props) {
           </Link>
         </Button>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled>
             <Mail className="mr-2 h-4 w-4" />
             Enviar Email
           </Button>
