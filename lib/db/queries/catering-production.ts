@@ -32,21 +32,6 @@ export async function consolidateProduction(tenantId: string, date: Date) {
       siteId: true,
       selection: true,
       price: true,
-          lastName: true,
-        },
-      },
-      companySite: {
-        select: {
-          id: true,
-          name: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
     },
   })
 
@@ -63,75 +48,58 @@ export async function consolidateProduction(tenantId: string, date: Date) {
   > = {}
 
   for (const order of orders) {
-    if (!order.dishSelection) continue
+    if (!order.selection) continue
 
-    const selection = order.dishSelection as any
+    const selection = order.selection as any
 
     // Procesar primer plato
-    if (selection.firstId) {
-      if (!dishCounts[selection.firstId]) {
-        dishCounts[selection.firstId] = {
-          dishId: selection.firstId,
-          dishName: selection.firstId, // Temporal, lo resolveremos después
+    if (selection.first?.dishId) {
+      const dishId = selection.first.dishId
+      if (!dishCounts[dishId]) {
+        dishCounts[dishId] = {
+          dishId,
+          dishName: selection.first.name || 'Plato desconocido',
           course: 'FIRST',
           count: 0,
           orders: [],
         }
       }
-      dishCounts[selection.firstId].count++
-      dishCounts[selection.firstId].orders.push(order.id)
+      dishCounts[dishId].count++
+      dishCounts[dishId].orders.push(order.id)
     }
 
     // Procesar segundo plato
-    if (selection.secondId) {
-      if (!dishCounts[selection.secondId]) {
-        dishCounts[selection.secondId] = {
-          dishId: selection.secondId,
-          dishName: selection.secondId,
+    if (selection.second?.dishId) {
+      const dishId = selection.second.dishId
+      if (!dishCounts[dishId]) {
+        dishCounts[dishId] = {
+          dishId,
+          dishName: selection.second.name || 'Plato desconocido',
           course: 'SECOND',
           count: 0,
           orders: [],
         }
       }
-      dishCounts[selection.secondId].count++
-      dishCounts[selection.secondId].orders.push(order.id)
+      dishCounts[dishId].count++
+      dishCounts[dishId].orders.push(order.id)
     }
 
     // Procesar postre
-    if (selection.dessertId) {
-      if (!dishCounts[selection.dessertId]) {
-        dishCounts[selection.dessertId] = {
-          dishId: selection.dessertId,
-          dishName: selection.dessertId,
+    if (selection.dessert?.dishId) {
+      const dishId = selection.dessert.dishId
+      if (!dishCounts[dishId]) {
+        dishCounts[dishId] = {
+          dishId,
+          dishName: selection.dessert.name || 'Plato desconocido',
           course: 'DESSERT',
           count: 0,
           orders: [],
         }
       }
-      dishCounts[selection.dessertId].count++
-      dishCounts[selection.dessertId].orders.push(order.id)
+      dishCounts[dishId].count++
+      dishCounts[dishId].orders.push(order.id)
     }
   }
-
-  // Obtener nombres de platos
-  const dishIds = Object.keys(dishCounts)
-  const dishes = await prisma.dish.findMany({
-    where: {
-      id: { in: dishIds },
-    },
-    select: {
-      id: true,
-      name: true,
-      course: true,
-    },
-  })
-
-  // Mapear nombres
-  dishes.forEach((dish) => {
-    if (dishCounts[dish.id]) {
-      dishCounts[dish.id].dishName = dish.name
-    }
-  })
 
   // Convertir a array y ordenar
   const consolidated = Object.values(dishCounts).sort((a, b) => {
@@ -164,7 +132,7 @@ export async function getKitchenDisplay(
   // Obtener pedidos confirmados del día
   const orders = await prisma.order.findMany({
     where: {
-      tenantId,
+      tenantCatering: tenantId,
       serviceDate: {
         gte: dayStart,
         lte: dayEnd,
@@ -172,60 +140,49 @@ export async function getKitchenDisplay(
       status: 'CONFIRMED',
       deletedAt: null,
     },
-    include: {
-      dishSelection: true,
+    select: {
+      id: true,
+      selection: true,
     },
   })
 
   // Consolidar por plato del tipo especificado
-  const dishCounts: Record<string, number> = {}
-  const dishNames: Record<string, string> = {}
+  const dishCounts: Record<string, { name: string; count: number }> = {}
 
   for (const order of orders) {
-    if (!order.dishSelection) continue
+    if (!order.selection) continue
 
-    const selection = order.dishSelection as any
-    let dishId: string | null = null
+    const selection = order.selection as any
+    let dish: { dishId: string; name: string } | null = null
 
     switch (course) {
       case 'FIRST':
-        dishId = selection.firstId
+        dish = selection.first
         break
       case 'SECOND':
-        dishId = selection.secondId
+        dish = selection.second
         break
       case 'DESSERT':
-        dishId = selection.dessertId
+        dish = selection.dessert
         break
     }
 
-    if (dishId) {
-      dishCounts[dishId] = (dishCounts[dishId] || 0) + 1
+    if (dish?.dishId) {
+      if (!dishCounts[dish.dishId]) {
+        dishCounts[dish.dishId] = {
+          name: dish.name || 'Plato desconocido',
+          count: 0,
+        }
+      }
+      dishCounts[dish.dishId].count++
     }
   }
 
-  // Obtener nombres de platos
-  const dishIds = Object.keys(dishCounts)
-  const dishes = await prisma.dish.findMany({
-    where: {
-      id: { in: dishIds },
-    },
-    select: {
-      id: true,
-      name: true,
-      course: true,
-    },
-  })
-
-  dishes.forEach((dish) => {
-    dishNames[dish.id] = dish.name
-  })
-
   // Convertir a array y ordenar por cantidad (descendente)
   const items = Object.entries(dishCounts)
-    .map(([dishId, count]) => ({
+    .map(([dishId, { name, count }]) => ({
       dishId,
-      dishName: dishNames[dishId] || 'Plato desconocido',
+      dishName: name,
       count,
     }))
     .sort((a, b) => b.count - a.count)
@@ -241,6 +198,8 @@ export async function getKitchenDisplay(
 /**
  * Obtener datos para Packing Display
  * Pedidos agrupados por empresa/sede para empaquetado
+ * 
+ * NOTA: Simplificado - no incluye datos de empleado/sede por limitaciones del schema
  */
 export async function getPackingDisplay(
   tenantId: string,
@@ -254,7 +213,7 @@ export async function getPackingDisplay(
   const dayEnd = endOfDay(date)
 
   const whereClause: any = {
-    tenantId,
+    tenantCatering: tenantId,
     serviceDate: {
       gte: dayStart,
       lte: dayEnd,
@@ -263,105 +222,36 @@ export async function getPackingDisplay(
     deletedAt: null,
   }
 
-  if (filters?.companyId) {
-    whereClause.companySite = {
-      companyId: filters.companyId,
-    }
-  }
-
   if (filters?.siteId) {
-    whereClause.companySiteId = filters.siteId
+    whereClause.siteId = filters.siteId
   }
 
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
-      employee: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          allergies: true,
-        },
-      },
-      companySite: {
-        select: {
-          id: true,
-          name: true,
-          company: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      },
-      dishSelection: true,
-    },
-    orderBy: [
-      {
-        companySite: {
-          company: {
-            name: 'asc',
-          },
-        },
-      },
-      {
-        companySite: {
-          name: 'asc',
-        },
-      },
-      {
-        employee: {
-          lastName: 'asc',
-        },
-      },
-    ],
-  })
-
-  // Obtener nombres de platos
-  const dishIds: string[] = []
-  orders.forEach((order) => {
-    if (order.dishSelection) {
-      const selection = order.dishSelection as any
-      if (selection.firstId) dishIds.push(selection.firstId)
-      if (selection.secondId) dishIds.push(selection.secondId)
-      if (selection.dessertId) dishIds.push(selection.dessertId)
-    }
-  })
-
-  const dishes = await prisma.dish.findMany({
-    where: {
-      id: { in: [...new Set(dishIds)] },
-    },
     select: {
       id: true,
-      name: true,
-      course: true,
+      employeeId: true,
+      siteId: true,
+      selection: true,
+      tenantEmpresa: true,
+    },
+    orderBy: {
+      siteId: 'asc',
     },
   })
 
-  const dishMap = new Map(dishes.map((d) => [d.id, d]))
-
-  // Formatear datos para display
   const formattedOrders = orders.map((order) => {
-    const selection = order.dishSelection as any
-    const first = selection?.firstId ? dishMap.get(selection.firstId) : null
-    const second = selection?.secondId ? dishMap.get(selection.secondId) : null
-    const dessert = selection?.dessertId ? dishMap.get(selection.dessertId) : null
-
+    const selection = order.selection as any
+    
     return {
       id: order.id,
-      employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
-      employeeAllergies: order.employee.allergies as string[] | null,
-      company: order.companySite.company.name,
-      site: order.companySite.name,
+      employeeId: order.employeeId,
+      siteId: order.siteId,
       dishes: {
-        first: first ? { id: first.id, name: first.name, course: first.course } : null,
-        second: second ? { id: second.id, name: second.name, course: second.course } : null,
-        dessert: dessert ? { id: dessert.id, name: dessert.name, course: dessert.course } : null,
+        first: selection?.first || null,
+        second: selection?.second || null,
+        dessert: selection?.dessert || null,
       },
-      notes: order.notes,
     }
   })
 
@@ -374,6 +264,8 @@ export async function getPackingDisplay(
 
 /**
  * Obtener pedidos para generar etiquetas
+ * 
+ * NOTA: Simplificado - retorna datos básicos del pedido
  */
 export async function getOrdersForLabels(
   tenantId: string,
@@ -388,7 +280,7 @@ export async function getOrdersForLabels(
   const dayEnd = endOfDay(date)
 
   const whereClause: any = {
-    tenantId,
+    tenantCatering: tenantId,
     serviceDate: {
       gte: dayStart,
       lte: dayEnd,
@@ -401,120 +293,57 @@ export async function getOrdersForLabels(
     whereClause.id = { in: filters.orderIds }
   }
 
-  if (filters?.companyId) {
-    whereClause.companySite = {
-      companyId: filters.companyId,
-    }
-  }
-
   if (filters?.siteId) {
-    whereClause.companySiteId = filters.siteId
+    whereClause.siteId = filters.siteId
   }
 
   const orders = await prisma.order.findMany({
     where: whereClause,
-    include: {
-      employee: {
-        select: {
-          firstName: true,
-          lastName: true,
-        },
-      },
-      companySite: {
-        select: {
-          name: true,
-          company: {
-            select: {
-              name: true,
-              logoUrl: true,
-            },
-          },
-        },
-      },
-      dishSelection: true,
-    },
-  })
-
-  // Obtener platos
-  const dishIds: string[] = []
-  orders.forEach((order) => {
-    if (order.dishSelection) {
-      const selection = order.dishSelection as any
-      if (selection.firstId) dishIds.push(selection.firstId)
-      if (selection.secondId) dishIds.push(selection.secondId)
-      if (selection.dessertId) dishIds.push(selection.dessertId)
-    }
-  })
-
-  const dishes = await prisma.dish.findMany({
-    where: {
-      id: { in: [...new Set(dishIds)] },
-    },
     select: {
       id: true,
-      name: true,
-      course: true,
+      employeeId: true,
+      siteId: true,
+      selection: true,
     },
   })
-
-  const dishMap = new Map(dishes.map((d) => [d.id, d]))
 
   // Generar etiquetas (una por plato)
   const labels: any[] = []
 
   orders.forEach((order) => {
-    const selection = order.dishSelection as any
-    const employeeName = `${order.employee.firstName} ${order.employee.lastName}`
-    const company = order.companySite.company.name
-    const site = order.companySite.name
-    const logoUrl = order.companySite.company.logoUrl
+    const selection = order.selection as any
 
     // Etiqueta para primer plato
-    if (selection?.firstId) {
-      const dish = dishMap.get(selection.firstId)
-      if (dish) {
-        labels.push({
-          orderId: order.id,
-          course: dish.course,
-          dishName: dish.name,
-          employeeName,
-          company,
-          site,
-          logoUrl,
-        })
-      }
+    if (selection?.first) {
+      labels.push({
+        orderId: order.id,
+        course: 'FIRST',
+        dishName: selection.first.name,
+        employeeId: order.employeeId,
+        siteId: order.siteId,
+      })
     }
 
     // Etiqueta para segundo plato
-    if (selection?.secondId) {
-      const dish = dishMap.get(selection.secondId)
-      if (dish) {
-        labels.push({
-          orderId: order.id,
-          course: dish.course,
-          dishName: dish.name,
-          employeeName,
-          company,
-          site,
-          logoUrl,
-        })
-      }
+    if (selection?.second) {
+      labels.push({
+        orderId: order.id,
+        course: 'SECOND',
+        dishName: selection.second.name,
+        employeeId: order.employeeId,
+        siteId: order.siteId,
+      })
     }
 
     // Etiqueta para postre
-    if (selection?.dessertId) {
-      const dish = dishMap.get(selection.dessertId)
-      if (dish) {
-        labels.push({
-          orderId: order.id,
-          course: dish.course,
-          dishName: dish.name,
-          employeeName,
-          company,
-          site,
-          logoUrl,
-        })
-      }
+    if (selection?.dessert) {
+      labels.push({
+        orderId: order.id,
+        course: 'DESSERT',
+        dishName: selection.dessert.name,
+        employeeId: order.employeeId,
+        siteId: order.siteId,
+      })
     }
   })
 
@@ -528,10 +357,10 @@ export async function getProductionStats(tenantId: string, date: Date) {
   const dayStart = startOfDay(date)
   const dayEnd = endOfDay(date)
 
-  const [totalOrders, confirmedOrders, deliveredOrders, companies] = await Promise.all([
+  const [totalOrders, confirmedOrders, deliveredOrders] = await Promise.all([
     prisma.order.count({
       where: {
-        tenantId,
+        tenantCatering: tenantId,
         serviceDate: {
           gte: dayStart,
           lte: dayEnd,
@@ -541,7 +370,7 @@ export async function getProductionStats(tenantId: string, date: Date) {
     }),
     prisma.order.count({
       where: {
-        tenantId,
+        tenantCatering: tenantId,
         serviceDate: {
           gte: dayStart,
           lte: dayEnd,
@@ -552,7 +381,7 @@ export async function getProductionStats(tenantId: string, date: Date) {
     }),
     prisma.order.count({
       where: {
-        tenantId,
+        tenantCatering: tenantId,
         serviceDate: {
           gte: dayStart,
           lte: dayEnd,
@@ -561,43 +390,6 @@ export async function getProductionStats(tenantId: string, date: Date) {
         deletedAt: null,
       },
     }),
-    prisma.order
-      .findMany({
-        where: {
-          tenantId,
-          serviceDate: {
-            gte: dayStart,
-            lte: dayEnd,
-          },
-          status: 'CONFIRMED',
-          deletedAt: null,
-        },
-        select: {
-          companySite: {
-            select: {
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
-            },
-          },
-        },
-      })
-      .then((orders) => {
-        const uniqueCompanies = new Map()
-        orders.forEach((order) => {
-          uniqueCompanies.set(
-            order.companySite.company.id,
-            order.companySite.company.name
-          )
-        })
-        return Array.from(uniqueCompanies.entries()).map(([id, name]) => ({
-          id,
-          name,
-        }))
-      }),
   ])
 
   return {
@@ -605,8 +397,5 @@ export async function getProductionStats(tenantId: string, date: Date) {
     confirmedOrders,
     deliveredOrders,
     pendingOrders: confirmedOrders - deliveredOrders,
-    companies: companies.length,
-    companiesList: companies,
   }
 }
-
