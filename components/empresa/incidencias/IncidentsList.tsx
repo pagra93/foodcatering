@@ -6,6 +6,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Search, Filter, Eye } from 'lucide-react'
@@ -192,10 +194,12 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => router.push(`/empresa/incidencias/${incident.id}`)}
+                    asChild
                   >
-                    <Eye className="mr-1 h-3 w-3" />
-                    Ver
+                    <Link href={`/empresa/incidencias/${incident.id}`}>
+                      <Eye className="mr-1 h-3 w-3" />
+                      Ver
+                    </Link>
                   </Button>
                 </TableCell>
               </TableRow>
