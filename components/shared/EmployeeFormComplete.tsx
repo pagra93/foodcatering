@@ -21,20 +21,27 @@ const employeeSchema = z.object({
   // === DATOS USUARIO ===
   email: z.string().email('Email inválido'),
   name: z.string().min(2, 'Mínimo 2 caracteres'),
-  phone: z.string().optional(),
+  phone: z.string().optional().nullable(),
   
   // === DATOS LABORALES ===
-  employeeNumber: z.string().optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
+  employeeNumber: z.string().optional().nullable(),
+  department: z.string().optional().nullable(),
+  position: z.string().optional().nullable(),
   siteId: z.string().min(1, 'Sede requerida'),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
+  startDate: z.string().optional().nullable(),
+  endDate: z.string().optional().nullable(),
   
   // === CONFIGURACIÓN MENÚ ===
-  weeklyMenuDays: z.coerce.number().min(0).max(7).optional(),
-  monthlyLimit: z.coerce.number().positive().optional(),
-  notes: z.string().optional(),
+  weeklyMenuDays: z.coerce.number().int().min(0).max(7).optional().nullable(),
+  monthlyLimit: z.coerce.number().positive().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  
+  // === PREFERENCIAS DIETÉTICAS ===
+  dietPrefs: z.object({
+    allergies: z.array(z.string()).optional(),
+    restrictions: z.array(z.string()).optional(),
+    preferences: z.array(z.string()).optional(),
+  }).optional(),
   
   // === OPCIONES ===
   sendInvitation: z.boolean().default(true),
@@ -86,6 +93,7 @@ export function EmployeeFormComplete({
       weeklyMenuDays: initialData?.weeklyMenuDays || 4,
       monthlyLimit: initialData?.monthlyLimit || undefined,
       notes: initialData?.notes || '',
+      dietPrefs: initialData?.dietPrefs || { allergies: [], restrictions: [], preferences: [] },
       sendInvitation: initialData?.sendInvitation ?? true,
     },
   })
@@ -320,8 +328,72 @@ export function EmployeeFormComplete({
               id="notes"
               {...register('notes')}
               rows={3}
-              placeholder="Alergias, preferencias dietéticas, observaciones..."
+              placeholder="Observaciones generales, horarios especiales, etc..."
             />
+          </div>
+        </div>
+      </Card>
+
+      {/* === PREFERENCIAS DIETÉTICAS === */}
+      <Card className="p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Calendar className="h-5 w-5 text-green-600" />
+          <h3 className="text-lg font-semibold">Preferencias Dietéticas</h3>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="allergies">Alergias (separadas por comas)</Label>
+            <Input
+              id="allergies"
+              {...register('dietPrefs.allergies', {
+                setValueAs: (val) => {
+                  if (!val || typeof val !== 'string') return []
+                  return val.split(',').map((s: string) => s.trim()).filter(Boolean)
+                },
+              })}
+              defaultValue={initialData?.dietPrefs?.allergies?.join(', ') || ''}
+              placeholder="Ej: Gluten, Lactosa, Frutos secos"
+            />
+            <p className="text-xs text-gray-500">
+              Lista de alergias alimentarias del empleado
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="restrictions">Restricciones Dietéticas (separadas por comas)</Label>
+            <Input
+              id="restrictions"
+              {...register('dietPrefs.restrictions', {
+                setValueAs: (val) => {
+                  if (!val || typeof val !== 'string') return []
+                  return val.split(',').map((s: string) => s.trim()).filter(Boolean)
+                },
+              })}
+              defaultValue={initialData?.dietPrefs?.restrictions?.join(', ') || ''}
+              placeholder="Ej: Vegetariano, Vegano, Halal, Sin carne roja"
+            />
+            <p className="text-xs text-gray-500">
+              Restricciones alimentarias por salud, religión o preferencia
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="preferences">Preferencias (separadas por comas)</Label>
+            <Input
+              id="preferences"
+              {...register('dietPrefs.preferences', {
+                setValueAs: (val) => {
+                  if (!val || typeof val !== 'string') return []
+                  return val.split(',').map((s: string) => s.trim()).filter(Boolean)
+                },
+              })}
+              defaultValue={initialData?.dietPrefs?.preferences?.join(', ') || ''}
+              placeholder="Ej: Pescado, Verduras, Picante, Ensaladas"
+            />
+            <p className="text-xs text-gray-500">
+              Preferencias personales de comida
+            </p>
           </div>
         </div>
       </Card>

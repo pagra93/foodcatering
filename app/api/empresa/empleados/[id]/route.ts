@@ -98,20 +98,25 @@ export async function PUT(
 const updateFullEmployeeSchema = z.object({
   // Datos usuario (solo nombre y teléfono editables, email NO)
   name: z.string().min(2).optional(),
-  phone: z.string().optional(),
+  phone: z.string().optional().nullable(),
   
   // Datos laborales
-  employeeNumber: z.string().optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
+  employeeNumber: z.string().optional().nullable(),
+  department: z.string().optional().nullable(),
+  position: z.string().optional().nullable(),
   siteId: z.string().optional(),
-  startDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
-  endDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
+  startDate: z.string().optional().nullable().transform(val => val ? new Date(val) : null),
+  endDate: z.string().optional().nullable().transform(val => val ? new Date(val) : null),
   
   // Configuración menú
-  weeklyMenuDays: z.coerce.number().optional(),
-  monthlyLimit: z.coerce.number().optional(),
-  notes: z.string().optional(),
+  weeklyMenuDays: z.coerce.number().int().min(0).max(7).optional().nullable(),
+  monthlyLimit: z.coerce.number().positive().optional().nullable(),
+  dietPrefs: z.object({
+    allergies: z.array(z.string()).optional(),
+    restrictions: z.array(z.string()).optional(),
+    preferences: z.array(z.string()).optional(),
+  }).optional(),
+  notes: z.string().optional().nullable(),
   
   // Estado (para suspender/activar)
   status: z.enum(['ACTIVE', 'SUSPENDED', 'INACTIVE']).optional(),
@@ -181,10 +186,11 @@ export async function PATCH(
           ...(validated.department !== undefined && { department: validated.department || null }),
           ...(validated.position !== undefined && { position: validated.position || null }),
           ...(validated.siteId && { siteId: validated.siteId }),
-          ...(validated.startDate && { startDate: validated.startDate }),
-          ...(validated.endDate && { endDate: validated.endDate }),
+          ...(validated.startDate !== undefined && { startDate: validated.startDate }),
+          ...(validated.endDate !== undefined && { endDate: validated.endDate }),
           ...(validated.weeklyMenuDays !== undefined && { weeklyMenuDays: validated.weeklyMenuDays }),
           ...(validated.monthlyLimit !== undefined && { monthlyLimit: validated.monthlyLimit }),
+          ...(validated.dietPrefs !== undefined && { dietPrefs: validated.dietPrefs || {} }),
           ...(validated.notes !== undefined && { notes: validated.notes || null }),
           ...(validated.status && { status: validated.status }),
         },

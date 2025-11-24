@@ -6,14 +6,21 @@ import { z } from 'zod'
 const createEmployeeSchema = z.object({
   email: z.string().email(),
   name: z.string().min(2),
-  employeeNumber: z.string().optional(),
-  department: z.string().optional(),
-  position: z.string().optional(),
+  phone: z.string().optional().nullable(),
+  employeeNumber: z.string().optional().nullable(),
+  department: z.string().optional().nullable(),
+  position: z.string().optional().nullable(),
   siteId: z.string().min(1),
-  startDate: z.string().optional().transform((val) => val ? new Date(val) : undefined),
-  weeklyMenuDays: z.number().optional(),
-  monthlyLimit: z.number().optional(),
-  notes: z.string().optional(),
+  startDate: z.string().optional().nullable().transform((val) => val ? new Date(val) : undefined),
+  endDate: z.string().optional().nullable().transform((val) => val ? new Date(val) : undefined),
+  weeklyMenuDays: z.coerce.number().int().min(0).max(7).optional().nullable(),
+  monthlyLimit: z.coerce.number().positive().optional().nullable(),
+  dietPrefs: z.object({
+    allergies: z.array(z.string()).optional(),
+    restrictions: z.array(z.string()).optional(),
+    preferences: z.array(z.string()).optional(),
+  }).optional(),
+  notes: z.string().optional().nullable(),
   sendInvitation: z.boolean().default(true),
 })
 

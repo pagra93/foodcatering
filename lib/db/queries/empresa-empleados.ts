@@ -346,15 +346,17 @@ export async function createEmployee(
   data: {
     email: string
     name: string
-    employeeNumber?: string
-    department?: string
-    position?: string
+    phone?: string | null
+    employeeNumber?: string | null
+    department?: string | null
+    position?: string | null
     siteId: string
     startDate?: Date
-    weeklyMenuDays?: number
-    monthlyLimit?: number
+    endDate?: Date
+    weeklyMenuDays?: number | null
+    monthlyLimit?: number | null
     dietPrefs?: any
-    notes?: string
+    notes?: string | null
     sendInvitation?: boolean
   }
 ) {
@@ -378,6 +380,7 @@ export async function createEmployee(
         tenantId,
         email: data.email,
         nameEnc: data.name,
+        phoneEnc: data.phone || null,
         passwordHash: await bcrypt.hash(nanoid(16), 10), // Password temporal
         role: 'EMPLOYEE',
         status: 'ACTIVE',
@@ -394,6 +397,7 @@ export async function createEmployee(
         department: data.department,
         position: data.position,
         startDate: data.startDate,
+        endDate: data.endDate,
         weeklyMenuDays: data.weeklyMenuDays || 4,
         monthlyLimit: data.monthlyLimit,
         dietPrefs: data.dietPrefs || {},
@@ -440,28 +444,77 @@ export async function updateEmployee(
   employeeId: string,
   tenantId: string,
   data: Partial<{
-    employeeNumber: string
-    department: string
-    position: string
+    name: string
+    phone: string | null
+    employeeNumber: string | null
+    department: string | null
+    position: string | null
     siteId: string
-    startDate: Date
-    endDate: Date
-    weeklyMenuDays: number
-    monthlyLimit: number
+    startDate: Date | null
+    endDate: Date | null
+    weeklyMenuDays: number | null
+    monthlyLimit: number | null
     dietPrefs: any
-    notes: string
+    notes: string | null
     status: 'ACTIVE' | 'SUSPENDED' | 'DISABLED'
   }>
 ) {
-  const employee = await prisma.employee.update({
-    where: {
-      id: employeeId,
-      tenantId,
-    },
-    data,
+  // Separar datos de User y Employee
+  const { name, phone, ...employeeData } = data
+
+  // Actualizar en transacción
+  const result = await prisma.$transaction(async (tx) => {
+    // Obtener el employee para acceder al userId
+    const employee = await tx.employee.findUnique({
+      where: { id: employeeId },
+      select: { userId: true },
+    })
+
+    if (!employee) {
+      throw new Error('Empleado no encontrado')
+    }
+
+    // Si hay datos de User, actualizarlos
+    if (name !== undefined || phone !== undefined) {
+      await tx.user.update({
+        where: { id: employee.userId },
+        data: {
+          ...(name !== undefined && { nameEnc: name }),
+          ...(phone !== undefined && { phoneEnc: phone }),
+        },
+      })
+    }
+
+    // Actualizar Employee
+    const updatedEmployee = await tx.employee.update({
+      where: {
+        id: employeeId,
+        tenantId,
+      },
+      data: employeeData,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            nameEnc: true,
+            phoneEnc: true,
+            status: true,
+          },
+        },
+        site: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    })
+
+    return updatedEmployee
   })
 
-  return employee
+  return result
 }
 
 // ============================================================================
