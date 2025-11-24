@@ -184,17 +184,17 @@ export function TenantsTable({ tenants, pagination }: TenantsTableProps) {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem
-                        onClick={() => router.push(detailRoute)}
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        Ver detalles
+                      <DropdownMenuItem asChild>
+                        <Link href={detailRoute}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          Ver detalles
+                        </Link>
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => router.push(`${detailRoute}/edit`)}
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Editar
+                      <DropdownMenuItem asChild>
+                        <Link href={`${detailRoute}/edit`}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Editar
+                        </Link>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       {tenant.status === 'ACTIVE' ? (

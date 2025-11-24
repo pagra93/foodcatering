@@ -7,6 +7,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Building2, ChefHat, Loader2 } from 'lucide-react'
@@ -364,10 +365,12 @@ export function TenantForm({ mode, initialData, tenantId }: TenantFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
           disabled={isSubmitting}
+          asChild
         >
-          Cancelar
+          <Link href="/admin/tenants">
+            Cancelar
+          </Link>
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

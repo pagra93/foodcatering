@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -283,10 +284,12 @@ export function NewEmployeeForm({ sites }: NewEmployeeFormProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
           disabled={isSubmitting}
+          asChild
         >
-          Cancelar
+          <Link href="/empresa/empleados">
+            Cancelar
+          </Link>
         </Button>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
