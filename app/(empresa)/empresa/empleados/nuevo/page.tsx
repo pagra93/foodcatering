@@ -18,7 +18,7 @@ export default async function NuevoEmpleadoPage() {
     redirect('/login')
   }
 
-  const tenant = getTenant()
+  const tenant = await getTenant()
   if (tenant.type !== 'EMPRESA') {
     redirect('/unauthorized')
   }

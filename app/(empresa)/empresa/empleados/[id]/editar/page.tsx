@@ -19,7 +19,7 @@ export default async function EditarEmpleadoPage({ params }: Props) {
     redirect('/login')
   }
 
-  const tenant = getTenant()
+  const tenant = await getTenant()
   if (tenant.type !== 'EMPRESA') {
     redirect('/unauthorized')
   }

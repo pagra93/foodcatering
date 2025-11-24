@@ -41,19 +41,7 @@ export async function middleware(req: NextRequest) {
   if (!isPublic) {
     const session = await auth()
     
-    // 🔍 LOGGING TEMPORAL PARA DIAGNÓSTICO
-    console.log('[MIDDLEWARE]', {
-      pathname,
-      hasSession: !!session,
-      hasUser: !!session?.user,
-      hasTenantId: !!session?.user?.tenantId,
-      tenantId: session?.user?.tenantId,
-      email: session?.user?.email,
-      role: session?.user?.role,
-    })
-    
     if (!session?.user) {
-      console.log('[MIDDLEWARE] No session, redirecting to login')
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
@@ -65,11 +53,6 @@ export async function middleware(req: NextRequest) {
       if (session.user.tenantType) {
         requestHeaders.set('x-tenant-type', session.user.tenantType)
       }
-      
-      console.log('[MIDDLEWARE] Headers injected:', {
-        'x-tenant-id': session.user.tenantId,
-        'x-tenant-type': session.user.tenantType,
-      })
 
       return NextResponse.next({
         request: {
@@ -77,8 +60,7 @@ export async function middleware(req: NextRequest) {
         },
       })
     } else {
-      console.error('[MIDDLEWARE] ⚠️ NO TENANT ID for user:', session.user.email)
-      // Redirigir a login con error
+      console.error('[ERROR] User without tenantId:', session.user.email)
       return NextResponse.redirect(new URL('/login?error=NoTenant', req.url))
     }
   }
