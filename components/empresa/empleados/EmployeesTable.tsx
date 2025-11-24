@@ -263,29 +263,35 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
                         {employee.status === 'ACTIVE' ? (
                           <DropdownMenuItem
                             className="text-yellow-600"
-                            onClick={() => handleToggleStatus(employee.id, employee.status)}
                             disabled={isLoading}
+                            asChild
                           >
-                            <UserX className="mr-2 h-4 w-4" />
-                            Suspender
+                            <button onClick={() => handleToggleStatus(employee.id, employee.status)}>
+                              <UserX className="mr-2 h-4 w-4" />
+                              Suspender
+                            </button>
                           </DropdownMenuItem>
                         ) : (
                           <DropdownMenuItem
                             className="text-green-600"
-                            onClick={() => handleToggleStatus(employee.id, employee.status)}
                             disabled={isLoading}
+                            asChild
                           >
-                            <UserX className="mr-2 h-4 w-4" />
-                            Activar
+                            <button onClick={() => handleToggleStatus(employee.id, employee.status)}>
+                              <UserX className="mr-2 h-4 w-4" />
+                              Activar
+                            </button>
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
                           className="text-red-600"
-                          onClick={() => handleDelete(employee.id)}
                           disabled={isLoading}
+                          asChild
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Eliminar
+                          <button onClick={() => handleDelete(employee.id)}>
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Eliminar
+                          </button>
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
