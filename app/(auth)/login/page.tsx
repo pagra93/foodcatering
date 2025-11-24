@@ -12,7 +12,7 @@ import { getTenantFromHeaders } from '@/lib/middleware/headers'
 import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
-  title: 'Iniciar Sesión | BonSanté',
+  title: 'Iniciar Sesión | SinTupper',
   description: 'Accede a tu portal de gestión de menús corporativos',
 }
 
@@ -39,22 +39,22 @@ export default async function LoginPage() {
           {/* Logo */}
           <div className="mb-8">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-gray-900">Bon</span>
-              <span className="text-2xl font-bold text-green-600">Santé</span>
+              <span className="text-2xl font-bold text-gray-900">Sin</span>
+              <span className="text-2xl font-bold text-orange-600">Tupper</span>
             </div>
             <div className="mt-2 flex items-center gap-1 text-sm">
-              <svg className="h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6z" />
+              <svg className="h-4 w-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
               </svg>
-              <span className="text-gray-500">fr</span>
+              <span className="text-gray-500">ES</span>
             </div>
           </div>
 
           {/* Título */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Bonjour!</h1>
+            <h1 className="text-3xl font-bold text-gray-900">¡Bienvenido!</h1>
             <p className="mt-2 text-sm text-gray-600">
-              Pour vous connecter à votre compte, renseignez votre adresse email ainsi que votre mot de passe.
+              Ingresa tu email y contraseña para acceder a tu portal.
             </p>
           </div>
 
@@ -65,54 +65,85 @@ export default async function LoginPage() {
           <div className="mt-8 text-center">
             <Link 
               href="/forgot-password" 
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="text-sm text-orange-600 hover:text-orange-700"
             >
-              Mot de passe oublié ?
+              ¿Olvidaste tu contraseña?
             </Link>
           </div>
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              N'avez pas vous créé votre compte ?{' '}
+              ¿Aún no tienes cuenta?{' '}
               <Link 
                 href="/register" 
-                className="font-medium text-blue-600 hover:text-blue-700"
+                className="font-medium text-orange-600 hover:text-orange-700"
               >
-                s'identifier sur BonSante.com
+                Regístrate aquí
               </Link>
             </p>
           </div>
 
           {/* Copyright */}
           <div className="mt-12 text-center text-xs text-gray-400">
-            All copyrights reserved Tous les droits de reproduction 2022
+            © 2025 SinTupper. Todos los derechos reservados.
           </div>
         </div>
       </div>
 
-      {/* LADO DERECHO: Imagen */}
-      <div className="relative hidden w-1/2 bg-gray-100 lg:block">
-        {/* Imagen de fondo */}
-        <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-          {/* Contenedor de imagen con plantas */}
-          <div className="relative h-full w-full">
-            {/* Simulación de imagen con plantas - reemplazar con imagen real */}
-            <div className="flex h-full flex-col items-center justify-center p-12">
-              {/* Plantas decorativas (placeholder) */}
-              <div className="mb-8 text-center">
-                <div className="mx-auto mb-6 h-64 w-64 rounded-full bg-white/50 backdrop-blur-sm" />
-                <div className="mx-auto h-32 w-48 rounded-2xl bg-amber-100/50" />
+      {/* LADO DERECHO: Branding */}
+      <div className="relative hidden w-1/2 bg-gradient-to-br from-orange-500 via-orange-600 to-red-600 lg:block">
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="relative max-w-lg text-center">
+            {/* Icono decorativo */}
+            <div className="mb-8 flex justify-center">
+              <div className="rounded-full bg-white/20 p-6 backdrop-blur-sm">
+                <svg className="h-20 w-20 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
               </div>
+            </div>
 
-              {/* Texto superpuesto */}
-              <div className="max-w-md text-center">
-                <h2 className="text-2xl font-bold text-gray-800">
-                  Precision medicine is the new gold standard for cancer treatment
-                </h2>
-                <p className="mt-4 text-sm text-gray-600">
-                  This moulding information expert includes validated recommendation examples, research consensus on dosing and much more
+            {/* Título y eslogan */}
+            <h2 className="text-4xl font-bold text-white mb-4">
+              Menús corporativos sin complicaciones
+            </h2>
+            <p className="text-xl text-orange-100 mb-8">
+              Gestiona los beneficios de comida de tu empresa de forma simple y transparente
+            </p>
+
+            {/* Features */}
+            <div className="space-y-4 text-left">
+              <div className="flex items-start gap-3">
+                <svg className="h-6 w-6 text-orange-200 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-white">
+                  <span className="font-semibold">Cumplimiento fiscal garantizado:</span> Límite de 11€/día para deducción total
                 </p>
               </div>
+              <div className="flex items-start gap-3">
+                <svg className="h-6 w-6 text-orange-200 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-white">
+                  <span className="font-semibold">Gestión centralizada:</span> Un solo lugar para empleados, caterings y finanzas
+                </p>
+              </div>
+              <div className="flex items-start gap-3">
+                <svg className="h-6 w-6 text-orange-200 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <p className="text-white">
+                  <span className="font-semibold">Trazabilidad completa:</span> Reportes automáticos listos para auditorías
+                </p>
+              </div>
+            </div>
+
+            {/* Footer del lado derecho */}
+            <div className="mt-12 pt-8 border-t border-orange-400/30">
+              <p className="text-orange-100 text-sm">
+                Más de 50 empresas confían en SinTupper para gestionar sus beneficios de comida
+              </p>
             </div>
           </div>
         </div>

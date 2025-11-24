@@ -65,10 +65,10 @@ export default function LoginForm() {
         </Alert>
       )}
 
-      {/* Votre adresse email */}
+      {/* Email */}
       <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-normal text-gray-700">
-          Votre adresse email
+          Email
         </Label>
         <Input
           type="email"
@@ -77,15 +77,15 @@ export default function LoginForm() {
           required
           autoComplete="email"
           disabled={isLoading}
-          placeholder=""
+          placeholder="tu@empresa.com"
           className="h-12"
         />
       </div>
 
-      {/* Votre mot de passe */}
+      {/* Contraseña */}
       <div className="space-y-2">
         <Label htmlFor="password" className="text-sm font-normal text-gray-700">
-          Votre mot de passe
+          Contraseña
         </Label>
         <Input
           type="password"
@@ -94,19 +94,19 @@ export default function LoginForm() {
           required
           autoComplete="current-password"
           disabled={isLoading}
-          placeholder=""
+          placeholder="••••••••"
           className="h-12"
         />
       </div>
 
-      {/* Clef de passe oublié? */}
+      {/* Recordar sesión */}
       <div className="flex items-center space-x-2">
         <Checkbox id="remember" name="remember" disabled={isLoading} />
         <Label
           htmlFor="remember"
           className="text-sm font-normal text-gray-600 cursor-pointer"
         >
-          Clef de passe oublié?
+          Recordar sesión
         </Label>
       </div>
 
@@ -114,16 +114,16 @@ export default function LoginForm() {
       <Button 
         type="submit" 
         disabled={isLoading} 
-        className="w-full h-12 bg-black hover:bg-gray-800 text-white" 
+        className="w-full h-12 bg-orange-600 hover:bg-orange-700 text-white" 
         size="lg"
       >
         {isLoading ? (
           <>
             <span className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-            Chargement...
+            Iniciando sesión...
           </>
         ) : (
-          'Étape suivante'
+          'Iniciar sesión'
         )}
       </Button>
     </form>
