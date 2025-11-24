@@ -39,25 +39,47 @@ export async function middleware(req: NextRequest) {
   const isPublic = publicPaths.some(path => pathname.startsWith(path))
 
   if (!isPublic) {
-  const session = await auth()
+    const session = await auth()
+    
+    // 🔍 LOGGING TEMPORAL PARA DIAGNÓSTICO
+    console.log('[MIDDLEWARE]', {
+      pathname,
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      hasTenantId: !!session?.user?.tenantId,
+      tenantId: session?.user?.tenantId,
+      email: session?.user?.email,
+      role: session?.user?.role,
+    })
+    
     if (!session?.user) {
+      console.log('[MIDDLEWARE] No session, redirecting to login')
       return NextResponse.redirect(new URL('/login', req.url))
-  }
+    }
 
     // Inyectar tenant ID en headers desde la sesión
     if (session?.user?.tenantId) {
-  const requestHeaders = new Headers(req.headers)
+      const requestHeaders = new Headers(req.headers)
       requestHeaders.set('x-tenant-id', session.user.tenantId)
       
       if (session.user.tenantType) {
         requestHeaders.set('x-tenant-type', session.user.tenantType)
-  }
+      }
+      
+      console.log('[MIDDLEWARE] Headers injected:', {
+        'x-tenant-id': session.user.tenantId,
+        'x-tenant-type': session.user.tenantType,
+      })
 
-  return NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  })
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      })
+    } else {
+      console.error('[MIDDLEWARE] ⚠️ NO TENANT ID for user:', session.user.email)
+      // Redirigir a login con error
+      return NextResponse.redirect(new URL('/login?error=NoTenant', req.url))
     }
   }
 

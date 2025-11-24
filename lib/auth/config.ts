@@ -95,7 +95,7 @@ export const authConfig = {
           const normalizedRole = user.role.toUpperCase() as UserRole
           const normalizedTenantType = user.tenant.type.toUpperCase() as TenantType
           
-          return {
+          const userReturn = {
             id: user.id,
             email: user.email,
             name: user.nameEnc, // TODO: descifrar en producción
@@ -105,6 +105,17 @@ export const authConfig = {
             mfaEnabled: user.mfaEnabled,
             status: user.status,
           }
+          
+          // 🔍 LOGGING TEMPORAL PARA DIAGNÓSTICO
+          console.log('[AUTHORIZE] User found in DB:', {
+            email: user.email,
+            tenantId: user.tenantId,
+            role: user.role,
+            tenantType: user.tenant.type,
+          })
+          console.log('[AUTHORIZE] Returning normalized user:', userReturn)
+          
+          return userReturn
         } catch (error) {
           console.error('Error en authorize:', error)
           return null
