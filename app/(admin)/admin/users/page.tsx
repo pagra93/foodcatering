@@ -32,7 +32,7 @@ export default async function AdminUsersPage() {
     include: {
       tenant: {
         select: {
-          displayName: true,
+          name: true,
           type: true,
           status: true,
         },
@@ -116,7 +116,7 @@ export default async function AdminUsersPage() {
                   </div>
                   {user.tenant && (
                     <p className="text-xs text-gray-400 mt-1">
-                      {user.tenant.displayName} ({user.tenant.type})
+                      {user.tenant.name} ({user.tenant.type})
                     </p>
                   )}
                 </div>

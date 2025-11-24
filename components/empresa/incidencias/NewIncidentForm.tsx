@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -119,10 +120,12 @@ export function NewIncidentForm() {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
           disabled={isSubmitting}
+          asChild
         >
-          Cancelar
+          <Link href="/empresa/incidencias">
+            Cancelar
+          </Link>
         </Button>
       </div>
     </form>

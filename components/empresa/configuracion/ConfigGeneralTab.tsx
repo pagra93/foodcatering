@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -316,10 +317,12 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
           disabled={isSubmitting}
+          asChild
         >
-          Cancelar
+          <Link href="/empresa/configuracion">
+            Cancelar
+          </Link>
         </Button>
         <Button type="submit" disabled={isSubmitting || !isDirty}>
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
