@@ -94,9 +94,32 @@ export async function PUT(
   }
 }
 
+// Schema para edición completa
+const updateFullEmployeeSchema = z.object({
+  // Datos usuario (solo nombre y teléfono editables, email NO)
+  name: z.string().min(2).optional(),
+  phone: z.string().optional(),
+  
+  // Datos laborales
+  employeeNumber: z.string().optional(),
+  department: z.string().optional(),
+  position: z.string().optional(),
+  siteId: z.string().optional(),
+  startDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
+  endDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
+  
+  // Configuración menú
+  weeklyMenuDays: z.coerce.number().optional(),
+  monthlyLimit: z.coerce.number().optional(),
+  notes: z.string().optional(),
+  
+  // Estado (para suspender/activar)
+  status: z.enum(['ACTIVE', 'SUSPENDED', 'INACTIVE']).optional(),
+})
+
 /**
  * PATCH /api/empresa/empleados/[id]
- * Suspender/Activar empleado (cambio rápido de estado)
+ * Actualizar empleado completo o cambiar estado
  */
 export async function PATCH(
   req: NextRequest,
@@ -115,14 +138,16 @@ export async function PATCH(
     }
 
     const body = await req.json()
-    const { action } = body // 'suspend' | 'activate'
-
+    
     // Verificar que el empleado existe y pertenece al tenant
     const employee = await prisma.employee.findFirst({
       where: {
         id: params.id,
         tenantId: session.user.tenantId,
         deletedAt: null,
+      },
+      include: {
+        user: true,
       },
     })
 
@@ -133,29 +158,65 @@ export async function PATCH(
       )
     }
 
-    // Actualizar estado
-    const newStatus = action === 'suspend' ? 'SUSPENDED' : 'ACTIVE'
-    const updated = await prisma.employee.update({
-      where: { id: params.id },
-      data: { status: newStatus },
-      include: {
-        user: {
-          select: {
-            nameEnc: true,
+    const validated = updateFullEmployeeSchema.parse(body)
+
+    // Actualizar en transacción
+    const updated = await prisma.$transaction(async (tx) => {
+      // Actualizar usuario si hay cambios
+      if (validated.name || validated.phone) {
+        await tx.user.update({
+          where: { id: employee.userId },
+          data: {
+            ...(validated.name && { nameEnc: validated.name }),
+            ...(validated.phone && { phoneEnc: validated.phone }),
+          },
+        })
+      }
+
+      // Actualizar empleado
+      return tx.employee.update({
+        where: { id: params.id },
+        data: {
+          ...(validated.employeeNumber !== undefined && { employeeNumber: validated.employeeNumber || null }),
+          ...(validated.department !== undefined && { department: validated.department || null }),
+          ...(validated.position !== undefined && { position: validated.position || null }),
+          ...(validated.siteId && { siteId: validated.siteId }),
+          ...(validated.startDate && { startDate: validated.startDate }),
+          ...(validated.endDate && { endDate: validated.endDate }),
+          ...(validated.weeklyMenuDays !== undefined && { weeklyMenuDays: validated.weeklyMenuDays }),
+          ...(validated.monthlyLimit !== undefined && { monthlyLimit: validated.monthlyLimit }),
+          ...(validated.notes !== undefined && { notes: validated.notes || null }),
+          ...(validated.status && { status: validated.status }),
+        },
+        include: {
+          user: {
+            select: {
+              email: true,
+              nameEnc: true,
+              phoneEnc: true,
+            },
+          },
+          site: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
+      })
     })
 
-    return NextResponse.json({
-      success: true,
-      employee: updated,
-      message: `Empleado ${action === 'suspend' ? 'suspendido' : 'activado'} correctamente`,
-    })
+    return NextResponse.json(updated)
   } catch (error) {
-    console.error('[EMPLOYEE_STATUS_CHANGE]', error)
+    console.error('[EMPLOYEE_UPDATE]', error)
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Datos inválidos', details: error.errors },
+        { status: 400 }
+      )
+    }
     return NextResponse.json(
-      { error: 'Error al cambiar estado del empleado' },
+      { error: 'Error al actualizar empleado' },
       { status: 500 }
     )
   }
