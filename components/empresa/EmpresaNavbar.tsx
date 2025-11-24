@@ -90,9 +90,11 @@ export function EmpresaNavbar({ tenant, user }: EmpresaNavbarProps) {
                 Configuración
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                <LogOut className="mr-2 h-4 w-4" />
-                Cerrar sesión
+              <DropdownMenuItem className="text-red-600" asChild>
+                <button onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar sesión
+                </button>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
