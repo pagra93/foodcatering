@@ -23,7 +23,7 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 type Employee = {
   id: string
@@ -63,6 +63,7 @@ const statusMap = {
 
 export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
 
   const handleToggleStatus = async (employeeId: string, currentStatus: string) => {
@@ -317,7 +318,7 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
               size="sm"
               disabled={pagination.page === 1}
               onClick={() => {
-                const params = new URLSearchParams(window.location.search)
+                const params = new URLSearchParams(searchParams.toString())
                 params.set('page', (pagination.page - 1).toString())
                 router.push(`/empresa/empleados?${params.toString()}`)
               }}
@@ -332,7 +333,7 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
               size="sm"
               disabled={pagination.page === pagination.totalPages}
               onClick={() => {
-                const params = new URLSearchParams(window.location.search)
+                const params = new URLSearchParams(searchParams.toString())
                 params.set('page', (pagination.page + 1).toString())
                 router.push(`/empresa/empleados?${params.toString()}`)
               }}
