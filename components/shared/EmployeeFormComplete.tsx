@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -330,10 +331,12 @@ export function EmployeeFormComplete({
         <Button
           type="button"
           variant="outline"
-          onClick={() => router.back()}
           disabled={isSubmitting}
+          asChild
         >
-          Cancelar
+          <Link href={redirectPath}>
+            Cancelar
+          </Link>
         </Button>
 
         <Button type="submit" disabled={isSubmitting}>
