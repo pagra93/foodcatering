@@ -31,7 +31,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empresa-incidencias'
-import { useRouter } from 'next/navigation'
 
 type IncidentsListProps = {
   incidents: Array<{
