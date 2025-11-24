@@ -40,13 +40,13 @@ export default async function EmpleadosPage({
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <Link href="/empresa/empleados/importar">
+            <Link href="/empresa/empleados/importar" prefetch={false}>
               <Upload className="mr-2 h-4 w-4" />
               Importar CSV
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/empresa/empleados/nuevo">
+            <Link href="/empresa/empleados/nuevo" prefetch={false}>
               <Plus className="mr-2 h-4 w-4" />
               Nuevo Empleado
             </Link>

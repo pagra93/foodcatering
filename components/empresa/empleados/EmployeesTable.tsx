@@ -122,7 +122,7 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
             Comienza añadiendo empleados a tu empresa
           </p>
           <Button asChild className="mt-4">
-            <Link href="/empresa/empleados/nuevo">Añadir Empleado</Link>
+            <Link href="/empresa/empleados/nuevo" prefetch={false}>Añadir Empleado</Link>
           </Button>
         </div>
       </div>
@@ -161,6 +161,7 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
                       <Link
                         href={`/empresa/empleados/${employee.id}`}
                         className="font-medium text-gray-900 hover:text-blue-600"
+                        prefetch={false}
                       >
                         {employee.name}
                       </Link>
@@ -245,13 +246,13 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
                         <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                          <Link href={`/empresa/empleados/${employee.id}`}>
+                          <Link href={`/empresa/empleados/${employee.id}`} prefetch={false}>
                             <Eye className="mr-2 h-4 w-4" />
                             Ver detalle
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                          <Link href={`/empresa/empleados/${employee.id}/editar`}>
+                          <Link href={`/empresa/empleados/${employee.id}/editar`} prefetch={false}>
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </Link>
