@@ -44,6 +44,8 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 
+import type { Prisma } from '@prisma/client'
+
 type Company = {
   id: string
   name: string
@@ -59,7 +61,7 @@ type Company = {
   policy: {
     cutoffTime: string
     limitPerDay: number
-    daysActive: any
+    daysActive: Prisma.JsonValue
   } | null
   sites: number
   employees: {
@@ -77,7 +79,7 @@ type Company = {
     tenantId: string
   } | null
   alerts: {
-    deductibilityIssue: boolean
+    deductibilityIssue: boolean | null
     lowAdoption: boolean
     highIncidents: boolean
   }

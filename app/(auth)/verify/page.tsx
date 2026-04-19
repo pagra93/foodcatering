@@ -3,7 +3,7 @@
  * Se muestra después del registro (si se implementa email verification)
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { Mail } from 'lucide-react'
 import { Button } from '@/components/ui/button'

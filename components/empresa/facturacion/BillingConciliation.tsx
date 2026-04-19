@@ -19,7 +19,6 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
-  AlertTriangle,
   CheckCircle2,
   XCircle,
   Eye,
@@ -27,12 +26,18 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import type { Prisma } from '@prisma/client'
 
 type ConciliationProps = {
   report: {
     summary: {
       totalOrders: number
       subtotal: number
+      companyPart: number
+      employeePart: number
+      commission: number
+      subsidyPercentage: number
+      commissionRate: number
     }
     issues: {
       ordersWithOpenIncidents: number
@@ -42,7 +47,7 @@ type ConciliationProps = {
     ordersWithIncidents: Array<{
       id: string
       serviceDate: Date
-      price: number
+      price: Prisma.Decimal | number
       incidents: Array<{
         id: string
         type: string
@@ -58,7 +63,6 @@ export function BillingConciliation({ report }: ConciliationProps) {
   const hasIssues =
     issues.ordersWithOpenIncidents > 0 || issues.ordersWithoutProof > 0
 
-  const statusColor = hasIssues ? 'destructive' : 'default'
   const statusIcon = hasIssues ? XCircle : CheckCircle2
   const StatusIcon = statusIcon
 

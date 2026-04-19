@@ -5,22 +5,16 @@
  * Vista administrativa para crear y gestionar rutas de reparto
  */
 
-import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Route,
   Plus,
   Truck,
   MapPin,
-  Clock,
-  Calendar,
 } from 'lucide-react'
 
 export default function RoutesManagementPage() {
-  const today = new Date().toISOString().split('T')[0]
-
   return (
     <div className="space-y-6">
       {/* Header */}

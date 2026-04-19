@@ -244,10 +244,12 @@ export function CateringWizard() {
         <CardHeader className="border-b border-gray-100">
           <CardTitle className="flex items-center gap-2">
             {(() => {
-              const Icon = STEPS[currentStep - 1].icon
+              const step = STEPS[currentStep - 1]
+              if (!step) return null
+              const Icon = step.icon
               return <Icon className="h-5 w-5 text-blue-600" />
             })()}
-            Paso {currentStep}: {STEPS[currentStep - 1].title}
+            Paso {currentStep}: {STEPS[currentStep - 1]?.title}
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
@@ -639,7 +641,9 @@ export function CateringWizard() {
                           value={zone.name}
                           onChange={(e) => {
                             const newZones = [...formData.zones]
-                            newZones[index].name = e.target.value
+                            const current = newZones[index]
+                            if (!current) return
+                            current.name = e.target.value
                             updateFormData('zones', newZones)
                           }}
                           placeholder="Centro, Norte, Sur..."
@@ -652,7 +656,9 @@ export function CateringWizard() {
                           value={zone.operator}
                           onValueChange={(value) => {
                             const newZones = [...formData.zones]
-                            newZones[index].operator = value
+                            const current = newZones[index]
+                            if (!current) return
+                            current.operator = value
                             updateFormData('zones', newZones)
                           }}
                         >
@@ -676,7 +682,9 @@ export function CateringWizard() {
                           value={zone.postalCodes}
                           onChange={(e) => {
                             const newZones = [...formData.zones]
-                            newZones[index].postalCodes = e.target.value
+                            const current = newZones[index]
+                            if (!current) return
+                            current.postalCodes = e.target.value
                             updateFormData('zones', newZones)
                           }}
                           placeholder="28001, 28002, 28003..."
@@ -691,7 +699,9 @@ export function CateringWizard() {
                           value={zone.maxDistance}
                           onChange={(e) => {
                             const newZones = [...formData.zones]
-                            newZones[index].maxDistance = parseInt(e.target.value)
+                            const current = newZones[index]
+                            if (!current) return
+                            current.maxDistance = parseInt(e.target.value)
                             updateFormData('zones', newZones)
                           }}
                           min={0}
@@ -863,7 +873,9 @@ export function CateringWizard() {
                           value={user.name}
                           onChange={(e) => {
                             const newUsers = [...formData.initialUsers]
-                            newUsers[index].name = e.target.value
+                            const current = newUsers[index]
+                            if (!current) return
+                            current.name = e.target.value
                             updateFormData('initialUsers', newUsers)
                           }}
                           placeholder="Juan Pérez"
@@ -877,7 +889,9 @@ export function CateringWizard() {
                           value={user.email}
                           onChange={(e) => {
                             const newUsers = [...formData.initialUsers]
-                            newUsers[index].email = e.target.value
+                            const current = newUsers[index]
+                            if (!current) return
+                            current.email = e.target.value
                             updateFormData('initialUsers', newUsers)
                           }}
                           placeholder="juan@catering.com"
@@ -891,7 +905,9 @@ export function CateringWizard() {
                         value={user.role}
                         onValueChange={(value) => {
                           const newUsers = [...formData.initialUsers]
-                          newUsers[index].role = value
+                          const current = newUsers[index]
+                          if (!current) return
+                          current.role = value
                           updateFormData('initialUsers', newUsers)
                         }}
                       >

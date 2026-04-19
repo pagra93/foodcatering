@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import { getImpersonationInfo } from '@/lib/auth/impersonation'
 import { requireAuth } from '@/lib/guards'
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
     // Verificar autenticación
     await requireAuth()

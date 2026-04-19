@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
 // Schema de validación para actualización de empleado
@@ -60,7 +61,7 @@ export async function PUT(
     // Actualizar empleado
     const updated = await prisma.employee.update({
       where: { id: params.id },
-      data,
+      data: data as Prisma.EmployeeUncheckedUpdateInput,
       include: {
         user: {
           select: {
@@ -193,7 +194,7 @@ export async function PATCH(
           ...(validated.dietPrefs !== undefined && { dietPrefs: validated.dietPrefs || {} }),
           ...(validated.notes !== undefined && { notes: validated.notes || null }),
           ...(validated.status && { status: validated.status }),
-        },
+        } as Prisma.EmployeeUncheckedUpdateInput,
         include: {
           user: {
             select: {

@@ -3,7 +3,6 @@
  * ♻️ Reutiliza tablas FiscalReport y DeliveryProof ya existentes
  */
 
-import { redirect } from 'next/navigation'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import {
   getOrGenerateFiscalReport,
@@ -21,8 +20,6 @@ import {
   Download,
   CheckCircle2,
   AlertTriangle,
-  Calendar,
-  Euro,
   ShieldCheck,
 } from 'lucide-react'
 
@@ -259,8 +256,10 @@ async function AuditoriaData() {
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Tipo de Reporte:</span>
-              <Badge variant="outline">{monthlyReport.reportType}</Badge>
+              <span className="text-muted-foreground">Período:</span>
+              <Badge variant="outline">
+                {monthlyReport.periodYear}-{String(monthlyReport.periodMonth).padStart(2, '0')}
+              </Badge>
             </div>
           </div>
         </CardContent>

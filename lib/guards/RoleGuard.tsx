@@ -38,9 +38,7 @@ export function RoleGuard<P extends object>(
     const session = await getRequiredSession()
 
     // Verificar si el rol del usuario está permitido
-    const isAllowed = config.allowedRoles.some((role) =>
-      hasRole(session.user.role, role)
-    )
+    const isAllowed = hasRole(session.user.role, config.allowedRoles)
 
     if (!isAllowed) {
       // Si hay un fallback, mostrarlo

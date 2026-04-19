@@ -2,13 +2,11 @@
 
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import {
   Building2,
   Mail,
   Phone,
-  Globe,
   MapPin,
   Clock,
   Users,
@@ -20,35 +18,29 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import type { Prisma } from '@prisma/client'
 
 type CateringInfoTabProps = {
   restaurant: {
     id: string
+    tenantId: string
+    displayName: string
     legalName: string
-    tradeName: string | null
     cif: string
-    address: string | null
-    city: string | null
-    phone: string | null
-    email: string | null
-    website: string | null
-    logoUrl: string | null
-    sanitaryRegistration: string | null
-    sanitaryRegistrationExpiry: Date | null
-    rcInsurance: string | null
-    rcInsuranceExpiry: Date | null
+    billingAddress: string
+    contactPerson: string
+    contactEmail: string
+    contactPhone: string
     dailyCapacity: number
     cutoffTime: string
     preparationWindow: string | null
     deliveryWindow: string | null
-    serviceZones: any
-    commissionRate: number
-    status: string
+    zones: Prisma.JsonValue
   }
   assignment: {
     id: string
     type: string
-    zones: any
+    zones: Prisma.JsonValue
     priority: number
     assignedAt: Date
   }
@@ -59,8 +51,8 @@ type CateringInfoTabProps = {
     incidents: number
     incidentRate: number
     avgRating: number | null
-    slaPunctuality: number
-    slaIncidentRate: number
+    slaPunctuality: Prisma.Decimal | number | null
+    slaIncidentRate: Prisma.Decimal | number | null
   }
 }
 
@@ -69,37 +61,22 @@ export function CateringInfoTab({
   assignment,
   metrics,
 }: CateringInfoTabProps) {
-  const statusMap = {
-    ACTIVE: { label: 'Activo', variant: 'success' as const },
-    SUSPENDED: { label: 'Suspendido', variant: 'destructive' as const },
-    UNDER_REVIEW: { label: 'En Revisión', variant: 'warning' as const },
-  }
-
-  const statusInfo = statusMap[restaurant.status as keyof typeof statusMap] || {
-    label: restaurant.status,
-    variant: 'outline' as const,
-  }
-
-  // Verificar documentos próximos a caducar
-  const checkDocExpiry = (expiryDate: Date | null) => {
-    if (!expiryDate) return null
-    const daysUntilExpiry = Math.floor(
-      (new Date(expiryDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
-    )
-    if (daysUntilExpiry < 0) return 'expired'
-    if (daysUntilExpiry <= 30) return 'expiring'
-    return 'valid'
-  }
-
-  const sanitaryStatus = checkDocExpiry(restaurant.sanitaryRegistrationExpiry)
-  const rcStatus = checkDocExpiry(restaurant.rcInsuranceExpiry)
+  // Normalizar los valores SLA (Decimal -> number)
+  const slaPunctualityValue =
+    metrics.slaPunctuality !== null && metrics.slaPunctuality !== undefined
+      ? Number(metrics.slaPunctuality)
+      : null
+  const slaIncidentRateValue =
+    metrics.slaIncidentRate !== null && metrics.slaIncidentRate !== undefined
+      ? Number(metrics.slaIncidentRate)
+      : null
 
   // Calcular cumplimiento de SLA
-  const punctualityCompliance = restaurant.slaPunctuality
-    ? (metrics.punctualityRate / restaurant.slaPunctuality) * 100
+  const punctualityCompliance = slaPunctualityValue
+    ? (metrics.punctualityRate / slaPunctualityValue) * 100
     : 0
-  const incidentCompliance = restaurant.slaIncidentRate
-    ? 100 - (metrics.incidentRate / restaurant.slaIncidentRate) * 100
+  const incidentCompliance = slaIncidentRateValue
+    ? 100 - (metrics.incidentRate / slaIncidentRateValue) * 100
     : 0
 
   return (
@@ -107,62 +84,46 @@ export function CateringInfoTab({
       {/* Header con logo y datos básicos */}
       <Card className="p-6">
         <div className="flex items-start gap-6">
-          {restaurant.logoUrl ? (
-            <img
-              src={restaurant.logoUrl}
-              alt={restaurant.tradeName || restaurant.legalName}
-              className="h-24 w-24 rounded-lg object-cover"
-            />
-          ) : (
-            <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100">
-              <Building2 className="h-12 w-12 text-gray-400" />
-            </div>
-          )}
+          <div className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-100">
+            <Building2 className="h-12 w-12 text-gray-400" />
+          </div>
 
           <div className="flex-1">
             <div className="flex items-start justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {restaurant.tradeName || restaurant.legalName}
+                  {restaurant.displayName || restaurant.legalName}
                 </h2>
-                {restaurant.tradeName && (
+                {restaurant.displayName !== restaurant.legalName && (
                   <p className="text-sm text-gray-600 mt-1">{restaurant.legalName}</p>
                 )}
                 <p className="text-sm text-gray-500 mt-1">CIF: {restaurant.cif}</p>
               </div>
-              <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
             </div>
 
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              {restaurant.phone && (
+              {restaurant.contactPhone && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Phone className="h-4 w-4" />
-                  <span>{restaurant.phone}</span>
+                  <span>{restaurant.contactPhone}</span>
                 </div>
               )}
-              {restaurant.email && (
+              {restaurant.contactEmail && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <Mail className="h-4 w-4" />
-                  <span>{restaurant.email}</span>
+                  <span>{restaurant.contactEmail}</span>
                 </div>
               )}
-              {restaurant.website && (
+              {restaurant.contactPerson && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Globe className="h-4 w-4" />
-                  <a
-                    href={restaurant.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-blue-600"
-                  >
-                    Sitio web
-                  </a>
+                  <Users className="h-4 w-4" />
+                  <span>{restaurant.contactPerson}</span>
                 </div>
               )}
-              {restaurant.address && (
+              {restaurant.billingAddress && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <MapPin className="h-4 w-4" />
-                  <span>{restaurant.city}</span>
+                  <span>{restaurant.billingAddress}</span>
                 </div>
               )}
             </div>
@@ -182,7 +143,7 @@ export function CateringInfoTab({
           </p>
           <Progress value={punctualityCompliance} className="mt-2" />
           <p className="text-xs text-gray-500 mt-1">
-            Objetivo: {metrics.slaPunctuality}%
+            Objetivo: {slaPunctualityValue ?? '-'}%
           </p>
         </Card>
 
@@ -196,7 +157,7 @@ export function CateringInfoTab({
           </p>
           <Progress value={incidentCompliance} className="mt-2" />
           <p className="text-xs text-gray-500 mt-1">
-            Máximo: {metrics.slaIncidentRate}%
+            Máximo: {slaIncidentRateValue ?? '-'}%
           </p>
         </Card>
 
@@ -267,69 +228,41 @@ export function CateringInfoTab({
           </div>
         </Card>
 
-        {/* Documentación */}
+        {/* Contacto Principal */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <FileText className="h-5 w-5 text-gray-600" />
-            Documentación
+            Contacto
           </h3>
           <div className="space-y-3">
-            {/* Registro Sanitario */}
             <div className="flex items-start justify-between p-3 rounded-lg border">
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Registro Sanitario</p>
+                <p className="font-medium text-gray-900">Persona de contacto</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  {restaurant.sanitaryRegistration || 'No disponible'}
+                  {restaurant.contactPerson || 'No disponible'}
                 </p>
-                {restaurant.sanitaryRegistrationExpiry && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Caduca:{' '}
-                    {format(
-                      new Date(restaurant.sanitaryRegistrationExpiry),
-                      "d 'de' MMMM, yyyy",
-                      { locale: es }
-                    )}
-                  </p>
-                )}
               </div>
-              {sanitaryStatus === 'valid' && (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              )}
-              {sanitaryStatus === 'expiring' && (
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              )}
-              {sanitaryStatus === 'expired' && (
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              )}
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
             </div>
 
-            {/* Seguro RC */}
             <div className="flex items-start justify-between p-3 rounded-lg border">
               <div className="flex-1">
-                <p className="font-medium text-gray-900">Seguro RC</p>
+                <p className="font-medium text-gray-900">Email</p>
                 <p className="text-sm text-gray-600 mt-1">
-                  {restaurant.rcInsurance || 'No disponible'}
+                  {restaurant.contactEmail || 'No disponible'}
                 </p>
-                {restaurant.rcInsuranceExpiry && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Caduca:{' '}
-                    {format(
-                      new Date(restaurant.rcInsuranceExpiry),
-                      "d 'de' MMMM, yyyy",
-                      { locale: es }
-                    )}
-                  </p>
-                )}
               </div>
-              {rcStatus === 'valid' && (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-              )}
-              {rcStatus === 'expiring' && (
-                <AlertCircle className="h-5 w-5 text-yellow-600" />
-              )}
-              {rcStatus === 'expired' && (
-                <AlertCircle className="h-5 w-5 text-red-600" />
-              )}
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            </div>
+
+            <div className="flex items-start justify-between p-3 rounded-lg border">
+              <div className="flex-1">
+                <p className="font-medium text-gray-900">Teléfono</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  {restaurant.contactPhone || 'No disponible'}
+                </p>
+              </div>
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
             </div>
           </div>
         </Card>
@@ -365,11 +298,19 @@ export function CateringInfoTab({
               Zonas de Servicio
             </p>
             <div className="flex flex-wrap gap-2">
-              {assignment.zones.map((zone: any, index: number) => (
-                <Badge key={index} variant="outline">
-                  {typeof zone === 'string' ? zone : zone.name || 'Zona sin nombre'}
-                </Badge>
-              ))}
+              {(assignment.zones as unknown[]).map((zone, index) => {
+                const label =
+                  typeof zone === 'string'
+                    ? zone
+                    : zone && typeof zone === 'object' && 'name' in zone && typeof (zone as { name?: unknown }).name === 'string'
+                    ? ((zone as { name: string }).name)
+                    : 'Zona sin nombre'
+                return (
+                  <Badge key={index} variant="outline">
+                    {label}
+                  </Badge>
+                )
+              })}
             </div>
           </div>
         )}

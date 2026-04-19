@@ -1,5 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getRequiredSession } from '@/lib/auth/session'
+import { type NextRequest, NextResponse } from 'next/server'
+import {
+  getRequiredSession,
+  getScopedTenantId,
+  TenantMismatchError,
+} from '@/lib/auth/session'
 import { createEmployee } from '@/lib/db/queries/empresa-empleados'
 import { z } from 'zod'
 
@@ -26,22 +30,18 @@ const createEmployeeSchema = z.object({
 
 /**
  * POST /api/empresa/empleados
- * Crear un nuevo empleado
+ * Crea un nuevo empleado. tenantId protegido con getScopedTenantId.
  */
 export async function POST(request: NextRequest) {
   try {
     const session = await getRequiredSession()
-    const tenantId = request.headers.get('x-tenant-id')
 
-    if (!tenantId) {
-      return NextResponse.json({ error: 'Tenant ID missing' }, { status: 400 })
-    }
-
-    // Verificar permisos
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH']
     if (!allowedRoles.includes(session.user.role as string)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
+
+    const tenantId = await getScopedTenantId(request)
 
     const body = await request.json()
     const validated = createEmployeeSchema.parse(body)
@@ -49,20 +49,23 @@ export async function POST(request: NextRequest) {
     const employee = await createEmployee(tenantId, validated)
 
     return NextResponse.json(employee, { status: 201 })
-  } catch (error: any) {
+  } catch (error) {
+    if (error instanceof TenantMismatchError) {
+      return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+
     console.error('Error creating employee:', error)
 
-    if (error.name === 'ZodError') {
+    if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
+        { error: 'Datos inválidos', details: (error as unknown as { errors: unknown }).errors },
         { status: 400 }
       )
     }
 
     return NextResponse.json(
-      { error: error.message || 'Error al crear empleado' },
+      { error: error instanceof Error ? error.message : 'Error al crear empleado' },
       { status: 500 }
     )
   }
 }
-

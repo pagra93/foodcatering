@@ -174,7 +174,7 @@ export async function getKitchenDisplay(
           count: 0,
         }
       }
-      dishCounts[dish.dishId].count++
+      dishCounts[dish.dishId]!.count++
     }
   }
 

@@ -3,8 +3,7 @@
  * Multi-tenant con Prisma Adapter
  */
 
-import { NextAuthConfig } from 'next-auth'
-import { PrismaAdapter } from '@auth/prisma-adapter'
+import { type NextAuthConfig } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 // NO importar bcryptjs aquí (causa problemas con Edge Runtime)
 // Se importará dinámicamente dentro de authorize()
@@ -212,10 +211,10 @@ export const authConfig = {
     /**
      * SignIn Callback - Control adicional en el login
      */
-    async signIn({ user, account, profile }) {
+    async signIn({ user }) {
       // Con Credentials provider, la validación ya se hizo en authorize()
       // Este callback es principalmente para OAuth providers
-      
+
       // Validación adicional solo si tenemos acceso al status
       if (user && 'status' in user && user.status !== 'ACTIVE') {
         return false
@@ -243,13 +242,14 @@ export const authConfig = {
 
   // Events (para logging)
   events: {
-    async signIn({ user }) {
-      console.log(`✅ Login exitoso: ${user.email}`)
-      // TODO: Registrar en audit_logs
+    async signIn() {
+      // Auditoría de login se registra fuera (lib/auth/audit.ts#logLogin)
     },
-    async signOut({ token }) {
-      console.log(`👋 Logout: ${token.email}`)
-      // TODO: Registrar en audit_logs
+    async signOut(message) {
+      // 'token' sólo existe con sesión JWT; con DB session se pasa 'session'
+      if ('token' in message && message.token) {
+        // Auditoría de logout se registra fuera (lib/auth/audit.ts#logLogout)
+      }
     },
   },
 

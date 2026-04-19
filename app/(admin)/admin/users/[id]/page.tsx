@@ -1,174 +1,218 @@
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
+import { ArrowLeft, Mail, Phone, ShieldCheck } from 'lucide-react'
+import type { Session } from 'next-auth'
 import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db/prisma'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import Link from 'next/link'
-import { ArrowLeft, Edit, Mail, Phone } from 'lucide-react'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import {
+  getUserById,
+  getUserLastActivity,
+} from '@/lib/db/queries/admin-users'
+import {
+  ROLE_DESCRIPTIONS,
+  getRoleCategory,
+  PERMISSIONS,
+} from '@/lib/auth/permissions'
+import { UserDetailActions } from '@/components/admin/users/UserDetailActions'
 
-type Props = {
-  params: {
-    id: string
-  }
-}
+const STATUS_VARIANT = {
+  ACTIVE: 'default',
+  PENDING: 'secondary',
+  DISABLED: 'destructive',
+} as const
 
-/**
- * Página de detalle de usuario (Super Admin)
- */
-export default async function UserDetailPage({ params }: Props) {
-  const session = await auth()
-  
-  if (!session) {
-    redirect('/login')
-  }
+const STATUS_LABEL = {
+  ACTIVE: 'Activo',
+  PENDING: 'Pendiente',
+  DISABLED: 'Suspendido',
+} as const
 
-  // Solo SUPER_ADMIN puede acceder
-  if (session.user.role !== 'SUPER_ADMIN') {
-    redirect('/unauthorized')
-  }
+const CATEGORY_LABEL = {
+  ROOT: 'Equipo SinTupper',
+  EMPRESA: 'Portal Empresa',
+  CATERING: 'Portal Catering',
+} as const
 
-  // Obtener usuario
-  const user = await prisma.user.findUnique({
-    where: {
-      id: params.id,
-    },
-    include: {
-      tenant: {
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          status: true,
-        },
-      },
-    },
-  })
+export default async function UserDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
 
-  if (!user) {
-    notFound()
-  }
+  const [session, user, lastActivity] = await Promise.all([
+    auth() as Promise<Session | null>,
+    getUserById(id),
+    getUserLastActivity(id),
+  ])
 
-  const statusMap: Record<string, { label: string; variant: any }> = {
-    ACTIVE: { label: 'Activo', variant: 'default' },
-    INACTIVE: { label: 'Inactivo', variant: 'secondary' },
-    SUSPENDED: { label: 'Suspendido', variant: 'destructive' },
-  }
+  if (!user) notFound()
 
-  const statusInfo = statusMap[user.status] || statusMap.INACTIVE
+  const currentUserId = session?.user?.id ?? ''
+  const isSelf = currentUserId === user.id
+  const category = getRoleCategory(user.role)
+  const permissions = PERMISSIONS[user.role] ?? []
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/admin/users">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Volver a Usuarios
-            </Link>
-          </Button>
-        </div>
-        <Button asChild>
-          <Link href={`/admin/users/${user.id}/edit`}>
-            <Edit className="mr-2 h-4 w-4" />
-            Editar
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin/users">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver a Usuarios
           </Link>
         </Button>
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold">{user.nameEnc}</h1>
-        <p className="text-sm text-gray-500 mt-1">{user.email}</p>
-      </div>
-
-      {/* Información básica */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Información Básica</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Estado</p>
-            <Badge variant={statusInfo.variant} className="mt-1">
-              {statusInfo.label}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">{user.nameEnc}</h1>
+          <p className="mt-1 text-sm text-gray-500">{user.email}</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <Badge variant={STATUS_VARIANT[user.status]}>
+              {STATUS_LABEL[user.status]}
             </Badge>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Rol</p>
-            <Badge variant="outline" className="mt-1">
-              {user.role}
-            </Badge>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Email</p>
-            <p className="text-sm font-medium mt-1 flex items-center gap-2">
-              <Mail className="h-4 w-4 text-gray-400" />
-              {user.email}
-            </p>
-          </div>
-          {user.phoneEnc && (
-            <div>
-              <p className="text-sm text-gray-500">Teléfono</p>
-              <p className="text-sm font-medium mt-1 flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-400" />
-                {user.phoneEnc}
-              </p>
-            </div>
-          )}
-          <div>
-            <p className="text-sm text-gray-500">Fecha de Creación</p>
-            <p className="text-sm font-medium mt-1">
-              {format(new Date(user.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
-            </p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Última Actualización</p>
-            <p className="text-sm font-medium mt-1">
-              {format(new Date(user.updatedAt), 'dd/MM/yyyy HH:mm', { locale: es })}
-            </p>
+            <Badge variant="outline">{user.role}</Badge>
+            <Badge variant="secondary">{CATEGORY_LABEL[category]}</Badge>
+            {isSelf && <Badge variant="outline">Eres tú</Badge>}
           </div>
         </div>
-      </Card>
+      </div>
 
-      {/* Información del Tenant */}
-      {user.tenant && (
+      <UserDetailActions
+        userId={user.id}
+        currentStatus={user.status}
+        isSelf={isSelf}
+      />
+
+      <div className="grid gap-6 md:grid-cols-2">
         <Card className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Tenant Asociado</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <h3 className="mb-4 text-lg font-semibold">Información básica</h3>
+          <div className="space-y-3 text-sm">
             <div>
-              <p className="text-sm text-gray-500">Nombre</p>
-              <p className="text-sm font-medium mt-1">{user.tenant.name}</p>
+              <p className="text-xs uppercase text-gray-500">Email</p>
+              <p className="mt-1 flex items-center gap-2">
+                <Mail className="h-4 w-4 text-gray-400" />
+                {user.email}
+              </p>
+            </div>
+            {user.phoneEnc && (
+              <div>
+                <p className="text-xs uppercase text-gray-500">Teléfono</p>
+                <p className="mt-1 flex items-center gap-2">
+                  <Phone className="h-4 w-4 text-gray-400" />
+                  {user.phoneEnc}
+                </p>
+              </div>
+            )}
+            <div>
+              <p className="text-xs uppercase text-gray-500">MFA</p>
+              <p className="mt-1">
+                {user.mfaEnabled ? 'Habilitado' : 'Deshabilitado'}
+              </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Tipo</p>
+              <p className="text-xs uppercase text-gray-500">Creado</p>
+              <p className="mt-1">
+                {format(user.createdAt, "dd 'de' MMMM yyyy 'a las' HH:mm", {
+                  locale: es,
+                })}
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">
+                Última actualización
+              </p>
+              <p className="mt-1">
+                {format(user.updatedAt, "dd 'de' MMMM yyyy 'a las' HH:mm", {
+                  locale: es,
+                })}
+              </p>
+            </div>
+            {lastActivity && (
+              <div>
+                <p className="text-xs uppercase text-gray-500">
+                  Última actividad
+                </p>
+                <p className="mt-1">
+                  {lastActivity.action} sobre {lastActivity.entity} ·{' '}
+                  {format(lastActivity.timestamp, 'dd MMM yyyy HH:mm', {
+                    locale: es,
+                  })}
+                </p>
+              </div>
+            )}
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <h3 className="mb-4 text-lg font-semibold">Rol y permisos</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-2">
+              <ShieldCheck className="mt-0.5 h-4 w-4 text-blue-600" />
+              <div>
+                <p className="font-medium">{user.role}</p>
+                <p className="mt-1 text-xs text-gray-600">
+                  {ROLE_DESCRIPTIONS[user.role]}
+                </p>
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-xs uppercase text-gray-500">
+                Permisos del rol ({permissions.length})
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {permissions.map((p) => (
+                  <Badge
+                    key={p}
+                    variant="outline"
+                    className="font-mono text-xs"
+                  >
+                    {p}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <Link
+              href="/admin/users/permissions"
+              className="inline-block text-xs text-blue-600 hover:underline"
+            >
+              Ver matriz completa de permisos →
+            </Link>
+          </div>
+        </Card>
+
+        <Card className="p-6 md:col-span-2">
+          <h3 className="mb-4 text-lg font-semibold">Tenant asociado</h3>
+          <div className="grid gap-3 text-sm md:grid-cols-3">
+            <div>
+              <p className="text-xs uppercase text-gray-500">Nombre</p>
+              <p className="mt-1 font-medium">{user.tenant.name}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">Subdominio</p>
+              <p className="mt-1 font-mono text-xs">
+                {user.tenant.subdomain}.sintupper.com
+              </p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-gray-500">Tipo</p>
               <Badge variant="outline" className="mt-1">
                 {user.tenant.type}
               </Badge>
             </div>
-            <div>
-              <p className="text-sm text-gray-500">Estado del Tenant</p>
-              <Badge variant="outline" className="mt-1">
-                {user.tenant.status}
-              </Badge>
-            </div>
+          </div>
+          <div className="mt-4 flex gap-2">
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/admin/tenants/${user.tenant.id}`}>Ver tenant</Link>
+            </Button>
           </div>
         </Card>
-      )}
-
-      {/* Seguridad */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Seguridad</h3>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">MFA Habilitado</p>
-            <p className="text-sm font-medium mt-1">
-              {user.mfaEnabled ? 'Sí' : 'No'}
-            </p>
-          </div>
-        </div>
-      </Card>
+      </div>
     </div>
   )
 }
-

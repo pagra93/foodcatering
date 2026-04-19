@@ -1,4 +1,4 @@
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { ShieldAlert, ArrowLeft, Home } from 'lucide-react'
 import { auth } from '@/lib/auth'

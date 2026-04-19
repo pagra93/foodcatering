@@ -4,8 +4,9 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { startOfMonth, endOfMonth, startOfYear, endOfYear } from 'date-fns'
+import { endOfMonth } from 'date-fns'
 import crypto from 'crypto'
+import { getEffectiveHolidays } from '@/lib/db/queries/catalogs'
 
 // ============================================================================
 // OBTENER O GENERAR REPORTE FISCAL MENSUAL
@@ -45,17 +46,38 @@ async function generateFiscalReport(
   const startDate = new Date(year, month - 1, 1)
   const endDate = endOfMonth(startDate)
 
-  // Obtener todos los pedidos del período
-  const orders = await prisma.order.findMany({
-    where: {
-      tenantEmpresa,
-      serviceDate: { gte: startDate, lte: endDate },
-      status: 'DELIVERED',
-    },
-    include: {
-      deliveryProof: true,
-    },
-  })
+  // Obtener todos los pedidos del período + festivos efectivos para esta empresa
+  const [orders, effectiveHolidays] = await Promise.all([
+    prisma.order.findMany({
+      where: {
+        tenantEmpresa,
+        serviceDate: { gte: startDate, lte: endDate },
+        status: 'DELIVERED',
+      },
+      include: {
+        deliveryProof: true,
+      },
+    }),
+    getEffectiveHolidays(tenantEmpresa, year),
+  ])
+
+  // Set de ISO strings (yyyy-MM-dd en UTC) para lookup O(1).
+  const holidaysSet = new Set(
+    effectiveHolidays.map((h) =>
+      new Date(Date.UTC(h.getFullYear(), h.getMonth(), h.getDate()))
+        .toISOString()
+        .slice(0, 10)
+    )
+  )
+
+  const isBusinessDayLocal = (d: Date): boolean => {
+    const day = d.getDay()
+    if (day === 0 || day === 6) return false
+    const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+      .toISOString()
+      .slice(0, 10)
+    return !holidaysSet.has(iso)
+  }
 
   // Calcular totales
   const totalOrders = orders.length
@@ -71,6 +93,22 @@ async function generateFiscalReport(
   // Validar trazabilidad
   const ordersWithProof = orders.filter((o) => o.deliveryProof !== null).length
   const ordersWithoutProof = totalOrders - ordersWithProof
+
+  // Días hábiles con servicio (excluye fin de semana + festivos efectivos)
+  const businessDaysSet = new Set<string>()
+  let ordersOnNonBusinessDay = 0
+  for (const o of orders) {
+    const d = o.serviceDate
+    const iso = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()))
+      .toISOString()
+      .slice(0, 10)
+    if (isBusinessDayLocal(d)) {
+      businessDaysSet.add(iso)
+    } else {
+      ordersOnNonBusinessDay++
+    }
+  }
+  const daysWithService = businessDaysSet.size
 
   // Agrupar por empleado
   const byEmployee = orders.reduce((acc, order) => {
@@ -102,6 +140,8 @@ async function generateFiscalReport(
         totalAmount > 0 ? (deductibleAmount / totalAmount) * 100 : 0,
       ordersWithProof,
       ordersWithoutProof,
+      daysWithService,
+      ordersOnNonBusinessDay,
     },
     byEmployee: Object.values(byEmployee),
   }
@@ -125,10 +165,10 @@ async function generateFiscalReport(
       deductibilityRate:
         totalAmount > 0 ? (deductibleAmount / totalAmount) * 100 : 0,
       employeesServed: Object.keys(byEmployee).length,
-      daysWithService: 1, // Placeholder - calcular días únicos
+      daysWithService,
       ordersAboveLimit: orders.filter((o) => Number(o.price) > 11).length,
       ordersWithoutProof,
-      ordersWithIssues: 0, // Placeholder
+      ordersWithIssues: ordersOnNonBusinessDay,
       signatureHash,
       generatedBy: 'system', // Placeholder - usar userId real
     },
@@ -290,7 +330,7 @@ export async function exportFiscalDossier(
     select: {
       legalName: true,
       cif: true,
-      address: true,
+      billingAddress: true,
     },
   })
 

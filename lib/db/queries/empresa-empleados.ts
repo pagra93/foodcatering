@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db/prisma'
 import { subDays } from 'date-fns'
 import bcrypt from 'bcryptjs'
 import { nanoid } from 'nanoid'
+import { type Prisma } from '@prisma/client'
 
 // ============================================================================
 // LISTADO DE EMPLEADOS CON FILTROS
@@ -382,7 +383,7 @@ export async function createEmployee(
         nameEnc: data.name,
         phoneEnc: data.phone || null,
         passwordHash: await bcrypt.hash(nanoid(16), 10), // Password temporal
-        role: 'EMPLOYEE',
+        role: 'EMPLEADO',
         status: 'ACTIVE',
       },
     })
@@ -412,7 +413,7 @@ export async function createEmployee(
       const expiresAt = new Date()
       expiresAt.setDate(expiresAt.getDate() + 7) // Expira en 7 días
 
-      await tx.employeeInvitation.create({
+      await tx.userInvitation.create({
         data: {
           tenantId,
           companyId: tenantId, // TODO: obtener companyId correcto
@@ -420,6 +421,7 @@ export async function createEmployee(
           name: data.name,
           department: data.department,
           position: data.position,
+          role: 'EMPLEADO',
           token,
           expiresAt,
           createdBy: user.id, // TODO: obtener userId del creador
@@ -485,13 +487,18 @@ export async function updateEmployee(
       })
     }
 
-    // Actualizar Employee
+    // Actualizar Employee (filtrar por tenant via findFirst-guard antes, update usa id)
+    const guarded = await tx.employee.findFirst({
+      where: { id: employeeId, tenantId },
+      select: { id: true },
+    })
+    if (!guarded) {
+      throw new Error('Empleado no encontrado')
+    }
+
     const updatedEmployee = await tx.employee.update({
-      where: {
-        id: employeeId,
-        tenantId,
-      },
-      data: employeeData,
+      where: { id: employeeId },
+      data: employeeData as Prisma.EmployeeUncheckedUpdateInput,
       include: {
         user: {
           select: {
@@ -565,6 +572,7 @@ export async function importEmployeesFromCSV(
 
   for (let i = 0; i < employees.length; i++) {
     const emp = employees[i]
+    if (!emp) continue
 
     try {
       // Buscar sede por nombre

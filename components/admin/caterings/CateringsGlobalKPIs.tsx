@@ -12,7 +12,6 @@ import {
   AlertCircle,
   TrendingUp,
   FileText,
-  Star,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 

@@ -24,6 +24,21 @@ import {
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import type { DietPrefs } from '@/lib/types/diet-prefs'
+import type { Prisma } from '@prisma/client'
+
+type DishLike = {
+  id: string
+  name: string
+  course: 'FIRST' | 'SECOND' | 'DESSERT'
+  description: string | null
+  imageUrl?: string | null
+  price: number
+  allergens?: string[]
+  isVegetarian?: boolean
+  isVegan?: boolean
+  calories?: number | null
+}
 
 type DaySelectorProps = {
   data: {
@@ -33,17 +48,17 @@ type DaySelectorProps = {
     canEdit: boolean
     existingOrder: {
       id: string
-      selection: any
+      selection: Prisma.JsonValue
       status: string
     } | null
     dishes: {
-      starters: any[]
-      mains: any[]
-      desserts: any[]
+      starters: DishLike[]
+      mains: DishLike[]
+      desserts: DishLike[]
     }
     employee: {
       allergens: string[]
-      dietPrefs: string[]
+      dietPrefs: DietPrefs
       blockAllergensEnabled: boolean
     }
     limits: {
@@ -58,14 +73,19 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Estado de selección
+  const existingSelection = (data.existingOrder?.selection ?? null) as {
+    starterId?: string | null
+    mainId?: string | null
+    dessertId?: string | null
+  } | null
   const [selectedStarter, setSelectedStarter] = useState<string | null>(
-    data.existingOrder?.selection?.starterId || null
+    existingSelection?.starterId || null
   )
   const [selectedMain, setSelectedMain] = useState<string | null>(
-    data.existingOrder?.selection?.mainId || null
+    existingSelection?.mainId || null
   )
   const [selectedDessert, setSelectedDessert] = useState<string | null>(
-    data.existingOrder?.selection?.dessertId || null
+    existingSelection?.dessertId || null
   )
 
   // Calcular precio total
@@ -128,10 +148,10 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
 
   // Renderizar plato
   const renderDish = (
-    dish: any,
+    dish: DishLike,
     isSelected: boolean,
     onSelect: () => void,
-    isRequired: boolean = false
+    _isRequired: boolean = false
   ) => {
     // Detectar alérgenos del empleado en el plato
     const dishAllergens = dish.allergens || []

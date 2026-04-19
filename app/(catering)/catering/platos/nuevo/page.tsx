@@ -1,36 +1,23 @@
 /**
  * Página: Crear Nuevo Plato
  * Ruta: /catering/platos/nuevo
+ *
+ * Server Component: valida la sesión y el tipo de tenant, y monta el
+ * formulario cliente (`DishCreateForm`) que ejecuta la Server Action
+ * `createDishAction`.
  */
 
-'use client'
-
-import { useRouter } from 'next/navigation'
-import { DishForm } from '@/components/catering/platos/DishForm'
-import { Card } from '@/components/ui/card'
-import { ChevronLeft } from 'lucide-react'
+import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import type { CreateDishInput } from '@/lib/validations/dish'
+import { ChevronLeft } from 'lucide-react'
+import { getRequiredSession } from '@/lib/auth/session'
+import { DishCreateForm } from '@/components/catering/platos/DishCreateForm'
 
-export default function NuevoPlatoPage() {
-  const router = useRouter()
+export default async function NuevoPlatoPage() {
+  const session = await getRequiredSession()
 
-  const handleSubmit = async (data: CreateDishInput) => {
-    const response = await fetch('/api/catering/platos', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-
-    const result = await response.json()
-
-    if (!result.success) {
-      throw new Error(result.error || 'Error al crear el plato')
-    }
-  }
-
-  const handleCancel = () => {
-    router.push('/catering/platos')
+  if (session.user.tenantType !== 'CATERING') {
+    redirect('/unauthorized')
   }
 
   return (
@@ -57,12 +44,7 @@ export default function NuevoPlatoPage() {
       </div>
 
       {/* Formulario */}
-      <DishForm
-        mode="create"
-        onSubmit={handleSubmit}
-        onCancel={handleCancel}
-      />
+      <DishCreateForm />
     </div>
   )
 }
-

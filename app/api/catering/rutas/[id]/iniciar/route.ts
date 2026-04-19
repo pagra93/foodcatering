@@ -3,7 +3,7 @@
  * POST /api/catering/rutas/[id]/iniciar
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { startRoute } from '@/lib/db/queries/catering-routes'
 
@@ -13,7 +13,7 @@ type RouteContext = {
   }
 }
 
-export async function POST(request: NextRequest, { params }: RouteContext) {
+export async function POST(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 

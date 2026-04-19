@@ -1,11 +1,13 @@
 /**
  * Queries para Facturación del Catering
- * 
- * CRÍTICO: Precisión máxima en cálculos financieros
- * - Solo pedidos DELIVERED
- * - Usar priceOverride si existe, sino basePrice
- * - Snapshot inmutable con hash de integridad
- * - Compliance fiscal (11€/día límite IRPF)
+ *
+ * Precisión máxima en cálculos financieros:
+ * - Solo pedidos DELIVERED entran en la factura
+ * - Se usa `priceOverride` si el DishSchedule del día lo define, si no `Dish.basePrice`
+ * - Snapshot inmutable JSON + hash de integridad SHA-256
+ * - Compliance fiscal (límite IRPF 11€/día lo fijan otras queries)
+ *
+ * El parámetro `tenantId` es siempre el tenant del CATERING (emisor de la factura).
  */
 
 import { prisma } from '@/lib/db/prisma'
@@ -16,32 +18,40 @@ import {
   calculateInvoiceHash,
   getPeriodDateRange,
   roundToTwoDecimals,
-  sumWithPrecision,
 } from '@/lib/validations/invoice'
 
+const FACTURABLE_TAX_RATE = new Prisma.Decimal(0.21) // 21% IVA
+
+function formatPeriod(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
+function parsePeriod(period: string): { year: number; month: number } {
+  const [y, m] = period.split('-')
+  return { year: Number(y ?? 0), month: Number(m ?? 0) }
+}
+
 /**
- * Generar factura para una empresa en un período
- * 
- * IMPORTANTE: Esta función es CRÍTICA y debe mantener precisión decimal
+ * Generar factura para una empresa en un período (año+mes).
  */
 export async function generateInvoice(
   tenantId: string,
-  data: GenerateInvoiceInput
+  data: GenerateInvoiceInput,
+  actorUserId: string
 ) {
   const { companyId, period, notes } = data
   const { year, month } = period
+  const periodStr = formatPeriod(year, month)
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Verificar que la empresa existe y pertenece al tenant
+  return prisma.$transaction(async (tx) => {
+    // 1. Empresa debe existir
     const company = await tx.company.findFirst({
-      where: {
-        id: companyId,
-        tenantId,
-      },
+      where: { id: companyId },
       select: {
         id: true,
-        name: true,
-        taxId: true,
+        tenantId: true,
+        legalName: true,
+        cif: true,
         billingAddress: true,
       },
     })
@@ -50,300 +60,255 @@ export async function generateInvoice(
       throw new Error('Empresa no encontrada')
     }
 
-    // 2. Verificar si ya existe factura para este período
-    const existingInvoice = await tx.invoice.findFirst({
+    // 2. No puede existir otra factura no cancelada para el mismo período
+    const existing = await tx.invoice.findFirst({
       where: {
-        tenantId,
-        companyId,
-        periodYear: year,
-        periodMonth: month,
-        status: { not: 'CANCELLED' },
+        tenantCatering: tenantId,
+        tenantEmpresa: company.tenantId,
+        period: periodStr,
+        status: { notIn: ['CANCELLED', 'VOID'] },
       },
     })
-
-    if (existingInvoice) {
+    if (existing) {
       throw new Error('Ya existe una factura para este período')
     }
 
-    // 3. Obtener rango de fechas del período
+    // 3. Rango de fechas del período
     const { startDate, endDate } = getPeriodDateRange(year, month)
 
-    // 4. Obtener todos los pedidos DELIVERED del período
+    // 4. Pedidos DELIVERED del período (del catering, a esta empresa, en sus sedes)
     const orders = await tx.order.findMany({
       where: {
-        tenantId,
-        companySite: {
-          companyId,
-        },
-        serviceDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        status: 'DELIVERED', // SOLO DELIVERED
+        tenantCatering: tenantId,
+        tenantEmpresa: company.tenantId,
+        serviceDate: { gte: startDate, lte: endDate },
+        status: 'DELIVERED',
         deletedAt: null,
       },
-      include: {
-        dishSelection: true,
-        companySite: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        employee: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-      orderBy: {
-        serviceDate: 'asc',
-      },
+      orderBy: { serviceDate: 'asc' },
     })
 
     if (orders.length === 0) {
       throw new Error('No hay pedidos entregados en este período')
     }
 
-    // 5. Obtener precios de platos (con priceOverride si existe)
+    // 5. IDs de platos involucrados en las selecciones JSON
     const allDishIds = new Set<string>()
-    orders.forEach((order) => {
-      if (order.dishSelection) {
-        const selection = order.dishSelection as any
-        if (selection.firstId) allDishIds.add(selection.firstId)
-        if (selection.secondId) allDishIds.add(selection.secondId)
-        if (selection.dessertId) allDishIds.add(selection.dessertId)
-      }
-    })
-
-    const dishes = await tx.dish.findMany({
-      where: {
-        id: { in: Array.from(allDishIds) },
-      },
-      select: {
-        id: true,
-        name: true,
-        course: true,
-        basePrice: true,
-      },
-    })
-
-    const dishMap = new Map(dishes.map((d) => [d.id, d]))
-
-    // 6. Obtener priceOverrides del período (de DishSchedule)
-    const dishSchedules = await tx.dishSchedule.findMany({
-      where: {
-        tenantId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-        dishId: { in: Array.from(allDishIds) },
-      },
-      select: {
-        dishId: true,
-        date: true,
-        priceOverride: true,
-      },
-    })
-
-    // Map: dishId + date -> priceOverride
-    const priceOverrideMap = new Map<string, number>()
-    dishSchedules.forEach((schedule) => {
-      if (schedule.priceOverride) {
-        const key = `${schedule.dishId}|${schedule.date.toISOString().split('T')[0]}`
-        priceOverrideMap.set(key, Number(schedule.priceOverride))
-      }
-    })
-
-    // 7. Calcular precio de cada pedido
-    type OrderWithPrice = {
-      orderId: string
-      serviceDate: Date
-      siteName: string
-      employeeName: string
-      dishes: Array<{
-        name: string
-        course: string
-        price: number
-      }>
-      subtotal: number
+    for (const order of orders) {
+      const selection = order.selection as Record<string, unknown>
+      const firstId = selection['firstId']
+      const secondId = selection['secondId']
+      const dessertId = selection['dessertId']
+      if (typeof firstId === 'string') allDishIds.add(firstId)
+      if (typeof secondId === 'string') allDishIds.add(secondId)
+      if (typeof dessertId === 'string') allDishIds.add(dessertId)
     }
 
-    const ordersWithPrices: OrderWithPrice[] = []
+    const dishes = await tx.dish.findMany({
+      where: { id: { in: Array.from(allDishIds) }, tenantId },
+      select: { id: true, name: true, course: true, basePrice: true },
+    })
+    const dishMap = new Map(dishes.map((d) => [d.id, d]))
+
+    // 6. Precio overrides por día (si existen en DishSchedule)
+    const schedules = await tx.dishSchedule.findMany({
+      where: {
+        tenantId,
+        dishId: { in: Array.from(allDishIds) },
+        date: { gte: startDate, lte: endDate },
+      },
+      select: { dishId: true, date: true, priceOverride: true },
+    })
+    const overrideMap = new Map<string, number>()
+    for (const s of schedules) {
+      if (!s.priceOverride) continue
+      const day = s.date.toISOString().slice(0, 10)
+      overrideMap.set(`${s.dishId}|${day}`, Number(s.priceOverride))
+    }
+
+    // 7. Precargar info de empleados y sedes (Order no tiene esas relaciones)
+    const employeeIds = Array.from(new Set(orders.map((o) => o.employeeId)))
+    const siteIds = Array.from(new Set(orders.map((o) => o.siteId)))
+    const [employees, sites] = await Promise.all([
+      tx.employee.findMany({
+        where: { id: { in: employeeIds } },
+        include: { user: { select: { nameEnc: true } } },
+      }),
+      tx.companySite.findMany({
+        where: { id: { in: siteIds } },
+        select: { id: true, name: true },
+      }),
+    ])
+    const employeeMap = new Map(employees.map((e) => [e.id, e]))
+    const siteMap = new Map(sites.map((s) => [s.id, s]))
+
+    // 8. Calcular líneas e importe por pedido
+    type LineInput = {
+      orderId: string
+      employeeId: string
+      date: Date
+      concept: string
+      amount: number
+    }
+
+    const lines: LineInput[] = []
+    const snapshotOrders: Array<{
+      orderId: string
+      serviceDate: string
+      siteName: string
+      employeeName: string
+      dishes: Array<{ name: string; course: string; price: number }>
+      subtotal: number
+    }> = []
     let totalSubtotal = 0
 
-    orders.forEach((order) => {
-      if (!order.dishSelection) return
-
-      const selection = order.dishSelection as any
-      const dateKey = order.serviceDate.toISOString().split('T')[0]
-      const dishes: OrderWithPrice['dishes'] = []
-
+    for (const order of orders) {
+      const selection = order.selection as Record<string, unknown>
+      const dayKey = order.serviceDate.toISOString().slice(0, 10)
+      const dishLines: Array<{ name: string; course: string; price: number }> = []
       let orderSubtotal = 0
 
-      // Primer plato
-      if (selection.firstId) {
-        const dish = dishMap.get(selection.firstId)
-        if (dish) {
-          const overrideKey = `${selection.firstId}|${dateKey}`
-          const price = priceOverrideMap.get(overrideKey) || Number(dish.basePrice)
-          dishes.push({
-            name: dish.name,
-            course: dish.course,
-            price: roundToTwoDecimals(price),
-          })
-          orderSubtotal += price
-        }
+      for (const key of ['firstId', 'secondId', 'dessertId'] as const) {
+        const id = selection[key]
+        if (typeof id !== 'string') continue
+        const dish = dishMap.get(id)
+        if (!dish) continue
+        const price =
+          overrideMap.get(`${id}|${dayKey}`) ?? Number(dish.basePrice)
+        dishLines.push({
+          name: dish.name,
+          course: dish.course,
+          price: roundToTwoDecimals(price),
+        })
+        orderSubtotal += price
       }
 
-      // Segundo plato
-      if (selection.secondId) {
-        const dish = dishMap.get(selection.secondId)
-        if (dish) {
-          const overrideKey = `${selection.secondId}|${dateKey}`
-          const price = priceOverrideMap.get(overrideKey) || Number(dish.basePrice)
-          dishes.push({
-            name: dish.name,
-            course: dish.course,
-            price: roundToTwoDecimals(price),
-          })
-          orderSubtotal += price
-        }
-      }
+      const rounded = roundToTwoDecimals(orderSubtotal)
+      const employee = employeeMap.get(order.employeeId)
+      const site = siteMap.get(order.siteId)
+      const employeeName = employee?.user.nameEnc ?? 'Desconocido'
+      const concept = dishLines.map((d) => d.name).join(' + ') || 'Menú'
 
-      // Postre
-      if (selection.dessertId) {
-        const dish = dishMap.get(selection.dessertId)
-        if (dish) {
-          const overrideKey = `${selection.dessertId}|${dateKey}`
-          const price = priceOverrideMap.get(overrideKey) || Number(dish.basePrice)
-          dishes.push({
-            name: dish.name,
-            course: dish.course,
-            price: roundToTwoDecimals(price),
-          })
-          orderSubtotal += price
-        }
-      }
-
-      ordersWithPrices.push({
+      lines.push({
         orderId: order.id,
-        serviceDate: order.serviceDate,
-        siteName: order.companySite.name,
-        employeeName: `${order.employee.firstName} ${order.employee.lastName}`,
-        dishes,
-        subtotal: roundToTwoDecimals(orderSubtotal),
+        employeeId: order.employeeId,
+        date: order.serviceDate,
+        concept,
+        amount: rounded,
+      })
+
+      snapshotOrders.push({
+        orderId: order.id,
+        serviceDate: order.serviceDate.toISOString(),
+        siteName: site?.name ?? 'Desconocida',
+        employeeName,
+        dishes: dishLines,
+        subtotal: rounded,
       })
 
       totalSubtotal += orderSubtotal
-    })
+    }
 
-    // 8. Calcular totales con precisión
+    // 9. Totales
     const subtotal = roundToTwoDecimals(totalSubtotal)
-    const taxRate = new Prisma.Decimal(0.21) // 21% IVA
-    const taxAmount = roundToTwoDecimals(subtotal * 0.21)
+    const taxAmount = roundToTwoDecimals(subtotal * Number(FACTURABLE_TAX_RATE))
     const totalAmount = roundToTwoDecimals(subtotal + taxAmount)
 
-    // 9. Generar número de factura (secuencial por período)
+    // 10. Número correlativo por (catering, año-mes)
     const lastInvoice = await tx.invoice.findFirst({
-      where: {
-        tenantId,
-        periodYear: year,
-        periodMonth: month,
-      },
-      orderBy: {
-        invoiceNumber: 'desc',
-      },
+      where: { tenantCatering: tenantId, period: periodStr },
+      orderBy: { number: 'desc' },
     })
+    const lastSequence = lastInvoice
+      ? Number(lastInvoice.number.split('-').pop() ?? 0)
+      : 0
+    const number = generateInvoiceNumber(year, month, lastSequence + 1)
 
-    const sequence = lastInvoice ? 
-      (parseInt(lastInvoice.invoiceNumber.split('-').pop() || '0') + 1) : 
-      1
-
-    const invoiceNumber = generateInvoiceNumber(year, month, sequence)
-
-    // 10. Generar hash de integridad
+    // 11. Hash de integridad
     const integrityHash = calculateInvoiceHash({
-      invoiceNumber,
+      invoiceNumber: number,
       companyId,
       totalAmount,
       itemsCount: orders.length,
     })
 
-    // 11. Crear snapshot inmutable (JSON)
-    const snapshot = {
-      company: {
-        id: company.id,
-        name: company.name,
-        taxId: company.taxId,
-        billingAddress: company.billingAddress,
-      },
-      period: { year, month },
-      dateRange: {
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      },
-      orders: ordersWithPrices,
-      totals: {
-        orderCount: orders.length,
-        subtotal,
-        taxRate: 0.21,
-        taxAmount,
-        totalAmount,
-      },
-      generatedAt: new Date().toISOString(),
-      integrityHash,
-    }
-
-    // 12. Crear factura
+    // 12. Crear factura + líneas + vincular pedidos en una sola transacción
     const invoice = await tx.invoice.create({
       data: {
-        tenantId,
-        companyId,
-        invoiceNumber,
-        periodYear: year,
-        periodMonth: month,
+        tenantCatering: tenantId,
+        tenantEmpresa: company.tenantId,
+        companyId: company.id,
+        period: periodStr,
+        number,
+        issueDate: new Date(),
+        dueDate: new Date(new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
         startDate,
         endDate,
         subtotal: new Prisma.Decimal(subtotal),
-        taxRate,
+        taxRate: FACTURABLE_TAX_RATE.mul(100), // almacenado como porcentaje (21.00)
         taxAmount: new Prisma.Decimal(taxAmount),
-        totalAmount: new Prisma.Decimal(totalAmount),
+        total: new Prisma.Decimal(totalAmount),
         status: 'DRAFT',
         integrityHash,
-        snapshot,
-        notes,
+        notes: notes ?? null,
+        snapshot: {
+          company: {
+            id: company.id,
+            legalName: company.legalName,
+            cif: company.cif,
+            billingAddress: company.billingAddress,
+          },
+          period: { year, month },
+          dateRange: {
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+          },
+          orders: snapshotOrders,
+          totals: {
+            orderCount: orders.length,
+            subtotal,
+            taxRate: Number(FACTURABLE_TAX_RATE),
+            taxAmount,
+            totalAmount,
+          },
+          generatedAt: new Date().toISOString(),
+          integrityHash,
+        },
       },
     })
 
-    // 13. Asociar pedidos a la factura
-    await tx.order.updateMany({
-      where: {
-        id: { in: orders.map((o) => o.id) },
-      },
-      data: {
+    await tx.invoiceLine.createMany({
+      data: lines.map((l) => ({
         invoiceId: invoice.id,
-      },
+        date: l.date,
+        orderId: l.orderId,
+        employeeId: l.employeeId,
+        concept: l.concept,
+        amount: new Prisma.Decimal(l.amount),
+        facturableFlag: 'FULL',
+      })),
     })
 
-    // 14. Crear audit log
+    await tx.order.updateMany({
+      where: { id: { in: orders.map((o) => o.id) } },
+      data: { invoiceId: invoice.id },
+    })
+
     await tx.auditLog.create({
       data: {
         tenantId,
-        userId: 'system', // TODO: Pasar userId del usuario que genera
+        actorId: actorUserId,
         action: 'INVOICE_GENERATED',
-        resourceType: 'Invoice',
-        resourceId: invoice.id,
-        metadata: {
-          invoiceNumber,
+        entity: 'invoice',
+        entityId: invoice.id,
+        diff: {
+          number,
           companyId,
-          period: { year, month },
+          period: periodStr,
           totalAmount,
           orderCount: orders.length,
         },
+        hash: integrityHash,
       },
     })
 
@@ -351,69 +316,51 @@ export async function generateInvoice(
       ...invoice,
       subtotal: Number(invoice.subtotal),
       taxAmount: Number(invoice.taxAmount),
-      totalAmount: Number(invoice.totalAmount),
+      total: Number(invoice.total),
       orderCount: orders.length,
       company: {
         id: company.id,
-        name: company.name,
+        legalName: company.legalName,
       },
     }
   })
 }
 
 /**
- * Obtener facturas con filtros
+ * Listar facturas del catering con filtros
  */
 export async function getInvoices(tenantId: string, filters?: InvoiceFilters) {
-  const whereClause: any = { tenantId }
+  const where: Prisma.InvoiceWhereInput = { tenantCatering: tenantId }
 
   if (filters?.companyId) {
-    whereClause.companyId = filters.companyId
+    where.companyId = filters.companyId
   }
-
   if (filters?.status) {
-    whereClause.status = filters.status
+    where.status = filters.status as Prisma.InvoiceWhereInput['status']
   }
-
-  if (filters?.year) {
-    whereClause.periodYear = filters.year
+  if (filters?.year || filters?.month) {
+    // period tiene formato "YYYY-MM"
+    if (filters.year && filters.month) {
+      where.period = formatPeriod(filters.year, filters.month)
+    } else if (filters.year) {
+      where.period = { startsWith: `${filters.year}-` }
+    }
   }
-
-  if (filters?.month) {
-    whereClause.periodMonth = filters.month
-  }
-
   if (filters?.startDate || filters?.endDate) {
-    whereClause.startDate = {}
-    if (filters.startDate) {
-      whereClause.startDate.gte = filters.startDate
-    }
-    if (filters.endDate) {
-      whereClause.startDate.lte = filters.endDate
-    }
+    where.startDate = {}
+    if (filters.startDate) where.startDate.gte = filters.startDate
+    if (filters.endDate) where.startDate.lte = filters.endDate
   }
 
   const invoices = await prisma.invoice.findMany({
-    where: whereClause,
+    where,
     include: {
       company: {
-        select: {
-          id: true,
-          name: true,
-          taxId: true,
-        },
+        select: { id: true, legalName: true, cif: true },
       },
-      _count: {
-        select: {
-          orders: true,
-        },
-      },
+      _count: { select: { orders: true, lines: true } },
     },
-    orderBy: [
-      { periodYear: 'desc' },
-      { periodMonth: 'desc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ period: 'desc' }, { createdAt: 'desc' }],
   })
 
   return invoices.map((invoice) => ({
@@ -421,50 +368,39 @@ export async function getInvoices(tenantId: string, filters?: InvoiceFilters) {
     subtotal: Number(invoice.subtotal),
     taxRate: Number(invoice.taxRate),
     taxAmount: Number(invoice.taxAmount),
-    totalAmount: Number(invoice.totalAmount),
+    total: Number(invoice.total),
     orderCount: invoice._count.orders,
   }))
 }
 
 /**
- * Obtener una factura por ID
+ * Obtener una factura por id
  */
 export async function getInvoiceById(tenantId: string, invoiceId: string) {
   const invoice = await prisma.invoice.findFirst({
-    where: {
-      id: invoiceId,
-      tenantId,
-    },
+    where: { id: invoiceId, tenantCatering: tenantId },
     include: {
       company: {
         select: {
           id: true,
-          name: true,
-          taxId: true,
+          legalName: true,
+          cif: true,
           billingAddress: true,
-          billingEmail: true,
+          contactFinanceEmail: true,
         },
       },
+      lines: { orderBy: { date: 'asc' } },
       orders: {
-        where: {
-          deletedAt: null,
+        where: { deletedAt: null },
+        select: {
+          id: true,
+          serviceDate: true,
+          status: true,
+          siteId: true,
+          employeeId: true,
+          price: true,
         },
-        include: {
-          employee: {
-            select: {
-              firstName: true,
-              lastName: true,
-            },
-          },
-          companySite: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          serviceDate: 'asc',
-        },
+        orderBy: { serviceDate: 'asc' },
       },
     },
   })
@@ -478,7 +414,7 @@ export async function getInvoiceById(tenantId: string, invoiceId: string) {
     subtotal: Number(invoice.subtotal),
     taxRate: Number(invoice.taxRate),
     taxAmount: Number(invoice.taxAmount),
-    totalAmount: Number(invoice.totalAmount),
+    total: Number(invoice.total),
     orderCount: invoice.orders.length,
   }
 }
@@ -489,12 +425,13 @@ export async function getInvoiceById(tenantId: string, invoiceId: string) {
 export async function updateInvoiceStatus(
   tenantId: string,
   invoiceId: string,
-  status: string,
+  status: 'DRAFT' | 'ISSUED' | 'SENT' | 'PAID' | 'OVERDUE' | 'CANCELLED' | 'VOID',
+  actorUserId: string,
   notes?: string
 ) {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({
-      where: { id: invoiceId, tenantId },
+      where: { id: invoiceId, tenantCatering: tenantId },
     })
 
     if (!invoice) {
@@ -505,23 +442,23 @@ export async function updateInvoiceStatus(
       where: { id: invoiceId },
       data: {
         status,
-        notes: notes || invoice.notes,
+        notes: notes ?? invoice.notes,
         sentAt: status === 'SENT' && !invoice.sentAt ? new Date() : invoice.sentAt,
       },
     })
 
-    // Audit log
     await tx.auditLog.create({
       data: {
         tenantId,
-        userId: 'system', // TODO: userId
-        action: 'INVOICE_STATUS_CHANGED',
-        resourceType: 'Invoice',
-        resourceId: invoiceId,
-        metadata: {
+        actorId: actorUserId,
+        action: 'INVOICE_UPDATED',
+        entity: 'invoice',
+        entityId: invoiceId,
+        diff: {
           previousStatus: invoice.status,
           newStatus: status,
         },
+        hash: invoice.integrityHash ?? invoiceId,
       },
     })
 
@@ -529,7 +466,7 @@ export async function updateInvoiceStatus(
       ...updated,
       subtotal: Number(updated.subtotal),
       taxAmount: Number(updated.taxAmount),
-      totalAmount: Number(updated.totalAmount),
+      total: Number(updated.total),
     }
   })
 }
@@ -541,13 +478,14 @@ export async function markInvoiceAsPaid(
   tenantId: string,
   invoiceId: string,
   paidAt: Date,
+  actorUserId: string,
   paymentMethod?: string,
   transactionReference?: string,
   notes?: string
 ) {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({
-      where: { id: invoiceId, tenantId },
+      where: { id: invoiceId, tenantCatering: tenantId },
     })
 
     if (!invoice) {
@@ -563,26 +501,26 @@ export async function markInvoiceAsPaid(
       data: {
         status: 'PAID',
         paidAt,
-        paymentMethod,
-        transactionReference,
-        notes: notes || invoice.notes,
+        paymentMethod: paymentMethod ?? null,
+        transactionReference: transactionReference ?? null,
+        notes: notes ?? invoice.notes,
       },
     })
 
-    // Audit log
     await tx.auditLog.create({
       data: {
         tenantId,
-        userId: 'system', // TODO: userId
+        actorId: actorUserId,
         action: 'INVOICE_PAID',
-        resourceType: 'Invoice',
-        resourceId: invoiceId,
-        metadata: {
+        entity: 'invoice',
+        entityId: invoiceId,
+        diff: {
           paidAt: paidAt.toISOString(),
-          amount: Number(invoice.totalAmount),
+          amount: Number(invoice.total),
           paymentMethod,
           transactionReference,
         },
+        hash: invoice.integrityHash ?? invoiceId,
       },
     })
 
@@ -590,7 +528,7 @@ export async function markInvoiceAsPaid(
       ...updated,
       subtotal: Number(updated.subtotal),
       taxAmount: Number(updated.taxAmount),
-      totalAmount: Number(updated.totalAmount),
+      total: Number(updated.total),
     }
   })
 }
@@ -601,11 +539,12 @@ export async function markInvoiceAsPaid(
 export async function cancelInvoice(
   tenantId: string,
   invoiceId: string,
-  reason: string
+  reason: string,
+  actorUserId: string
 ) {
-  return await prisma.$transaction(async (tx) => {
+  return prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({
-      where: { id: invoiceId, tenantId },
+      where: { id: invoiceId, tenantCatering: tenantId },
     })
 
     if (!invoice) {
@@ -620,28 +559,27 @@ export async function cancelInvoice(
       where: { id: invoiceId },
       data: {
         status: 'CANCELLED',
-        notes: `${invoice.notes || ''}\n\nCANCELADA: ${reason}`.trim(),
+        notes: `${invoice.notes ?? ''}\n\nCANCELADA: ${reason}`.trim(),
       },
     })
 
-    // Desasociar pedidos
     await tx.order.updateMany({
       where: { invoiceId },
       data: { invoiceId: null },
     })
 
-    // Audit log
     await tx.auditLog.create({
       data: {
         tenantId,
-        userId: 'system', // TODO: userId
+        actorId: actorUserId,
         action: 'INVOICE_CANCELLED',
-        resourceType: 'Invoice',
-        resourceId: invoiceId,
-        metadata: {
+        entity: 'invoice',
+        entityId: invoiceId,
+        diff: {
           reason,
           previousStatus: invoice.status,
         },
+        hash: invoice.integrityHash ?? invoiceId,
       },
     })
 
@@ -649,33 +587,27 @@ export async function cancelInvoice(
       ...updated,
       subtotal: Number(updated.subtotal),
       taxAmount: Number(updated.taxAmount),
-      totalAmount: Number(updated.totalAmount),
+      total: Number(updated.total),
     }
   })
 }
 
 /**
- * Obtener estadísticas de facturación
+ * Estadísticas de facturación del catering
  */
 export async function getInvoiceStats(tenantId: string, year?: number) {
-  const whereClause: any = { tenantId }
-
+  const where: Prisma.InvoiceWhereInput = { tenantCatering: tenantId }
   if (year) {
-    whereClause.periodYear = year
+    where.period = { startsWith: `${year}-` }
   }
 
-  const [total, draft, sent, paid, overdue, totalAmount] = await Promise.all([
-    prisma.invoice.count({ where: whereClause }),
-    prisma.invoice.count({ where: { ...whereClause, status: 'DRAFT' } }),
-    prisma.invoice.count({ where: { ...whereClause, status: 'SENT' } }),
-    prisma.invoice.count({ where: { ...whereClause, status: 'PAID' } }),
-    prisma.invoice.count({ where: { ...whereClause, status: 'OVERDUE' } }),
-    prisma.invoice.aggregate({
-      where: whereClause,
-      _sum: {
-        totalAmount: true,
-      },
-    }),
+  const [total, draft, sent, paid, overdue, totalAgg] = await Promise.all([
+    prisma.invoice.count({ where }),
+    prisma.invoice.count({ where: { ...where, status: 'DRAFT' } }),
+    prisma.invoice.count({ where: { ...where, status: 'SENT' } }),
+    prisma.invoice.count({ where: { ...where, status: 'PAID' } }),
+    prisma.invoice.count({ where: { ...where, status: 'OVERDUE' } }),
+    prisma.invoice.aggregate({ where, _sum: { total: true } }),
   ])
 
   return {
@@ -684,7 +616,8 @@ export async function getInvoiceStats(tenantId: string, year?: number) {
     sent,
     paid,
     overdue,
-    totalAmount: Number(totalAmount._sum.totalAmount || 0),
+    totalAmount: totalAgg._sum.total ? Number(totalAgg._sum.total) : 0,
   }
 }
 
+export { parsePeriod, formatPeriod }

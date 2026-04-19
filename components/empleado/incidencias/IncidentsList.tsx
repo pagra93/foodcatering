@@ -6,6 +6,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empleado-incidencias'
 import { FileText } from 'lucide-react'
+import type { Prisma } from '@prisma/client'
 
 type Incident = {
   id: string
@@ -19,13 +20,13 @@ type Incident = {
   createdAt: Date
   resolvedAt: Date | null
   resolutionTime: number | null
-  resolution: any
+  resolution: Prisma.JsonValue
   order: {
     id: string
     serviceDate: Date
-    selection: any
-    price: number
-  }
+    selection: Prisma.JsonValue
+    price: Prisma.Decimal | number
+  } | null
 }
 
 type IncidentsListProps = {
@@ -52,9 +53,12 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
   return (
     <div className="space-y-4">
       {incidents.map((incident) => {
-        const selection = incident.order.selection as any
+        const selection = (incident.order?.selection ?? null) as
+          | { first?: { name?: string } | null }
+          | null
         const firstDish = selection?.first?.name || 'Sin plato'
-        
+        const serviceDate = incident.order?.serviceDate ?? null
+
         return (
           <Card key={incident.id} className="p-6">
             <div className="flex items-start justify-between">
@@ -65,10 +69,9 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
                   <div>
                     <h3 className="font-semibold text-lg">{incident.typeLabel}</h3>
                     <p className="text-sm text-gray-500">
-                      Pedido del{' '}
-                      {format(new Date(incident.order.serviceDate), "d 'de' MMMM", {
-                        locale: es,
-                      })}
+                      {serviceDate
+                        ? `Pedido del ${format(new Date(serviceDate), "d 'de' MMMM", { locale: es })}`
+                        : 'Sin pedido asociado'}
                     </p>
                   </div>
                 </div>
@@ -96,9 +99,9 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
                       ✓ Respuesta del Catering
                     </h4>
                     <p className="text-sm text-green-800">
-                      {typeof incident.resolution === 'object' 
-                        ? incident.resolution.details || incident.resolution.type
-                        : incident.resolution}
+                      {typeof incident.resolution === 'object' && incident.resolution !== null && !Array.isArray(incident.resolution)
+                        ? String((incident.resolution as Record<string, unknown>)['details'] ?? (incident.resolution as Record<string, unknown>)['type'] ?? '')
+                        : String(incident.resolution)}
                     </p>
                     {incident.resolvedAt && (
                       <p className="text-xs text-green-600 mt-2">

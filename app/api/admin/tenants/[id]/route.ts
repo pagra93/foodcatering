@@ -2,13 +2,12 @@
  * API Routes para operaciones individuales de Tenant
  */
 
-import { NextRequest, NextResponse } from 'next/server'
-import { updateTenantSchema, updateTenantStatusSchema } from '@/lib/validations/tenant'
-import { 
-  getTenantById, 
-  updateTenant, 
-  updateTenantStatus,
-  deleteTenant 
+import { type NextRequest, NextResponse } from 'next/server'
+import { updateTenantSchema } from '@/lib/validations/tenant'
+import {
+  getTenantById,
+  updateTenant,
+  deleteTenant
 } from '@/lib/db/queries/tenants'
 import { getRequiredSession } from '@/lib/auth/session'
 import { ZodError } from 'zod'
@@ -20,7 +19,7 @@ type Params = {
 }
 
 // GET: Obtener tenant por ID
-export async function GET(request: NextRequest, { params }: Params) {
+export async function GET(_request: NextRequest, { params }: Params) {
   try {
     const session = await getRequiredSession()
     
@@ -95,7 +94,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 }
 
 // DELETE: Soft delete de tenant
-export async function DELETE(request: NextRequest, { params }: Params) {
+export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
     const session = await getRequiredSession()
     

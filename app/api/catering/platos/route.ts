@@ -4,7 +4,7 @@
  * POST /api/catering/platos - Crear plato
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getDishes, createDish, dishNameExists } from '@/lib/db/queries/catering-dishes'
 import { createDishSchema, dishFiltersSchema } from '@/lib/validations/dish'

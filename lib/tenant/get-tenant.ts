@@ -12,7 +12,7 @@ import { cache } from 'react'
  * SOLO usar en Server Components
  */
 export const getCurrentTenant = cache(async () => {
-  const headersList = headers()
+  const headersList = await headers()
   const tenantId = headersList.get('x-tenant-id')
   const tenantType = headersList.get('x-tenant-type')
   
@@ -63,13 +63,13 @@ export const getCurrentTenant = cache(async () => {
  * Obtiene solo el ID del tenant actual (más rápido)
  */
 export const getCurrentTenantId = cache(async () => {
-  const headersList = headers()
+  const headersList = await headers()
   const tenantId = headersList.get('x-tenant-id')
-  
+
   if (!tenantId) {
     throw new Error('No tenant ID in headers')
   }
-  
+
   return tenantId
 })
 
@@ -77,7 +77,7 @@ export const getCurrentTenantId = cache(async () => {
  * Verifica si el tenant actual es de tipo EMPRESA
  */
 export const isEmpresaTenant = cache(async () => {
-  const headersList = headers()
+  const headersList = await headers()
   const tenantType = headersList.get('x-tenant-type')
   return tenantType === 'EMPRESA'
 })
@@ -86,7 +86,7 @@ export const isEmpresaTenant = cache(async () => {
  * Verifica si el tenant actual es de tipo CATERING
  */
 export const isCateringTenant = cache(async () => {
-  const headersList = headers()
+  const headersList = await headers()
   const tenantType = headersList.get('x-tenant-type')
   return tenantType === 'CATERING'
 })

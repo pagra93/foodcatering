@@ -8,7 +8,7 @@
 import { test, expect } from '@playwright/test'
 
 // URL base (ajustar según entorno)
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
+const BASE_URL = process.env['BASE_URL'] || 'http://localhost:3000'
 
 // Helper para login (ajustar según tu sistema de auth)
 async function login(page: any) {

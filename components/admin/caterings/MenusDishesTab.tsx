@@ -137,7 +137,7 @@ const getMockDishes = (): Dish[] => [
   },
 ]
 
-export function MenusDishesTab({ dishes: propDishes, cateringId }: MenusDishesTabProps) {
+export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: MenusDishesTabProps) {
   const dishes = propDishes.length > 0 ? propDishes : getMockDishes()
   
   const [searchTerm, setSearchTerm] = useState('')

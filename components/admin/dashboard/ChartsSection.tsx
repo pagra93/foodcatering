@@ -90,7 +90,7 @@ export function ChartsSection({ data }: { data: ChartData }) {
               </p>
             ) : (
               <>
-                {data.companiesGrowth.new.slice(-6).map((month, index) => {
+                {data.companiesGrowth.new.slice(-6).map((month, _index) => {
                   const churned = data.companiesGrowth.churned.find(
                     (c) => c.month === month.month
                   )
@@ -144,7 +144,7 @@ export function ChartsSection({ data }: { data: ChartData }) {
               </p>
             ) : (
               <div className="flex items-end justify-between gap-2" style={{ height: '200px' }}>
-                {data.revenuePerMonth.map((month, index) => {
+                {data.revenuePerMonth.map((month, _index) => {
                   const height = (month.total / maxRevenue) * 100
                   return (
                     <div key={month.month} className="flex flex-1 flex-col items-center justify-end gap-1">

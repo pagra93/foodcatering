@@ -13,14 +13,11 @@ import {
   Search,
   Download,
   Filter,
-  Calendar,
-  User,
   Activity,
   Edit,
   Plus,
   Trash2,
   CheckCircle2,
-  XCircle,
   Upload,
   Settings,
   Shield,
@@ -232,7 +229,7 @@ const getActionIcon = (action: string) => {
   return Activity
 }
 
-export function ActivityLogTab({ cateringId }: ActivityLogTabProps) {
+export function ActivityLogTab({ cateringId: _cateringId }: ActivityLogTabProps) {
   const logs = getMockAuditLog()
   
   const [searchTerm, setSearchTerm] = useState('')
@@ -262,7 +259,7 @@ export function ActivityLogTab({ cateringId }: ActivityLogTabProps) {
   const uniqueUsersCount = uniqueUsers.length
 
   // Exportar logs
-  const handleExport = (format: 'CSV' | 'JSON') => {
+  const handleExport = (exportFormat: 'CSV' | 'JSON') => {
     const data = filteredLogs.map((log) => ({
       fecha: format(log.timestamp, 'dd/MM/yyyy HH:mm:ss', { locale: es }),
       usuario: log.userName,
@@ -273,7 +270,7 @@ export function ActivityLogTab({ cateringId }: ActivityLogTabProps) {
       ip: log.metadata?.ipAddress || '-',
     }))
 
-    if (format === 'JSON') {
+    if (exportFormat === 'JSON') {
       const json = JSON.stringify(data, null, 2)
       const blob = new Blob([json], { type: 'application/json' })
       const url = URL.createObjectURL(blob)

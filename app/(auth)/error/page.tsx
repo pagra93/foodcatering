@@ -3,7 +3,7 @@
  * Muestra errores específicos de NextAuth
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,7 @@ export default function AuthErrorPage({
   searchParams: { error?: string }
 }) {
   const errorType = searchParams.error || 'Default'
-  const errorMessage = errorMessages[errorType] || errorMessages.Default
+  const errorMessage = errorMessages[errorType] || errorMessages['Default']
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-orange-50 px-4">

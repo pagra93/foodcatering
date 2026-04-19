@@ -3,7 +3,7 @@
  * Actualizar sede existente
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { z } from 'zod'

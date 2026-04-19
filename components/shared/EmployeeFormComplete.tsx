@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,9 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
-import { Loader2, User, Briefcase, Calendar, MapPin, Utensils } from 'lucide-react'
+import { Loader2, User, Briefcase, Calendar, Utensils } from 'lucide-react'
 
 // Schema de validación completo
 const employeeSchema = z.object({

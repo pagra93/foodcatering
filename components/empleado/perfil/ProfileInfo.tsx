@@ -11,7 +11,6 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
   User,
-  Mail,
   Phone,
   Building2,
   MapPin,
@@ -48,8 +47,8 @@ type ProfileInfoProps = {
     }
     site: {
       name: string
-      address: string
-      city: string
+      address: string | null
+      city: string | null
     } | null
   }
 }

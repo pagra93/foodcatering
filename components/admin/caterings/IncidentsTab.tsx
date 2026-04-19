@@ -6,7 +6,7 @@
 'use client'
 
 import { useState } from 'react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
   AlertTriangle,
@@ -15,7 +15,6 @@ import {
   Eye,
   Clock,
   CheckCircle2,
-  XCircle,
   AlertCircle,
   MessageSquare,
   Euro,
@@ -151,7 +150,7 @@ const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
   OTHER: { label: '❓ Otro', color: 'bg-gray-100 text-gray-800' },
 }
 
-export function IncidentsTab({ cateringId }: IncidentsTabProps) {
+export function IncidentsTab({ cateringId: _cateringId }: IncidentsTabProps) {
   const incidents = getMockIncidents()
   
   const [searchTerm, setSearchTerm] = useState('')

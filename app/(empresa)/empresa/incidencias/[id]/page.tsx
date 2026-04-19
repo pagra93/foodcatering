@@ -26,8 +26,8 @@ export default async function IncidentDetailPage({ params }: Props) {
     redirect('/login')
   }
 
-  const tenant = getTenant()
-  if (tenant.type !== 'EMPRESA') {
+  const tenant = await getTenant()
+  if (!tenant || tenant.type !== 'EMPRESA') {
     redirect('/unauthorized')
   }
 

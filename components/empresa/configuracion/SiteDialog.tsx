@@ -39,10 +39,10 @@ type SiteDialogProps = {
     name: string
     address: string | null
     city: string | null
-    postalCode: string | null
-    contactName: string | null
-    contactPhone: string | null
-    deliveryNotes: string | null
+    postalCode?: string | null
+    contactName?: string | null
+    contactPhone?: string | null
+    deliveryNotes?: string | null
   }
 }
 

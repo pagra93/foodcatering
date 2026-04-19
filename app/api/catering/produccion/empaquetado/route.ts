@@ -5,7 +5,7 @@
  * Obtiene lista de pedidos para empaquetado
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getPackingDisplay } from '@/lib/db/queries/catering-production'
 import { packingDisplaySchema } from '@/lib/validations/production'

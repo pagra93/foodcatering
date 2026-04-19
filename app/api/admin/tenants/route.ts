@@ -2,7 +2,7 @@
  * API Route para crear un tenant
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { createTenantSchema } from '@/lib/validations/tenant'
 import { createTenant, checkSubdomainAvailability } from '@/lib/db/queries/tenants'
 import { getRequiredSession } from '@/lib/auth/session'

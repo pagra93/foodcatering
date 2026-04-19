@@ -255,6 +255,7 @@ async function main() {
 
   for (let i = 0; i < companies.length; i++) {
     const companyData = companies[i]
+    if (!companyData) continue
     console.log(`\n🏢 Creando empresa ${i + 1}/5: ${companyData.name}...`)
 
     // 3.1 Crear Tenant
@@ -281,7 +282,7 @@ async function main() {
         tenantId: tenant.id,
         legalName: companyData.legalName,
         cif: companyData.cif,
-        billingAddress: companyData.sites[0].address,
+        billingAddress: companyData.sites[0]?.address ?? '',
         plan: companyData.plan,
         sector: companyData.sector,
         contactRrhhName: companyData.contactRrhhName,
@@ -301,7 +302,7 @@ async function main() {
     console.log(`  ✅ Company creado: ${company.id}`)
 
     // 3.3 Crear Policy
-    const policy = await prisma.companyPolicy.create({
+    await prisma.companyPolicy.create({
       data: {
         tenantId: tenant.id,
         companyId: company.id,
@@ -336,15 +337,16 @@ async function main() {
 
       console.log(`    ✅ Site creado: ${site.name} (${siteData.employees} empleados)`)
 
-      // Crear empleados para esta sede
+      // Crear empleados para esta sede (idempotente: upsert por tenantId+email)
       for (let j = 0; j < siteData.employees; j++) {
         globalEmployeeCounter++
         const employeeEmail = `empleado${globalEmployeeCounter}@${companyData.subdomain}.com`
         const employeeName = `Empleado ${globalEmployeeCounter} ${companyData.name}`
 
-        // Crear usuario
-        const user = await prisma.user.create({
-          data: {
+        const user = await prisma.user.upsert({
+          where: { tenantId_email: { tenantId: tenant.id, email: employeeEmail } },
+          update: {},
+          create: {
             tenantId: tenant.id,
             email: employeeEmail,
             nameEnc: employeeName,
@@ -355,26 +357,34 @@ async function main() {
           },
         })
 
-        // Crear empleado
-        await prisma.employee.create({
-          data: {
-            tenantId: tenant.id,
-            userId: user.id,
-            siteId: site.id,
-            employeeNumber: `EMP${i + 1}${globalEmployeeCounter}`.padStart(8, '0'),
-            department: ['Tecnología', 'RRHH', 'Finanzas', 'Marketing', 'Operaciones'][j % 5],
-            position: ['Developer', 'Analista', 'Manager', 'Consultor', 'Especialista'][j % 5],
-            startDate: subDays(new Date(), Math.floor(Math.random() * 365)),
-            weeklyMenuDays: companyData.policy.daysActive.length,
-            status: 'ACTIVE',
-          },
+        const existingEmployee = await prisma.employee.findFirst({
+          where: { userId: user.id },
         })
+        if (!existingEmployee) {
+          await prisma.employee.create({
+            data: {
+              tenantId: tenant.id,
+              userId: user.id,
+              siteId: site.id,
+              employeeNumber: `EMP${i + 1}${globalEmployeeCounter}`.padStart(8, '0'),
+              department: ['Tecnología', 'RRHH', 'Finanzas', 'Marketing', 'Operaciones'][j % 5],
+              position: ['Developer', 'Analista', 'Manager', 'Consultor', 'Especialista'][j % 5],
+              startDate: subDays(new Date(), Math.floor(Math.random() * 365)),
+              weeklyMenuDays: companyData.policy.daysActive.length,
+              status: 'ACTIVE',
+            },
+          })
+        }
       }
     }
 
-    // 3.5 Crear usuario admin de empresa
-    await prisma.user.create({
-      data: {
+    // 3.5 Crear usuario admin de empresa (idempotente)
+    await prisma.user.upsert({
+      where: {
+        tenantId_email: { tenantId: tenant.id, email: `admin@${companyData.subdomain}.com` },
+      },
+      update: {},
+      create: {
         tenantId: tenant.id,
         email: `admin@${companyData.subdomain}.com`,
         nameEnc: companyData.contactRrhhName,
@@ -390,17 +400,28 @@ async function main() {
     // 3.6 Asignar catering (rotar entre caterings disponibles)
     const assignedCatering = caterings[i % caterings.length]
     const firstSite = companyData.sites[0]
-    
-    await prisma.companyCateringAssignment.create({
-      data: {
+    if (!assignedCatering || !firstSite) {
+      console.log('  ⚠️  No hay catering o sede para asignar; saltando')
+      continue
+    }
+
+    await prisma.companyCateringAssignment.upsert({
+      where: {
+        companyId_tenantCatering: {
+          companyId: company.id,
+          tenantCatering: assignedCatering.id,
+        },
+      },
+      update: {},
+      create: {
         tenantEmpresa: tenant.id,
         tenantCatering: assignedCatering.id,
         companyId: company.id,
         type: 'PRIMARY',
         zones: [{ name: 'Centro Madrid', postalCodes: [firstSite.postalCode] }],
         priority: 1,
-        slaPunctuality: 95.00,
-        slaIncidentRate: 3.00,
+        slaPunctuality: 95.0,
+        slaIncidentRate: 3.0,
         active: true,
         assignedBy: tenant.id, // Temporal, debería ser un user ID
         assignedAt: subDays(new Date(), 90),

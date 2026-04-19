@@ -6,7 +6,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, Edit, Ban, CheckCircle, Trash2 } from 'lucide-react'
+import { ArrowLeft, Edit } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { getTenantById } from '@/lib/db/queries/tenants'
@@ -116,25 +116,17 @@ async function TenantDetails({ tenantId }: { tenantId: string }) {
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Pedidos</CardTitle>
+                  <CardTitle className="text-base">
+                    {tenant.type === 'EMPRESA' ? 'Empresas' : 'Restaurantes'}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-3xl font-bold">
                     {tenant.type === 'EMPRESA'
-                      ? tenant._count.ordersAsCompany
-                      : tenant._count.ordersAsRestaurant}
+                      ? tenant._count.companies
+                      : tenant._count.restaurants}
                   </p>
-                  <p className="mt-1 text-sm text-gray-600">Pedidos totales</p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Incidencias</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-3xl font-bold">{tenant._count.incidents}</p>
-                  <p className="mt-1 text-sm text-gray-600">Incidencias reportadas</p>
+                  <p className="mt-1 text-sm text-gray-600">Entidades ligadas</p>
                 </CardContent>
               </Card>
             </div>
@@ -288,7 +280,7 @@ async function TenantDetails({ tenantId }: { tenantId: string }) {
                       {tenant.users.map((user) => (
                         <TableRow key={user.id}>
                           <TableCell className="font-medium">
-                            {user.name || 'Sin nombre'}
+                            {user.nameEnc || 'Sin nombre'}
                           </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>

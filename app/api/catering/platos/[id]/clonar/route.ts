@@ -3,7 +3,7 @@
  * POST /api/catering/platos/[id]/clonar - Duplicar un plato
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { cloneDish } from '@/lib/db/queries/catering-dishes'
 import { cloneDishSchema } from '@/lib/validations/dish'

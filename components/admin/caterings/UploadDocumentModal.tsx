@@ -54,7 +54,7 @@ type UploadDocumentModalProps = {
 export function UploadDocumentModal({
   isOpen,
   onClose,
-  cateringId,
+  cateringId: _cateringId,
   onSuccess,
 }: UploadDocumentModalProps) {
   const [isUploading, setIsUploading] = useState(false)

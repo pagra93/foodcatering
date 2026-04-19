@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { addDays, startOfDay, endOfDay, subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { addDays, startOfDay, endOfDay, subDays, startOfMonth } from 'date-fns'
 
 /**
  * KPIs principales del dashboard

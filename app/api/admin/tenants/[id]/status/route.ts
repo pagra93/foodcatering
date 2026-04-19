@@ -2,7 +2,7 @@
  * API Route para cambiar el estado de un tenant
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateTenantStatusSchema } from '@/lib/validations/tenant'
 import { updateTenantStatus } from '@/lib/db/queries/tenants'
 import { getRequiredSession } from '@/lib/auth/session'

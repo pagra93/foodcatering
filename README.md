@@ -204,57 +204,23 @@ docs: documentación
 test: tests
 ```
 
-## 🗺️ Roadmap
+## 🗺️ Estado del proyecto
 
-### Fase 0: Base (✅ COMPLETADO)
-- [x] Setup proyecto
-- [x] Configuración TypeScript estricta
-- [x] Schema Prisma completo (31 tablas)
-- [x] Variables de entorno validadas
-- [x] Cursor rules
-- [x] Vitest + Playwright configurados
-- [x] ESLint + Prettier configurados
-- [x] Estructura de tests
-- [x] Seed inicial con datos de prueba
-- [x] Documentación del schema
+Estado vivo detallado → [`docs/ESTADO.md`](./docs/ESTADO.md).
+Diagnóstico técnico y plan de sprints → [`docs/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md`](./docs/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md).
 
-### Fase 1: Súper Admin (⏳ EN PROGRESO - 40%)
-- [x] Auth multi-tenant (NextAuth v5)
-- [x] Middleware subdominio → tenant_id
-- [x] Sistema RBAC (11 roles, 50+ permisos)
-- [x] Guards para rutas y componentes
-- [x] Impersonación segura (15 min, auditoría)
-- [x] Sistema de auditoría completo
-- [ ] Estructura de aplicación (layouts + dashboards)
-- [ ] Dashboard KPIs globales
-- [ ] CRUD tenants
-- [ ] Catálogos globales
+Resumen rápido:
+- **Fase 0 · Base**: ✅ 100% (TS estricto, schema Prisma con 34 modelos, auth, guards, RBAC, impersonación auditada)
+- **Fase 1 · Súper Admin**: 🟡 portales funcionales, estabilización en curso
+- **Fase 2 · Catering**: 🟡 platos, menús, rutas, facturación reescritos contra schema real
+- **Fase 3 · Empresa**: 🟡 dashboard, empleados, facturación, incidencias, auditoría
+- **Fase 4 · Empleado**: 🟡 selector semanal, historial, perfil, incidencias
 
-### Fase 2: Catering
-- [ ] CRUD platos
-- [ ] Calendario menús
-- [ ] Consolidación 11:05
-- [ ] Operación (cocina/entregas)
-
-### Fase 3: Empresa
-- [ ] Políticas beneficio
-- [ ] CRUD empleados
-- [ ] Export ERP/nómina
-
-### Fase 4: Empleado
-- [ ] Selección semanal
-- [ ] IA básica
-- [ ] Mis pedidos
+Trabajo en curso: sprints 0-3 (estabilización + seguridad + infra) tras un diagnóstico que destapó drift grande entre código y schema.
 
 ## 📚 Documentación
 
-- [PRD Completo](./prd.md) - Especificación completa del producto
-- [Cursor Rules](./.cursorrules) - Reglas de desarrollo
-- [Schema DB](./prisma/schema.prisma) - Modelo de datos
-
-## 🤝 Contribución
-
-Este es un proyecto privado en desarrollo. Por favor revisa las [Cursor Rules](./.cursorrules) antes de contribuir.
+Todo el índice en [`docs/README.md`](./docs/README.md).
 
 ## 📄 Licencia
 
@@ -262,6 +228,6 @@ Privado - Todos los derechos reservados
 
 ---
 
-**Versión**: 0.1.0 (MVP en desarrollo)
-**Última actualización**: Enero 2025
+**Versión**: 0.1.0 (MVP en estabilización)
+**Última actualización**: 2026-04-18
 

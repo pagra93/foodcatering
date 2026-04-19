@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import type { Prisma } from '@prisma/client'
 
 // ============================================================================
 // OBTENER CONFIGURACIÓN COMPLETA
@@ -134,14 +135,14 @@ export type UpdateCompanyGeneralData = {
   legalName?: string
   cif?: string
   billingAddress?: string
-  sector?: string
-  employeeCount?: number
-  contactRrhhName?: string
-  contactRrhhEmail?: string
-  contactRrhhPhone?: string
-  contactFinanceName?: string
-  contactFinanceEmail?: string
-  contactFinancePhone?: string
+  sector?: string | null
+  employeeCount?: number | null
+  contactRrhhName?: string | null
+  contactRrhhEmail?: string | null
+  contactRrhhPhone?: string | null
+  contactFinanceName?: string | null
+  contactFinanceEmail?: string | null
+  contactFinancePhone?: string | null
 }
 
 export async function updateCompanyGeneral(
@@ -160,13 +161,13 @@ export async function updateCompanyGeneral(
 
 export type UpdateCompanyPolicyData = {
   cutoffTime?: string
-  daysActive?: any // JSON
+  daysActive?: string[] | unknown // JSON
   limitPerDay?: number
   copayCompany?: number
   copayEmployee?: number
   noShowRule?: 'CHARGE' | 'NO_CHARGE' | 'PARTIAL'
-  effectiveFrom?: Date
-  effectiveTo?: Date
+  effectiveFrom?: Date | string
+  effectiveTo?: Date | string
   changedBy: string
   changeReason: string
 }
@@ -201,8 +202,10 @@ export async function updateCompanyPolicy(
     where: { companyId: tenantId },
     data: {
       ...data,
+      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
+      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
       version: currentPolicy.version + 1,
-    },
+    } as Prisma.CompanyPolicyUncheckedUpdateInput,
   })
 }
 

@@ -1,7 +1,8 @@
 /**
  * Queries para Gestión de Rutas del Catering
- * 
- * CRUD de rutas, asignación de repartidores, tracking
+ *
+ * CRUD de rutas, asignación de repartidores, tracking.
+ * El `tenantId` de estas funciones es siempre el tenant del CATERING.
  */
 
 import { prisma } from '@/lib/db/prisma'
@@ -12,28 +13,25 @@ import { startOfDay, endOfDay } from 'date-fns'
  * Crear una nueva ruta
  */
 export async function createRoute(tenantId: string, data: CreateRouteInput) {
-  return await prisma.$transaction(async (tx) => {
-    // Verificar que las sedes existen y pertenecen al tenant
+  return prisma.$transaction(async (tx) => {
+    // Verificar que las sedes existen (aceptamos cualquier empresa cliente del catering)
     const sites = await tx.companySite.findMany({
-      where: {
-        id: { in: data.companySiteIds },
-        company: {
-          tenantId,
-        },
-      },
+      where: { id: { in: data.companySiteIds } },
+      select: { id: true, name: true },
     })
 
     if (sites.length !== data.companySiteIds.length) {
-      throw new Error('Algunas sedes no existen o no pertenecen a este tenant')
+      throw new Error('Algunas sedes no existen')
     }
 
-    // Si hay repartidor, verificar que existe
+    // Si hay repartidor, verificar que pertenece al catering y tiene el rol correcto
     if (data.deliveryUserId) {
       const driver = await tx.user.findFirst({
         where: {
           id: data.deliveryUserId,
           tenantId,
           role: 'REPARTIDOR',
+          status: 'ACTIVE',
         },
       })
 
@@ -42,20 +40,18 @@ export async function createRoute(tenantId: string, data: CreateRouteInput) {
       }
     }
 
-    // Crear la ruta
     const route = await tx.deliveryRoute.create({
       data: {
         tenantId,
         name: data.name,
         date: startOfDay(data.date),
-        deliveryUserId: data.deliveryUserId,
-        estimatedDuration: data.estimatedDuration,
-        notes: data.notes,
+        deliveryUserId: data.deliveryUserId ?? null,
+        estimatedDuration: data.estimatedDuration ?? null,
+        notes: data.notes ?? null,
         status: 'PENDING',
       },
     })
 
-    // Asociar las sedes a la ruta
     await tx.deliveryRouteSite.createMany({
       data: data.companySiteIds.map((siteId, index) => ({
         routeId: route.id,
@@ -64,28 +60,24 @@ export async function createRoute(tenantId: string, data: CreateRouteInput) {
       })),
     })
 
-    // Obtener pedidos confirmados de esas sedes para esa fecha
+    // Pedidos del catering para esas sedes y fecha
     const orders = await tx.order.findMany({
       where: {
-        tenantId,
-        companySiteId: { in: data.companySiteIds },
+        tenantCatering: tenantId,
+        siteId: { in: data.companySiteIds },
         serviceDate: {
           gte: startOfDay(data.date),
           lte: endOfDay(data.date),
         },
         status: 'CONFIRMED',
       },
+      select: { id: true },
     })
 
-    // Asignar pedidos a la ruta
     if (orders.length > 0) {
       await tx.order.updateMany({
-        where: {
-          id: { in: orders.map((o) => o.id) },
-        },
-        data: {
-          routeId: route.id,
-        },
+        where: { id: { in: orders.map((o) => o.id) } },
+        data: { routeId: route.id },
       })
     }
 
@@ -97,45 +89,38 @@ export async function createRoute(tenantId: string, data: CreateRouteInput) {
   })
 }
 
+type RouteFilters = {
+  date?: Date
+  status?: string
+  deliveryUserId?: string
+}
+
 /**
- * Obtener rutas con filtros
+ * Listar rutas con filtros
  */
-export async function getRoutes(
-  tenantId: string,
-  filters?: {
-    date?: Date
-    status?: string
+export async function getRoutes(tenantId: string, filters?: RouteFilters) {
+  const where: {
+    tenantId: string
+    date?: { gte: Date; lte: Date }
+    status?: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED'
     deliveryUserId?: string
-  }
-) {
-  const whereClause: any = {
-    tenantId,
-  }
+  } = { tenantId }
 
   if (filters?.date) {
-    whereClause.date = {
-      gte: startOfDay(filters.date),
-      lte: endOfDay(filters.date),
-    }
+    where.date = { gte: startOfDay(filters.date), lte: endOfDay(filters.date) }
   }
-
   if (filters?.status) {
-    whereClause.status = filters.status
+    where.status = filters.status as typeof where.status
   }
-
   if (filters?.deliveryUserId) {
-    whereClause.deliveryUserId = filters.deliveryUserId
+    where.deliveryUserId = filters.deliveryUserId
   }
 
   const routes = await prisma.deliveryRoute.findMany({
-    where: whereClause,
+    where,
     include: {
       deliveryUser: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
+        select: { id: true, nameEnc: true, email: true },
       },
       sites: {
         include: {
@@ -144,29 +129,15 @@ export async function getRoutes(
               id: true,
               name: true,
               address: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
+              company: { select: { id: true, legalName: true } },
             },
           },
         },
-        orderBy: {
-          sequence: 'asc',
-        },
+        orderBy: { sequence: 'asc' },
       },
-      _count: {
-        select: {
-          orders: true,
-        },
-      },
+      _count: { select: { orders: true } },
     },
-    orderBy: [
-      { date: 'desc' },
-      { createdAt: 'desc' },
-    ],
+    orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
   })
 
   return routes.map((route) => ({
@@ -174,7 +145,13 @@ export async function getRoutes(
     name: route.name,
     date: route.date,
     status: route.status,
-    deliveryUser: route.deliveryUser,
+    deliveryUser: route.deliveryUser
+      ? {
+          id: route.deliveryUser.id,
+          name: route.deliveryUser.nameEnc,
+          email: route.deliveryUser.email,
+        }
+      : null,
     totalOrders: route._count.orders,
     totalSites: route.sites.length,
     sites: route.sites.map((rs) => ({
@@ -193,22 +170,14 @@ export async function getRoutes(
 }
 
 /**
- * Obtener una ruta por ID
+ * Obtener una ruta por id
  */
 export async function getRouteById(tenantId: string, routeId: string) {
   const route = await prisma.deliveryRoute.findFirst({
-    where: {
-      id: routeId,
-      tenantId,
-    },
+    where: { id: routeId, tenantId },
     include: {
       deliveryUser: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-        },
+        select: { id: true, nameEnc: true, email: true, phoneEnc: true },
       },
       sites: {
         include: {
@@ -221,58 +190,17 @@ export async function getRouteById(tenantId: string, routeId: string) {
               contactPhone: true,
               latitude: true,
               longitude: true,
-              company: {
-                select: {
-                  id: true,
-                  name: true,
-                },
-              },
+              company: { select: { id: true, legalName: true } },
             },
           },
         },
-        orderBy: {
-          sequence: 'asc',
-        },
+        orderBy: { sequence: 'asc' },
       },
       orders: {
-        where: {
-          deletedAt: null,
-        },
-        include: {
-          employee: {
-            select: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              phone: true,
-            },
-          },
-          companySite: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          deliveryProof: true,
-        },
-        orderBy: [
-          {
-            companySite: {
-              name: 'asc',
-            },
-          },
-          {
-            employee: {
-              lastName: 'asc',
-            },
-          },
-        ],
+        where: { deletedAt: null },
+        include: { deliveryProof: true },
       },
-      events: {
-        orderBy: {
-          timestamp: 'asc',
-        },
-      },
+      events: { orderBy: { timestamp: 'asc' } },
     },
   })
 
@@ -280,8 +208,31 @@ export async function getRouteById(tenantId: string, routeId: string) {
     return null
   }
 
+  // Enriquecer pedidos con info del empleado (Order no tiene relación con Employee)
+  const employeeIds = Array.from(new Set(route.orders.map((o) => o.employeeId)))
+  const employees = await prisma.employee.findMany({
+    where: { id: { in: employeeIds } },
+    include: { user: { select: { nameEnc: true, phoneEnc: true } } },
+  })
+  const employeeMap = new Map(employees.map((e) => [e.id, e]))
+
+  const orders = route.orders.map((o) => {
+    const emp = employeeMap.get(o.employeeId)
+    return {
+      ...o,
+      employee: emp
+        ? {
+            id: emp.id,
+            name: emp.user.nameEnc,
+            phone: emp.user.phoneEnc,
+          }
+        : null,
+    }
+  })
+
   return {
     ...route,
+    orders,
     totalOrders: route.orders.length,
     deliveredOrders: route.orders.filter((o) => o.status === 'DELIVERED').length,
     pendingOrders: route.orders.filter((o) => o.status === 'CONFIRMED').length,
@@ -290,32 +241,24 @@ export async function getRouteById(tenantId: string, routeId: string) {
 }
 
 /**
- * Actualizar una ruta
+ * Actualizar datos básicos de una ruta
  */
-export async function updateRoute(
-  tenantId: string,
-  routeId: string,
-  data: UpdateRouteInput
-) {
-  // Verificar que la ruta existe
+export async function updateRoute(tenantId: string, routeId: string, data: UpdateRouteInput) {
   const route = await prisma.deliveryRoute.findFirst({
-    where: {
-      id: routeId,
-      tenantId,
-    },
+    where: { id: routeId, tenantId },
   })
 
   if (!route) {
     throw new Error('Ruta no encontrada')
   }
 
-  // Si se cambia el repartidor, verificar que existe
   if (data.deliveryUserId) {
     const driver = await prisma.user.findFirst({
       where: {
         id: data.deliveryUserId,
         tenantId,
         role: 'REPARTIDOR',
+        status: 'ACTIVE',
       },
     })
 
@@ -324,18 +267,16 @@ export async function updateRoute(
     }
   }
 
-  const updated = await prisma.deliveryRoute.update({
+  return prisma.deliveryRoute.update({
     where: { id: routeId },
     data: {
-      name: data.name,
-      deliveryUserId: data.deliveryUserId,
-      status: data.status,
-      estimatedDuration: data.estimatedDuration,
-      notes: data.notes,
+      name: data.name ?? undefined,
+      deliveryUserId: data.deliveryUserId ?? undefined,
+      status: data.status ?? undefined,
+      estimatedDuration: data.estimatedDuration ?? undefined,
+      notes: data.notes ?? undefined,
     },
   })
-
-  return updated
 }
 
 /**
@@ -346,12 +287,12 @@ export async function assignDriverToRoute(
   routeId: string,
   deliveryUserId: string
 ) {
-  // Verificar repartidor
   const driver = await prisma.user.findFirst({
     where: {
       id: deliveryUserId,
       tenantId,
       role: 'REPARTIDOR',
+      status: 'ACTIVE',
     },
   })
 
@@ -359,14 +300,10 @@ export async function assignDriverToRoute(
     throw new Error('Repartidor no encontrado')
   }
 
-  const updated = await prisma.deliveryRoute.update({
+  return prisma.deliveryRoute.update({
     where: { id: routeId },
-    data: {
-      deliveryUserId,
-    },
+    data: { deliveryUserId },
   })
-
-  return updated
 }
 
 /**
@@ -374,13 +311,8 @@ export async function assignDriverToRoute(
  */
 export async function startRoute(tenantId: string, routeId: string) {
   const route = await prisma.deliveryRoute.findFirst({
-    where: {
-      id: routeId,
-      tenantId,
-    },
-    include: {
-      orders: true,
-    },
+    where: { id: routeId, tenantId },
+    include: { orders: true },
   })
 
   if (!route) {
@@ -395,29 +327,22 @@ export async function startRoute(tenantId: string, routeId: string) {
     throw new Error('No hay repartidor asignado')
   }
 
-  if (!route.orders || route.orders.length === 0) {
+  if (route.orders.length === 0) {
     throw new Error('No hay pedidos en la ruta')
   }
 
-  return await prisma.$transaction(async (tx) => {
-    // Actualizar ruta
+  return prisma.$transaction(async (tx) => {
     const updated = await tx.deliveryRoute.update({
       where: { id: routeId },
-      data: {
-        status: 'IN_PROGRESS',
-        startedAt: new Date(),
-      },
+      data: { status: 'IN_PROGRESS', startedAt: new Date() },
     })
 
-    // Crear evento
-    await tx.deliveryEvent.create({
+    await tx.deliveryRouteEvent.create({
       data: {
         routeId,
         type: 'ROUTE_STARTED',
         timestamp: new Date(),
-        metadata: {
-          userId: route.deliveryUserId,
-        },
+        metadata: { userId: route.deliveryUserId },
       },
     })
 
@@ -428,19 +353,10 @@ export async function startRoute(tenantId: string, routeId: string) {
 /**
  * Completar una ruta
  */
-export async function completeRoute(
-  tenantId: string,
-  routeId: string,
-  notes?: string
-) {
+export async function completeRoute(tenantId: string, routeId: string, notes?: string) {
   const route = await prisma.deliveryRoute.findFirst({
-    where: {
-      id: routeId,
-      tenantId,
-    },
-    include: {
-      orders: true,
-    },
+    where: { id: routeId, tenantId },
+    include: { orders: true },
   })
 
   if (!route) {
@@ -452,26 +368,24 @@ export async function completeRoute(
   }
 
   const allDelivered = route.orders.every(
-    (order) => order.status === 'DELIVERED' || order.status === 'ISSUE_REPORTED'
+    (o) => o.status === 'DELIVERED' || o.status === 'ISSUE_REPORTED'
   )
 
   if (!allDelivered) {
     throw new Error('Aún hay pedidos sin entregar')
   }
 
-  return await prisma.$transaction(async (tx) => {
-    // Actualizar ruta
+  return prisma.$transaction(async (tx) => {
     const updated = await tx.deliveryRoute.update({
       where: { id: routeId },
       data: {
         status: 'COMPLETED',
         completedAt: new Date(),
-        notes: notes || route.notes,
+        notes: notes ?? route.notes,
       },
     })
 
-    // Crear evento
-    await tx.deliveryEvent.create({
+    await tx.deliveryRouteEvent.create({
       data: {
         routeId,
         type: 'ROUTE_COMPLETED',
@@ -479,8 +393,7 @@ export async function completeRoute(
         metadata: {
           totalOrders: route.orders.length,
           deliveredOrders: route.orders.filter((o) => o.status === 'DELIVERED').length,
-          incidentOrders: route.orders.filter((o) => o.status === 'ISSUE_REPORTED')
-            .length,
+          incidentOrders: route.orders.filter((o) => o.status === 'ISSUE_REPORTED').length,
         },
       },
     })
@@ -492,16 +405,9 @@ export async function completeRoute(
 /**
  * Cancelar una ruta
  */
-export async function cancelRoute(
-  tenantId: string,
-  routeId: string,
-  reason?: string
-) {
+export async function cancelRoute(tenantId: string, routeId: string, reason?: string) {
   const route = await prisma.deliveryRoute.findFirst({
-    where: {
-      id: routeId,
-      tenantId,
-    },
+    where: { id: routeId, tenantId },
   })
 
   if (!route) {
@@ -512,29 +418,24 @@ export async function cancelRoute(
     throw new Error('No se puede cancelar una ruta completada')
   }
 
-  return await prisma.$transaction(async (tx) => {
-    // Actualizar ruta
+  return prisma.$transaction(async (tx) => {
     const updated = await tx.deliveryRoute.update({
       where: { id: routeId },
       data: {
         status: 'CANCELLED',
-        notes: reason ? `${route.notes || ''}\nCANCELADA: ${reason}` : route.notes,
+        notes: reason ? `${route.notes ?? ''}\nCANCELADA: ${reason}`.trim() : route.notes,
       },
     })
 
-    // Crear evento
-    await tx.deliveryEvent.create({
+    await tx.deliveryRouteEvent.create({
       data: {
         routeId,
         type: 'ROUTE_CANCELLED',
         timestamp: new Date(),
-        metadata: {
-          reason,
-        },
+        metadata: { reason: reason ?? null },
       },
     })
 
-    // Desasignar pedidos de la ruta
     await tx.order.updateMany({
       where: { routeId },
       data: { routeId: null },
@@ -545,31 +446,25 @@ export async function cancelRoute(
 }
 
 /**
- * Obtener estadísticas de rutas
+ * Estadísticas de rutas
  */
 export async function getRoutesStats(tenantId: string, date?: Date) {
-  const whereClause: any = { tenantId }
+  const dateFilter = date
+    ? { gte: startOfDay(date), lte: endOfDay(date) }
+    : undefined
 
-  if (date) {
-    whereClause.date = {
-      gte: startOfDay(date),
-      lte: endOfDay(date),
-    }
-  }
+  const baseWhere = { tenantId, ...(dateFilter ? { date: dateFilter } : {}) }
 
   const [total, pending, inProgress, completed, totalOrders] = await Promise.all([
-    prisma.deliveryRoute.count({ where: whereClause }),
-    prisma.deliveryRoute.count({ where: { ...whereClause, status: 'PENDING' } }),
-    prisma.deliveryRoute.count({ where: { ...whereClause, status: 'IN_PROGRESS' } }),
-    prisma.deliveryRoute.count({ where: { ...whereClause, status: 'COMPLETED' } }),
+    prisma.deliveryRoute.count({ where: baseWhere }),
+    prisma.deliveryRoute.count({ where: { ...baseWhere, status: 'PENDING' } }),
+    prisma.deliveryRoute.count({ where: { ...baseWhere, status: 'IN_PROGRESS' } }),
+    prisma.deliveryRoute.count({ where: { ...baseWhere, status: 'COMPLETED' } }),
     prisma.order.count({
       where: {
-        tenantId,
-        route: whereClause.date
-          ? {
-              date: whereClause.date,
-            }
-          : undefined,
+        tenantCatering: tenantId,
+        routeId: { not: null },
+        ...(dateFilter ? { serviceDate: dateFilter } : {}),
       },
     }),
   ])
@@ -585,47 +480,36 @@ export async function getRoutesStats(tenantId: string, date?: Date) {
 }
 
 /**
- * Obtener repartidores disponibles
+ * Listar repartidores disponibles en una fecha
  */
 export async function getAvailableDrivers(tenantId: string, date: Date) {
-  // Obtener todos los repartidores activos
   const allDrivers = await prisma.user.findMany({
     where: {
       tenantId,
       role: 'REPARTIDOR',
-      active: true,
+      status: 'ACTIVE',
     },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      phone: true,
-    },
+    select: { id: true, nameEnc: true, email: true, phoneEnc: true },
   })
 
-  // Obtener rutas del día
   const routesOfDay = await prisma.deliveryRoute.findMany({
     where: {
       tenantId,
-      date: {
-        gte: startOfDay(date),
-        lte: endOfDay(date),
-      },
+      date: { gte: startOfDay(date), lte: endOfDay(date) },
       status: { in: ['PENDING', 'IN_PROGRESS'] },
     },
-    select: {
-      deliveryUserId: true,
-    },
+    select: { deliveryUserId: true },
   })
 
   const assignedDriverIds = routesOfDay
     .map((r) => r.deliveryUserId)
     .filter((id): id is string => id !== null)
 
-  // Marcar quiénes están disponibles
   return allDrivers.map((driver) => ({
-    ...driver,
+    id: driver.id,
+    name: driver.nameEnc,
+    email: driver.email,
+    phone: driver.phoneEnc,
     isAvailable: !assignedDriverIds.includes(driver.id),
   }))
 }
-

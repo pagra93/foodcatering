@@ -30,20 +30,20 @@ function getSLAColor(value: number, metric: 'punctuality' | 'incidents' | 'satis
     if (value >= 90) return 'warning'
     return 'destructive'
   }
-  
+
   if (metric === 'incidents') {
     if (value < 2) return 'success'
     if (value <= 5) return 'warning'
     return 'destructive'
   }
-  
+
   if (metric === 'satisfaction') {
     if (value >= 4.5) return 'success'
     if (value >= 4.0) return 'warning'
     return 'destructive'
   }
-  
-  return 'secondary'
+
+  return 'warning'
 }
 
 // Componente de KPI individual

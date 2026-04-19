@@ -3,7 +3,6 @@
  * ♻️ Reutiliza tabla AuditLog ya existente
  */
 
-import { redirect } from 'next/navigation'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import {
   getActivityLog,
@@ -111,7 +110,7 @@ async function ActividadData({ searchParams }: { searchParams: any }) {
               {activityLog.logs.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell>
-                    {format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm', {
+                    {format(new Date(log.timestamp), 'dd/MM/yyyy HH:mm', {
                       locale: es,
                     })}
                   </TableCell>
@@ -141,25 +140,25 @@ async function ActividadData({ searchParams }: { searchParams: any }) {
                       <div className="font-medium">
                         {
                           RESOURCE_TYPES[
-                            log.resourceType as keyof typeof RESOURCE_TYPES
+                            log.entity as keyof typeof RESOURCE_TYPES
                           ]?.icon
                         }{' '}
                         {
                           RESOURCE_TYPES[
-                            log.resourceType as keyof typeof RESOURCE_TYPES
+                            log.entity as keyof typeof RESOURCE_TYPES
                           ]?.label
                         }
                       </div>
-                      {log.resourceId && (
+                      {log.entityId && (
                         <div className="text-xs text-muted-foreground">
-                          #{log.resourceId.slice(-8)}
+                          #{log.entityId.slice(-8)}
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <code className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {log.ipAddress || 'N/A'}
+                      {log.ip || 'N/A'}
                     </code>
                   </TableCell>
                 </TableRow>

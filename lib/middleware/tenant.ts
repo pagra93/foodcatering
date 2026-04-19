@@ -16,6 +16,7 @@ const tenantCache = new Map<
     id: string
     type: string
     status: string
+    name: string
     timestamp: number
   }
 >()
@@ -39,6 +40,7 @@ export function getSubdomainFromRequest(req: NextRequest): string | null {
 
   // Extraer el primer segmento
   const subdomain = parts[0]
+  if (!subdomain) return null
 
   // Validar que no sea un subdominio del sistema
   if (['www', 'api'].includes(subdomain)) {
@@ -62,7 +64,12 @@ export async function resolveTenantFromSubdomain(
   // Verificar cache
   const cached = tenantCache.get(subdomain)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-    return cached
+    return {
+      id: cached.id,
+      type: cached.type,
+      status: cached.status,
+      name: cached.name,
+    }
   }
 
   // Buscar en DB

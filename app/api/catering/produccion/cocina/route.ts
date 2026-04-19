@@ -5,7 +5,7 @@
  * Obtiene datos consolidados para pantalla de cocina
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getKitchenDisplay } from '@/lib/db/queries/catering-production'
 import { kitchenDisplaySchema } from '@/lib/validations/production'

@@ -5,7 +5,7 @@
  * DELETE /api/catering/facturas/[id] - Cancelar factura
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import {
   getInvoiceById,
@@ -24,7 +24,7 @@ type RouteContext = {
 /**
  * GET - Obtener factura
  */
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 
@@ -86,7 +86,8 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       session.user.tenantId,
       params.id,
       validatedData.status,
-      validatedData.notes
+      session.user.id,
+      validatedData.notes ?? undefined
     )
 
     return NextResponse.json({
@@ -148,7 +149,12 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const body = await request.json()
     const reason = body.reason || 'Sin motivo especificado'
 
-    const cancelled = await cancelInvoice(session.user.tenantId, params.id, reason)
+    const cancelled = await cancelInvoice(
+      session.user.tenantId,
+      params.id,
+      reason,
+      session.user.id
+    )
 
     return NextResponse.json({
       success: true,

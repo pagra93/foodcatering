@@ -9,7 +9,6 @@ import { AlertTriangle, FileWarning, TrendingDown, Activity } from 'lucide-react
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import Link from 'next/link'
 
 type AlertsData = {
   expiredDocs: Array<{
@@ -21,7 +20,7 @@ type AlertsData = {
   criticalIncidents: Array<{
     id: string
     severity: string
-    description: string
+    type: string
   }>
   lowPunctuality: boolean
   highIncidentRate: boolean

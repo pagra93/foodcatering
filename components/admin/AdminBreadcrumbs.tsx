@@ -81,7 +81,7 @@ export function AdminBreadcrumbs() {
   
   // Construir breadcrumbs acumulativos
   let currentPath = ''
-  pathParts.forEach((part, index) => {
+  pathParts.forEach((part, _index) => {
     currentPath += `/${part}`
     const label = routeLabels[part] || part
     

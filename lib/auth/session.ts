@@ -5,7 +5,7 @@
 
 import { auth } from './index'
 import { redirect } from 'next/navigation'
-import type { UserRole, TenantType } from '@prisma/client'
+import type { UserRole } from '@prisma/client'
 import {
   canAccessTenant,
   hasPermission,
@@ -101,5 +101,47 @@ export async function redirectToDashboard() {
   const session = await getRequiredSession()
   const path = getDashboardPath(session.user.role, session.user.tenantType)
   redirect(path)
+}
+
+/**
+ * TenantMismatchError — lanzado cuando un header 'x-tenant-id' no coincide
+ * con el tenant de la sesión y el usuario no es SUPER_ADMIN.
+ *
+ * Las API routes deben capturar esto y responder 403.
+ */
+export class TenantMismatchError extends Error {
+  readonly status = 403
+  constructor(message = 'Tenant mismatch') {
+    super(message)
+    this.name = 'TenantMismatchError'
+  }
+}
+
+/**
+ * Devuelve el `tenantId` con el que se debe operar en una API route.
+ *
+ * Reglas:
+ *   - Si no hay header `x-tenant-id` → devuelve `session.user.tenantId` (flujo habitual).
+ *   - Si hay header y coincide con la sesión → devuelve ese valor.
+ *   - Si hay header y NO coincide:
+ *       - SUPER_ADMIN: se permite (habilitado para impersonación administrativa).
+ *       - Cualquier otro rol: lanza `TenantMismatchError` (403).
+ *
+ * Este helper cierra el patrón de cross-tenant bypass donde una ruta leía el
+ * header sin validar contra la sesión.
+ */
+export async function getScopedTenantId(req?: Request | { headers: Headers }): Promise<string> {
+  const session = await getRequiredSession()
+  const headerTenant = req?.headers.get('x-tenant-id') ?? null
+
+  if (!headerTenant || headerTenant === session.user.tenantId) {
+    return session.user.tenantId
+  }
+
+  if (session.user.role === 'SUPER_ADMIN') {
+    return headerTenant
+  }
+
+  throw new TenantMismatchError()
 }
 

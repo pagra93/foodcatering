@@ -3,12 +3,11 @@
  * Layout 50/50: Izquierda (formulario) | Derecha (imagen)
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getDashboardPath } from '@/lib/auth/permissions'
-import { getTenantFromHeaders } from '@/lib/middleware/headers'
 import LoginForm from './LoginForm'
 
 export const metadata: Metadata = {
@@ -27,9 +26,6 @@ export default async function LoginPage() {
     )
     redirect(dashboardPath)
   }
-
-  // Obtener información del tenant (si viene de subdominio)
-  const tenantContext = getTenantFromHeaders()
 
   return (
     <div className="flex min-h-screen">

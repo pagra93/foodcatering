@@ -42,24 +42,40 @@ const preferencesSchema = z.object({
 
 type PreferencesFormData = z.infer<typeof preferencesSchema>
 
+import type { Prisma } from '@prisma/client'
+
 type ConfigPreferencesTabProps = {
   settings: {
-    emailNotifications: boolean
-    smsNotifications: boolean
-    notifyOnOrderConfirmed: boolean
-    notifyOnOrderDelivered: boolean
-    notifyOnIncident: boolean
-    notifyOnInvoice: boolean
-    weeklyDigest: boolean
-    monthlyReport: boolean
-    preferredLanguage: string
-    timezone: string
-    currency: string
-    dateFormat: string
-    fiscalDocRetention: number
-    autoApproveOrders: boolean
-    requirePhotoProof: boolean
-    allowEmployeeFeedback: boolean
+    id?: string
+    deliveryLocation?: string | null
+    deliveryInstructions?: string | null
+    notificationsEmail?: string[]
+    notifyDailySummary?: boolean
+    notifyIncidents?: boolean
+    notifyInvoices?: boolean
+    notifyLowAdoption?: boolean
+    defaultViewEmployees?: string
+    defaultPeriodReports?: string
+    alertCancellationRate?: Prisma.Decimal | number
+    alertAdoptionRate?: Prisma.Decimal | number
+    alertDeductibilityRate?: Prisma.Decimal | number
+    // Campos legacy / opcionales que el form local espera pero no existen en DB
+    emailNotifications?: boolean
+    smsNotifications?: boolean
+    notifyOnOrderConfirmed?: boolean
+    notifyOnOrderDelivered?: boolean
+    notifyOnIncident?: boolean
+    notifyOnInvoice?: boolean
+    weeklyDigest?: boolean
+    monthlyReport?: boolean
+    preferredLanguage?: string
+    timezone?: string
+    currency?: string
+    dateFormat?: string
+    fiscalDocRetention?: number
+    autoApproveOrders?: boolean
+    requirePhotoProof?: boolean
+    allowEmployeeFeedback?: boolean
   } | null
 }
 

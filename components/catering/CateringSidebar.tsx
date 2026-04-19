@@ -14,6 +14,7 @@ import {
   Receipt,
   FileText,
   Settings,
+  ShieldCheck,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -31,6 +32,11 @@ type CateringSidebarProps = {
     name?: string | null
     email?: string | null
     role?: string | null
+  }
+  branding?: {
+    primaryColor: string
+    primaryForeground: string
+    logoUrl: string | null
   }
 }
 
@@ -79,6 +85,12 @@ const navigation = [
     roles: ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR', 'FINANZAS_CATERING'],
   },
   {
+    name: 'Calidad',
+    href: '/catering/calidad',
+    icon: ShieldCheck,
+    roles: ['ADMIN_CATERING', 'CHEF', 'FINANZAS_CATERING'],
+  },
+  {
     name: 'Facturación',
     href: '/catering/facturacion',
     icon: Receipt,
@@ -98,10 +110,17 @@ const navigation = [
   },
 ]
 
-export function CateringSidebar({ tenant, user }: CateringSidebarProps) {
+export function CateringSidebar({
+  tenant,
+  user,
+  branding,
+}: CateringSidebarProps) {
   const pathname = usePathname()
+  const effectiveLogo = branding?.logoUrl ?? tenant.logoUrl
+  const effectivePrimary =
+    branding?.primaryColor ?? tenant.primaryColor ?? '#F59E0B'
+  const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
 
-  // Filtrar navegación según rol del usuario
   const visibleNavigation = navigation.filter((item) =>
     item.roles.includes(user.role || '')
   )
@@ -110,16 +129,16 @@ export function CateringSidebar({ tenant, user }: CateringSidebarProps) {
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 lg:flex lg:flex-col hidden">
       {/* Logo y nombre del catering */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
-        {tenant.logoUrl ? (
+        {effectiveLogo ? (
           <img
-            src={tenant.logoUrl}
+            src={effectiveLogo}
             alt={tenant.name}
             className="h-10 w-10 rounded-lg object-cover"
           />
         ) : (
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white text-lg font-bold"
-            style={{ backgroundColor: tenant.primaryColor || '#F59E0B' }}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
+            style={{ backgroundColor: effectivePrimary, color: effectivePrimaryFg }}
           >
             <ChefHat className="h-5 w-5" />
           </div>
@@ -145,17 +164,24 @@ export function CateringSidebar({ tenant, user }: CateringSidebarProps) {
               className={cn(
                 'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
                 isActive
-                  ? 'bg-orange-50 text-orange-700'
+                  ? ''
                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
               )}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: effectivePrimary + '15',
+                      color: effectivePrimary,
+                    }
+                  : undefined
+              }
             >
               <Icon
                 className={cn(
                   'h-5 w-5 flex-shrink-0',
-                  isActive
-                    ? 'text-orange-600'
-                    : 'text-gray-400 group-hover:text-gray-600'
+                  isActive ? '' : 'text-gray-400 group-hover:text-gray-600'
                 )}
+                style={isActive ? { color: effectivePrimary } : undefined}
               />
               <span>{item.name}</span>
             </Link>

@@ -27,7 +27,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   Navigation,
-  Clock,
 } from 'lucide-react'
 
 type Stop = {
@@ -73,7 +72,7 @@ export function DeliveryMobileView({
   route,
   stops,
   onConfirmDelivery,
-  onReportIncident,
+  onReportIncident: _onReportIncident,
 }: DeliveryMobileViewProps) {
   const [expandedStop, setExpandedStop] = useState<number | null>(null)
   const [confirmingOrder, setConfirmingOrder] = useState<string | null>(null)

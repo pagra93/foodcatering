@@ -3,7 +3,7 @@
  * Permite solicitar un enlace de recuperación por email
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft, Key } from 'lucide-react'
 import { Button } from '@/components/ui/button'

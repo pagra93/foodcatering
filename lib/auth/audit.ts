@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db'
 import { createHash } from 'crypto'
+import { Prisma } from '@prisma/client'
 import type { AuditAction } from '@prisma/client'
 
 type AuditLogInput = {
@@ -48,7 +49,7 @@ export async function logAudit(input: AuditLogInput) {
         action: input.action,
         entity: input.entity,
         entityId: input.entityId,
-        diff: input.diff || null,
+        diff: input.diff ? (input.diff as Prisma.InputJsonValue) : Prisma.JsonNull,
         ip: input.ip || null,
         userAgent: input.userAgent || null,
         hash,
@@ -63,12 +64,14 @@ export async function logAudit(input: AuditLogInput) {
 /**
  * Obtener headers de request para auditoría
  */
-export function getAuditHeaders(req?: Request) {
+export function getAuditHeaders(req?: Request): { ip?: string; userAgent?: string } {
   if (!req) return {}
 
+  const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+  const userAgent = req.headers.get('user-agent')
   return {
-    ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip'),
-    userAgent: req.headers.get('user-agent'),
+    ...(ip ? { ip } : {}),
+    ...(userAgent ? { userAgent } : {}),
   }
 }
 

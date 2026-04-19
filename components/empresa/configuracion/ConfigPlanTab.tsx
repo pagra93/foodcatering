@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { Loader2, Euro, Clock } from 'lucide-react'
+import type { Prisma } from '@prisma/client'
 
 // Schema según modelo real CompanyPolicy
 const planSchema = z.object({
@@ -30,13 +31,19 @@ type PlanFormData = z.infer<typeof planSchema>
 
 type ConfigPlanTabProps = {
   policy: {
-    limitPerDay: number
-    copayCompany: number
-    copayEmployee: number
+    id: string
+    limitPerDay: Prisma.Decimal | number
+    copayCompany: Prisma.Decimal | number
+    copayEmployee: Prisma.Decimal | number
     cutoffTime: string
-    daysActive: string[] // JSON parseado
+    daysActive: Prisma.JsonValue
     noShowRule: 'CHARGE' | 'NO_CHARGE' | 'PARTIAL'
+    effectiveFrom: Date | null
+    effectiveTo: Date | null
     version: number
+    changedBy: string | null
+    changeReason: string | null
+    updatedAt: Date
   } | null
 }
 
@@ -66,7 +73,9 @@ export function ConfigPlanTab({ policy }: ConfigPlanTabProps) {
           copayCompany: Number(policy.copayCompany),
           copayEmployee: Number(policy.copayEmployee),
           cutoffTime: policy.cutoffTime,
-          daysActive: policy.daysActive,
+          daysActive: Array.isArray(policy.daysActive)
+            ? (policy.daysActive as string[]).filter((d): d is string => typeof d === 'string')
+            : [],
           noShowRule: policy.noShowRule,
           changeReason: '',
         }

@@ -137,7 +137,9 @@ export function isAfterCutoff(date: Date, cutoffTime: string): boolean {
   
   if (targetDate.getTime() === today.getTime()) {
     // Parsear cutoffTime (formato "HH:mm")
-    const [hours, minutes] = cutoffTime.split(':').map(Number)
+    const [hoursStr, minutesStr] = cutoffTime.split(':')
+    const hours = Number(hoursStr ?? 11)
+    const minutes = Number(minutesStr ?? 0)
     const cutoff = new Date()
     cutoff.setHours(hours, minutes, 0, 0)
     

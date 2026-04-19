@@ -16,6 +16,12 @@ const envSchema = z.object({
   // Tenant
   WILDCARD_DOMAIN: z.string().startsWith('.'),
 
+  // Cifrado PII (32 bytes hex = 64 chars). Opcional hasta Sprint 4.
+  PII_ENCRYPTION_KEY: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i, 'PII_ENCRYPTION_KEY debe ser 64 chars hex (32 bytes)')
+    .optional(),
+
   // Feature Flags
   FEATURE_AI_NUTRITION: z
     .string()

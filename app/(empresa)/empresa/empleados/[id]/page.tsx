@@ -9,6 +9,7 @@ import { ArrowLeft, Edit, Mail } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { EmpleadoGdprSection } from '@/components/empresa/empleados/EmpleadoGdprSection'
 
 // ============================================================================
 // Página de Detalle de Empleado
@@ -26,8 +27,8 @@ export default async function EmpleadoDetallePage({ params }: Props) {
     redirect('/login')
   }
 
-  const tenant = getTenant()
-  if (tenant.type !== 'EMPRESA') {
+  const tenant = await getTenant()
+  if (!tenant || tenant.type !== 'EMPRESA') {
     redirect('/unauthorized')
   }
 
@@ -58,6 +59,20 @@ export default async function EmpleadoDetallePage({ params }: Props) {
   if (!employee) {
     notFound()
   }
+
+  // Solicitudes RGPD existentes del empleado
+  const gdprRequests = await prisma.gdprRequest.findMany({
+    where: { userId: employee.userId },
+    orderBy: { requestedAt: 'desc' },
+    take: 10,
+    select: {
+      id: true,
+      type: true,
+      status: true,
+      requestedAt: true,
+      resolvedAt: true,
+    },
+  })
 
   const statusMap: Record<string, { label: string; variant: any }> = {
     ACTIVE: { label: 'Activo', variant: 'default' },
@@ -160,6 +175,13 @@ export default async function EmpleadoDetallePage({ params }: Props) {
             )}
           </CardContent>
         </Card>
+
+        {/* Derechos RGPD */}
+        <EmpleadoGdprSection
+          employeeName={employee.user.nameEnc}
+          userId={employee.userId}
+          existing={gdprRequests}
+        />
       </div>
     </div>
   )

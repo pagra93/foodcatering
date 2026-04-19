@@ -4,7 +4,6 @@
  */
 
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import {
   getIncidentsKPIs,

@@ -3,7 +3,7 @@
  * POST /api/catering/rutas/[id]/completar
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { completeRoute } from '@/lib/db/queries/catering-routes'
 

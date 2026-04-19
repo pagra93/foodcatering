@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Star, User } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { useRouter } from 'next/navigation'
 
 type CateringRatingsTabProps = {
   tenantId: string
@@ -49,7 +48,6 @@ export function CateringRatingsTab({
   tenantId,
   cateringId,
 }: CateringRatingsTabProps) {
-  const router = useRouter()
   const [data, setData] = useState<RatingsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)

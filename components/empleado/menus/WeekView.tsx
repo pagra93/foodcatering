@@ -7,7 +7,6 @@
 
 import Link from 'next/link'
 import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,13 +19,24 @@ import {
   Utensils,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { DietPrefs } from '@/lib/types/diet-prefs'
+import type { Prisma } from '@prisma/client'
+
+type DishLike = {
+  id: string
+  name: string
+  course: 'FIRST' | 'SECOND' | 'DESSERT'
+  description: string | null
+  imageUrl: string | null
+}
 
 type WeekViewProps = {
   data: {
     employee: {
+      id?: string
       name: string
-      allergens: any[]
-      dietPrefs: any[]
+      allergens: string[]
+      dietPrefs: DietPrefs
     }
     company: {
       name: string
@@ -46,13 +56,13 @@ type WeekViewProps = {
         status: 'PENDING' | 'CONFIRMED' | 'LOCKED' | 'CANCELLED' | 'DELIVERED'
         order: {
           id: string
-          selection: any
+          selection: Prisma.JsonValue
           price: number
         } | null
         availableDishes: {
-          starters: any[]
-          mains: any[]
-          desserts: any[]
+          starters: DishLike[]
+          mains: DishLike[]
+          desserts: DishLike[]
         }
         isPastCutoff: boolean
         cutoffTime: string

@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { subDays, startOfMonth, endOfMonth } from 'date-fns'
+import { parseDietPrefs } from '@/lib/types/diet-prefs'
 
 // ============================================================================
 // OBTENER PERFIL COMPLETO DEL EMPLEADO
@@ -152,6 +153,8 @@ export async function getEmployeeProfile(employeeId: string) {
     },
   })
 
+  const dietPrefs = parseDietPrefs(employee.dietPrefs)
+
   return {
     employee: {
       id: employee.id,
@@ -164,8 +167,8 @@ export async function getEmployeeProfile(employeeId: string) {
       startDate: employee.startDate,
       active: employee.status === 'ACTIVE',
       memberSince: employee.user.createdAt,
-      allergens: employee.allergens || [],
-      blockAllergensEnabled: employee.blockAllergensEnabled || false,
+      allergens: dietPrefs.allergies,
+      blockAllergensEnabled: dietPrefs.blockAllergensEnabled,
     },
     company: {
       name: employee.site.company.legalName,
@@ -263,16 +266,17 @@ export async function updateEmployeeProfile(
 ) {
   // Solo permitir actualizar teléfono por ahora
   // Los demás datos son gestionados por RRHH
-  
-  return prisma.employee.update({
+  // Employee no tiene relación inversa 'user' en update nested; actualizamos User directamente
+  const employee = await prisma.employee.findUnique({
     where: { id: employeeId },
-    data: {
-      user: {
-        update: {
-          phoneEnc: data.phone,
-        },
-      },
-    },
+    select: { userId: true },
+  })
+  if (!employee) {
+    throw new Error('Empleado no encontrado')
+  }
+  return prisma.user.update({
+    where: { id: employee.userId },
+    data: { phoneEnc: data.phone },
   })
 }
 

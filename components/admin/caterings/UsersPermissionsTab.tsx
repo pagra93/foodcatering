@@ -20,7 +20,6 @@ import {
   XCircle,
   UserCog,
   Mail,
-  Phone,
   AlertCircle,
   Lock,
   Unlock,
@@ -52,7 +51,7 @@ type User = {
   role: string
   mfaEnabled: boolean
   status: string
-  lastLoginAt: Date | null
+  lastLoginAt?: Date | null
   createdAt: Date
 }
 
@@ -154,7 +153,7 @@ const getMockUsers = (): User[] => [
   },
 ]
 
-export function UsersPermissionsTab({ users: propUsers, cateringId }: UsersPermissionsTabProps) {
+export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId }: UsersPermissionsTabProps) {
   const users = propUsers.length > 0 ? propUsers : getMockUsers()
   
   const [searchTerm, setSearchTerm] = useState('')

@@ -111,7 +111,6 @@ export async function getOrderHistoryKPIs(employeeId: string) {
     spentLast3Months,
     deliveredOrders,
     cancelledOrders,
-    avgRating,
   ] = await Promise.all([
     // Total pedidos
     prisma.order.count({

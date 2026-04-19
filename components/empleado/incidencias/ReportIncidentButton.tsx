@@ -4,12 +4,13 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertCircle, Plus } from 'lucide-react'
 import { ReportIncidentDialog } from './ReportIncidentDialog'
+import type { Prisma } from '@prisma/client'
 
 type Order = {
   id: string
   serviceDate: Date
-  selection: any
-  price: number
+  selection: Prisma.JsonValue
+  price: Prisma.Decimal | number
   status: string
 }
 

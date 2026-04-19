@@ -4,7 +4,7 @@
  * POST /api/catering/menus/dia/[date] - Actualizar/crear menú del día
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getDailyMenu, updateDailyMenu } from '@/lib/db/queries/catering-menus'
@@ -21,7 +21,7 @@ type RouteContext = {
  * GET - Obtener menú de un día
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteContext
 ) {
   try {

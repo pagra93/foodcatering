@@ -55,11 +55,10 @@ export async function getCateringById(tenantId: string) {
     },
   })
 
-  if (!tenant || tenant.restaurants.length === 0) {
+  const restaurant = tenant?.restaurants[0]
+  if (!tenant || !restaurant) {
     return null
   }
-
-  const restaurant = tenant.restaurants[0]
 
   // KPIs: Obtener métricas de los últimos 30 y 90 días
   const thirtyDaysAgo = subDays(new Date(), 30)
@@ -142,12 +141,6 @@ export async function getCateringById(tenantId: string) {
     
   // Cancelaciones post-cutoff (placeholder)
   const postCutoffCancellations = 0
-
-  // Documentos por caducar (próximos 30 días)
-  const next30Days = subDays(new Date(), -30)
-  const expiringDocs = restaurant.documents.filter(
-    (doc) => doc.expiresAt <= next30Days && doc.expiresAt >= new Date()
-  )
 
   // Documentos caducados
   const expiredDocs = restaurant.documents.filter(
@@ -287,8 +280,6 @@ export async function getCaterings({
   pageSize = 20,
   search,
   status,
-  operationalStatus,
-  documentsStatus,
 }: {
   page?: number
   pageSize?: number

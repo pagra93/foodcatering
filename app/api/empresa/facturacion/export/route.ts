@@ -3,15 +3,15 @@
  * ♻️ Reutiliza lógica del portal de Admin
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { getTenant } from '@/lib/tenant/get-tenant'
-import { exportToERP, ERPFormat } from '@/lib/db/queries/empresa-facturacion'
+import { exportToERP, type ERPFormat } from '@/lib/db/queries/empresa-facturacion'
 
 export async function GET(request: NextRequest) {
   try {
-    const { tenantId, tenantType } = await getTenant()
+    const tenant = await getTenant()
 
-    if (!tenantId || tenantType !== 'EMPRESA') {
+    if (!tenant.id || tenant.type !== 'EMPRESA') {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Generar export
-    const { content, filename } = await exportToERP(tenantId, year, month, format)
+    const { content, filename } = await exportToERP(tenant.id, year, month, format)
 
     // Retornar CSV como descarga
     return new NextResponse(content, {

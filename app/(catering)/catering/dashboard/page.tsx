@@ -16,6 +16,7 @@ import { DashboardKPIs } from '@/components/catering/dashboard/DashboardKPIs'
 import { QuickActionsPanel } from '@/components/catering/dashboard/QuickActionsPanel'
 import { DashboardAlerts } from '@/components/catering/dashboard/DashboardAlerts'
 import { RecentActivityTable } from '@/components/catering/dashboard/RecentActivityTable'
+import { QualityWidgets } from '@/components/catering/dashboard/QualityWidgets'
 
 export const metadata = {
   title: 'Dashboard - Catering',
@@ -103,6 +104,9 @@ export default async function CateringDashboardPage() {
 
       {/* KPIs */}
       <DashboardKPIs kpis={kpis} />
+
+      {/* Widgets de calidad (Sprint 2) */}
+      <QualityWidgets tenantId={session.user.tenantId} />
 
       {/* Quick Actions */}
       <QuickActionsPanel />

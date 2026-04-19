@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProfileInfo } from '@/components/empleado/perfil/ProfileInfo'
 import { ProfileStats } from '@/components/empleado/perfil/ProfileStats'
 import { ProfileSettings } from '@/components/empleado/perfil/ProfileSettings'
+import { PrivacySection } from '@/components/empleado/perfil/PrivacySection'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Suspense } from 'react'
@@ -52,9 +53,21 @@ async function ProfileData() {
     )
   }
 
-  const [profile, monthlyHistory] = await Promise.all([
+  const [profile, monthlyHistory, gdprRequests] = await Promise.all([
     getEmployeeProfile(employee.id),
     getEmployeeMonthlyHistory(employee.id, 6),
+    prisma.gdprRequest.findMany({
+      where: { userId: session.user.id },
+      orderBy: { requestedAt: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        requestedAt: true,
+        resolvedAt: true,
+      },
+    }),
   ])
 
   return (
@@ -69,10 +82,11 @@ async function ProfileData() {
 
       {/* Tabs */}
       <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="info">Información</TabsTrigger>
           <TabsTrigger value="stats">Estadísticas</TabsTrigger>
           <TabsTrigger value="settings">Configuración</TabsTrigger>
+          <TabsTrigger value="privacy">Privacidad</TabsTrigger>
         </TabsList>
 
         <TabsContent value="info" className="space-y-4">
@@ -85,6 +99,10 @@ async function ProfileData() {
 
         <TabsContent value="settings" className="space-y-4">
           <ProfileSettings employeeId={employee.id} />
+        </TabsContent>
+
+        <TabsContent value="privacy" className="space-y-4">
+          <PrivacySection userId={session.user.id} existing={gdprRequests} />
         </TabsContent>
       </Tabs>
     </div>

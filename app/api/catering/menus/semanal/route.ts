@@ -5,7 +5,7 @@
  * Obtiene los menús de una semana completa
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getWeeklyMenu } from '@/lib/db/queries/catering-menus'
 import { weeklyMenuQuerySchema } from '@/lib/validations/menu'

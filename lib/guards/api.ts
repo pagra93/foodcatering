@@ -38,9 +38,7 @@ export async function requireAuth() {
 export async function requireRoles(allowedRoles: UserRole[]) {
   const session = await requireAuth()
 
-  const isAllowed = allowedRoles.some((role) =>
-    hasRole(session.user.role, role)
-  )
+  const isAllowed = hasRole(session.user.role, allowedRoles)
 
   if (!isAllowed) {
     throw new Error('Forbidden: Insufficient role')

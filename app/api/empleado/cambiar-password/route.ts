@@ -3,7 +3,7 @@
  * POST /api/empleado/cambiar-password
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { z } from 'zod'
@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar tenant
-    const { tenantId, tenantType } = await getTenant()
-    if (tenantType !== 'EMPRESA') {
+    const tenant = await getTenant()
+    if (tenant.type !== 'EMPRESA') {
       return NextResponse.json(
         { error: 'Este endpoint solo está disponible para empresas' },
         { status: 403 }
@@ -53,11 +53,11 @@ export async function POST(req: NextRequest) {
       where: { id: session.user.id },
       select: {
         id: true,
-        password: true,
+        passwordHash: true,
       },
     })
 
-    if (!user || !user.password) {
+    if (!user || !user.passwordHash) {
       return NextResponse.json(
         { error: 'Usuario no encontrado o sin contraseña configurada' },
         { status: 404 }
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Verificar contraseña actual
     const isPasswordValid = await bcrypt.compare(
       validated.currentPassword,
-      user.password
+      user.passwordHash
     )
 
     if (!isPasswordValid) {
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
     await prisma.user.update({
       where: { id: user.id },
       data: {
-        password: hashedPassword,
+        passwordHash: hashedPassword,
       },
     })
 

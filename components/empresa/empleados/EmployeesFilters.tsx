@@ -20,7 +20,7 @@ type EmployeesFiltersProps = {
     status?: string
     department?: string
   }
-  departments: string[]
+  departments: (string | null)[]
 }
 
 export function EmployeesFilters({
@@ -112,11 +112,13 @@ export function EmployeesFilters({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos los departamentos</SelectItem>
-            {departments.map((dept) => (
-              <SelectItem key={dept} value={dept}>
-                {dept}
-              </SelectItem>
-            ))}
+            {departments
+              .filter((dept): dept is string => dept !== null)
+              .map((dept) => (
+                <SelectItem key={dept} value={dept}>
+                  {dept}
+                </SelectItem>
+              ))}
           </SelectContent>
         </Select>
       )}

@@ -7,6 +7,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireSuperAdmin } from '@/lib/guards'
 import { startImpersonation } from '@/lib/auth/impersonation'
+import { impersonationRateLimiter } from '@/lib/ratelimit'
 
 const startSchema = z.object({
   userId: z.string().uuid(),
@@ -15,9 +16,18 @@ const startSchema = z.object({
 export async function POST(req: Request) {
   try {
     // 1. Verificar que sea super admin
-    await requireSuperAdmin()
-    
-    // 2. Validar datos
+    const session = await requireSuperAdmin()
+
+    // 2. Rate limit: 3 impersonaciones por hora por admin
+    const rl = await impersonationRateLimiter.check(`impersonate:${session.user.id}`)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Demasiadas impersonaciones, espera un momento' },
+        { status: 429, headers: { 'Retry-After': String(rl.resetIn) } }
+      )
+    }
+
+    // 3. Validar datos
     const body = await req.json()
     const { userId } = startSchema.parse(body)
     

@@ -72,7 +72,7 @@ export function CateringForm() {
     },
   })
 
-  const onSubmit = async (data: CreateCateringInput) => {
+  const onSubmit = async (_data: CreateCateringInput) => {
     setIsSubmitting(true)
     try {
       // TODO: Implementar createCatering en queries

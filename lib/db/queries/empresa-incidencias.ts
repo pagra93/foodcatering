@@ -4,7 +4,8 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { startOfMonth } from 'date-fns'
+import type { IncidentSeverity } from '@prisma/client'
 
 // ♻️ REUTILIZAR mapeo de tipos (mismo que en admin)
 export const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
@@ -224,21 +225,21 @@ export async function getIncidentById(tenantId: string, incidentId: string) {
       tenantEmpresa: tenantId,
     },
     include: {
-      order: {
-        include: {
-          employee: {
-            include: {
-              user: true,
-            },
-          },
-        },
-      },
+      order: true,
     },
   })
 
   if (!incident) {
     throw new Error('Incidencia no encontrada')
   }
+
+  // Order no tiene relación directa a Employee; traemos empleado por separado si hay orden
+  const employee = incident.order
+    ? await prisma.employee.findUnique({
+        where: { id: incident.order.employeeId },
+        include: { user: { select: { nameEnc: true, email: true } } },
+      })
+    : null
 
   // Calcular tiempo de resolución
   const resolutionTime = incident.resolvedAt
@@ -258,6 +259,7 @@ export async function getIncidentById(tenantId: string, incidentId: string) {
 
   return {
     ...incident,
+    employee,
     resolutionTime,
     compensation,
   }
@@ -296,7 +298,7 @@ export async function createIncident(
       tenantEmpresa: tenantId,
       tenantCatering: order.tenantCatering,
       type: data.type,
-      severity: data.severity,
+      severity: data.severity as IncidentSeverity,
       status: 'OPEN',
       openedBy: data.openedBy,
     },

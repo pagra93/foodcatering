@@ -17,8 +17,8 @@ export default async function NuevaIncidenciaPage() {
     redirect('/login')
   }
 
-  const tenant = getTenant()
-  if (tenant.type !== 'EMPRESA') {
+  const tenant = await getTenant()
+  if (!tenant || tenant.type !== 'EMPRESA') {
     redirect('/unauthorized')
   }
 

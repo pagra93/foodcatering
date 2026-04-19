@@ -40,7 +40,7 @@ type DishFormProps = {
     id: string
     name: string
     course: string
-    ingredients: string
+    ingredients?: string
     labels: string[]
     nutrition: object
     basePrice: number

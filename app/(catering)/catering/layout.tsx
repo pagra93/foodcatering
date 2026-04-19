@@ -11,6 +11,7 @@
 import { CateringNavbar } from '@/components/catering/CateringNavbar'
 import { CateringSidebar } from '@/components/catering/CateringSidebar'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
+import { withBranding } from '@/components/shared/BrandProvider'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { redirect } from 'next/navigation'
@@ -58,20 +59,19 @@ export default async function CateringInnerLayout({
     role: session.user.role,
   }
 
+  const { branding, style } = await withBranding(tenant.id)
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <CateringSidebar tenant={tenantData} user={userData} />
+    <div className="flex h-screen overflow-hidden" style={style}>
+      {branding.faviconUrl && (
+        <link rel="icon" href={branding.faviconUrl} sizes="any" />
+      )}
 
-      {/* Main Content Area */}
+      <CateringSidebar tenant={tenantData} user={userData} branding={branding} />
+
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-64">
-        {/* Impersonation Banner (si aplica) */}
-        {session?.user?.isImpersonating && <ImpersonationBanner />}
-
-        {/* Top Navbar */}
+        {session?.user?.impersonationToken && <ImpersonationBanner />}
         <CateringNavbar tenant={tenantData} user={userData} />
-
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
           {children}
         </main>

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { ChefHat, Truck, Calendar, LucideIcon } from 'lucide-react'
+import { ChefHat, Truck, Calendar, type LucideIcon } from 'lucide-react'
 
 type QuickAction = {
   title: string

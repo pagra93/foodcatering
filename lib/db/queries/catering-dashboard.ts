@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { subDays, startOfDay, endOfDay } from 'date-fns'
+import { subDays, startOfDay } from 'date-fns'
 
 export async function getCateringDashboard(tenantId: string) {
   const today = startOfDay(new Date())

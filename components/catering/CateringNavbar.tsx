@@ -26,7 +26,7 @@ type CateringNavbarProps = {
   }
 }
 
-export function CateringNavbar({ tenant, user }: CateringNavbarProps) {
+export function CateringNavbar({ tenant: _tenant, user }: CateringNavbarProps) {
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' })
   }

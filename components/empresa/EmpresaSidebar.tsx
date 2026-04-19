@@ -32,6 +32,11 @@ type EmpresaSidebarProps = {
     email?: string | null
     role?: string | null
   }
+  branding?: {
+    primaryColor: string
+    primaryForeground: string
+    logoUrl: string | null
+  }
 }
 
 const navigation = [
@@ -82,23 +87,30 @@ const navigation = [
   },
 ]
 
-export function EmpresaSidebar({ tenant, user }: EmpresaSidebarProps) {
+export function EmpresaSidebar({
+  tenant,
+  user,
+  branding,
+}: EmpresaSidebarProps) {
   const pathname = usePathname()
+  const effectiveLogo = branding?.logoUrl ?? tenant.logoUrl
+  const effectivePrimary = branding?.primaryColor ?? tenant.primaryColor ?? '#3B82F6'
+  const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 lg:flex lg:flex-col hidden">
       {/* Logo y nombre de la empresa */}
       <div className="flex items-center gap-3 px-6 py-5 border-b border-gray-200">
-        {tenant.logoUrl ? (
+        {effectiveLogo ? (
           <img
-            src={tenant.logoUrl}
+            src={effectiveLogo}
             alt={tenant.name}
             className="h-10 w-10 rounded-lg object-cover"
           />
         ) : (
           <div
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white text-lg font-bold"
-            style={{ backgroundColor: tenant.primaryColor || '#3B82F6' }}
+            className="flex h-10 w-10 items-center justify-center rounded-lg text-lg font-bold"
+            style={{ backgroundColor: effectivePrimary, color: effectivePrimaryFg }}
           >
             <Building2 className="h-5 w-5" />
           </div>
@@ -124,17 +136,24 @@ export function EmpresaSidebar({ tenant, user }: EmpresaSidebarProps) {
               className={cn(
                 'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
                 isActive
-                  ? 'bg-blue-50 text-blue-700'
+                  ? ''
                   : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
               )}
+              style={
+                isActive
+                  ? {
+                      backgroundColor: effectivePrimary + '15', // ~8% alpha
+                      color: effectivePrimary,
+                    }
+                  : undefined
+              }
             >
               <Icon
                 className={cn(
                   'h-5 w-5 flex-shrink-0',
-                  isActive
-                    ? 'text-blue-600'
-                    : 'text-gray-400 group-hover:text-gray-600'
+                  isActive ? '' : 'text-gray-400 group-hover:text-gray-600'
                 )}
+                style={isActive ? { color: effectivePrimary } : undefined}
               />
               <span>{item.name}</span>
             </Link>

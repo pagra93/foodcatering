@@ -6,7 +6,7 @@
  * CRÍTICO: Cálculos financieros precisos
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { generateInvoice } from '@/lib/db/queries/catering-invoices'
 import { generateInvoiceSchema, canGenerateInvoiceForPeriod } from '@/lib/validations/invoice'
@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Generar factura
-    const invoice = await generateInvoice(session.user.tenantId, validatedData)
+    const invoice = await generateInvoice(
+      session.user.tenantId,
+      validatedData,
+      session.user.id
+    )
 
     return NextResponse.json({
       success: true,

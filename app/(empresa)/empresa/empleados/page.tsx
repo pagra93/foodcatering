@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
-import { Plus, Upload, FileDown } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getEmployees, type EmployeeFilters } from '@/lib/db/queries/empresa-empleados'
 import { Button } from '@/components/ui/button'

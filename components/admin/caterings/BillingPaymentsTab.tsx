@@ -140,9 +140,8 @@ const getMockCommissionHistory = () => [
 
 export function BillingPaymentsTab({
   restaurant,
-  cateringId,
+  cateringId: _cateringId,
 }: BillingPaymentsTabProps) {
-  const [filterPeriod, setFilterPeriod] = useState<string>('all')
   const [filterStatus, setFilterStatus] = useState<string>('all')
 
   const invoices = getMockInvoices()

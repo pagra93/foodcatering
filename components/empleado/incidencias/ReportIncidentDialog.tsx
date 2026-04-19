@@ -24,12 +24,13 @@ import { es } from 'date-fns/locale'
 import { INCIDENT_TYPES } from '@/lib/db/queries/empleado-incidencias'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
+import type { Prisma } from '@prisma/client'
 
 type Order = {
   id: string
   serviceDate: Date
-  selection: any
-  price: number
+  selection: Prisma.JsonValue
+  price: Prisma.Decimal | number
   status: string
 }
 

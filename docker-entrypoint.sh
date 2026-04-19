@@ -66,16 +66,23 @@ if [ "$HAS_VALID_MIGRATIONS" = true ]; then
     fi
   done
 else
-  # No hay migraciones válidas, usar db push para sincronizar el schema
-  echo "⚠️  No se encontraron migraciones válidas de Prisma"
-  echo "📦 Intentando sincronizar schema con prisma db push..."
-  
+  # No hay migraciones válidas. En producción esto es un fallo duro: no queremos
+  # perder datos con db push --accept-data-loss silenciosamente.
+  if [ "${NODE_ENV:-}" = "production" ]; then
+    echo "❌ ERROR: no hay migraciones de Prisma en formato estándar y NODE_ENV=production."
+    echo "   Revisa prisma/migrations/*/migration.sql antes de desplegar."
+    echo "   Nunca se cae a 'db push --accept-data-loss' en producción."
+    exit 1
+  fi
+
+  echo "⚠️  No se encontraron migraciones válidas de Prisma (entorno no-prod)"
+  echo "📦 Sincronizando schema con prisma db push (dev/staging)..."
+
   if prisma db push --accept-data-loss --skip-generate 2>&1; then
-    echo "✅ Schema sincronizado correctamente"
+    echo "✅ Schema sincronizado"
     MIGRATION_SUCCESS=true
   else
-    echo "⚠️  Error al sincronizar schema, pero continuando..."
-    echo "   Esto puede ser normal si la base de datos ya está actualizada"
+    echo "⚠️  Error al sincronizar schema, continuando (revisa logs)"
   fi
 fi
 

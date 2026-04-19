@@ -10,7 +10,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Search, Filter, Eye } from 'lucide-react'
+import { Search, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -103,7 +103,7 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
               <SelectItem value="all">Todos los tipos</SelectItem>
               {Object.keys(INCIDENT_TYPES).map((type) => (
                 <SelectItem key={type} value={type}>
-                  {INCIDENT_TYPES[type].label}
+                  {INCIDENT_TYPES[type as keyof typeof INCIDENT_TYPES]?.label}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -177,12 +177,12 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
                   </div>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.badgeVariant}>
+                  <Badge variant={SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.variant}>
                     {SEVERITY_MAP[incident.severity as keyof typeof SEVERITY_MAP]?.label}
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Badge variant={INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.badgeVariant}>
+                  <Badge variant={INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.variant}>
                     {INCIDENT_STATUS_MAP[incident.status as keyof typeof INCIDENT_STATUS_MAP]?.label}
                   </Badge>
                 </TableCell>

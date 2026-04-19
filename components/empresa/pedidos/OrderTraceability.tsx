@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import type { Prisma } from '@prisma/client'
 
 type OrderTraceabilityProps = {
   order: {
@@ -20,12 +21,14 @@ type OrderTraceabilityProps = {
     integrityHash: string
     version: number
     deliveryProof: {
+      id?: string
       deliveredAt: Date
       deliveredBy: string | null
       deliveryMethod: string | null
-      geoLocation: any | null
+      signatureImageUrl?: string | null
+      geoLocation: Prisma.JsonValue | null
       notes: string | null
-      verificationHash: string
+      verificationHash: string | null
     } | null
   }
 }
@@ -123,21 +126,23 @@ export function OrderTraceability({ order }: OrderTraceabilityProps) {
               </div>
             )}
 
-            {hasGeoLocation && (
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <p className="text-sm font-medium text-gray-700">Geolocalización</p>
+            {hasGeoLocation && order.deliveryProof?.geoLocation && (() => {
+              const geo = order.deliveryProof.geoLocation as { lat?: number | string; lng?: number | string }
+              return (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <p className="text-sm font-medium text-gray-700">Geolocalización</p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {geo.lat}, {geo.lng}
+                  </p>
+                  <Badge variant="success" className="mt-2">
+                    Ubicación verificada
+                  </Badge>
                 </div>
-                <p className="text-sm text-gray-600">
-                  {order.deliveryProof.geoLocation.lat},{' '}
-                  {order.deliveryProof.geoLocation.lng}
-                </p>
-                <Badge variant="success" className="mt-2">
-                  Ubicación verificada
-                </Badge>
-              </div>
-            )}
+              )
+            })()}
 
             {order.deliveryProof.notes && (
               <div>

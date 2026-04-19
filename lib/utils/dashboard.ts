@@ -10,7 +10,7 @@ import type { UserRole, TenantType } from '@prisma/client'
  * @param tenantType - Tipo de tenant (opcional)
  * @returns Ruta del dashboard correspondiente
  */
-export function getDashboardPath(role: UserRole, tenantType?: TenantType): string {
+export function getDashboardPath(role: UserRole, _tenantType?: TenantType): string {
   // Super Admin → Portal Root
   if (role === 'SUPER_ADMIN') {
     return '/admin'

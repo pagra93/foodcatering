@@ -3,7 +3,7 @@
  * POST /api/empleado/pedidos - Crear o actualizar pedido
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { createOrUpdateOrder } from '@/lib/db/queries/empleado-menus'
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Verificar tenant
-    const { tenantId, tenantType } = await getTenant()
-    if (tenantType !== 'EMPRESA') {
+    const tenant = await getTenant()
+    if (tenant.type !== 'EMPRESA') {
       return NextResponse.json(
         { error: 'Este endpoint solo está disponible para empresas' },
         { status: 403 }
@@ -48,14 +48,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const validated = orderSchema.parse(body)
 
-    // Verificar que el empleado pertenece al usuario autenticado
+    // Verificar que el empleado pertenece al usuario autenticado y al tenant
     const { prisma } = await import('@/lib/db/prisma')
     const employee = await prisma.employee.findFirst({
       where: {
         id: validated.employeeId,
         userId: session.user.id,
-        companyId: tenantId,
-        active: true,
+        tenantId: tenant.id,
+        status: 'ACTIVE',
       },
     })
 

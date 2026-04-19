@@ -190,8 +190,9 @@ export async function getMonthlyBreakdown(
         total: 0,
       }
     }
-    acc[order.employeeId].orders++
-    acc[order.employeeId].total += Number(order.price)
+    const bucket = acc[order.employeeId]!
+    bucket.orders++
+    bucket.total += Number(order.price)
     return acc
   }, {} as Record<string, { employeeId: string; orders: number; total: number }>)
 

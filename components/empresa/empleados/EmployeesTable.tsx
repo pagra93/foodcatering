@@ -35,13 +35,18 @@ type Employee = {
   site: {
     id: string
     name: string
+    address?: string
   }
   status: string
   startDate: Date | null
+  endDate?: Date | null
+  weeklyMenuDays?: unknown
+  monthlyLimit?: number | null
+  createdAt?: Date
   metrics: {
     ordersLast30Days: number
     totalSpent: number
-    lastOrderDate: Date | null
+    lastOrderDate?: Date | null | undefined
   }
 }
 

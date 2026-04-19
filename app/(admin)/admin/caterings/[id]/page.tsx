@@ -6,7 +6,7 @@
 import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit, ChefHat, AlertTriangle, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Edit } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCateringById } from '@/lib/db/queries/caterings'
 import { Button } from '@/components/ui/button'

@@ -5,7 +5,7 @@
  * Genera PDF con etiquetas para impresora térmica
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getOrdersForLabels } from '@/lib/db/queries/catering-production'
 import { generateLabelsSchema } from '@/lib/validations/production'

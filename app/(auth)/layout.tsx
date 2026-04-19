@@ -3,7 +3,7 @@
  * Simple, sin navegación, enfocado en el formulario
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Autenticación | Comidas',

@@ -15,13 +15,10 @@ import {
   Package,
   Truck,
   AlertCircle,
-  FileText,
   Download,
   Eye,
   MapPin,
-  TrendingUp,
   CheckCircle2,
-  XCircle,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -118,7 +115,7 @@ const getMockIncidents = () => [
 
 export function DailyOperationsTab({
   restaurant,
-  cateringId,
+  cateringId: _cateringId,
 }: DailyOperationsTabProps) {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const menusWeek = getMockMenusForWeek()

@@ -23,7 +23,7 @@ const generalSchema = z.object({
   
   // Campos OPCIONALES (según schema de Company)
   sector: z.string().optional().or(z.literal('')),
-  employeeCount: z.coerce.number().optional().or(z.literal('').transform(() => undefined)),
+  employeeCount: z.coerce.number().int().optional(),
   contactRrhhName: z.string().optional().or(z.literal('')),
   contactRrhhEmail: z.string().optional().or(z.literal('')).refine(
     (val) => !val || val === '' || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
@@ -59,6 +59,10 @@ type ConfigGeneralTabProps = {
     name: string
     address: string | null
     city: string | null
+    postalCode?: string | null
+    contactName?: string | null
+    contactPhone?: string | null
+    deliveryNotes?: string | null
   }>
 }
 
@@ -79,7 +83,7 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
       cif: company.cif,
       billingAddress: company.billingAddress,
       sector: company.sector || '',
-      employeeCount: company.employeeCount?.toString() || '',
+      employeeCount: company.employeeCount ?? undefined,
       contactRrhhName: company.contactRrhhName || '',
       contactRrhhEmail: company.contactRrhhEmail || '',
       contactRrhhPhone: company.contactRrhhPhone || '',

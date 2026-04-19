@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { format, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { Calendar, Edit, Eye, AlertCircle, CheckCircle2 } from 'lucide-react'
+import { Calendar, Edit, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 type DayMenu = {
   date: Date
@@ -25,7 +25,7 @@ type WeeklyMenuCalendarProps = {
 export function WeeklyMenuCalendar({
   weekStart,
   menus,
-  onDateClick,
+  onDateClick: _onDateClick,
 }: WeeklyMenuCalendarProps) {
   // Generar 7 días desde weekStart
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))

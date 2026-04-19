@@ -24,7 +24,6 @@ export type OrderFilters = {
 
 export async function getOrders(tenantId: string, filters: OrderFilters = {}) {
   const {
-    search,
     status,
     dateFrom,
     dateTo,

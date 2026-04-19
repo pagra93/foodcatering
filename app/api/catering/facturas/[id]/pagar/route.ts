@@ -3,7 +3,7 @@
  * POST /api/catering/facturas/[id]/pagar
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { markInvoiceAsPaid } from '@/lib/db/queries/catering-invoices'
 import { markInvoiceAsPaidSchema } from '@/lib/validations/invoice'
@@ -40,9 +40,10 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       session.user.tenantId,
       params.id,
       validatedData.paidAt,
-      validatedData.paymentMethod,
-      validatedData.transactionReference,
-      validatedData.notes
+      session.user.id,
+      validatedData.paymentMethod ?? undefined,
+      validatedData.transactionReference ?? undefined,
+      validatedData.notes ?? undefined
     )
 
     return NextResponse.json({

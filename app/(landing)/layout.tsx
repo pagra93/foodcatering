@@ -3,7 +3,7 @@
  * Sin auth, diseño público y limpio
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Comidas - Gestión de Menús Corporativos',

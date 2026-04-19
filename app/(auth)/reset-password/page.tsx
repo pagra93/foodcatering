@@ -3,7 +3,7 @@
  * Se accede desde el enlace del email (con token)
  */
 
-import { Metadata } from 'next'
+import { type Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { CheckCircle2 } from 'lucide-react'

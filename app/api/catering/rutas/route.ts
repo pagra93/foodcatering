@@ -4,7 +4,7 @@
  * POST /api/catering/rutas - Crear ruta
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getRoutes, createRoute } from '@/lib/db/queries/catering-routes'
 import { createRouteSchema } from '@/lib/validations/delivery'

@@ -4,8 +4,9 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import type { OrderStatus } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
-import { subDays, addDays, startOfDay } from 'date-fns'
+import { subDays, startOfDay } from 'date-fns'
 
 const { hash } = bcryptjs
 
@@ -128,7 +129,7 @@ async function main() {
       tenantId: empresaTenant.id,
       companyId: company.id,
       deliveryLocation: 'Recepción - Planta Baja',
-      deliveryNotes: 'Llamar al timbre de entrega',
+      deliveryInstructions: 'Llamar al timbre de entrega',
       notificationsEmail: ['rrhh@acme.com', 'finanzas@acme.com'],
       notifyDailySummary: true,
       notifyIncidents: true,
@@ -385,7 +386,7 @@ async function main() {
   })
 
   // Usuarios catering
-  const chefUser = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: {
       tenantId_email: {
         tenantId: cateringTenant.id,
@@ -520,28 +521,35 @@ async function main() {
     // Fisher-Yates shuffle para garantizar unicidad
     const shuffled = [...empleadosCreados]
     for (let j = shuffled.length - 1; j > 0; j--) {
-      const k = Math.floor(Math.random() * (j + 1));
-      [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]]
+      const k = Math.floor(Math.random() * (j + 1))
+      const tmpJ = shuffled[j]
+      const tmpK = shuffled[k]
+      if (tmpJ && tmpK) {
+        shuffled[j] = tmpK
+        shuffled[k] = tmpJ
+      }
     }
     const empleadosQuePiden = shuffled.slice(0, 7 + Math.floor(Math.random() * 3))
 
     for (const empleado of empleadosQuePiden) {
       // Seleccionar platos aleatorios
-      const primero = platosCreados.filter((p) => p.course === 'FIRST')[Math.floor(Math.random() * 4)]
-      const segundo = platosCreados.filter((p) => p.course === 'SECOND')[Math.floor(Math.random() * 4)]
-      const postre = platosCreados.filter((p) => p.course === 'DESSERT')[Math.floor(Math.random() * 4)]
+      const firsts = platosCreados.filter((p) => p.course === 'FIRST')
+      const seconds = platosCreados.filter((p) => p.course === 'SECOND')
+      const desserts = platosCreados.filter((p) => p.course === 'DESSERT')
+      const primero = firsts[Math.floor(Math.random() * firsts.length)]
+      const segundo = seconds[Math.floor(Math.random() * seconds.length)]
+      const postre = desserts[Math.floor(Math.random() * desserts.length)]
+      if (!primero || !segundo || !postre) continue
 
       const precioTotal = Number(primero.basePrice) + Number(segundo.basePrice) + Number(postre.basePrice)
 
       // 95% entregados, 3% cancelados antes, 2% no show
       const rand = Math.random()
-      let estado: string
-      if (rand < 0.95) estado = 'DELIVERED'
-      else if (rand < 0.98) estado = 'CANCELLED_BEFORE_CUTOFF'
-      else estado = 'NO_SHOW'
+      const estado: OrderStatus =
+        rand < 0.95 ? 'DELIVERED' : rand < 0.98 ? 'CANCELLED_BEFORE_CUTOFF' : 'NO_SHOW'
 
       const order = await prisma.order.create({
-      data: {
+        data: {
           tenantEmpresa: empresaTenant.id,
           tenantCatering: cateringTenant.id,
           employeeId: empleado.id,
@@ -558,8 +566,8 @@ async function main() {
           createdBy: empleado.userId,
           lastModifiedBy: empleado.userId,
           integrityHash: `hash-${Date.now()}-${Math.random()}`,
-      },
-    })
+        },
+      })
 
       // Si fue entregado, crear delivery proof y rating
       if (estado === 'DELIVERED') {

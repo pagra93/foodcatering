@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getWeeklyMenus } from '@/lib/db/queries/empresa-catering'
 
@@ -8,7 +8,7 @@ import { getWeeklyMenus } from '@/lib/db/queries/empresa-catering'
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    await getRequiredSession()
     const searchParams = request.nextUrl.searchParams
     
     const cateringId = searchParams.get('cateringId')

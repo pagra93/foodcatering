@@ -14,14 +14,16 @@ import {
   XCircle,
 } from 'lucide-react'
 
+import type { Prisma } from '@prisma/client'
+
 type CateringSLATabProps = {
   tenantId: string
   cateringId: string
   metrics: {
     punctualityRate: number
     incidentRate: number
-    slaPunctuality: number
-    slaIncidentRate: number
+    slaPunctuality: Prisma.Decimal | number | null
+    slaIncidentRate: Prisma.Decimal | number | null
   }
 }
 
@@ -61,10 +63,19 @@ export function CateringSLATab({
     }
   }
 
+  const slaPunctualityValue =
+    metrics.slaPunctuality !== null && metrics.slaPunctuality !== undefined
+      ? Number(metrics.slaPunctuality)
+      : 0
+  const slaIncidentRateValue =
+    metrics.slaIncidentRate !== null && metrics.slaIncidentRate !== undefined
+      ? Number(metrics.slaIncidentRate)
+      : 0
+
   const punctualityStatus =
-    metrics.punctualityRate >= metrics.slaPunctuality ? 'success' : 'warning'
+    metrics.punctualityRate >= slaPunctualityValue ? 'success' : 'warning'
   const incidentStatus =
-    metrics.incidentRate <= metrics.slaIncidentRate ? 'success' : 'warning'
+    metrics.incidentRate <= slaIncidentRateValue ? 'success' : 'warning'
 
   if (loading) {
     return (
@@ -82,15 +93,11 @@ export function CateringSLATab({
     (sum, item) => sum + item.count,
     0
   )
-  const deliveredLast30Days =
-    slaMetrics?.last30Days.find((item) => item.status === 'DELIVERED')?.count || 0
 
   const totalThisMonth = slaMetrics?.thisMonth.reduce(
     (sum, item) => sum + item.count,
     0
   )
-  const deliveredThisMonth =
-    slaMetrics?.thisMonth.find((item) => item.status === 'DELIVERED')?.count || 0
 
   return (
     <div className="space-y-6">
@@ -127,7 +134,7 @@ export function CateringSLATab({
             <div className="flex items-center justify-between pt-4 border-t">
               <span className="text-sm text-gray-600">Objetivo SLA</span>
               <span className="text-xl font-semibold text-gray-900">
-                {metrics.slaPunctuality}%
+                {slaPunctualityValue}%
               </span>
             </div>
 
@@ -178,7 +185,7 @@ export function CateringSLATab({
             <div className="flex items-center justify-between pt-4 border-t">
               <span className="text-sm text-gray-600">Máximo SLA</span>
               <span className="text-xl font-semibold text-gray-900">
-                {metrics.slaIncidentRate}%
+                {slaIncidentRateValue}%
               </span>
             </div>
 

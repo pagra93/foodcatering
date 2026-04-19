@@ -5,7 +5,7 @@
  * Publica menús de un rango de fechas (los hace visibles a empleados)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { publishWeeklyMenu } from '@/lib/db/queries/catering-menus'
 import { publishMenusSchema } from '@/lib/validations/menu'

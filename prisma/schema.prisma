@@ -41,9 +41,11 @@ model Tenant {
   status    TenantStatus @default(ACTIVE)
 
   // Información de contacto y branding
-  primaryColor String? @map("primary_color")
-  logoUrl      String? @map("logo_url")
-  contactEmail String? @map("contact_email")
+  primaryColor   String? @map("primary_color")
+  secondaryColor String? @map("secondary_color")
+  logoUrl        String? @map("logo_url")
+  faviconUrl     String? @map("favicon_url")
+  contactEmail   String? @map("contact_email")
   contactPhone String? @map("contact_phone")
 
   // Dirección
@@ -119,8 +121,9 @@ model User {
   deletedAt    DateTime?  @map("deleted_at")
 
   // Relaciones
-  tenant    Tenant     @relation(fields: [tenantId], references: [id])
-  employees Employee[]
+  tenant         Tenant          @relation(fields: [tenantId], references: [id])
+  employees      Employee[]
+  deliveryRoutes DeliveryRoute[]
 
   @@unique([tenantId, email])
   @@index([tenantId, status])
@@ -143,6 +146,7 @@ enum CompanyPlan {
 model Company {
   id             String      @id @default(uuid())
   tenantId       String      @unique @map("tenant_id")
+  invoices       Invoice[]
   legalName      String      @map("legal_name")
   cif            String      @unique
   billingAddress String      @map("billing_address")
@@ -205,6 +209,10 @@ model CompanySite {
   contactName  String? @map("contact_name")
   contactPhone String? @map("contact_phone")
 
+  // ===== GEOLOCALIZACIÓN =====
+  latitude  Decimal? @db.Decimal(10, 7)
+  longitude Decimal? @db.Decimal(10, 7)
+
   // ===== OPERACIÓN =====
   deliveryWindow String? @map("delivery_window")
   notes          String? // Notas internas
@@ -218,8 +226,9 @@ model CompanySite {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relaciones
-  company   Company    @relation(fields: [companyId], references: [id])
-  employees Employee[]
+  company            Company             @relation(fields: [companyId], references: [id])
+  employees          Employee[]
+  deliveryRouteSites DeliveryRouteSite[]
 
   @@index([tenantId, active])
   @@index([companyId])
@@ -241,12 +250,13 @@ model CompanyPolicy {
   companyId String @unique @map("company_id")
 
   // ===== CONFIGURACIÓN =====
-  cutoffTime    String     @map("cutoff_time") // formato "HH:mm"
-  daysActive    Json       @default("[\"monday\",\"tuesday\",\"wednesday\",\"thursday\"]") @map("days_active")
-  limitPerDay   Decimal    @map("limit_per_day") @db.Decimal(8, 2)
-  copayCompany  Decimal    @map("copay_company") @db.Decimal(8, 2)
-  copayEmployee Decimal    @map("copay_employee") @db.Decimal(8, 2)
-  noShowRule    NoShowRule @default(NO_CHARGE) @map("no_show_rule")
+  cutoffTime            String     @map("cutoff_time") // formato "HH:mm"
+  daysActive            Json       @default("[\"monday\",\"tuesday\",\"wednesday\",\"thursday\"]") @map("days_active")
+  limitPerDay           Decimal    @map("limit_per_day") @db.Decimal(8, 2)
+  copayCompany          Decimal    @map("copay_company") @db.Decimal(8, 2)
+  copayEmployee         Decimal    @map("copay_employee") @db.Decimal(8, 2)
+  noShowRule            NoShowRule @default(NO_CHARGE) @map("no_show_rule")
+  blockAllergensEnabled Boolean    @default(false) @map("block_allergens_enabled")
 
   // ===== VIGENCIA =====
   effectiveFrom DateTime? @map("effective_from")
@@ -518,6 +528,9 @@ model Dish {
   restaurantId String     @map("restaurant_id")
   name         String
   course       DishCourse
+  description  String?
+  ingredients  String? // Texto libre con ingredientes
+  imageUrl     String?    @map("image_url")
   labels       Json       @default("[]") // [alérgenos, etiquetas nutricionales]
   nutrition    Json       @default("{}") @map("nutrition") // {kcal, protein, carbs, fat}
   basePrice    Decimal    @map("base_price") @db.Decimal(8, 2)
@@ -567,12 +580,21 @@ model DishSchedule {
 // ============================================================================
 
 enum AuditAction {
-  CREATE        @map("create")
-  UPDATE        @map("update")
-  DELETE        @map("delete")
-  IMPERSONATE   @map("impersonate")
-  POLICY_CHANGE @map("policy_change")
-  BILLING_RUN   @map("billing_run")
+  CREATE            @map("create")
+  UPDATE            @map("update")
+  DELETE            @map("delete")
+  IMPERSONATE       @map("impersonate")
+  POLICY_CHANGE     @map("policy_change")
+  BILLING_RUN       @map("billing_run")
+  INVOICE_GENERATED @map("invoice_generated")
+  INVOICE_UPDATED   @map("invoice_updated")
+  INVOICE_PAID      @map("invoice_paid")
+  INVOICE_CANCELLED @map("invoice_cancelled")
+  ORDER_DELIVERED   @map("order_delivered")
+  INCIDENT_REPORTED @map("incident_reported")
+  ROUTE_STARTED     @map("route_started")
+  ROUTE_COMPLETED   @map("route_completed")
+  ROUTE_CANCELLED   @map("route_cancelled")
 
   @@map("audit_action")
 }
@@ -640,6 +662,11 @@ model Order {
   statusChangedAt DateTime?   @map("status_changed_at")
   lockedAt        DateTime?   @map("locked_at")
 
+  // Notas y asignaciones opcionales
+  notes     String?
+  routeId   String? @map("route_id")
+  invoiceId String? @map("invoice_id")
+
   // Auditoría
   createdBy      String @map("created_by")
   lastModifiedBy String @map("last_modified_by")
@@ -651,6 +678,8 @@ model Order {
   deletedAt DateTime? @map("deleted_at")
 
   // Relaciones
+  route          DeliveryRoute?  @relation(fields: [routeId], references: [id])
+  invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
   history        OrderHistory[]
   deliveryEvents DeliveryEvent[]
   incidents      Incident[]
@@ -662,6 +691,8 @@ model Order {
   @@index([tenantEmpresa, serviceDate])
   @@index([serviceDate, status])
   @@index([employeeId, serviceDate])
+  @@index([routeId])
+  @@index([invoiceId])
   @@map("orders")
 }
 
@@ -769,25 +800,32 @@ model DeliveryEvent {
 // ============================================================================
 
 enum InvoiceStatus {
-  DRAFT  @map("draft")
-  ISSUED @map("issued")
-  SENT   @map("sent")
-  PAID   @map("paid")
-  VOID   @map("void")
+  DRAFT     @map("draft")
+  ISSUED    @map("issued")
+  SENT      @map("sent")
+  PAID      @map("paid")
+  OVERDUE   @map("overdue")
+  CANCELLED @map("cancelled")
+  VOID      @map("void")
 
   @@map("invoice_status")
 }
 
 model Invoice {
-  id             String @id @default(uuid())
-  tenantCatering String @map("tenant_catering")
-  tenantEmpresa  String @map("tenant_empresa")
+  id             String  @id @default(uuid())
+  tenantCatering String  @map("tenant_catering")
+  tenantEmpresa  String  @map("tenant_empresa")
+  companyId      String? @map("company_id")
   period         String // "YYYY-MM"
   number         String // Serie + correlativo
 
   // Fechas
-  issueDate DateTime @map("issue_date")
-  dueDate   DateTime @map("due_date")
+  issueDate DateTime  @map("issue_date")
+  dueDate   DateTime  @map("due_date")
+  startDate DateTime? @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  sentAt    DateTime? @map("sent_at")
+  paidAt    DateTime? @map("paid_at")
 
   // Montos
   subtotal  Decimal @db.Decimal(10, 2)
@@ -795,18 +833,28 @@ model Invoice {
   taxAmount Decimal @map("tax_amount") @db.Decimal(10, 2)
   total     Decimal @db.Decimal(10, 2)
 
-  // Estado y archivo
-  status InvoiceStatus @default(DRAFT)
-  pdfUrl String?       @map("pdf_url")
+  // Pago
+  paymentMethod        String? @map("payment_method")
+  transactionReference String? @map("transaction_reference")
+
+  // Estado, archivo e integridad
+  status        InvoiceStatus @default(DRAFT)
+  pdfUrl        String?       @map("pdf_url")
+  snapshot      Json? // Snapshot inmutable del estado al generar
+  integrityHash String?       @map("integrity_hash")
+  notes         String?
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // Relaciones
-  lines InvoiceLine[]
+  company Company?      @relation(fields: [companyId], references: [id])
+  lines   InvoiceLine[]
+  orders  Order[]
 
   @@unique([tenantCatering, tenantEmpresa, period])
   @@index([tenantEmpresa, period])
+  @@index([companyId])
   @@index([status])
   @@map("invoices")
 }
@@ -889,12 +937,15 @@ model Incident {
   orderId        String? @map("order_id")
 
   // Tipo y severidad
-  type     String // De catálogo
-  severity IncidentSeverity @default(LOW)
+  type        String // De catálogo
+  severity    IncidentSeverity @default(LOW)
+  description String?
+  metadata    Json?
 
   // Estado y tracking
   status     IncidentStatus @default(OPEN)
   openedBy   String         @map("opened_by")
+  reportedBy String?        @map("reported_by")
   assignedTo String?        @map("assigned_to")
 
   // Resolución
@@ -1037,37 +1088,37 @@ model WebhookDelivery {
 // ============================================================================
 
 model FiscalReport {
-  id           String @id @default(uuid())
+  id            String @id @default(uuid())
   tenantEmpresa String @map("tenant_empresa")
-  
+
   // Período
   periodYear  Int @map("period_year")
   periodMonth Int @map("period_month") // 1-12
-  
+
   // Métricas
-  totalOrders           Int     @default(0) @map("total_orders")
-  totalAmount           Decimal @default(0) @map("total_amount") @db.Decimal(10, 2)
-  deductibleAmount      Decimal @default(0) @map("deductible_amount") @db.Decimal(10, 2)
-  nonDeductibleAmount   Decimal @default(0) @map("non_deductible_amount") @db.Decimal(10, 2)
-  deductibilityRate     Decimal @map("deductibility_rate") @db.Decimal(5, 2)
-  
+  totalOrders         Int     @default(0) @map("total_orders")
+  totalAmount         Decimal @default(0) @map("total_amount") @db.Decimal(10, 2)
+  deductibleAmount    Decimal @default(0) @map("deductible_amount") @db.Decimal(10, 2)
+  nonDeductibleAmount Decimal @default(0) @map("non_deductible_amount") @db.Decimal(10, 2)
+  deductibilityRate   Decimal @map("deductibility_rate") @db.Decimal(5, 2)
+
   // Empleados
-  employeesServed  Int @default(0) @map("employees_served")
-  daysWithService  Int @default(0) @map("days_with_service")
-  
+  employeesServed Int @default(0) @map("employees_served")
+  daysWithService Int @default(0) @map("days_with_service")
+
   // Cumplimiento fiscal
-  ordersAboveLimit    Int @default(0) @map("orders_above_limit")
-  ordersWithoutProof  Int @default(0) @map("orders_without_proof")
-  ordersWithIssues    Int @default(0) @map("orders_with_issues")
-  
+  ordersAboveLimit   Int @default(0) @map("orders_above_limit")
+  ordersWithoutProof Int @default(0) @map("orders_without_proof")
+  ordersWithIssues   Int @default(0) @map("orders_with_issues")
+
   // Archivo generado
   fileUrl       String? @map("file_url")
   signatureHash String  @map("signature_hash")
-  
+
   // Timestamps
   generatedAt DateTime @default(now()) @map("generated_at")
   generatedBy String   @map("generated_by") // User ID
-  
+
   @@unique([tenantEmpresa, periodYear, periodMonth])
   @@index([tenantEmpresa])
   @@index([periodYear, periodMonth])
@@ -1081,31 +1132,115 @@ model FiscalReport {
 model DeliveryProof {
   id      String @id @default(uuid())
   orderId String @unique @map("order_id")
-  
+
   // Información de entrega
-  deliveredAt     DateTime @map("delivered_at")
-  deliveredBy     String?  @map("delivered_by") // Nombre del repartidor
-  deliveryMethod  String?  @map("delivery_method") // 'in_person', 'locker', 'reception'
-  
+  deliveredAt    DateTime @map("delivered_at")
+  deliveredBy    String?  @map("delivered_by") // Nombre del repartidor
+  deliveryMethod String?  @map("delivery_method") // 'in_person', 'locker', 'reception'
+  proofType      String?  @map("proof_type") // PHOTO | SIGNATURE | NONE
+  proofUrl       String?  @map("proof_url") // URL del documento/foto
+  recipientName  String?  @map("recipient_name")
+
   // Evidencia
-  signatureImageUrl String? @map("signature_image_url")
-  geoLocation       Json?   @map("geo_location") // {lat, lng}
+  signatureImageUrl String?  @map("signature_image_url")
+  latitude          Decimal? @db.Decimal(10, 7)
+  longitude         Decimal? @db.Decimal(10, 7)
+  geoLocation       Json?    @map("geo_location") // {lat, lng} legacy
   notes             String?
-  
+
   // Verificación
   verifiedBy       String?   @map("verified_by") // User ID
   verifiedAt       DateTime? @map("verified_at")
-  verificationHash String    @map("verification_hash")
-  
+  verificationHash String?   @map("verification_hash")
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relaciones
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
+
   @@index([orderId])
   @@index([deliveredAt])
   @@map("delivery_proofs")
+}
+
+// ============================================================================
+// RUTAS DE REPARTO
+// ============================================================================
+
+enum DeliveryRouteStatus {
+  PENDING     @map("pending")
+  IN_PROGRESS @map("in_progress")
+  COMPLETED   @map("completed")
+  CANCELLED   @map("cancelled")
+
+  @@map("delivery_route_status")
+}
+
+enum DeliveryRouteEventType {
+  ROUTE_STARTED     @map("route_started")
+  ROUTE_COMPLETED   @map("route_completed")
+  ROUTE_CANCELLED   @map("route_cancelled")
+  ORDER_DELIVERED   @map("order_delivered")
+  INCIDENT_REPORTED @map("incident_reported")
+  LOCATION_UPDATE   @map("location_update")
+
+  @@map("delivery_route_event_type")
+}
+
+model DeliveryRoute {
+  id                String              @id @default(uuid())
+  tenantId          String              @map("tenant_id") // catering tenant
+  name              String
+  date              DateTime            @db.Date
+  deliveryUserId    String?             @map("delivery_user_id")
+  estimatedDuration Int?                @map("estimated_duration") // minutos
+  notes             String?
+  status            DeliveryRouteStatus @default(PENDING)
+  startedAt         DateTime?           @map("started_at")
+  completedAt       DateTime?           @map("completed_at")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+
+  // Relaciones
+  deliveryUser User?                @relation(fields: [deliveryUserId], references: [id])
+  sites        DeliveryRouteSite[]
+  orders       Order[]
+  events       DeliveryRouteEvent[]
+
+  @@index([tenantId, date])
+  @@index([deliveryUserId])
+  @@index([status])
+  @@map("delivery_routes")
+}
+
+model DeliveryRouteSite {
+  id            String @id @default(uuid())
+  routeId       String @map("route_id")
+  companySiteId String @map("company_site_id")
+  sequence      Int
+
+  // Relaciones
+  route       DeliveryRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  companySite CompanySite   @relation(fields: [companySiteId], references: [id])
+
+  @@unique([routeId, companySiteId])
+  @@index([routeId, sequence])
+  @@map("delivery_route_sites")
+}
+
+model DeliveryRouteEvent {
+  id        String                 @id @default(uuid())
+  routeId   String                 @map("route_id")
+  type      DeliveryRouteEventType
+  timestamp DateTime               @default(now())
+  metadata  Json?
+
+  // Relaciones
+  route DeliveryRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@index([routeId, timestamp])
+  @@map("delivery_route_events")
 }
 
 // ============================================================================
@@ -1132,26 +1267,26 @@ enum NotificationPriority {
 }
 
 model Notification {
-  id       String               @id @default(uuid())
-  tenantId String               @map("tenant_id")
-  userId   String?              @map("user_id") // NULL = para todos
-  
+  id       String  @id @default(uuid())
+  tenantId String  @map("tenant_id")
+  userId   String? @map("user_id") // NULL = para todos
+
   // Tipo y contenido
   type     NotificationType
   priority NotificationPriority @default(NORMAL)
-  
+
   title     String
   message   String
   actionUrl String? @map("action_url")
-  
+
   // Estado
   read   Boolean   @default(false)
   readAt DateTime? @map("read_at")
-  
+
   // Timestamps
   createdAt DateTime  @default(now()) @map("created_at")
   expiresAt DateTime? @map("expires_at")
-  
+
   @@index([tenantId])
   @@index([userId])
   @@index([read])
@@ -1167,34 +1302,34 @@ model CompanySettings {
   id        String @id @default(uuid())
   tenantId  String @unique @map("tenant_id")
   companyId String @unique @map("company_id")
-  
+
   // Preferencias operativas
   deliveryLocation     String? @map("delivery_location")
   deliveryInstructions String? @map("delivery_instructions")
-  
+
   // Notificaciones
-  notificationsEmail    String[] @map("notifications_email")
-  notifyDailySummary    Boolean  @default(false) @map("notify_daily_summary")
-  notifyIncidents       Boolean  @default(true) @map("notify_incidents")
-  notifyInvoices        Boolean  @default(true) @map("notify_invoices")
-  notifyLowAdoption     Boolean  @default(true) @map("notify_low_adoption")
-  
+  notificationsEmail String[] @map("notifications_email")
+  notifyDailySummary Boolean  @default(false) @map("notify_daily_summary")
+  notifyIncidents    Boolean  @default(true) @map("notify_incidents")
+  notifyInvoices     Boolean  @default(true) @map("notify_invoices")
+  notifyLowAdoption  Boolean  @default(true) @map("notify_low_adoption")
+
   // Preferencias de visualización
-  defaultViewEmployees  String @default("table") @map("default_view_employees")
-  defaultPeriodReports  String @default("month") @map("default_period_reports")
-  
+  defaultViewEmployees String @default("table") @map("default_view_employees")
+  defaultPeriodReports String @default("month") @map("default_period_reports")
+
   // Límites y alertas
   alertCancellationRate  Decimal @default(20.00) @map("alert_cancellation_rate") @db.Decimal(5, 2)
   alertAdoptionRate      Decimal @default(50.00) @map("alert_adoption_rate") @db.Decimal(5, 2)
   alertDeductibilityRate Decimal @default(85.00) @map("alert_deductibility_rate") @db.Decimal(5, 2)
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
-  
+
   // Relaciones
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+
   @@index([tenantId])
   @@map("company_settings")
 }
@@ -1207,25 +1342,25 @@ model OrderRating {
   id         String @id @default(uuid())
   orderId    String @unique @map("order_id")
   employeeId String @map("employee_id")
-  
+
   // Valoración general
   rating Int // 1-5
-  
+
   // Valoraciones detalladas (opcional)
   tasteRating        Int? @map("taste_rating") // 1-5
   portionRating      Int? @map("portion_rating") // 1-5
   presentationRating Int? @map("presentation_rating") // 1-5
-  
+
   // Comentario
   comment String?
-  
+
   // Timestamps
   createdAt DateTime @default(now()) @map("created_at")
-  
+
   // Relaciones
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  
+
   @@index([orderId])
   @@index([employeeId])
   @@index([rating])
@@ -1245,37 +1380,608 @@ enum InvitationStatus {
   @@map("invitation_status")
 }
 
-model EmployeeInvitation {
-  id        String @id @default(uuid())
-  tenantId  String @map("tenant_id")
-  companyId String @map("company_id")
-  
+/// Invitación genérica a un usuario para cualquier rol del sistema.
+/// Antes: EmployeeInvitation (asumía rol EMPLEADO). Ahora: UserInvitation
+/// con campo `role` que permite invitar a roles de gestión (RRHH, FINANZAS,
+/// ADMIN_CATERING, CHEF, etc.).
+/// El campo `employeeId` sólo se rellena cuando role = EMPLEADO.
+model UserInvitation {
+  id        String  @id @default(uuid())
+  tenantId  String  @map("tenant_id")
+  companyId String? @map("company_id") // Sólo aplica a tenants EMPRESA
+
   // Datos del invitado
   email      String
   name       String
   department String?
   position   String?
-  
+
+  // Rol que tendrá el user al aceptar la invitación
+  role UserRole
+
   // Token
   token String @unique
-  
+
   // Estado
   status InvitationStatus @default(PENDING)
-  
+
   // Aceptación
   acceptedAt DateTime? @map("accepted_at")
   userId     String?   @map("user_id")
-  employeeId String?   @map("employee_id")
-  
+  employeeId String?   @map("employee_id") // Sólo cuando role = EMPLEADO
+
   // Timestamps
   sentAt    DateTime @default(now()) @map("sent_at")
   expiresAt DateTime @map("expires_at")
   createdBy String   @map("created_by") // User ID
-  
+
   @@unique([tenantId, email])
   @@index([tenantId])
   @@index([token])
   @@index([status])
   @@index([email])
-  @@map("employee_invitations")
+  @@index([role])
+  @@map("user_invitations")
+}
+
+// ─── Calidad y SLAs ──────────────────────────────────────────────────────
+
+enum PenaltyType {
+  SLA_BREACH
+  DOC_EXPIRED
+  INCIDENT_THRESHOLD
+  MANUAL
+
+  @@map("penalty_type")
+}
+
+enum PenaltyStatus {
+  PENDING
+  APPLIED
+  DISPUTED
+  WAIVED
+
+  @@map("penalty_status")
+}
+
+/// Sanciones económicas al catering por SLA incumplido, documentación
+/// expirada, umbral de incidencias superado o decisión manual. Se
+/// descontarán de la liquidación mensual (Sprint 8). Flujo:
+///   PENDING  → SUPER_ADMIN revisa y aplica (APPLIED) o perdona (WAIVED)
+///   APPLIED  → catering puede disputar en 7 días (→ DISPUTED)
+///   DISPUTED → SUPER_ADMIN resuelve (→ WAIVED o vuelve a APPLIED)
+model Penalty {
+  id             String        @id @default(uuid())
+  tenantCatering String        @map("tenant_catering")
+  companyId      String?       @map("company_id")
+  type           PenaltyType
+  reason         String
+  amount         Decimal       @db.Decimal(10, 2)
+  appliedAt      DateTime      @default(now()) @map("applied_at")
+  appliedBy      String        @map("applied_by") // User ID (super admin)
+
+  // Trazabilidad opcional al origen
+  linkedIncidentId String? @map("linked_incident_id")
+  linkedAuditId    String? @map("linked_audit_id")
+
+  // Estado y flujo
+  status        PenaltyStatus @default(PENDING)
+  settledAt     DateTime?     @map("settled_at") // Cuando se paga/descuenta efectivamente
+  disputedAt    DateTime?     @map("disputed_at")
+  disputeReason String?       @map("dispute_reason")
+  resolvedAt    DateTime?     @map("resolved_at") // WAIVED o APPLIED tras DISPUTED
+  resolvedBy    String?       @map("resolved_by")
+
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantCatering, status])
+  @@index([tenantCatering, appliedAt])
+  @@index([status])
+  @@index([linkedIncidentId])
+  @@index([linkedAuditId])
+  @@map("penalties")
+}
+
+// ─── Compliance (Sprint 3) ─────────────────────────────────────────────
+
+enum RetentionEntity {
+  AuditLog
+  Order
+  Invoice
+  User
+  Notification
+  DailySnapshot
+  Incident
+  OrderHistory
+  DeliveryProof
+
+  @@map("retention_entity")
+}
+
+enum RetentionDeleteMode {
+  SOFT
+  HARD
+
+  @@map("retention_delete_mode")
+}
+
+/// Política de retención de datos por entidad. Un cron periódico consulta
+/// esta tabla y aplica purgas según configuración. Cumplimiento RGPD +
+/// obligaciones fiscales (ej. Invoice 5 años obligatorio).
+model RetentionPolicy {
+  id            String              @id @default(uuid())
+  entity        RetentionEntity     @unique
+  retentionDays Int                 @map("retention_days")
+  deleteMode    RetentionDeleteMode @default(SOFT) @map("delete_mode")
+  lastRun       DateTime?           @map("last_run")
+  nextRun       DateTime?           @map("next_run")
+  lastDeleted   Int?                @map("last_deleted")
+  updatedBy     String?             @map("updated_by")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  createdAt     DateTime            @default(now()) @map("created_at")
+
+  @@map("retention_policies")
+}
+
+enum GdprRequestType {
+  ACCESS
+  ERASURE
+  PORTABILITY
+  RECTIFICATION
+
+  @@map("gdpr_request_type")
+}
+
+enum GdprRequestStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
+
+  @@map("gdpr_request_status")
+}
+
+/// Solicitudes RGPD. Plazo legal: 30 días desde recepción.
+/// Pueden venir del propio empleado (portal empleado) o de RRHH en su
+/// nombre (portal empresa).
+model GdprRequest {
+  id              String            @id @default(uuid())
+  tenantId        String            @map("tenant_id")
+  userId          String            @map("user_id")
+  requestedBy     String            @map("requested_by")
+  type            GdprRequestType
+  status          GdprRequestStatus @default(PENDING)
+  requestedAt     DateTime          @default(now()) @map("requested_at")
+  dueBy           DateTime          @map("due_by")
+  resolvedAt      DateTime?         @map("resolved_at")
+  resolvedBy      String?           @map("resolved_by")
+  notes           String?
+  deliveryUrl     String?           @map("delivery_url")
+  rejectionReason String?           @map("rejection_reason")
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([status])
+  @@index([dueBy])
+  @@map("gdpr_requests")
+}
+
+/// Data Processing Agreements firmados con cada tenant.
+/// Obligatorio RGPD Art. 28.
+model DpaAgreement {
+  id               String    @id @default(uuid())
+  tenantId         String    @map("tenant_id")
+  version          String
+  pdfUrl           String    @map("pdf_url")
+  signedAt         DateTime  @map("signed_at")
+  signedByUserId   String    @map("signed_by_user_id")
+  signedByName     String    @map("signed_by_name")
+  effectiveFrom    DateTime  @map("effective_from")
+  effectiveTo      DateTime? @map("effective_to")
+  uploadedByUserId String    @map("uploaded_by_user_id")
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  @@index([tenantId, effectiveFrom])
+  @@index([effectiveTo])
+  @@map("dpa_agreements")
+}
+
+enum SecurityCheckStatus {
+  VERIFIED
+  FAILED
+  PENDING
+
+  @@map("security_check_status")
+}
+
+enum SecurityCheckCategory {
+  OWASP_A01_ACCESS_CONTROL
+  OWASP_A02_CRYPTO_FAILURES
+  OWASP_A03_INJECTION
+  OWASP_A04_INSECURE_DESIGN
+  OWASP_A05_SECURITY_MISCONFIG
+  OWASP_A06_VULNERABLE_COMPONENTS
+  OWASP_A07_AUTH_FAILURES
+  OWASP_A08_DATA_INTEGRITY
+  OWASP_A09_LOGGING_MONITORING
+  OWASP_A10_SSRF
+
+  @@map("security_check_category")
+}
+
+/// Checklist OWASP Top 10 con evidencias.
+model SecurityCheck {
+  id           String                @id @default(uuid())
+  category     SecurityCheckCategory
+  item         String
+  status       SecurityCheckStatus   @default(PENDING)
+  evidence     String?
+  verifiedBy   String?               @map("verified_by")
+  verifiedAt   DateTime?             @map("verified_at")
+  nextReviewAt DateTime?             @map("next_review_at")
+  notes        String?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([status])
+  @@map("security_checks")
+}
+
+enum SecurityReportSeverity {
+  INFO
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+
+  @@map("security_report_severity")
+}
+
+/// Informes de pentesting externos.
+model SecurityReport {
+  id         String                 @id @default(uuid())
+  title      String
+  scanner    String
+  scannedAt  DateTime               @map("scanned_at")
+  pdfUrl     String                 @map("pdf_url")
+  severity   SecurityReportSeverity @default(INFO)
+  findings   Json?
+  uploadedBy String                 @map("uploaded_by")
+  notes      String?
+  createdAt  DateTime               @default(now()) @map("created_at")
+
+  @@index([scannedAt])
+  @@index([severity])
+  @@map("security_reports")
+}
+
+// ─── Facturación (Sprint 4) ────────────────────────────────────────────
+
+/// Catálogo de planes SaaS que SinTupper ofrece a las empresas.
+/// `Company.plan` (enum existente) referencia este catálogo por `code`.
+/// El precio es lo que la empresa paga mensualmente como suscripción SaaS,
+/// separado de la factura que el catering le emite por los pedidos.
+model SaasPlan {
+  id             String      @id @default(uuid())
+  code           CompanyPlan @unique
+  name           String
+  description    String?
+  monthlyPrice   Decimal     @db.Decimal(10, 2) @map("monthly_price")
+  yearlyPrice    Decimal?    @db.Decimal(10, 2) @map("yearly_price")
+  features       Json        @default("[]") // [{name, included, limit?}]
+  maxEmployees   Int?        @map("max_employees")
+  maxOrdersMonth Int?        @map("max_orders_month")
+  supportLevel   String      @default("BASIC") @map("support_level") // BASIC / PRIORITY / DEDICATED
+  active         Boolean     @default(true)
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("saas_plans")
+}
+
+enum SettlementStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+
+  @@map("settlement_status")
+}
+
+/// Liquidación mensual de comisión Catering → SinTupper.
+/// Se genera el día 1 de cada mes automáticamente (cron) para el mes
+/// anterior. El catering paga por transferencia; SinTupper marca como
+/// PAID al recibirlo.
+model Settlement {
+  id               String           @id @default(uuid())
+  tenantCatering   String           @map("tenant_catering")
+  period           String // "YYYY-MM" del mes liquidado
+  grossAmount      Decimal          @db.Decimal(10, 2) @map("gross_amount") // sum Invoice.total del mes
+  commissionRate   Decimal          @db.Decimal(5, 4) @map("commission_rate") // 0.0500 = 5%
+  commissionAmount Decimal          @db.Decimal(10, 2) @map("commission_amount")
+  penalties        Decimal          @default(0) @db.Decimal(10, 2) // Penalty APPLIED del mes
+  netOwed          Decimal          @db.Decimal(10, 2) @map("net_owed") // lo que el catering paga
+  status           SettlementStatus @default(DRAFT)
+  issuedAt         DateTime?        @map("issued_at")
+  dueBy            DateTime?        @map("due_by")
+  paidAt           DateTime?        @map("paid_at")
+  paymentRef       String?          @map("payment_ref") // referencia de la transferencia
+  notes            String?
+  integrityHash    String?          @map("integrity_hash")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  updatedAt        DateTime         @updatedAt @map("updated_at")
+
+  @@unique([tenantCatering, period])
+  @@index([status])
+  @@index([dueBy])
+  @@map("settlements")
+}
+
+enum SaasInvoiceStatus {
+  DRAFT
+  ISSUED
+  PAID
+  OVERDUE
+  CANCELLED
+
+  @@map("saas_invoice_status")
+}
+
+/// Factura SaaS mensual emitida por SinTupper a una empresa por su plan.
+/// Flujo independiente de las facturas que recibe del catering.
+model SaasInvoice {
+  id            String            @id @default(uuid())
+  tenantEmpresa String            @map("tenant_empresa")
+  period        String // "YYYY-MM"
+  planCode      CompanyPlan       @map("plan_code")
+  planName      String            @map("plan_name") // snapshot del nombre al emitir
+  number        String // correlativo tipo SAAS-2026-0001
+  subtotal      Decimal           @db.Decimal(10, 2)
+  taxRate       Decimal           @db.Decimal(5, 2) @map("tax_rate")
+  taxAmount     Decimal           @db.Decimal(10, 2) @map("tax_amount")
+  total         Decimal           @db.Decimal(10, 2)
+  status        SaasInvoiceStatus @default(DRAFT)
+  issuedAt      DateTime?         @map("issued_at")
+  dueBy         DateTime?         @map("due_by")
+  paidAt        DateTime?         @map("paid_at")
+  paymentMethod String?           @map("payment_method")
+  paymentRef    String?           @map("payment_ref")
+  notes         String?
+  integrityHash String?           @map("integrity_hash")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([tenantEmpresa, period])
+  @@unique([number])
+  @@index([status])
+  @@index([dueBy])
+  @@map("saas_invoices")
+}
+
+// ─── Operación (Sprint 5) ──────────────────────────────────────────────
+
+/// Registro de backups de la base de datos productiva.
+/// El cron nocturno (`scripts/backup-prod.sh`) debería escribir una fila
+/// aquí tras cada pg_dump. La UI /admin/operations/backups lo lista para
+/// que SUPER_ADMIN vea el estado sin necesitar acceso SSH al servidor.
+model BackupEvent {
+  id        String   @id @default(uuid())
+  fileName  String   @map("file_name")
+  fileSize  BigInt?  @map("file_size")
+  hash      String?
+  createdBy String   @map("created_by")
+  source    String   @default("cron")
+  notes     String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt])
+  @@map("backup_events")
+}
+
+/// Ventana de mantenimiento programada. Durante la ventana, el
+/// middleware devuelve 503 con mensaje custom a todos los usuarios
+/// cuyo rol no esté en `allowedRoles`. SUPER_ADMIN siempre pasa.
+model MaintenanceWindow {
+  id           String    @id @default(uuid())
+  startsAt     DateTime  @map("starts_at")
+  endsAt       DateTime  @map("ends_at")
+  reason       String
+  message      String
+  allowedRoles Json      @default("[\"SUPER_ADMIN\"]") @map("allowed_roles")
+  enabledBy    String    @map("enabled_by")
+  disabledAt   DateTime? @map("disabled_at")
+  disabledBy   String?   @map("disabled_by")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@index([startsAt, endsAt])
+  @@index([disabledAt])
+  @@map("maintenance_windows")
+}
+
+// ─── Catálogos (Sprint 8) ───────────────────────────────────────────────
+
+enum AllergenCategory {
+  CEREALS_WITH_GLUTEN
+  CRUSTACEANS
+  EGGS
+  FISH
+  PEANUTS
+  SOYBEANS
+  MILK
+  TREE_NUTS
+  CELERY
+  MUSTARD
+  SESAME
+  SULPHITES
+  LUPIN
+  MOLLUSCS
+  OTHER
+
+  @@map("allergen_category")
+}
+
+/// Catálogo de alérgenos. Los 14 oficiales EU se siembran como category
+/// concreta; un super admin puede añadir extras con category=OTHER.
+model Allergen {
+  id          String           @id @default(uuid())
+  code        String           @unique
+  name        String
+  category    AllergenCategory
+  description String?
+  icon        String?
+  active      Boolean          @default(true)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([active])
+  @@map("allergens")
+}
+
+/// Plantilla de menú reutilizable por un catering.
+model MenuTemplate {
+  id             String   @id @default(uuid())
+  tenantCatering String   @map("tenant_catering")
+  name           String
+  description    String?
+  structure      Json // { monday: { first:[], second:[], dessert:[] }, ... }
+  active         Boolean  @default(true)
+  createdBy      String   @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantCatering, active])
+  @@map("menu_templates")
+}
+
+enum HolidayScope {
+  NATIONAL
+  REGION
+  TENANT
+
+  @@map("holiday_scope")
+}
+
+/// Festivos. 3 scopes: NATIONAL (todo ES), REGION (ES-MD, ES-CN, …),
+/// TENANT (festivo propio del tenant).
+model Holiday {
+  id          String       @id @default(uuid())
+  date        DateTime     @db.Date
+  name        String
+  scope       HolidayScope
+  regionCode  String?      @map("region_code")
+  tenantId    String?      @map("tenant_id")
+  description String?
+  createdBy   String?      @map("created_by")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([date])
+  @@index([scope, regionCode])
+  @@index([tenantId])
+  @@map("holidays")
+}
+
+/// Override de un tenant sobre un festivo oficial (NATIONAL/REGION).
+/// Su presencia desactiva ese festivo para ese tenant.
+model HolidayOverride {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  holidayId String   @map("holiday_id")
+  disabled  Boolean  @default(true)
+  notes     String?
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([tenantId, holidayId])
+  @@index([tenantId])
+  @@map("holiday_overrides")
+}
+
+/// Zona de reparto de un catering. Normaliza el JSON Restaurant.zones.
+model DeliveryZone {
+  id             String   @id @default(uuid())
+  tenantCatering String   @map("tenant_catering")
+  name           String
+  postalCodes    String[] @map("postal_codes")
+  maxDistanceKm  Int?     @map("max_distance_km")
+  defaultDriver  String?  @map("default_driver")
+  notes          String?
+  active         Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@index([tenantCatering, active])
+  @@map("delivery_zones")
+}
+
+enum IncidentReasonSeverity {
+  LOW
+  MEDIUM
+  HIGH
+
+  @@map("incident_reason_severity")
+}
+
+/// Catálogo editable de motivos de incidencia.
+model IncidentReason {
+  id                   String                 @id @default(uuid())
+  code                 String                 @unique
+  name                 String
+  description          String?
+  defaultSeverity      IncidentReasonSeverity @default(MEDIUM) @map("default_severity")
+  category             String
+  requiresCompensation Boolean                @default(false) @map("requires_compensation")
+  scope                String                 @default("SYSTEM")
+  tenantId             String?                @map("tenant_id")
+  active               Boolean                @default(true)
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  @@index([scope, active])
+  @@index([tenantId])
+  @@map("incident_reasons")
+}
+
+/// Configuración global de branding del sistema. Sólo debe haber una fila.
+/// Cuando un tenant no personaliza su branding, los portales caen en estos
+/// valores por defecto. El super admin puede editarlos desde
+/// /admin/templates/branding. Singleton pattern: id fijo.
+model SystemSettings {
+  id                    String   @id @default("singleton")
+  defaultPrimaryColor   String   @default("#3B82F6") @map("default_primary_color")
+  defaultSecondaryColor String?  @map("default_secondary_color")
+  defaultLogoUrl        String?  @map("default_logo_url")
+  defaultFaviconUrl     String?  @map("default_favicon_url")
+  brandName             String   @default("SinTupper")
+  updatedBy             String?  @map("updated_by")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@map("system_settings")
+}
+
+/// Reglas fiscales (IVA) configurables. Sustituye el valor hardcoded
+/// 10% en Invoice.taxRate cuando el flujo lo consulte.
+model TaxRule {
+  id        String    @id @default(uuid())
+  code      String    @unique // IVA_GENERAL, IVA_COMIDA, IGIC_CANARIAS, ...
+  name      String
+  rate      Decimal   @db.Decimal(5, 2) // 10.00, 21.00, 7.00
+  category  String // food / service / digital
+  region    String? // ES-CN Canarias, ES-CE Ceuta, ...
+  validFrom DateTime  @map("valid_from")
+  validTo   DateTime? @map("valid_to")
+  active    Boolean   @default(true)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([active])
+  @@map("tax_rules")
 }

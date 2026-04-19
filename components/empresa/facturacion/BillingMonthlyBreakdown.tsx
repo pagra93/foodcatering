@@ -15,9 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Calendar, Download, Eye } from 'lucide-react'
+import { Download } from 'lucide-react'
 import {
   Select,
   SelectContent,

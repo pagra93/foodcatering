@@ -2,7 +2,7 @@ import { getRequiredSession } from '@/lib/auth/session'
 import { CateringWizard } from '@/components/admin/caterings/CateringWizard'
 
 export default async function NewCateringPage() {
-  const session = await getRequiredSession()
+  await getRequiredSession()
 
   return (
     <div className="space-y-6">

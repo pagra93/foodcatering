@@ -22,7 +22,7 @@ type RecentActivityProps = {
     tenants: Array<{
       id: string
       name: string
-      type: 'EMPRESA' | 'CATERING' | 'ROOT'
+      type: string
       status: string
       createdAt: Date
     }>
@@ -30,17 +30,13 @@ type RecentActivityProps = {
       id: string
       severity: string
       status: string
-      description: string
+      type: string
+      tenantEmpresa: string
       createdAt: Date
-      order: {
-        companyTenant: {
-          name: string
-        }
-      } | null
     }>
     users: Array<{
       id: string
-      name: string | null
+      nameEnc: string | null
       email: string
       role: string
       createdAt: Date
@@ -154,11 +150,11 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                           href={`/admin/quality/incidents/${incident.id}`}
                           className="text-gray-900 hover:text-blue-600 hover:underline"
                         >
-                          {incident.description}
+                          {incident.type}
                         </Link>
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
-                        {incident.order?.companyTenant.name || 'N/A'}
+                        {incident.tenantEmpresa || 'N/A'}
                       </TableCell>
                       <TableCell>
                         <Badge
@@ -222,7 +218,7 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                   activity.users.map((user) => (
                     <TableRow key={user.id} className="border-gray-100 hover:bg-gray-50">
                       <TableCell className="font-medium text-gray-900">
-                        {user.name || 'Sin nombre'}
+                        {user.nameEnc || 'Sin nombre'}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">{user.email}</TableCell>
                       <TableCell>

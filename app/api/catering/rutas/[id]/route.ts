@@ -5,7 +5,7 @@
  * DELETE /api/catering/rutas/[id] - Cancelar ruta
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import {
   getRouteById,
@@ -24,7 +24,7 @@ type RouteContext = {
 /**
  * GET - Obtener ruta
  */
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(_request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 

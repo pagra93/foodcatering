@@ -438,11 +438,10 @@ export async function getCompanyByIdComplete(tenantId: string) {
     },
   })
 
-  if (!tenant || tenant.companies.length === 0) {
+  const company = tenant?.companies[0]
+  if (!tenant || !company) {
     return null
   }
-
-  const company = tenant.companies[0]
 
   // KPIs paralelos
   const [
@@ -835,11 +834,10 @@ export async function getCompanyById(tenantId: string) {
     },
   })
 
-  if (!tenant || tenant.companies.length === 0) {
+  const company = tenant?.companies[0]
+  if (!tenant || !company) {
     return null
   }
-
-  const company = tenant.companies[0]
 
   // KPIs: Obtener pedidos de los últimos 30 días
   const thirtyDaysAgo = subDays(new Date(), 30)
@@ -952,7 +950,7 @@ export async function getCompanyById(tenantId: string) {
 /**
  * Obtener catering asignado a una empresa
  */
-export async function getAssignedCatering(tenantId: string) {
+export async function getAssignedCatering(_tenantId: string) {
   // Por ahora retornamos null hasta que se implemente RestaurantAssignment
   // TODO: Implementar cuando se defina la lógica de asignación
   return null

@@ -32,15 +32,13 @@ import {
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, Edit, Copy, Trash2, Eye, Power, PowerOff } from 'lucide-react'
 import { DISH_COURSE_LABELS, parseDishLabels, ALLERGEN_LABELS } from '@/lib/validations/dish'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import { toast } from 'sonner'
 
 type Dish = {
   id: string
   name: string
   course: string
-  ingredients: string
+  ingredients?: string
   labels: string[]
   basePrice: number
   active: boolean

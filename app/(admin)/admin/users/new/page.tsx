@@ -1,45 +1,18 @@
-import { redirect } from 'next/navigation'
-import { auth } from '@/lib/auth'
-import { prisma } from '@/lib/db/prisma'
-import { Card } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { prisma } from '@/lib/db/prisma'
+import { NewUserForm } from '@/components/admin/users/NewUserForm'
 
-/**
- * Página para crear nuevo usuario (Super Admin)
- */
 export default async function NewUserPage() {
-  const session = await auth()
-  
-  if (!session) {
-    redirect('/login')
-  }
-
-  // Solo SUPER_ADMIN puede acceder
-  if (session.user.role !== 'SUPER_ADMIN') {
-    redirect('/unauthorized')
-  }
-
-  // Obtener todos los tenants para el selector
   const tenants = await prisma.tenant.findMany({
-    where: {
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      status: true,
-    },
-    orderBy: {
-      name: 'asc',
-    },
+    where: { deletedAt: null, status: 'ACTIVE' },
+    select: { id: true, name: true, subdomain: true, type: true },
+    orderBy: [{ type: 'asc' }, { name: 'asc' }],
   })
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
           <Link href="/admin/users">
@@ -51,25 +24,14 @@ export default async function NewUserPage() {
 
       <div>
         <h1 className="text-2xl font-bold">Nuevo Usuario</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Crea un nuevo usuario en el sistema
+        <p className="mt-1 text-sm text-gray-500">
+          Normalmente se usa para crear miembros del equipo SinTupper
+          (SUPER_ADMIN, AUDITOR). Para usuarios de empresa o catering,
+          prefiere sus portales o impersonación.
         </p>
       </div>
 
-      {/* Formulario */}
-      <Card className="p-6 max-w-2xl">
-        <p className="text-sm text-gray-500">
-          Funcionalidad de creación de usuarios en desarrollo.
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Por ahora, los usuarios se crean desde:
-        </p>
-        <ul className="list-disc list-inside text-sm text-gray-500 mt-2 space-y-1">
-          <li>Portal Empresa → Empleados (para empleados)</li>
-          <li>Seed script (para administradores)</li>
-        </ul>
-      </Card>
+      <NewUserForm tenants={tenants} />
     </div>
   )
 }
-

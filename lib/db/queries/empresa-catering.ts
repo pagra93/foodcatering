@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { startOfMonth, endOfMonth, subDays } from 'date-fns'
+import { startOfMonth, subDays } from 'date-fns'
 
 // ============================================================================
 // OBTENER CATERING ASIGNADO
@@ -130,16 +130,36 @@ export async function getAssignedCatering(tenantId: string) {
 // OBTENER MENÚS DE LA SEMANA
 // ============================================================================
 
-export async function getWeeklyMenus(cateringId: string, startDate: Date, endDate: Date) {
-  // Obtener platos programados para el rango de fechas
+type DayMenu = {
+  date: Date
+  starters: DishEntry[]
+  mains: DishEntry[]
+  desserts: DishEntry[]
+}
+
+type DishEntry = {
+  scheduleId: string
+  dishId: string
+  name: string
+  course: string
+  price: number
+  labels: unknown
+  nutrition: unknown
+  stockLimit: number | null
+  priceOverride: number | null
+}
+
+export async function getWeeklyMenus(cateringTenantId: string, startDate: Date, endDate: Date) {
+  // Schedules publicados del catering en el rango
   const schedules = await prisma.dishSchedule.findMany({
     where: {
-      availableDate: {
+      tenantId: cateringTenantId,
+      date: {
         gte: startDate,
         lte: endDate,
       },
+      status: 'PUBLISHED',
       dish: {
-        tenantCatering: cateringId,
         active: true,
       },
     },
@@ -157,55 +177,50 @@ export async function getWeeklyMenus(cateringId: string, startDate: Date, endDat
       },
     },
     orderBy: [
-      { availableDate: 'asc' },
+      { date: 'asc' },
       { dish: { course: 'asc' } },
     ],
   })
 
-  // Agrupar por fecha
-  const menusByDate = schedules.reduce((acc, schedule) => {
-    const dateKey = schedule.availableDate.toISOString().split('T')[0]
-    
+  const menusByDate = schedules.reduce<Record<string, DayMenu>>((acc, schedule) => {
+    const dateKey = schedule.date.toISOString().split('T')[0] ?? schedule.date.toISOString()
+
     if (!acc[dateKey]) {
       acc[dateKey] = {
-        date: schedule.availableDate,
+        date: schedule.date,
         starters: [],
         mains: [],
         desserts: [],
       }
     }
+    const bucket = acc[dateKey]!
 
-    const dishData = {
+    const dishData: DishEntry = {
       scheduleId: schedule.id,
       dishId: schedule.dish.id,
       name: schedule.dish.name,
-      description: schedule.dish.description,
-      price: Number(schedule.dish.price),
-      imageUrl: schedule.dish.imageUrl,
-      allergens: schedule.dish.allergens,
-      nutritionData: schedule.dish.nutritionData,
-      isVegetarian: schedule.dish.isVegetarian,
-      isVegan: schedule.dish.isVegan,
-      isGlutenFree: schedule.dish.isGlutenFree,
-      maxQuantity: schedule.maxQuantity,
-      currentQuantity: schedule.currentQuantity,
-      available: schedule.currentQuantity < schedule.maxQuantity,
+      course: schedule.dish.course,
+      price: Number(schedule.priceOverride ?? schedule.dish.basePrice),
+      labels: schedule.dish.labels,
+      nutrition: schedule.dish.nutrition,
+      stockLimit: schedule.stockLimit,
+      priceOverride: schedule.priceOverride ? Number(schedule.priceOverride) : null,
     }
 
     switch (schedule.dish.course) {
-      case 'STARTER':
-        acc[dateKey].starters.push(dishData)
+      case 'FIRST':
+        bucket.starters.push(dishData)
         break
-      case 'MAIN':
-        acc[dateKey].mains.push(dishData)
+      case 'SECOND':
+        bucket.mains.push(dishData)
         break
       case 'DESSERT':
-        acc[dateKey].desserts.push(dishData)
+        bucket.desserts.push(dishData)
         break
     }
 
     return acc
-  }, {} as Record<string, any>)
+  }, {})
 
   return Object.values(menusByDate)
 }

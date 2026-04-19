@@ -60,6 +60,9 @@ export const createTenantSchema = z.object({
   
   // Notas internas
   notes: z.string().optional().or(z.literal('')),
+
+  // Configuración JSON arbitraria por tenant
+  config: z.record(z.unknown()).optional(),
 })
 
 export type CreateTenantInput = z.infer<typeof createTenantSchema>

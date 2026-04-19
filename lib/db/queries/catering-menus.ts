@@ -6,7 +6,11 @@
 
 import { prisma } from '@/lib/db/prisma'
 import type { DailyMenuInput, PublishMenusInput, WeeklyMenuQuery } from '@/lib/validations/menu'
-import { startOfDay, endOfDay } from 'date-fns'
+import { startOfDay, endOfDay, format } from 'date-fns'
+
+function toDateKey(d: Date): string {
+  return format(d, 'yyyy-MM-dd')
+}
 
 /**
  * Obtener menús de una semana completa
@@ -44,7 +48,7 @@ export async function getWeeklyMenu(tenantId: string, query: WeeklyMenuQuery) {
   const menusByDate: Record<string, any> = {}
 
   schedules.forEach((schedule) => {
-    const dateKey = schedule.date.toISOString().split('T')[0]
+    const dateKey = toDateKey(schedule.date)
 
     if (!menusByDate[dateKey]) {
       menusByDate[dateKey] = {
@@ -67,15 +71,16 @@ export async function getWeeklyMenu(tenantId: string, query: WeeklyMenuQuery) {
       labels: schedule.dish.labels as string[],
     }
 
+    const bucket = menusByDate[dateKey]!
     switch (schedule.dish.course) {
       case 'FIRST':
-        menusByDate[dateKey].firsts.push(dishData)
+        bucket.firsts.push(dishData)
         break
       case 'SECOND':
-        menusByDate[dateKey].seconds.push(dishData)
+        bucket.seconds.push(dishData)
         break
       case 'DESSERT':
-        menusByDate[dateKey].desserts.push(dishData)
+        bucket.desserts.push(dishData)
         break
     }
   })
@@ -121,7 +126,7 @@ export async function getDailyMenu(tenantId: string, date: Date) {
 
   const menu = {
     date,
-    status: schedules.length > 0 ? schedules[0].status : 'HIDDEN',
+    status: schedules[0]?.status ?? 'HIDDEN',
     firsts: [] as any[],
     seconds: [] as any[],
     desserts: [] as any[],
@@ -132,8 +137,6 @@ export async function getDailyMenu(tenantId: string, date: Date) {
       scheduleId: schedule.id,
       dishId: schedule.dish.id,
       name: schedule.dish.name,
-      labels: schedule.dish.labels,
-      nutrition: schedule.dish.nutrition,
       basePrice: Number(schedule.dish.basePrice),
       priceOverride: schedule.priceOverride ? Number(schedule.priceOverride) : null,
       stockLimit: schedule.stockLimit,
@@ -241,11 +244,11 @@ export async function publishWeeklyMenu(
     const dateGroups: Record<string, any[]> = {}
 
     schedules.forEach((schedule) => {
-      const dateKey = schedule.date.toISOString().split('T')[0]
+      const dateKey = toDateKey(schedule.date)
       if (!dateGroups[dateKey]) {
         dateGroups[dateKey] = []
       }
-      dateGroups[dateKey].push(schedule)
+      dateGroups[dateKey]!.push(schedule)
     })
 
     // 3. Validar que cada día tiene primeros y segundos

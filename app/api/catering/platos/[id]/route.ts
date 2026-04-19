@@ -5,7 +5,7 @@
  * DELETE /api/catering/platos/[id] - Eliminar (soft delete)
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import {
   getDishById,
@@ -26,7 +26,7 @@ type RouteContext = {
  * GET - Obtener detalle de un plato
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteContext
 ) {
   try {
@@ -177,7 +177,7 @@ export async function PATCH(
  * DELETE - Eliminar un plato (soft delete)
  */
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: RouteContext
 ) {
   try {

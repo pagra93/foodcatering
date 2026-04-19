@@ -107,16 +107,14 @@ export function QualityComplianceTab({
   documents,
   cateringId,
 }: QualityComplianceTabProps) {
-  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
 
   // Agrupar documentos por tipo
   const documentsByType: Record<string, Document[]> = {}
   documents.forEach((doc) => {
-    if (!documentsByType[doc.type]) {
-      documentsByType[doc.type] = []
-    }
-    documentsByType[doc.type].push(doc)
+    const bucket = documentsByType[doc.type] ?? []
+    bucket.push(doc)
+    documentsByType[doc.type] = bucket
   })
 
   // Contar documentos por estado

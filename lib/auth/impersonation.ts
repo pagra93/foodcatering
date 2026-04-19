@@ -97,7 +97,7 @@ export async function startImpersonation(
         id: true,
         role: true,
         tenantId: true,
-        name: true,
+        nameEnc: true,
         email: true,
       },
     })
@@ -127,17 +127,18 @@ export async function startImpersonation(
     
     // 6. Registrar en audit_logs
     await logAudit({
-      userId: session.user.id,
       tenantId: session.user.tenantId,
-      action: 'impersonation_started',
-      resource: 'user',
-      resourceId: targetUser.id,
-      details: {
+      actorId: session.user.id,
+      action: 'IMPERSONATE',
+      entity: 'user',
+      entityId: targetUser.id,
+      diff: {
+        event: 'start',
         targetUserEmail: targetUser.email,
-        targetUserName: targetUser.name,
+        targetUserName: targetUser.nameEnc,
         targetRole: targetUser.role,
         targetTenantId: targetUser.tenantId,
-        duration: IMPERSONATION_DURATION_MINUTES,
+        durationMinutes: IMPERSONATION_DURATION_MINUTES,
       },
     })
     
@@ -167,13 +168,14 @@ export async function stopImpersonation(): Promise<{ success: boolean; error?: s
     
     // Registrar fin de impersonación
     await logAudit({
-      userId: token.originalUserId,
       tenantId: session.user.tenantId,
-      action: 'impersonation_ended',
-      resource: 'user',
-      resourceId: token.targetUserId,
-      details: {
-        duration: Math.round((Date.now() - token.startedAt) / 1000 / 60), // minutos
+      actorId: token.originalUserId,
+      action: 'IMPERSONATE',
+      entity: 'user',
+      entityId: token.targetUserId,
+      diff: {
+        event: 'stop',
+        durationMinutes: Math.round((Date.now() - token.startedAt) / 1000 / 60),
         reason: 'manual_stop',
       },
     })

@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale'
 import { SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/catering-incidencias'
 import { FileText, MessageCircle } from 'lucide-react'
 import { ResolveIncidentDialog } from './ResolveIncidentDialog'
+import type { Prisma } from '@prisma/client'
 
 type Incident = {
   id: string
@@ -20,17 +21,22 @@ type Incident = {
   status: string
   statusLabel: string
   createdAt: Date
+  updatedAt?: Date
   resolvedAt: Date | null
   resolutionTime: number | null
-  resolution: any
+  resolution: Prisma.JsonValue
+  openedBy?: string
+  assignedTo?: string | null
+  tenantEmpresa?: string
   companyName: string
   employeeName: string | null
   employeeEmail: string | null
   order: {
     id: string
     serviceDate: Date
-    selection: any
-    price: number
+    selection: Prisma.JsonValue
+    price: Prisma.Decimal | number
+    employeeId?: string | null
   } | null
 }
 
@@ -123,9 +129,9 @@ export function CateringIncidentsList({ incidents }: CateringIncidentsListProps)
                         ✓ Resolución Enviada
                       </h4>
                       <p className="text-sm text-green-800">
-                        {typeof incident.resolution === 'object'
-                          ? incident.resolution.details || incident.resolution.type
-                          : incident.resolution}
+                        {typeof incident.resolution === 'object' && incident.resolution !== null && !Array.isArray(incident.resolution)
+                          ? String((incident.resolution as Record<string, unknown>)['details'] ?? (incident.resolution as Record<string, unknown>)['type'] ?? '')
+                          : String(incident.resolution)}
                       </p>
                       {incident.resolvedAt && (
                         <p className="text-xs text-green-600 mt-2">

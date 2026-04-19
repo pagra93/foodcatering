@@ -1,12 +1,8 @@
-/**
- * Layout principal del Portal del Empleado
- * UI simple y mobile-first
- */
-
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { EmpleadoNavbar } from '@/components/empleado/EmpleadoNavbar'
+import { withBranding } from '@/components/shared/BrandProvider'
 
 export default async function EmpleadoLayout({
   children,
@@ -24,19 +20,22 @@ export default async function EmpleadoLayout({
     redirect('/login')
   }
 
+  const { branding, style } = await withBranding(tenant.id)
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" style={style}>
+      {branding.faviconUrl && (
+        <link rel="icon" href={branding.faviconUrl} sizes="any" />
+      )}
       <EmpleadoNavbar
         user={{
           name: session.user.name || '',
           email: session.user.email || '',
           role: session.user.role || '',
         }}
+        branding={branding}
       />
-      <main className="pb-20">
-        {children}
-      </main>
+      <main className="pb-20">{children}</main>
     </div>
   )
 }
-

@@ -5,11 +5,8 @@ import { EmpresaSidebar } from '@/components/empresa/EmpresaSidebar'
 import { EmpresaNavbar } from '@/components/empresa/EmpresaNavbar'
 import { Toaster } from '@/components/ui/sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { withBranding } from '@/components/shared/BrandProvider'
 
-/**
- * Layout principal del portal de empresa
- * Incluye sidebar, navbar y área de contenido
- */
 export default async function EmpresaLayout({
   children,
 }: {
@@ -17,28 +14,25 @@ export default async function EmpresaLayout({
 }) {
   const session = await getRequiredSession()
   const tenant = await getCurrentTenant()
+  const { branding, style } = await withBranding(tenant.id)
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Sidebar fijo a la izquierda */}
-      <EmpresaSidebar tenant={tenant} user={session.user} />
+    <div className="min-h-screen bg-gray-50" style={style}>
+      {branding.faviconUrl && (
+        <link rel="icon" href={branding.faviconUrl} sizes="any" />
+      )}
+      <EmpresaSidebar tenant={tenant} user={session.user} branding={branding} />
 
-      {/* Contenedor principal (con margen para el sidebar) */}
       <div className="lg:pl-64">
-        {/* Navbar superior */}
         <EmpresaNavbar tenant={tenant} user={session.user} />
 
-        {/* Contenido principal */}
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <Suspense fallback={<ContentSkeleton />}>
-              {children}
-            </Suspense>
+            <Suspense fallback={<ContentSkeleton />}>{children}</Suspense>
           </div>
         </main>
       </div>
 
-      {/* Toast notifications */}
       <Toaster />
     </div>
   )
@@ -52,4 +46,3 @@ function ContentSkeleton() {
     </div>
   )
 }
-

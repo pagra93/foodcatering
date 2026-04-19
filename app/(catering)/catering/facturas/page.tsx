@@ -5,14 +5,10 @@
  * Vista para gestionar facturación mensual
  */
 
-import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
-  FileText,
   Plus,
-  Download,
   TrendingUp,
   DollarSign,
   Calendar,

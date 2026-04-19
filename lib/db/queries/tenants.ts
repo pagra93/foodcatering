@@ -3,7 +3,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import type { Prisma } from '@prisma/client'
+import { type Prisma } from '@prisma/client'
 import type { 
   CreateTenantInput, 
   UpdateTenantInput, 
@@ -109,13 +109,10 @@ export async function getTenantById(id: string) {
       companies: {
         include: {
           sites: {
-            where: { deletedAt: null },
+            where: { active: true },
             take: 5,
           },
-          policies: {
-            orderBy: { createdAt: 'desc' },
-            take: 1,
-          },
+          policy: true,
         },
       },
       restaurants: {
@@ -146,7 +143,7 @@ export async function getTenantById(id: string) {
 /**
  * Crear un nuevo tenant
  */
-export async function createTenant(data: CreateTenantInput, createdBy: string) {
+export async function createTenant(data: CreateTenantInput, _createdBy: string) {
   // Verificar que el subdominio no exista
   const existing = await prisma.tenant.findUnique({
     where: { subdomain: data.subdomain },
@@ -175,7 +172,7 @@ export async function createTenant(data: CreateTenantInput, createdBy: string) {
       currency: data.currency || 'EUR',
       language: data.language || 'es',
       notes: data.notes,
-      config: data.config || {},
+      config: (data.config ?? {}) as Prisma.InputJsonValue,
     },
   })
 
@@ -193,11 +190,20 @@ export async function createTenant(data: CreateTenantInput, createdBy: string) {
   }
 
   // Si es catering, crear registro en Restaurant
+  // NOTA: Restaurant requiere cif, billingAddress, contactPerson, contactEmail, contactPhone.
+  // Si el form de creación de tenant no los aporta todavía, se rellenan con defaults vacíos
+  // que el admin debe actualizar antes de operar el catering.
   if (tenant.type === 'CATERING') {
     await prisma.restaurant.create({
       data: {
         tenantId: tenant.id,
         displayName: data.name,
+        legalName: data.name,
+        cif: '',
+        billingAddress: data.address || '',
+        contactPerson: '',
+        contactEmail: data.contactEmail || '',
+        contactPhone: data.contactPhone || '',
         zones: [],
       },
     })
@@ -212,7 +218,7 @@ export async function createTenant(data: CreateTenantInput, createdBy: string) {
 export async function updateTenant(
   id: string,
   data: Omit<UpdateTenantInput, 'id'>,
-  updatedBy: string
+  _updatedBy: string
 ) {
   // Obtener tenant actual para comparar cambios
   const current = await prisma.tenant.findUnique({
@@ -253,7 +259,7 @@ export async function updateTenant(
       currency: data.currency,
       language: data.language,
       notes: data.notes,
-      config: data.config,
+      config: data.config !== undefined ? (data.config as Prisma.InputJsonValue) : undefined,
     },
   })
 
@@ -265,7 +271,7 @@ export async function updateTenant(
  */
 export async function updateTenantStatus(
   data: UpdateTenantStatusInput,
-  updatedBy: string
+  _updatedBy: string
 ) {
   const { id, status } = data
 
@@ -280,7 +286,7 @@ export async function updateTenantStatus(
 /**
  * Soft delete de un tenant
  */
-export async function deleteTenant(id: string, deletedBy: string) {
+export async function deleteTenant(id: string, _deletedBy: string) {
   const tenant = await prisma.tenant.update({
     where: { id },
     data: {

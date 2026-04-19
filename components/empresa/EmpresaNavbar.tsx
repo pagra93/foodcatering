@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { signOut } from 'next-auth/react'
 
@@ -27,7 +26,7 @@ type EmpresaNavbarProps = {
   }
 }
 
-export function EmpresaNavbar({ tenant, user }: EmpresaNavbarProps) {
+export function EmpresaNavbar({ tenant: _tenant, user }: EmpresaNavbarProps) {
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' })
   }

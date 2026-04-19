@@ -124,8 +124,8 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
           <TableBody>
             {orders.map((order) => {
               const statusConfig =
-                STATUS_CONFIG[order.status] || STATUS_CONFIG.CONFIRMED
-              const StatusIcon = statusConfig.icon
+                STATUS_CONFIG[order.status] ?? STATUS_CONFIG['CONFIRMED']
+              const StatusIcon = statusConfig?.icon ?? Clock
 
               return (
                 <TableRow key={order.id}>
@@ -149,9 +149,9 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge className={`${statusConfig.color} text-xs`}>
+                    <Badge className={`${statusConfig?.color ?? ''} text-xs`}>
                       <StatusIcon className="mr-1 h-3 w-3" />
-                      {statusConfig.label}
+                      {statusConfig?.label}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -170,8 +170,8 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
       <div className="md:hidden space-y-3">
         {orders.map((order) => {
           const statusConfig =
-            STATUS_CONFIG[order.status] || STATUS_CONFIG.CONFIRMED
-          const StatusIcon = statusConfig.icon
+            STATUS_CONFIG[order.status] ?? STATUS_CONFIG['CONFIRMED']
+          const StatusIcon = statusConfig?.icon ?? Clock
 
           return (
             <Card key={order.id} className="p-4">
@@ -186,9 +186,9 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
                     Pedido: {format(new Date(order.createdAt), 'HH:mm')}
                   </p>
                 </div>
-                <Badge className={`${statusConfig.color} text-xs`}>
+                <Badge className={`${statusConfig?.color ?? ''} text-xs`}>
                   <StatusIcon className="mr-1 h-3 w-3" />
-                  {statusConfig.label}
+                  {statusConfig?.label}
                 </Badge>
               </div>
 

@@ -10,9 +10,6 @@ import Link from 'next/link'
 import {
   Building2,
   MapPin,
-  TrendingUp,
-  FileText,
-  DollarSign,
   Eye,
   Edit,
   Power,

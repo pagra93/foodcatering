@@ -6,6 +6,14 @@
 import { prisma } from '@/lib/db/prisma'
 import { startOfWeek, endOfWeek, addDays, format, startOfDay, endOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { parseDietPrefs } from '@/lib/types/diet-prefs'
+
+function parseCutoffTime(cutoff: string): { hours: number; minutes: number } {
+  const [hStr, mStr] = cutoff.split(':')
+  const hours = hStr ? Number(hStr) : 11
+  const minutes = mStr ? Number(mStr) : 0
+  return { hours: Number.isFinite(hours) ? hours : 11, minutes: Number.isFinite(minutes) ? minutes : 0 }
+}
 
 // ============================================================================
 // OBTENER MENÚS DE LA SEMANA PARA EMPLEADO
@@ -114,7 +122,7 @@ export async function getWeekMenusForEmployee(
 
     // Verificar si ya pasó el cutoff
     const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-    const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
+    const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
     const cutoffDate = new Date(day)
     cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
     const isPastCutoff = new Date() > cutoffDate
@@ -145,8 +153,8 @@ export async function getWeekMenusForEmployee(
           }
         : null,
       availableDishes: {
-        starters: dayDishes.filter((d) => d.dish.course === 'STARTER').map((d) => d.dish),
-        mains: dayDishes.filter((d) => d.dish.course === 'MAIN').map((d) => d.dish),
+        starters: dayDishes.filter((d) => d.dish.course === 'FIRST').map((d) => d.dish),
+        mains: dayDishes.filter((d) => d.dish.course === 'SECOND').map((d) => d.dish),
         desserts: dayDishes.filter((d) => d.dish.course === 'DESSERT').map((d) => d.dish),
       },
       isPastCutoff,
@@ -154,16 +162,18 @@ export async function getWeekMenusForEmployee(
     })
   }
 
+  const dietPrefs = parseDietPrefs(employee.dietPrefs)
+
   return {
     employee: {
       id: employee.id,
       name: employee.user.nameEnc,
-      allergens: employee.allergens || [],
-      dietPrefs: employee.dietPrefs || [],
+      allergens: dietPrefs.allergies,
+      dietPrefs,
     },
     company: {
       name: employee.site.company.legalName,
-      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
+      dailyLimit: employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11,
     },
     catering: {
       name: catering.legalName,
@@ -230,7 +240,7 @@ export async function getDayMenuForEmployee(
 
   // Verificar cutoff
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-  const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
+  const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
   const cutoffDate = new Date(date)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
   const isPastCutoff = new Date() > cutoffDate
@@ -263,13 +273,13 @@ export async function getDayMenuForEmployee(
 
   const dishes = {
     starters: dishSchedules
-      .filter((d) => d.dish.course === 'STARTER')
+      .filter((d) => d.dish.course === 'FIRST')
       .map((d) => ({
         ...d.dish,
         price: Number(d.dish.basePrice),
       })),
     mains: dishSchedules
-      .filter((d) => d.dish.course === 'MAIN')
+      .filter((d) => d.dish.course === 'SECOND')
       .map((d) => ({
         ...d.dish,
         price: Number(d.dish.basePrice),
@@ -281,6 +291,8 @@ export async function getDayMenuForEmployee(
         price: Number(d.dish.basePrice),
       })),
   }
+
+  const dietPrefs = parseDietPrefs(employee.dietPrefs)
 
   return {
     date,
@@ -296,12 +308,12 @@ export async function getDayMenuForEmployee(
       : null,
     dishes,
     employee: {
-      allergens: employee.allergens || [],
-      dietPrefs: employee.dietPrefs || [],
-      blockAllergensEnabled: employee.blockAllergensEnabled || false,
+      allergens: dietPrefs.allergies,
+      dietPrefs,
+      blockAllergensEnabled: dietPrefs.blockAllergensEnabled,
     },
     limits: {
-      dailyLimit: employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11,
+      dailyLimit: employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11,
     },
   }
 }
@@ -347,7 +359,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   }
 
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-  const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
+  const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
   const cutoffDate = new Date(date)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
 
@@ -367,7 +379,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.basePrice), 0)
 
   // Verificar límite diario
-  const dailyLimit = employee.site.company.policy?.dailyLimit ? Number(employee.site.company.policy.dailyLimit) : 11
+  const dailyLimit = employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11
 
   if (totalPrice > dailyLimit) {
     throw new Error(`El precio total (${totalPrice}€) excede el límite diario de ${dailyLimit}€`)
@@ -397,12 +409,29 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     })
   } else {
     // Crear nuevo pedido
+    // NOTA: tenantCatering se resuelve del catering asignado a la empresa + siteId del empleado
+    const companyWithCatering = await prisma.company.findUnique({
+      where: { tenantId: employee.tenantId },
+      include: {
+        cateringAssignments: {
+          where: { active: true, type: 'PRIMARY' },
+          take: 1,
+        },
+      },
+    })
+    const tenantCatering = companyWithCatering?.cateringAssignments[0]?.tenantCatering
+    if (!tenantCatering) {
+      throw new Error('La empresa no tiene catering asignado')
+    }
+
     return prisma.order.create({
       data: {
         employeeId,
         tenantEmpresa: employee.tenantId,
+        tenantCatering,
+        siteId: employee.siteId,
         serviceDate: date,
-        menuType: 'DIARIO',
+        menuType: 'FULL',
         selection,
         price: totalPrice,
         status: 'CONFIRMED',
@@ -453,7 +482,7 @@ export async function cancelOrder(employeeId: string, orderId: string) {
 
   // Verificar cutoff
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-  const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number)
+  const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
   const cutoffDate = new Date(order.serviceDate)
   cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
 

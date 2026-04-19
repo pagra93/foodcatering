@@ -5,7 +5,7 @@ import { defineConfig, devices } from '@playwright/test'
  * Tests críticos: aislamiento tenant, cutoff, consolidación, facturación
  */
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env['PORT'] || 3000
 const baseURL = `http://localhost:${PORT}`
 
 export default defineConfig({
@@ -22,13 +22,13 @@ export default defineConfig({
   fullyParallel: true,
   
   // Fallar si se deja un test.only
-  forbidOnly: !!process.env.CI,
-  
+  forbidOnly: !!process.env['CI'],
+
   // Reintentos en CI
-  retries: process.env.CI ? 2 : 0,
-  
+  retries: process.env['CI'] ? 2 : 0,
+
   // Workers (paralelismo)
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env['CI'] ? 1 : undefined,
   
   // Reporter
   reporter: [

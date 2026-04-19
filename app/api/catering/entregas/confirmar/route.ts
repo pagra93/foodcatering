@@ -3,7 +3,7 @@
  * POST /api/catering/entregas/confirmar
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { confirmDelivery } from '@/lib/db/queries/catering-delivery'
 import { confirmDeliverySchema } from '@/lib/validations/delivery'

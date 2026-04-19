@@ -13,8 +13,6 @@ import {
   User,
   History,
   AlertCircle,
-  Menu as MenuIcon,
-  LogOut,
   Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -35,6 +33,12 @@ type EmpleadoNavbarProps = {
     name: string
     email: string
     role: string
+  }
+  branding?: {
+    primaryColor: string
+    primaryForeground: string
+    logoUrl: string | null
+    brandName: string
   }
 }
 
@@ -65,8 +69,11 @@ const navigation = [
   },
 ]
 
-export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
+export function EmpleadoNavbar({ user, branding }: EmpleadoNavbarProps) {
   const pathname = usePathname()
+  const effectivePrimary = branding?.primaryColor ?? '#3B82F6'
+  const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
+  const effectiveLogo = branding?.logoUrl ?? null
 
   return (
     <>
@@ -76,11 +83,24 @@ export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
           <div className="flex items-center justify-between h-16">
             {/* Logo/Brand */}
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 text-white">
-                <Building2 className="h-5 w-5" />
-              </div>
+              {effectiveLogo ? (
+                <img
+                  src={effectiveLogo}
+                  alt={branding?.brandName ?? 'Mi Comida'}
+                  className="h-10 w-10 rounded-lg object-cover"
+                />
+              ) : (
+                <div
+                  className="flex h-10 w-10 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: effectivePrimary, color: effectivePrimaryFg }}
+                >
+                  <Building2 className="h-5 w-5" />
+                </div>
+              )}
               <div className="hidden sm:block">
-                <h1 className="text-lg font-semibold text-gray-900">Mi Comida</h1>
+                <h1 className="text-lg font-semibold text-gray-900">
+                  {branding?.brandName ?? 'Mi Comida'}
+                </h1>
               </div>
             </div>
 
@@ -96,10 +116,16 @@ export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
                     href={item.href}
                     className={cn(
                       'flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-blue-50 text-blue-700'
-                        : 'text-gray-700 hover:bg-gray-100'
+                      isActive ? '' : 'text-gray-700 hover:bg-gray-100'
                     )}
+                    style={
+                      isActive
+                        ? {
+                            backgroundColor: effectivePrimary + '15',
+                            color: effectivePrimary,
+                          }
+                        : undefined
+                    }
                   >
                     <Icon className="h-4 w-4" />
                     {item.name}
@@ -125,7 +151,12 @@ export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                     <Avatar className="h-10 w-10">
-                      <AvatarFallback className="bg-blue-600 text-white">
+                      <AvatarFallback
+                        style={{
+                          backgroundColor: effectivePrimary,
+                          color: effectivePrimaryFg,
+                        }}
+                      >
                         {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
                       </AvatarFallback>
                     </Avatar>
@@ -180,10 +211,16 @@ export function EmpleadoNavbar({ user }: EmpleadoNavbarProps) {
                 href={item.href}
                 className={cn(
                   'flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-lg transition-colors',
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-600 hover:bg-gray-100'
+                  isActive ? '' : 'text-gray-600 hover:bg-gray-100'
                 )}
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: effectivePrimary + '15',
+                        color: effectivePrimary,
+                      }
+                    : undefined
+                }
               >
                 <Icon className="h-5 w-5" />
                 <span className="text-xs font-medium">{item.name}</span>

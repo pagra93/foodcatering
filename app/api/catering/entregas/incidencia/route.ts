@@ -3,7 +3,7 @@
  * POST /api/catering/entregas/incidencia
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { reportDeliveryIncident } from '@/lib/db/queries/catering-delivery'
 import { reportIncidentSchema } from '@/lib/validations/delivery'

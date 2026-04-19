@@ -10,7 +10,6 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -18,7 +17,7 @@ type ProfileSettingsProps = {
   employeeId: string
 }
 
-export function ProfileSettings({ employeeId }: ProfileSettingsProps) {
+export function ProfileSettings({ employeeId: _employeeId }: ProfileSettingsProps) {
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)

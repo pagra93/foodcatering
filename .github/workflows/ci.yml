@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Type-check · Lint · Build
+    runs-on: ubuntu-latest
+
+    env:
+      # Valores sintéticos para permitir compilación; no se conecta a BD real.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ci
+      NEXTAUTH_SECRET: ci-secret-placeholder-do-not-use-in-prod-ci-secret-placeholder
+      NEXTAUTH_URL: http://localhost:3000
+      WILDCARD_DOMAIN: .localhost:3000
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      - name: Type check
+        run: pnpm type-check
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm exec vitest run
+
+      - name: Build
+        run: pnpm build

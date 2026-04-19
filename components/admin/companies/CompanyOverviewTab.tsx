@@ -14,21 +14,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
   ShoppingCart,
   Users,
   AlertTriangle,
   Euro,
   TrendingUp,
   TrendingDown,
-  Building2,
   CheckCircle2,
   XCircle,
   Clock,
@@ -58,7 +49,7 @@ type Props = {
     avgTicketThisMonth: number
   }
   alerts: {
-    deductibilityIssue: boolean
+    deductibilityIssue: boolean | null
     lowAdoption: boolean
     highIncidents: boolean
     noOrders: boolean

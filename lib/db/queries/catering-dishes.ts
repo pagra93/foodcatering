@@ -5,6 +5,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import { type Prisma } from '@prisma/client'
 import type { DishFilters, CreateDishInput, UpdateDishInput } from '@/lib/validations/dish'
 import { formatDishLabels } from '@/lib/validations/dish'
 
@@ -201,8 +202,11 @@ export async function createDish(tenantId: string, data: CreateDishInput) {
       restaurantId: restaurant.id,
       name: data.name,
       course: data.course,
+      description: data.description ?? null,
+      ingredients: data.ingredients,
+      imageUrl: data.imageUrl || null,
       labels,
-      nutrition: data.nutrition || {},
+      nutrition: (data.nutrition ?? {}) as Prisma.InputJsonValue,
       basePrice: data.basePrice,
       active: data.active,
     },
@@ -249,15 +253,16 @@ export async function updateDish(
   if (data.course !== undefined) updateData.course = data.course
   if (data.basePrice !== undefined) updateData.basePrice = data.basePrice
   if (data.active !== undefined) updateData.active = data.active
-  if (data.labels !== undefined) updateData.labels = data.labels
   if (data.nutrition !== undefined) updateData.nutrition = data.nutrition
-  if (data.nutrition !== undefined) updateData.nutrition = data.nutrition
+  if (data.description !== undefined) updateData.description = data.description
+  if (data.ingredients !== undefined) updateData.ingredients = data.ingredients
+  if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null
 
   // Si se actualizan alérgenos o tags, reconstruir labels
   if (data.allergens !== undefined || data.tags !== undefined) {
     const currentLabels = existingDish.labels as string[]
-    const { allergens: currentAllergens, tags: currentTags } =
-      require('@/lib/validations/dish').parseDishLabels(currentLabels)
+    const { parseDishLabels } = await import('@/lib/validations/dish')
+    const { allergens: currentAllergens, tags: currentTags } = parseDishLabels(currentLabels)
 
     const newAllergens = data.allergens ?? currentAllergens
     const newTags = data.tags ?? currentTags
@@ -365,9 +370,11 @@ export async function cloneDish(
       restaurantId: originalDish.restaurantId,
       name: clonedName,
       course: originalDish.course,
+      description: originalDish.description,
       ingredients: originalDish.ingredients,
-      labels: originalDish.labels,
-      nutrition: originalDish.nutrition,
+      imageUrl: originalDish.imageUrl,
+      labels: (originalDish.labels ?? []) as Prisma.InputJsonValue,
+      nutrition: (originalDish.nutrition ?? {}) as Prisma.InputJsonValue,
       basePrice: originalDish.basePrice,
       active: originalDish.active,
     },
@@ -377,7 +384,6 @@ export async function cloneDish(
     id: clonedDish.id,
     name: clonedDish.name,
     course: clonedDish.course,
-    ingredients: clonedDish.ingredients,
     labels: clonedDish.labels as string[],
     nutrition: clonedDish.nutrition as object,
     basePrice: Number(clonedDish.basePrice),

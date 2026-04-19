@@ -1,147 +1,67 @@
-/**
- * Módulo de Facturación - Portal Empresa
- * ♻️ Reutiliza estructura del portal de Admin adaptada para empresa
- */
-
 import { redirect } from 'next/navigation'
-import { getCurrentTenant } from '@/lib/tenant/get-tenant'
-import {
-  getBillingSum,
-  getMonthlyBreakdown,
-  getConciliationReport,
-} from '@/lib/db/queries/empresa-facturacion'
-import { BillingKPIs } from '@/components/empresa/facturacion/BillingKPIs'
-import { BillingMonthlyBreakdown } from '@/components/empresa/facturacion/BillingMonthlyBreakdown'
-import { BillingConciliation } from '@/components/empresa/facturacion/BillingConciliation'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Suspense } from 'react'
-import { Euro, FileText, CheckSquare } from 'lucide-react'
+import type { Session } from 'next-auth'
+import { auth } from '@/lib/auth'
+import { Skeleton } from '@/components/ui/skeleton'
+import {
+  getEmpresaBillingKPIs,
+  getEmpresaInvoicesFromCatering,
+  getEmpresaSaasInvoices,
+} from '@/lib/db/queries/empresa-billing'
+import { BillingTabs } from '@/components/empresa/facturacion/BillingTabs'
 
-// ============================================================================
-// Server Component - Datos con cache
-// ============================================================================
-
-async function BillingData() {
-  const tenant = await getCurrentTenant()
-  const tenantId = tenant.id
-
-  const today = new Date()
-  const currentYear = today.getFullYear()
-  const currentMonth = today.getMonth() + 1
-
-  // Fetch en paralelo
-  const [summary, breakdown, conciliation] = await Promise.all([
-    getBillingSum(tenantId),
-    getMonthlyBreakdown(tenantId, currentYear, currentMonth),
-    getConciliationReport(tenantId, currentYear, currentMonth),
+async function BillingData({ tenantId }: { tenantId: string }) {
+  const [kpis, cateringInvoices, saasInvoices] = await Promise.all([
+    getEmpresaBillingKPIs(tenantId),
+    getEmpresaInvoicesFromCatering(tenantId),
+    getEmpresaSaasInvoices(tenantId),
   ])
 
   return (
-    <Tabs defaultValue="resumen" className="space-y-6">
-      <TabsList>
-        <TabsTrigger value="resumen">
-          <Euro className="mr-2 h-4 w-4" />
-          Resumen
-        </TabsTrigger>
-        <TabsTrigger value="desglose">
-          <FileText className="mr-2 h-4 w-4" />
-          Desglose Mensual
-        </TabsTrigger>
-        <TabsTrigger value="conciliacion">
-          <CheckSquare className="mr-2 h-4 w-4" />
-          Conciliación
-        </TabsTrigger>
-      </TabsList>
-
-      {/* Tab 1: Resumen */}
-      <TabsContent value="resumen" className="space-y-6">
-        <BillingKPIs summary={summary} />
-
-        {/* Histórico próximo mes (placeholder) */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Histórico de Facturación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              Gráfica de evolución mensual (próximamente)
-            </div>
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      {/* Tab 2: Desglose */}
-      <TabsContent value="desglose">
-        <BillingMonthlyBreakdown
-          breakdown={breakdown}
-          currentYear={currentYear}
-          currentMonth={currentMonth}
-        />
-      </TabsContent>
-
-      {/* Tab 3: Conciliación */}
-      <TabsContent value="conciliacion">
-        <BillingConciliation report={conciliation} />
-      </TabsContent>
-    </Tabs>
+    <BillingTabs
+      kpis={kpis}
+      cateringInvoices={cateringInvoices.map((i) => ({
+        id: i.id,
+        period: i.period,
+        number: i.number,
+        issueDate: i.issueDate,
+        dueDate: i.dueDate,
+        total: i.total.toString(),
+        status: i.status,
+        catering: i.catering,
+      }))}
+      saasInvoices={saasInvoices.map((i) => ({
+        id: i.id,
+        period: i.period,
+        number: i.number,
+        planName: i.planName,
+        total: i.total.toString(),
+        status: i.status,
+        issuedAt: i.issuedAt,
+        dueBy: i.dueBy,
+      }))}
+    />
   )
 }
 
-// ============================================================================
-// Loading State
-// ============================================================================
+export default async function BillingPage() {
+  const session = (await auth()) as Session | null
+  if (!session?.user?.tenantId) redirect('/login')
+  const tenantId = session.user.tenantId
 
-function BillingLoading() {
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-4">
-        {[...Array(4)].map((_, i) => (
-          <Card key={i}>
-            <CardHeader className="pb-2">
-              <Skeleton className="h-4 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-8 w-32" />
-              <Skeleton className="mt-2 h-3 w-20" />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-48" />
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-64 w-full" />
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// ============================================================================
-// Main Page Export
-// ============================================================================
-
-export default function BillingPage() {
-  return (
-    <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Facturación</h1>
-        <p className="text-muted-foreground">
-          Gestiona la facturación mensual, exporta a ERP y concilia pedidos
+        <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
+          Tus facturas mensuales. Recibes dos tipos: del catering (por los
+          pedidos servidos) y de SinTupper (tu plan SaaS).
         </p>
       </div>
 
-      {/* Content con Suspense */}
-      <Suspense fallback={<BillingLoading />}>
-        <BillingData />
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+        <BillingData tenantId={tenantId} />
       </Suspense>
     </div>
   )
 }
-

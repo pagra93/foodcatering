@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getAssignedCatering } from '@/lib/db/queries/empresa-catering'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle } from 'lucide-react'
@@ -20,7 +19,7 @@ async function CateringData() {
   const tenant = await getCurrentTenant()
   const catering = await getAssignedCatering(tenant.id)
 
-  if (!catering) {
+  if (!catering || !catering.restaurant) {
     return (
       <Alert variant="destructive">
         <AlertTriangle className="h-4 w-4" />
@@ -31,6 +30,8 @@ async function CateringData() {
       </Alert>
     )
   }
+
+  const restaurant = catering.restaurant
 
   return (
     <>
@@ -45,20 +46,20 @@ async function CateringData() {
 
         <TabsContent value="info">
           <CateringInfoTab
-            restaurant={catering.restaurant}
+            restaurant={restaurant}
             assignment={catering.assignment}
             metrics={catering.metrics}
           />
         </TabsContent>
 
         <TabsContent value="menus">
-          <CateringMenusTab cateringId={catering.restaurant.id} />
+          <CateringMenusTab cateringId={restaurant.id} />
         </TabsContent>
 
         <TabsContent value="sla">
           <CateringSLATab
             tenantId={tenant.id}
-            cateringId={catering.restaurant.id}
+            cateringId={restaurant.id}
             metrics={catering.metrics}
           />
         </TabsContent>
@@ -66,7 +67,7 @@ async function CateringData() {
         <TabsContent value="ratings">
           <CateringRatingsTab
             tenantId={tenant.id}
-            cateringId={catering.restaurant.id}
+            cateringId={restaurant.id}
           />
         </TabsContent>
       </Tabs>
