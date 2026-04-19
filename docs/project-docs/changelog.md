@@ -9,6 +9,93 @@ Fechas en ISO (YYYY-MM-DD).
 
 ---
 
+## 2026-04-19 — Portal admin completo (sprints 1-8) + integración fiscal festivos
+
+### Añadido
+
+Se construyen los **8 módulos operativos del portal Súper Admin** que
+quedaron como scaffolding tras el cero-404. Detalle completo en
+[`features/portal-admin-modulos.md`](./features/portal-admin-modulos.md).
+
+- **Sprint 1 — Usuarios/Roles/Permisos**: CRUD de usuarios, matriz
+  visual 14 roles × permisos, descripciones legibles.
+- **Sprint 2 — Calidad y SLAs**: vistas cross-tenant de incidencias,
+  auditorías y ratings; sistema completo de penalizaciones con flujo
+  dispute/waive (ventana 7 días para ADMIN_CATERING).
+- **Sprint 3 — Compliance**: auditoría fiscal cross-tenant con
+  verificación hash, políticas de retención, gestión RGPD, DPA por
+  tenant, checklist OWASP.
+- **Sprint 4 — Plantillas y Branding**: `SystemSettings` singleton,
+  branding por tenant con preview en vivo, CSS vars +
+  estilos inline para aplicar marca en tiempo real. Email templates y
+  announcements in-app.
+- **Sprint 5 — Operación**: historial impersonación, ventanas de
+  mantenimiento (middleware 503 si procede), healthchecks dashboard,
+  estado Prisma migraciones, stats de rate-limiters.
+- **Sprint 6 — Integraciones**: marketplace visual con 27 proveedores,
+  CRUD webhooks + retries, API keys con hash seguro, UI de SSO/Pagos/ERP
+  (conectores reales fuera de scope).
+- **Sprint 7 — Facturación**: planes SaaS, liquidaciones
+  catering→SinTupper, comisiones SinTupper→empresa, métricas MRR/ARR/churn,
+  reglas fiscales regionales.
+- **Sprint 8 — Catálogos globales**: `Allergen`, `Holiday`,
+  `HolidayOverride`, `MenuTemplate`, `DeliveryZone`, `IncidentReason`.
+  Seeds: 14 alérgenos EU, 20 festivos ES, 10 motivos de incidencia.
+  Catering gestiona sus plantillas de menú y zonas; empresa y catering
+  pueden desactivar festivos oficiales que no les apliquen (24/7).
+
+### Integración fiscal crítica (Sprint 8)
+
+- Helper nuevo `isBusinessDay(tenantId, date)` y
+  `getEffectiveHolidays(tenantId, year)` en `lib/db/queries/catalogs.ts`.
+- `generateFiscalReport()` ahora calcula `daysWithService` como días
+  hábiles únicos con pedidos entregados (antes era placeholder=1).
+- `ordersWithIssues` cuenta pedidos servidos en no-hábiles (fiscal red
+  flag).
+- `signatureHash` (SHA-256) incluye las nuevas métricas → cambios en
+  festivos del tenant invalidan el hash previo.
+
+### Cambiado
+
+- `lib/auth/permissions.ts`: ~30 nuevos permisos añadidos bajo SUPER_ADMIN
+  y `*:read` bajo AUDITOR. ADMIN_EMPRESA y ADMIN_CATERING ganan
+  `branding:*`, `holidays:read/update`. ADMIN_CATERING añade
+  `menu_templates:*`, `delivery_zones:*`.
+- Layouts de los 3 portales (empresa/catering/empleado) aplican CSS
+  vars de branding vía `BrandProvider` y leen `getEffectiveBranding()`
+  (cae al default del sistema si el tenant no personaliza).
+
+### Tests
+
+- **+70 tests** respecto al baseline (121 total, 14 suites).
+- Nuevos: `catalogs-validation` (18), `catalogs` queries (9),
+  `billing-validation` (10), `compliance-validation` (10),
+  `penalty-validation` (6), `maintenance-validation` (5),
+  `ratelimit` (7), `branding` (6), `permissions-metadata` (6).
+- Type-check limpio. 0 lint errors.
+
+### Modelos Prisma añadidos
+
+~25 modelos nuevos entre los 8 sprints: `Penalty`, `RetentionPolicy`,
+`GdprRequest`, `DpaAgreement`, `SecurityCheck`, `SecurityReport`,
+`SystemSettings`, `CommunicationTemplate`, `Announcement`, `ApiKey`,
+`SsoConfig`, `PaymentProvider`, `ErpConfig`, `MaintenanceWindow`,
+`BackupEvent`, `HealthCheckResult`, `SaasPlan`, `SaasInvoice`,
+`Settlement`, `TaxRule`, `Allergen`, `Holiday`, `HolidayOverride`,
+`MenuTemplate`, `DeliveryZone`, `IncidentReason`.
+
+Migraciones gestionadas con el patrón `db push + migrate resolve` (el
+user `comidas_dev_user` no tiene permisos de shadow DB).
+
+### Limitaciones conscientes
+
+- Conectores reales SSO/Stripe/ERP fuera de scope (solo UI).
+- `FiscalReport.generatedBy = 'system'` pre-existente, sigue pendiente.
+- `MenuTemplate.structure` usa strings de platos, no UUIDs (hasta que
+  haya catálogo de `Dish` normalizado).
+
+---
+
 ## 2026-04-18 — Estabilización + arquitectura de entornos
 
 ### Añadido
