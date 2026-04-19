@@ -68,3 +68,12 @@ playwright/.cache/
 *.tmp
 .cache
 
+
+# Neutraliza patrones del .gitignore_global del usuario que matcharían
+# directorios "users/" en este proyecto (SaaS multi-tenant con carpetas users/)
+!app/**/users/
+!app/**/users/**
+!components/**/users/
+!components/**/users/**
+!lib/**/users/
+!lib/**/users/**
