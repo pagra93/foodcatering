@@ -61,9 +61,23 @@ Thumbs.db
 .cache
 .Trash
 
-# Documentation (opcional, puedes incluirlos si quieres)
-# docs
+# Documentation (no se necesita en la imagen; reduce contexto de build)
+docs
+
+# PM x10 / artefactos de gestión (no se necesitan en runtime)
+tasks
+qa-reports
+memory
+.claude
+working-docs
+
+# Tests (no se ejecutan en la imagen de producción)
+tests
+e2e
 
 # Scripts de desarrollo
 restart-clean.sh
+
+# Editores / herramientas locales
+*.pen
 
