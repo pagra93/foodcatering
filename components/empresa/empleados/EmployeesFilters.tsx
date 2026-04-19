@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useDebounce } from '@/hooks/use-debounce'
 
 type EmployeesFiltersProps = {
@@ -54,11 +54,12 @@ export function EmployeesFilters({
   )
 
   // Efecto para actualizar search cuando el debounce termina
-  useCallback(() => {
-    if (debouncedSearch !== currentFilters.search) {
+  useEffect(() => {
+    if (debouncedSearch !== (currentFilters.search ?? '')) {
       updateFilters('search', debouncedSearch)
     }
-  }, [debouncedSearch])()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch])
 
   // Limpiar todos los filtros
   const clearFilters = () => {

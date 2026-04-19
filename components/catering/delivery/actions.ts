@@ -18,13 +18,16 @@ import {
 } from '@/lib/db/queries/catering-delivery'
 import {
   completeRoute,
+  createRoute,
   getRouteById,
   startRoute,
 } from '@/lib/db/queries/catering-routes'
 import {
   confirmDeliverySchema,
+  createRouteSchema,
   reportIncidentSchema,
   type ConfirmDeliveryInput,
+  type CreateRouteInput,
   type ReportIncidentInput,
 } from '@/lib/validations/delivery'
 
@@ -59,6 +62,36 @@ async function requireRouteAccess(routeId: string) {
 function formatZodError(error: ZodError): string {
   const first = error.errors[0]
   return first ? first.message : 'Datos inválidos'
+}
+
+/**
+ * Crear una ruta nueva (solo ADMIN_CATERING/CHEF)
+ */
+export async function createRouteAction(
+  input: CreateRouteInput
+): Promise<ActionResult<{ id: string }>> {
+  try {
+    const session = await getRequiredSession()
+    if (session.user.tenantType !== 'CATERING') {
+      throw new Error('Tenant no autorizado')
+    }
+    if (!DELIVERY_ADMIN_ROLES.has(session.user.role)) {
+      throw new Error('Solo ADMIN_CATERING o CHEF pueden crear rutas')
+    }
+
+    const parsed = createRouteSchema.parse(input)
+    const route = await createRoute(session.user.tenantId, parsed)
+    revalidatePath('/catering/rutas')
+    return { success: true, data: { id: route.id } }
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return { success: false, error: formatZodError(error) }
+    }
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Error al crear la ruta' }
+  }
 }
 
 /**

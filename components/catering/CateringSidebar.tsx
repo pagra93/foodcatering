@@ -68,7 +68,7 @@ const navigation = [
   },
   {
     name: 'Repartos',
-    href: '/catering/repartos',
+    href: '/catering/rutas',
     icon: Truck,
     roles: ['ADMIN_CATERING', 'REPARTIDOR'],
   },

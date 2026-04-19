@@ -215,7 +215,7 @@ export async function getCateringDashboard(tenantId: string) {
       type: 'warning' as const,
       title: 'Puntualidad por debajo del objetivo',
       message: `Tasa de puntualidad: ${punctualityRate}% (objetivo: 90%)`,
-      actionUrl: '/catering/repartos',
+      actionUrl: '/catering/rutas',
       actionLabel: 'Ver repartos',
     })
   }

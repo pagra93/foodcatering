@@ -24,7 +24,7 @@ const quickActions: QuickAction[] = [
   {
     title: 'Ver Repartos Hoy',
     description: 'Rutas y entregas programadas',
-    href: '/catering/repartos',
+    href: '/catering/rutas',
     icon: Truck,
     variant: 'default',
   },
