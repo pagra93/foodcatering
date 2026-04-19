@@ -26,7 +26,7 @@
     "test:caterings:ui": "playwright test tests/e2e/caterings.spec.ts --ui",
     "test:caterings:debug": "playwright test tests/e2e/caterings.spec.ts --debug",
     "test:caterings:report": "playwright show-report",
-    "prepare": "husky install"
+    "prepare": "husky install || true"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",
