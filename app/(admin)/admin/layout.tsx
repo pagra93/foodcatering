@@ -5,6 +5,9 @@
 
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
+
+// Portal multi-tenant con datos por sesión: nunca se prerenderiza en build.
+export const dynamic = 'force-dynamic'
 import { AdminSidebar } from '@/components/admin/AdminSidebar'
 import { AdminNavbar } from '@/components/admin/AdminNavbar'
 import { AdminBreadcrumbs } from '@/components/admin/AdminBreadcrumbs'
