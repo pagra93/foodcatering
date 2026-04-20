@@ -77,6 +77,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # completo de prod — así `prisma migrate deploy` encuentra el binario.
 COPY --from=prod-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
+# Regenerar @prisma/client contra el schema. El standalone trae el cliente
+# generado, pero al machacar su node_modules con el de prod-deps (que nunca
+# corrió prisma generate) queda desalineado — next-auth/adapter lanza
+# "did not initialize yet" en el primer query.
+RUN node_modules/.bin/prisma generate
+
 # Script de entrada
 COPY --chown=nextjs:nodejs docker-entrypoint.sh /app/docker-entrypoint.sh
 RUN chmod +x /app/docker-entrypoint.sh
