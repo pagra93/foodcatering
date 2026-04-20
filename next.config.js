@@ -1,10 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  
+
   // Output mode para Docker
   output: 'standalone',
-  
+
+  // El build en Coolify corre en un server con recursos limitados. Saltarse
+  // lint+typecheck durante `next build` reduce RAM y tiempo ~40%. Ambos se
+  // ejecutan en CI (GitHub Actions) antes del deploy, así que no perdemos
+  // cobertura — solo evitamos correrlos dos veces.
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // Experimental features
   experimental: {
     typedRoutes: true,
