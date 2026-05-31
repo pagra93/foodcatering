@@ -135,8 +135,8 @@ export function CompaniesTable({ companies }: Props) {
   const getPlanBadge = (plan: string) => {
     const colors = {
       STARTER: 'bg-gray-100 text-gray-700',
-      GROWTH: 'bg-blue-100 text-blue-700',
-      ENTERPRISE: 'bg-purple-100 text-purple-700',
+      GROWTH: 'bg-primary/10 text-primary',
+      ENTERPRISE: 'bg-primary/10 text-primary',
     }
     return (
       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${colors[plan as keyof typeof colors] || 'bg-gray-100 text-gray-700'}`}>
@@ -238,7 +238,7 @@ export function CompaniesTable({ companies }: Props) {
                     <div>
                       <Link
                         href={`/admin/empresas/${company.id}`}
-                        className="font-medium text-blue-600 hover:text-blue-700"
+                        className="font-medium text-primary hover:text-primary"
                       >
                         {company.name}
                       </Link>

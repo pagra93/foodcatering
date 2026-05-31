@@ -143,7 +143,7 @@ const getMockIncidents = (): Incident[] => [
 const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
   DELAYED_DELIVERY: { label: '⏰ Entrega Retrasada', color: 'bg-yellow-100 text-yellow-800' },
   MISSING_ITEM: { label: '📦 Producto Faltante', color: 'bg-orange-100 text-orange-800' },
-  WRONG_ORDER: { label: '❌ Pedido Incorrecto', color: 'bg-blue-100 text-blue-800' },
+  WRONG_ORDER: { label: '❌ Pedido Incorrecto', color: 'bg-primary/10 text-primary' },
   QUALITY_ISSUE: { label: '⚠️ Problema de Calidad', color: 'bg-red-100 text-red-800' },
   ALLERGEN_ISSUE: { label: '🚨 Alérgeno No Declarado', color: 'bg-red-100 text-red-800' },
   DAMAGED_PACKAGING: { label: '📦 Empaquetado Dañado', color: 'bg-gray-100 text-gray-800' },
@@ -291,7 +291,7 @@ export function IncidentsTab({ cateringId: _cateringId }: IncidentsTabProps) {
                 <p className="text-sm font-medium text-gray-500">Tiempo Medio</p>
                 <p className="text-2xl font-bold text-gray-900">{Math.round(avgResolutionTime)}m</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-400" />
+              <TrendingUp className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -303,7 +303,7 @@ export function IncidentsTab({ cateringId: _cateringId }: IncidentsTabProps) {
                 <p className="text-sm font-medium text-gray-500">Compensaciones</p>
                 <p className="text-2xl font-bold text-gray-900">{totalCompensation.toFixed(2)}€</p>
               </div>
-              <Euro className="h-8 w-8 text-purple-400" />
+              <Euro className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -430,7 +430,7 @@ export function IncidentsTab({ cateringId: _cateringId }: IncidentsTabProps) {
                         </span>
                       </div>
                       {incident.compensation && (
-                        <div className="flex items-center gap-1 text-purple-600 font-semibold">
+                        <div className="flex items-center gap-1 text-primary font-semibold">
                           <Euro className="h-3 w-3" />
                           <span>Compensación: {incident.compensation.toFixed(2)}€</span>
                         </div>

@@ -36,13 +36,13 @@ export default function IntegrationsPage() {
       {/* Hero */}
       <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
         <div className="flex items-start gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-lg">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-tinta shadow-lg">
             <Plug className="h-7 w-7 text-white" />
           </div>
           <div className="flex-1">
             <h1 className="text-2xl font-bold">Integraciones</h1>
             <p className="mt-2 max-w-3xl text-sm text-gray-600">
-              Conecta SinTupper con los sistemas que ya usas: tu ERP, tu
+              Conecta Plati con los sistemas que ya usas: tu ERP, tu
               identidad corporativa, tu pasarela de pagos, tu sistema de
               monitoring. Catálogo completo; activamos conectores según
               demanda de clientes.
@@ -65,7 +65,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Info card */}
-      <Card className="border-blue-200 bg-blue-50/40 p-4 text-sm text-blue-900">
+      <Card className="border-primary/30 bg-primary/10/40 p-4 text-sm text-primary">
         <p>
           <strong>¿Cómo funciona?</strong> Haz click en cualquier integración
           para ver los campos de configuración que tendrás cuando esté
@@ -102,10 +102,10 @@ export default function IntegrationsPage() {
         <p className="mt-1 text-xs text-gray-500">
           Escríbenos a{' '}
           <a
-            href="mailto:soporte@sintupper.com"
-            className="text-blue-600 hover:underline"
+            href="mailto:soporte@plati.es"
+            className="text-primary hover:underline"
           >
-            soporte@sintupper.com
+            soporte@plati.es
           </a>{' '}
           y evaluamos añadirla al roadmap.
         </p>

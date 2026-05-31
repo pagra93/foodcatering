@@ -66,7 +66,7 @@ export default async function QualityDashboardPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Auditorías (30d)</p>
-            <FileText className="h-4 w-4 text-blue-500" />
+            <FileText className="h-4 w-4 text-primary" />
           </div>
           <p className="mt-1 text-2xl font-bold">{quality.pendingAudits}</p>
           <p className="mt-1 text-xs text-gray-500">
@@ -90,7 +90,7 @@ export default async function QualityDashboardPage() {
         <SubModule
           href="/admin/quality/incidents"
           title="Incidencias"
-          description="Lista global de todas las incidencias con filtros por severidad, estado y tenant. Escala casos al equipo SinTupper."
+          description="Lista global de todas las incidencias con filtros por severidad, estado y tenant. Escala casos al equipo Plati."
           badge={`${quality.openIncidents} abiertas`}
         />
         <SubModule

@@ -159,7 +159,7 @@ export function ConfigPreferencesTab({ settings }: ConfigPreferencesTabProps) {
       {/* Notificaciones */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Bell className="h-5 w-5 text-blue-600" />
+          <Bell className="h-5 w-5 text-primary" />
           Notificaciones
         </h3>
         <div className="space-y-4">
@@ -369,7 +369,7 @@ export function ConfigPreferencesTab({ settings }: ConfigPreferencesTabProps) {
       {/* Operaciones */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Shield className="h-5 w-5 text-purple-600" />
+          <Shield className="h-5 w-5 text-primary" />
           Operaciones
         </h3>
         <div className="space-y-4">

@@ -122,7 +122,7 @@ export default function ProductionDashboardPage() {
           </Card>
 
           {/* Cocina - Segundos */}
-          <Card className="p-4 border-2 border-blue-200 bg-blue-50">
+          <Card className="p-4 border-2 border-primary/30 bg-primary/10">
             <div className="flex items-center gap-3 mb-3">
               <div className="text-4xl">🍗</div>
               <div>
@@ -238,11 +238,11 @@ export default function ProductionDashboardPage() {
       </div>
 
       {/* Ayuda */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <h3 className="font-semibold text-blue-900 mb-2">
+      <Card className="p-6 bg-primary/10 border-primary/30">
+        <h3 className="font-semibold text-primary mb-2">
           📱 Cómo usar las pantallas
         </h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+        <ul className="text-sm text-primary space-y-1 list-disc list-inside">
           <li>Haz clic en "Abrir Pantalla" para cada tablet</li>
           <li>Pon la tablet en modo fullscreen (F11 en navegador)</li>
           <li>Las pantallas se actualizan automáticamente cada 30 segundos</li>

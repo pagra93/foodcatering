@@ -19,7 +19,7 @@ export function OrdersKPIs({ stats }: OrdersKPIsProps) {
           <CardTitle className="text-sm font-medium text-gray-600">
             Total Pedidos
           </CardTitle>
-          <Utensils className="h-5 w-5 text-blue-600" />
+          <Utensils className="h-5 w-5 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">
@@ -54,7 +54,7 @@ export function OrdersKPIs({ stats }: OrdersKPIsProps) {
           <CardTitle className="text-sm font-medium text-gray-600">
             Ticket Medio
           </CardTitle>
-          <TrendingUp className="h-5 w-5 text-purple-600" />
+          <TrendingUp className="h-5 w-5 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">

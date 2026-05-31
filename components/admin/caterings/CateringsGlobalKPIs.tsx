@@ -55,7 +55,7 @@ export function CateringsGlobalKPIs({ kpis }: CateringsGlobalKPIsProps) {
                 </p>
               )}
             </div>
-            <Building2 className="h-8 w-8 text-blue-400" />
+            <Building2 className="h-8 w-8 text-primary" />
           </div>
         </CardContent>
       </Card>
@@ -73,7 +73,7 @@ export function CateringsGlobalKPIs({ kpis }: CateringsGlobalKPIsProps) {
                 <p className="text-xs text-gray-500">/ {kpis.todayOrders}</p>
               </div>
               <div className="flex gap-2 mt-1">
-                <p className="text-xs text-blue-600">
+                <p className="text-xs text-primary">
                   {kpis.confirmedOrders} confirmados
                 </p>
                 {kpis.incidentsOrders > 0 && (
@@ -116,7 +116,7 @@ export function CateringsGlobalKPIs({ kpis }: CateringsGlobalKPIsProps) {
                 <p className="text-xs text-gray-500">Entregas en ventana</p>
               </div>
             </div>
-            <Clock className="h-8 w-8 text-purple-400" />
+            <Clock className="h-8 w-8 text-muted-foreground" />
           </div>
         </CardContent>
       </Card>

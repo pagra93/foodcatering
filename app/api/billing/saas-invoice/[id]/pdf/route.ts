@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth'
 import { SaasInvoicePdf } from '@/lib/pdf/invoice-template'
 
 /**
- * PDF de factura SaaS (SinTupper → empresa).
+ * PDF de factura SaaS (Plati → empresa).
  * SUPER_ADMIN/AUDITOR; ADMIN_EMPRESA/FINANZAS de su tenant.
  */
 export async function GET(

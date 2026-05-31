@@ -13,18 +13,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export const metadata: Metadata = {
-  title: 'Recuperar Contraseña | Comidas',
+  title: 'Recuperar Contraseña · Plati',
   description: 'Solicita un enlace para restablecer tu contraseña',
 }
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         {/* Back button */}
         <Link
           href="/login"
-          className="mb-8 inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="mb-8 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Volver al inicio de sesión
@@ -33,8 +33,8 @@ export default function ForgotPasswordPage() {
         {/* Card con shadcn */}
         <Card className="shadow-lg">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Key className="h-6 w-6 text-blue-600" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Key className="h-6 w-6 text-primary" />
             </div>
             <div>
               <CardTitle className="text-2xl">¿Olvidaste tu contraseña?</CardTitle>
@@ -67,8 +67,8 @@ export default function ForgotPasswordPage() {
             </form>
 
             {/* Info con shadcn Alert */}
-            <Alert className="mt-6 bg-blue-50 border-blue-200">
-              <AlertDescription className="text-blue-800">
+            <Alert className="mt-6 bg-primary/10 border-primary/30">
+              <AlertDescription className="text-primary">
                 <strong>Nota:</strong> Si tu email está registrado, recibirás un enlace en los próximos minutos. Revisa también tu carpeta de spam.
               </AlertDescription>
             </Alert>
@@ -76,11 +76,11 @@ export default function ForgotPasswordPage() {
         </Card>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           ¿Recordaste tu contraseña?{' '}
           <Link
             href="/login"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            className="font-medium text-primary hover:text-primary transition-colors"
           >
             Inicia sesión aquí
           </Link>

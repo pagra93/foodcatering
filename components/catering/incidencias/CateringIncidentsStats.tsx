@@ -46,10 +46,10 @@ export function CateringIncidentsStats({ stats }: CateringIncidentsStatsProps) {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">En Revisión</CardTitle>
-          <TrendingUp className="h-4 w-4 text-blue-500" />
+          <TrendingUp className="h-4 w-4 text-primary" />
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-blue-600">{stats.inProgress}</div>
+          <div className="text-2xl font-bold text-primary">{stats.inProgress}</div>
           <p className="text-xs text-muted-foreground mt-1">Siendo procesadas</p>
         </CardContent>
       </Card>

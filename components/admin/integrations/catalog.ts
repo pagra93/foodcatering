@@ -1,5 +1,5 @@
 /**
- * Catálogo de integraciones posibles que SinTupper podría conectar.
+ * Catálogo de integraciones posibles que Plati podría conectar.
  * Pura data visual — ninguna tiene conector activo todavía.
  */
 
@@ -315,8 +315,8 @@ export const INTEGRATIONS: IntegrationSpec[] = [
     status: 'coming-soon',
     configFields: [
       { label: 'API Key', type: 'password', placeholder: 'SG....' },
-      { label: 'From email', type: 'text', placeholder: 'no-reply@sintupper.com' },
-      { label: 'From name', type: 'text', placeholder: 'SinTupper' },
+      { label: 'From email', type: 'text', placeholder: 'no-reply@plati.es' },
+      { label: 'From name', type: 'text', placeholder: 'Plati' },
     ],
   },
   {

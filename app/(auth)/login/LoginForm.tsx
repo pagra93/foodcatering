@@ -63,7 +63,7 @@ export default function LoginForm() {
 
       {/* Email */}
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-normal text-gray-700">
+        <Label htmlFor="email" className="text-sm font-normal text-foreground">
           Email
         </Label>
         <Input
@@ -80,7 +80,7 @@ export default function LoginForm() {
 
       {/* Contraseña */}
       <div className="space-y-2">
-        <Label htmlFor="password" className="text-sm font-normal text-gray-700">
+        <Label htmlFor="password" className="text-sm font-normal text-foreground">
           Contraseña
         </Label>
         <Input
@@ -100,7 +100,7 @@ export default function LoginForm() {
         <Checkbox id="remember" name="remember" disabled={isLoading} />
         <Label
           htmlFor="remember"
-          className="text-sm font-normal text-gray-600 cursor-pointer"
+          className="text-sm font-normal text-muted-foreground cursor-pointer"
         >
           Recordar sesión
         </Label>

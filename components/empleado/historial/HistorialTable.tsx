@@ -52,7 +52,7 @@ const STATUS_CONFIG: Record<
 > = {
   CONFIRMED: {
     label: 'Confirmado',
-    color: 'bg-blue-100 text-blue-700',
+    color: 'bg-primary/10 text-primary',
     icon: Clock,
   },
   LOCKED_AFTER_CUTOFF: {

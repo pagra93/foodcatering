@@ -16,7 +16,7 @@ export type EffectiveBranding = {
   primaryForeground: string
 }
 
-const FALLBACK_PRIMARY = '#3B82F6'
+const FALLBACK_PRIMARY = '#E0492A' // tomate Plati
 
 /**
  * Calcula color de texto legible sobre un fondo dado mediante luminancia
@@ -65,7 +65,7 @@ export const getEffectiveBranding = cache(
     const logoUrl = tenant?.logoUrl ?? settings?.defaultLogoUrl ?? null
     const faviconUrl =
       tenant?.faviconUrl ?? settings?.defaultFaviconUrl ?? null
-    const brandName = settings?.brandName ?? 'SinTupper'
+    const brandName = settings?.brandName ?? 'Plati'
 
     return {
       primaryColor,

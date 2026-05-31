@@ -1,26 +1,62 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Archivo, Bricolage_Grotesque, DM_Mono } from 'next/font/google'
 import './globals.css'
 import { Providers } from '@/components/providers'
+import { JsonLd } from '@/components/marketing/JsonLd'
+import { organizationSchema, websiteSchema } from '@/lib/landing/jsonld'
 
-const inter = Inter({
+// Tipografía de marca Plati (dirección «Diario»).
+const archivo = Archivo({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-inter',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sans',
 })
 
+const bricolage = Bricolage_Grotesque({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['600', '700', '800'],
+  variable: '--font-display',
+})
+
+const dmMono = DM_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  weight: ['400', '500'],
+  variable: '--font-mono',
+})
+
+const isProduction = process.env.NODE_ENV === 'production'
+
 export const metadata: Metadata = {
-  title: 'Comida - Plataforma de Gestión de Menús Corporativos',
+  metadataBase: new URL(
+    process.env['NEXT_PUBLIC_APP_URL'] ?? 'https://plati.es',
+  ),
+  title: {
+    default: 'Plati — El menú de hoy, en tu oficina',
+    template: '%s · Plati',
+  },
   description:
-    'Plataforma multi-tenant para gestión de beneficios de comida entre empresas, empleados y caterings con compliance fiscal automático.',
+    'Plati conecta tu empresa con caterings locales para llevar el menú de hoy, cocinado hoy, a la oficina. Comer juntos es cultura — y está exento de IRPF hasta 11€/día.',
   keywords: [
     'menús corporativos',
-    'gestión comidas',
-    'catering empresarial',
+    'comida de oficina',
+    'catering local',
     'beneficio social',
+    'comida cocinada hoy',
+    'comer juntos en la oficina',
   ],
-  authors: [{ name: 'Comida Platform' }],
-  robots: 'noindex, nofollow', // Cambiar en producción
+  authors: [{ name: 'Plati' }],
+  robots: isProduction ? 'index, follow' : 'noindex, nofollow',
+  openGraph: {
+    type: 'website',
+    locale: 'es_ES',
+    siteName: 'Plati',
+  },
+  twitter: {
+    card: 'summary_large_image',
+  },
 }
 
 export default function RootLayout({
@@ -30,7 +66,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased`}>
+      <body
+        className={`${archivo.variable} ${bricolage.variable} ${dmMono.variable} font-sans antialiased`}
+      >
+        <JsonLd
+          id="ld-organization"
+          data={[organizationSchema(), websiteSchema()]}
+        />
         <Providers>{children}</Providers>
       </body>
     </html>

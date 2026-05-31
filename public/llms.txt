@@ -1,0 +1,47 @@
+# Plati
+
+> Plati es una plataforma B2B SaaS de menús corporativos con compliance fiscal IRPF Art. 42.3. Hasta 11 € por día laborable y empleado, exentos de IRPF en régimen de entrega en especie. Servicio dirigido a empresas (RRHH/CFO) y a caterings que forman su red B2B.
+
+## Páginas clave
+
+- [Home empresa](https://plati.es/): propuesta de valor para RRHH/CFO, con calculadora IRPF embebida y banner a caterings.
+- [Compliance fiscal](https://plati.es/compliance): evidencia Art. 42.3 LIRPF, snapshot SHA-256 diario, dossier mensual auditable, RGPD/DPA.
+- [Precios](https://plati.es/precios): tiers Starter / Growth / Enterprise + comparativa con Cobee, Edenred y Ticket Restaurant.
+- [Calculadora IRPF](https://plati.es/calculadora): simulador interactivo del ahorro fiscal anual, compartible por URL.
+- [Para caterings](https://plati.es/caterings): KDS, rutas, facturación automática, red B2B recurrente.
+- [Producto](https://plati.es/producto): tour de los tres portales (empresa, empleado, catering) con Tabs.
+- [Solicitar demo](https://plati.es/demo): formulario de contacto.
+
+## Hechos verificables
+
+- Fundamento legal: Art. 42.3 de la Ley 35/2006 del IRPF (LIRPF). Límite de exención: 11 € por día laborable y empleado.
+- Modelo de producto: SaaS multi-tenant con tres portales (empresa, empleado, catering).
+- Evidencia fiscal generada: selección nominativa del empleado, prueba de entrega (hora, receptor, foto/firma, geolocalización), factura desglosada, snapshot SHA-256 diario inmutable, dossier fiscal mensual PDF.
+- Cifrado de PII: AES-256-GCM en reposo. Servidores en la UE. DPA firmado.
+- Integraciones: export CSV a SAP, Sage, A3. SSO SAML/OIDC y SCIM en plan Enterprise.
+- Facturación al catering: mensual automática el día 1, línea por pedido, IVA 10%.
+- Cierre diario de pedidos: 11:05.
+
+## Funciones por portal
+
+- Portal empresa: dashboard (pedidos, gasto, adopción %), importador CSV, configuración política (copay, cutoff, días activos), auditoría fiscal, conciliación pedidos ↔ factura, permisos por rol (ADMIN_EMPRESA, RRHH, FINANZAS, MANAGER_SEDE).
+- Portal empleado: selector semanal (5 días × 3 opciones), alérgenos codificados por color, rating post-comida, incidencias, historial y gasto YTD.
+- Portal catering: Kitchen Display System, consolidación automática, packing nominativo por empleado con alérgenos, rutas optimizadas (Google Maps), prueba de entrega, facturación automática, platos y menús semanales.
+
+## Competidores posicionamiento
+
+Plati se diferencia de Cobee, Edenred y Ticket Restaurant en que entrega comida real y genera evidencia criptográfica auditable (snapshot SHA-256 + dossier mensual + conciliación pedidos-factura línea por línea), frente a los tickets/tarjetas que dan libertad al empleado pero dejan una trazabilidad fiscal más débil ante inspección.
+
+## Versiones markdown para crawlers sin JS
+
+- https://plati.es/md/home
+- https://plati.es/md/caterings
+- https://plati.es/md/compliance
+- https://plati.es/md/precios
+- https://plati.es/md/calculadora
+- https://plati.es/md/producto
+- https://plati.es/llms-full.txt (documento completo)
+
+## Frase canónica
+
+Plati: plataforma de menús corporativos con compliance fiscal IRPF Art. 42.3.

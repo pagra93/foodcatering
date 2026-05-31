@@ -56,7 +56,7 @@ export function ChartsSection({ data }: { data: ChartData }) {
                   return (
                     <div key={index} className="flex flex-1 flex-col items-center justify-end">
                       <div
-                        className="w-full rounded-t bg-blue-500 transition-all hover:bg-blue-600"
+                        className="w-full rounded-t bg-primary transition-all hover:bg-primary"
                         style={{ height: `${height}%`, minHeight: day.count > 0 ? '4px' : '0' }}
                         title={`${day.date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}: ${day.count} pedidos`}
                       />

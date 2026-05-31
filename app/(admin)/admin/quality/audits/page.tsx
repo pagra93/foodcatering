@@ -21,7 +21,7 @@ const TYPE_LABEL: Record<AuditType, string> = {
 
 const TYPE_COLOR: Record<AuditType, string> = {
   SANITARIA: 'bg-red-100 text-red-700 border-red-200',
-  OPERATIVA: 'bg-blue-100 text-blue-700 border-blue-200',
+  OPERATIVA: 'bg-primary/10 text-primary border-primary/30',
   SATISFACCION: 'bg-amber-100 text-amber-700 border-amber-200',
 }
 
@@ -198,7 +198,7 @@ export default async function AuditsPage({
                       href={a.reportUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       Ver PDF
                       <ExternalLink className="h-3 w-3" />

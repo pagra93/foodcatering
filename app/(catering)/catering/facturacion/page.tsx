@@ -26,7 +26,7 @@ export default async function CateringFacturacionPage() {
         <h1 className="text-2xl font-bold">Facturación</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
           Dos vistas: lo que facturas a tus empresas y lo que pagas a
-          SinTupper por la plataforma (comisión sobre facturación mensual).
+          Plati por la plataforma (comisión sobre facturación mensual).
         </p>
       </div>
 
@@ -52,7 +52,7 @@ export default async function CateringFacturacionPage() {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-500">Comisión SinTupper YTD</p>
+          <p className="text-sm text-gray-500">Comisión Plati YTD</p>
           <p className="mt-1 text-2xl font-bold">
             {kpis.commissionsYTD.toFixed(2)} €
           </p>
@@ -61,7 +61,7 @@ export default async function CateringFacturacionPage() {
           </p>
         </Card>
         <Card className="p-4">
-          <p className="text-sm text-gray-500">Pendiente SinTupper</p>
+          <p className="text-sm text-gray-500">Pendiente Plati</p>
           <p
             className={`mt-1 text-2xl font-bold ${kpis.pendingPagarAmount > 0 ? 'text-red-600' : ''}`}
           >

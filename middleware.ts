@@ -11,11 +11,15 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const host = req.headers.get('host') || ''
 
-  // Ignorar assets y API
+  // Ignorar assets, API y ficheros estáticos públicos (SEO/GEO)
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.startsWith('/favicon')
+    pathname.startsWith('/favicon') ||
+    pathname === '/robots.txt' ||
+    pathname === '/sitemap.xml' ||
+    pathname === '/llms.txt' ||
+    pathname === '/llms-full.txt'
   ) {
     return NextResponse.next()
   }
@@ -28,14 +32,30 @@ export async function middleware(req: NextRequest) {
   if (subdomain && pathname === '/') {
     return NextResponse.redirect(new URL('/login', req.url))
   }
-  
+
   // Landing page en dominio principal
   if (!subdomain && pathname === '/') {
     return NextResponse.next()
   }
 
-  // Verificar auth solo en rutas protegidas
-  const publicPaths = ['/login', '/register', '/error', '/verify', '/forgot-password', '/reset-password']
+  // Rutas públicas de marketing (landing multi-página) + auth + versiones markdown
+  const publicPaths = [
+    '/login',
+    '/register',
+    '/error',
+    '/verify',
+    '/forgot-password',
+    '/reset-password',
+    '/caterings',
+    '/compliance',
+    '/precios',
+    '/calculadora',
+    '/producto',
+    '/demo',
+    '/privacidad',
+    '/terminos',
+    '/md',
+  ]
   const isPublic = publicPaths.some(path => pathname.startsWith(path))
 
   if (!isPublic) {

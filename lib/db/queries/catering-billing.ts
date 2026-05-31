@@ -1,7 +1,7 @@
 /**
  * Queries para /catering/facturacion. El catering tiene 2 roles:
  * 1. Emisor hacia empresas (facturas Invoice).
- * 2. Pagador a SinTupper (liquidaciones Settlement).
+ * 2. Pagador a Plati (liquidaciones Settlement).
  */
 
 import { prisma } from '@/lib/db/prisma'

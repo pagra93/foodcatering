@@ -59,7 +59,7 @@ export default async function SaasInvoicesPage({
       <div>
         <h1 className="text-2xl font-bold">Facturas SaaS</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Facturación SinTupper → empresas por su plan de suscripción. Se
+          Facturación Plati → empresas por su plan de suscripción. Se
           genera el día 1 de cada mes. El total depende del plan asignado a
           cada <code>Company</code>.
         </p>
@@ -177,7 +177,7 @@ export default async function SaasInvoicesPage({
                       title="Descargar PDF"
                     >
                       <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4 text-blue-600" />
+                        <Download className="h-4 w-4 text-primary" />
                       </Button>
                     </a>
                     {(inv.status === 'ISSUED' || inv.status === 'OVERDUE') && (

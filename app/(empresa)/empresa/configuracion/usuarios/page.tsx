@@ -40,7 +40,7 @@ export default async function EmpresaUsuariosPage() {
           Administra los usuarios de tu empresa con roles de gestión:
           ADMIN_EMPRESA, RRHH, FINANZAS, MANAGER_SEDE. Los{' '}
           <strong>empleados</strong> se gestionan en{' '}
-          <Link href="/empresa/empleados" className="text-blue-600 hover:underline">
+          <Link href="/empresa/empleados" className="text-primary hover:underline">
             /empresa/empleados
           </Link>
           .
@@ -55,7 +55,7 @@ export default async function EmpresaUsuariosPage() {
         </Card>
         <Card className="p-4">
           <p className="text-sm text-gray-500">Admins</p>
-          <p className="mt-1 text-2xl font-bold text-purple-600">
+          <p className="mt-1 text-2xl font-bold text-primary">
             {kpis.admins}
           </p>
         </Card>

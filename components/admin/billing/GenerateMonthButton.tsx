@@ -23,7 +23,7 @@ export function GenerateMonthButton() {
     if (
       !dryRun &&
       !confirm(
-        `Se van a generar las liquidaciones catering→SinTupper y las facturas SaaS SinTupper→empresa del período ${period}. Los documentos del mismo período que ya existan se saltan. ¿Continuar?`
+        `Se van a generar las liquidaciones catering→Plati y las facturas SaaS Plati→empresa del período ${period}. Los documentos del mismo período que ya existan se saltan. ¿Continuar?`
       )
     )
       return

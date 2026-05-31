@@ -160,12 +160,12 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
 
         {/* Empresas inactivas */}
         {alerts.inactiveCompanies.length > 0 && (
-          <Alert variant="info" className="border-blue-200 bg-blue-50">
+          <Alert variant="info" className="border-primary/30 bg-primary/10">
             <TrendingDown className="h-4 w-4" />
-            <AlertTitle className="text-blue-900">
+            <AlertTitle className="text-primary">
               {alerts.inactiveCompanies.length} empresa(s) sin pedidos
             </AlertTitle>
-            <AlertDescription className="text-blue-800">
+            <AlertDescription className="text-primary">
               <ul className="mt-2 space-y-1">
                 {alerts.inactiveCompanies.slice(0, 3).map((company) => (
                   <li key={company.id} className="text-sm">

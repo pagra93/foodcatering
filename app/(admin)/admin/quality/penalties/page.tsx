@@ -77,7 +77,7 @@ export default async function PenaltiesPage({
         </Card>
         <Card className="p-4">
           <p className="text-sm text-gray-500">En disputa</p>
-          <p className="mt-1 text-2xl font-bold text-blue-600">
+          <p className="mt-1 text-2xl font-bold text-primary">
             {kpis.disputed}
           </p>
         </Card>

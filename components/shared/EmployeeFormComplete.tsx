@@ -145,7 +145,7 @@ export function EmployeeFormComplete({
       {/* === DATOS PERSONALES === */}
       <Card className="p-6">
         <div className="flex items-center gap-2 mb-4">
-          <User className="h-5 w-5 text-blue-600" />
+          <User className="h-5 w-5 text-primary" />
           <h3 className="text-lg font-semibold">Datos Personales</h3>
         </div>
         

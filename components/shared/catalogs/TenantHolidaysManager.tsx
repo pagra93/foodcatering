@@ -190,7 +190,7 @@ export function TenantHolidaysManager({
             Festivos oficiales ({officialsInYear.length})
           </h3>
           <p className="mt-0.5 text-xs text-gray-500">
-            Los defines el administrador de SinTupper. Puedes desactivar los
+            Los defines el administrador de Plati. Puedes desactivar los
             que no apliquen a tu operativa (se mantienen en otros tenants).
           </p>
         </div>

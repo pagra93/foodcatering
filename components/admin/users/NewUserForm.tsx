@@ -108,7 +108,7 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
             className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
             required
           >
-            <optgroup label="Equipo SinTupper (ROOT)">
+            <optgroup label="Equipo Plati (ROOT)">
               {tenants
                 .filter((t) => t.type === 'ROOT')
                 .map((t) => (

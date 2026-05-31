@@ -309,7 +309,7 @@ export function QualityComplianceTab({
         <CardHeader className="border-b border-gray-100">
           <div className="flex items-center justify-between">
             <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Shield className="h-5 w-5 text-blue-600" />
+              <Shield className="h-5 w-5 text-primary" />
               Auditorías
             </CardTitle>
             <Button variant="outline" size="sm">
@@ -381,17 +381,17 @@ export function QualityComplianceTab({
         </CardHeader>
         <CardContent className="p-6">
           <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <Info className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="flex items-start gap-4 p-4 bg-primary/10 rounded-lg border border-primary/30">
+              <Info className="h-5 w-5 text-primary mt-0.5" />
               <div className="flex-1">
-                <h4 className="text-sm font-semibold text-blue-900">
+                <h4 className="text-sm font-semibold text-primary">
                   Cumplimiento de Normativa
                 </h4>
-                <p className="mt-1 text-sm text-blue-800">
+                <p className="mt-1 text-sm text-primary">
                   El catering debe declarar todos los alérgenos presentes en sus
                   platos según la normativa europea (Reglamento UE 1169/2011).
                 </p>
-                <ul className="mt-2 space-y-1 text-xs text-blue-700">
+                <ul className="mt-2 space-y-1 text-xs text-primary">
                   <li>
                     ✓ Declaración obligatoria de 14 alérgenos principales
                   </li>

@@ -35,7 +35,7 @@ export default async function MaintenancePage() {
         )}
         <p className="mt-6 text-xs text-gray-400">
           Si este mensaje persiste tras el horario indicado, escríbenos a
-          soporte@sintupper.com.
+          soporte@plati.es.
         </p>
       </div>
     </div>

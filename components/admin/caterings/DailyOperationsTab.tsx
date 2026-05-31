@@ -140,7 +140,7 @@ export function DailyOperationsTab({
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100 pb-4">
           <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
+            <Clock className="h-5 w-5 text-primary" />
             Horarios Operativos - Hoy {format(new Date(), 'EEEE d MMMM', { locale: es })}
           </CardTitle>
         </CardHeader>
@@ -166,18 +166,18 @@ export function DailyOperationsTab({
 
             {/* Ventana de Preparación */}
             {restaurant.preparationWindow && (
-              <div className="flex items-start gap-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-purple-100">
-                  <ChefHat className="h-6 w-6 text-purple-600" />
+              <div className="flex items-start gap-4 p-4 bg-primary/10 rounded-lg border border-primary/30">
+                <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-primary/10">
+                  <ChefHat className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-purple-900">
+                  <h4 className="text-sm font-semibold text-primary">
                     Ventana de Preparación
                   </h4>
-                  <p className="text-lg font-bold text-purple-600 mt-1">
+                  <p className="text-lg font-bold text-primary mt-1">
                     {restaurant.preparationWindow}
                   </p>
-                  <p className="text-xs text-purple-700 mt-1">
+                  <p className="text-xs text-primary mt-1">
                     👨‍🍳 Tiempo para cocinar y empaquetar
                   </p>
                 </div>
@@ -232,7 +232,7 @@ export function DailyOperationsTab({
                   onClick={() => setSelectedDate(menu.date)}
                   className={`p-3 rounded-lg border-2 transition-all text-left ${
                     isSelected
-                      ? 'border-blue-500 bg-blue-50'
+                      ? 'border-primary bg-primary/10'
                       : isToday
                       ? 'border-orange-300 bg-orange-50'
                       : 'border-gray-200 bg-white hover:border-gray-300'
@@ -276,32 +276,32 @@ export function DailyOperationsTab({
 
           {/* Resumen del día seleccionado */}
           {selectedDayMenu && (
-            <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <h4 className="text-sm font-semibold text-blue-900">
+            <div className="mt-6 p-4 bg-primary/10 rounded-lg border border-primary/30">
+              <h4 className="text-sm font-semibold text-primary">
                 📅 {format(selectedDate, "EEEE d 'de' MMMM", { locale: es })}
               </h4>
               <div className="mt-3 grid gap-3 md:grid-cols-4">
                 <div>
-                  <p className="text-xs text-blue-700">Primeros</p>
-                  <p className="text-lg font-bold text-blue-900">
+                  <p className="text-xs text-primary">Primeros</p>
+                  <p className="text-lg font-bold text-primary">
                     {selectedDayMenu.starters} platos
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-700">Segundos</p>
-                  <p className="text-lg font-bold text-blue-900">
+                  <p className="text-xs text-primary">Segundos</p>
+                  <p className="text-lg font-bold text-primary">
                     {selectedDayMenu.mains} platos
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-700">Postres</p>
-                  <p className="text-lg font-bold text-blue-900">
+                  <p className="text-xs text-primary">Postres</p>
+                  <p className="text-lg font-bold text-primary">
                     {selectedDayMenu.desserts} opciones
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs text-blue-700">Pedidos Estimados</p>
-                  <p className="text-lg font-bold text-blue-900">
+                  <p className="text-xs text-primary">Pedidos Estimados</p>
+                  <p className="text-lg font-bold text-primary">
                     {selectedDayMenu.totalOrders}
                   </p>
                 </div>
@@ -318,7 +318,7 @@ export function DailyOperationsTab({
           <CardHeader className="border-b border-gray-100 pb-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-                <ChefHat className="h-5 w-5 text-purple-600" />
+                <ChefHat className="h-5 w-5 text-primary" />
                 Hoja de Cocina - Hoy
               </CardTitle>
               <Button variant="outline" size="sm">

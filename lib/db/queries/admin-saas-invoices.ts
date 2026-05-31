@@ -1,5 +1,5 @@
 /**
- * Queries CRUD sobre SaasInvoice (SinTupper → Empresa por plan SaaS).
+ * Queries CRUD sobre SaasInvoice (Plati → Empresa por plan SaaS).
  */
 
 import { prisma } from '@/lib/db/prisma'

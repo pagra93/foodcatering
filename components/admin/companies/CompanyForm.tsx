@@ -260,7 +260,7 @@ export function CompanyForm({ action, initialData }: CompanyFormProps) {
               <p className="mt-1 text-xs text-gray-500">
                 Hora límite para hacer/cancelar pedidos
               </p>
-              <p className="mt-1 text-xs text-blue-600 font-medium">
+              <p className="mt-1 text-xs text-primary font-medium">
                 Después de esta hora, los pedidos se bloquean automáticamente
               </p>
             </div>
@@ -347,7 +347,7 @@ export function CompanyForm({ action, initialData }: CompanyFormProps) {
             </p>
             <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-4">
               {DIAS_SEMANA.map((dia) => (
-                <div key={dia.value} className="flex items-center space-x-2 rounded-lg border border-gray-200 bg-gray-50 p-3 hover:border-blue-300 hover:bg-blue-50 transition-colors">
+                <div key={dia.value} className="flex items-center space-x-2 rounded-lg border border-gray-200 bg-gray-50 p-3 hover:border-primary/40 hover:bg-primary/10 transition-colors">
                   <Checkbox
                     id={`day-${dia.value}`}
                     name="policy.daysActive"
@@ -370,8 +370,8 @@ export function CompanyForm({ action, initialData }: CompanyFormProps) {
                 </div>
               ))}
             </div>
-            <div className="mt-3 rounded-lg bg-blue-50 border border-blue-200 p-3">
-              <p className="text-xs text-blue-800">
+            <div className="mt-3 rounded-lg bg-primary/10 border border-primary/30 p-3">
+              <p className="text-xs text-primary">
                 <strong>💡 Ejemplo:</strong> Si seleccionas Lunes a Jueves, los empleados solo podrán 
                 hacer pedidos de lunes a jueves. No verán la opción de selección los viernes.
               </p>

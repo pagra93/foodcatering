@@ -38,8 +38,8 @@ const alertConfig = {
   },
   info: {
     icon: Info,
-    className: 'border-blue-200 bg-blue-50 text-blue-900',
-    iconClassName: 'text-blue-600',
+    className: 'border-primary/30 bg-primary/10 text-primary',
+    iconClassName: 'text-primary',
   },
   success: {
     icon: CheckCircle,

@@ -20,11 +20,11 @@ type KPICardProps = {
 }
 
 const variantStyles = {
-  default: 'text-blue-600',
+  default: 'text-primary',
   success: 'text-green-600',
   warning: 'text-yellow-600',
   error: 'text-red-600',
-  info: 'text-purple-600',
+  info: 'text-primary',
 }
 
 export function KPICard({

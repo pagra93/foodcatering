@@ -123,7 +123,7 @@ export function BillingMonthlyBreakdown({
               <p className="text-sm text-muted-foreground">
                 Empresa ({summary.subsidyPercentage}%)
               </p>
-              <p className="text-2xl font-bold text-blue-600">
+              <p className="text-2xl font-bold text-primary">
                 {summary.companyPart.toFixed(2)}€
               </p>
             </div>
@@ -181,7 +181,7 @@ export function BillingMonthlyBreakdown({
                   <TableCell className="text-right font-semibold">
                     {emp.total.toFixed(2)}€
                   </TableCell>
-                  <TableCell className="text-right text-blue-600">
+                  <TableCell className="text-right text-primary">
                     {(emp.total * (summary.subsidyPercentage / 100)).toFixed(2)}€
                   </TableCell>
                   {summary.subsidyPercentage < 100 && (

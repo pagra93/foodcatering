@@ -61,7 +61,7 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
       {/* Documentos Principales */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <FileText className="h-5 w-5 text-blue-600" />
+          <FileText className="h-5 w-5 text-primary" />
           Documentos Principales
         </h3>
         <div className="space-y-4">
@@ -145,7 +145,7 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-purple-600" />
+            <FileText className="h-5 w-5 text-primary" />
             Anexos del Contrato
           </h3>
           <Button 
@@ -298,8 +298,8 @@ export function ConfigDocumentationTab({ company }: ConfigDocumentationTabProps)
         <h3 className="text-lg font-semibold mb-4">Historial de Renovaciones</h3>
         <div className="space-y-3">
           <div className="flex items-start gap-4 p-3 rounded-lg border">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-              <span className="text-xs font-semibold text-blue-600">1</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+              <span className="text-xs font-semibold text-primary">1</span>
             </div>
             <div className="flex-1">
               <p className="font-medium text-gray-900">Contrato Inicial</p>

@@ -161,12 +161,12 @@ export function CateringAlerts({ alerts }: CateringAlertsProps) {
 
         {/* Capacidad Cerca del Límite */}
         {alerts.capacityNearLimit && (
-          <Alert variant="destructive" className="border-blue-200 bg-blue-50">
-            <Activity className="h-5 w-5 !text-blue-600" />
-            <AlertTitle className="text-blue-900">
+          <Alert variant="destructive" className="border-primary/30 bg-primary/10">
+            <Activity className="h-5 w-5 !text-primary" />
+            <AlertTitle className="text-primary">
               Capacidad al 90% o Más
             </AlertTitle>
-            <AlertDescription className="text-blue-800">
+            <AlertDescription className="text-primary">
               La demanda está cerca del límite de capacidad diaria. Considerar
               aumentar capacidad o limitar nuevos pedidos.
             </AlertDescription>

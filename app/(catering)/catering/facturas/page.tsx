@@ -67,9 +67,9 @@ export default function InvoicesPage() {
               <p className="text-sm font-medium text-gray-600">
                 Pendientes
               </p>
-              <p className="text-3xl font-bold text-blue-600">0</p>
+              <p className="text-3xl font-bold text-primary">0</p>
             </div>
-            <Calendar className="h-8 w-8 text-blue-400" />
+            <Calendar className="h-8 w-8 text-primary" />
           </div>
         </Card>
 
@@ -121,42 +121,42 @@ export default function InvoicesPage() {
       </Card>
 
       {/* Características Clave */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <h3 className="font-semibold text-blue-900 mb-3">
+      <Card className="p-6 bg-primary/10 border-primary/30">
+        <h3 className="font-semibold text-primary mb-3">
           🎯 Características Clave del Sistema
         </h3>
-        <div className="space-y-3 text-sm text-blue-800">
+        <div className="space-y-3 text-sm text-primary">
           <div>
             <p className="font-medium">1. Precisión Decimal</p>
-            <p className="text-blue-700">
+            <p className="text-primary">
               Todos los cálculos usan Prisma.Decimal y redondeo a 2 decimales.
               Previene errores de precisión flotante.
             </p>
           </div>
           <div>
             <p className="font-medium">2. Solo Pedidos Entregados</p>
-            <p className="text-blue-700">
+            <p className="text-primary">
               La facturación solo incluye pedidos con status DELIVERED.
               Los confirmados pero no entregados no se facturan.
             </p>
           </div>
           <div>
             <p className="font-medium">3. Price Override</p>
-            <p className="text-blue-700">
+            <p className="text-primary">
               Si un plato tiene priceOverride en DishSchedule para ese día,
               se usa ese precio. Sino, se usa basePrice.
             </p>
           </div>
           <div>
             <p className="font-medium">4. Snapshot Inmutable</p>
-            <p className="text-blue-700">
+            <p className="text-primary">
               Cada factura guarda un snapshot JSON completo con todos los datos.
               Incluye hash SHA-256 para verificar integridad.
             </p>
           </div>
           <div>
             <p className="font-medium">5. Compliance Fiscal</p>
-            <p className="text-blue-700">
+            <p className="text-primary">
               Cumple con requisitos españoles: IVA 21%, validación límite IRPF 11€/día,
               numeración secuencial (CATERING-YYYY-MM-XXXX).
             </p>

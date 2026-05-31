@@ -53,7 +53,7 @@ export function SystemDefaultsEditor({ initial }: Props) {
       <h3 className="text-base font-semibold">Defaults del sistema</h3>
       <p className="mt-1 text-sm text-gray-500">
         Valores que heredan los tenants que no personalizan su branding. Y
-        también el propio portal admin de SinTupper.
+        también el propio portal admin de Plati.
       </p>
 
       <div className="mt-5 grid gap-4 md:grid-cols-2">

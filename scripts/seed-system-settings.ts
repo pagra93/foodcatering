@@ -10,8 +10,8 @@ async function main() {
     update: {},
     create: {
       id: 'singleton',
-      defaultPrimaryColor: '#3B82F6',
-      brandName: 'SinTupper',
+      defaultPrimaryColor: '#E0492A',
+      brandName: 'Plati',
     },
   })
   console.log('✓ SystemSettings singleton listo')

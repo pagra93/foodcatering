@@ -55,7 +55,7 @@ export default async function BillingPage() {
         <h1 className="text-3xl font-bold tracking-tight">Facturación</h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
           Tus facturas mensuales. Recibes dos tipos: del catering (por los
-          pedidos servidos) y de SinTupper (tu plan SaaS).
+          pedidos servidos) y de Plati (tu plan SaaS).
         </p>
       </div>
 

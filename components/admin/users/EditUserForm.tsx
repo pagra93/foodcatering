@@ -76,7 +76,7 @@ export function EditUserForm({ user, tenant, currentUserId }: Props) {
     <form onSubmit={submit}>
       <Card className="max-w-2xl space-y-5 p-6">
         {isSelf && (
-          <div className="flex items-start gap-2 rounded-md bg-blue-50 p-3 text-sm text-blue-900">
+          <div className="flex items-start gap-2 rounded-md bg-primary/10 p-3 text-sm text-primary">
             <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
             <div>
               Estás editando <strong>tu propia cuenta</strong>. Los cambios de

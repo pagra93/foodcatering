@@ -19,7 +19,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <TrendingUp className="h-5 w-5 text-blue-600" />
+          <TrendingUp className="h-5 w-5 text-primary" />
           Evolución de Pedidos - Últimos 30 Días
         </CardTitle>
       </CardHeader>
@@ -41,7 +41,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
                   >
                     <div className="relative w-full">
                       <div
-                        className="w-full bg-blue-500 hover:bg-blue-600 transition-colors rounded-t-md cursor-pointer"
+                        className="w-full bg-primary hover:bg-primary transition-colors rounded-t-md cursor-pointer"
                         style={{ height: `${Math.max(height, 5)}%` }}
                         title={`${day.date}: ${day.pedidos} pedidos`}
                       />
@@ -66,7 +66,7 @@ export function DashboardCharts({ data }: DashboardChartsProps) {
             {/* Leyenda */}
             <div className="flex items-center justify-center gap-4 pt-4 border-t">
               <div className="flex items-center gap-2">
-                <div className="h-3 w-3 rounded bg-blue-500" />
+                <div className="h-3 w-3 rounded bg-primary" />
                 <span className="text-sm text-gray-600">Pedidos por día</span>
               </div>
             </div>

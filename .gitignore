@@ -77,3 +77,7 @@ playwright/.cache/
 !components/**/users/**
 !lib/**/users/
 !lib/**/users/**
+
+# Assets de marca (fuente de diseño, fuera del repo de código)
+Imagen de Marca/
+Proyecto_Comida_para_Empresas.pdf

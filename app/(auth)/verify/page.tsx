@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 
 export const metadata: Metadata = {
-  title: 'Verifica tu Email | Comidas',
+  title: 'Verifica tu Email · Plati',
   description: 'Revisa tu correo para verificar tu cuenta',
 }
 
@@ -24,29 +24,29 @@ export default function VerifyEmailPage({
   const email = searchParams.email || 'tu correo'
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         {/* Card con shadcn */}
         <Card className="shadow-lg">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-              <Mail className="h-6 w-6 text-blue-600" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <Mail className="h-6 w-6 text-primary" />
             </div>
             <div>
               <CardTitle className="text-2xl">Verifica tu email</CardTitle>
               <CardDescription className="mt-2">
                 Hemos enviado un enlace de verificación a:
               </CardDescription>
-              <p className="mt-1 text-sm font-semibold text-gray-900">{email}</p>
+              <p className="mt-1 text-sm font-semibold text-foreground">{email}</p>
             </div>
           </CardHeader>
 
           <CardContent className="space-y-6">
             {/* Instructions con shadcn Alert */}
-            <Alert className="bg-blue-50 border-blue-200">
-              <AlertDescription className="text-blue-900">
+            <Alert className="bg-primary/10 border-primary/30">
+              <AlertDescription className="text-primary">
                 <p className="font-semibold mb-2">Pasos siguientes:</p>
-                <ol className="ml-4 list-decimal space-y-2 text-sm text-blue-800">
+                <ol className="ml-4 list-decimal space-y-2 text-sm text-primary">
                   <li>Revisa tu bandeja de entrada</li>
                   <li>Haz clic en el enlace de verificación</li>
                   <li>Inicia sesión con tus credenciales</li>
@@ -56,14 +56,14 @@ export default function VerifyEmailPage({
 
             {/* Info */}
             <div className="text-center space-y-2">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-muted-foreground">
                 ¿No recibiste el email?
               </p>
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="text-blue-600 hover:text-blue-500"
+                className="text-primary hover:text-primary"
               >
                 Reenviar email de verificación
               </Button>
@@ -72,8 +72,8 @@ export default function VerifyEmailPage({
             {/* Divider con shadcn Separator */}
             <div className="relative">
               <Separator />
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-white px-2">
-                <span className="text-sm text-gray-500">O</span>
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-2">
+                <span className="text-sm text-muted-foreground">O</span>
               </div>
             </div>
 
@@ -92,11 +92,11 @@ export default function VerifyEmailPage({
         </Card>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           Si el problema persiste,{' '}
           <Link
             href="/contact"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            className="font-medium text-primary hover:text-primary transition-colors"
           >
             contacta con soporte
           </Link>

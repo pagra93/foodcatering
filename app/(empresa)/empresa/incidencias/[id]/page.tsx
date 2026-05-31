@@ -59,7 +59,7 @@ export default async function IncidentDetailPage({ params }: Props) {
     DELAYED_DELIVERY: { label: 'Entrega Retrasada', color: 'bg-yellow-500' },
     MISSING_ITEM: { label: 'Falta Artículo', color: 'bg-orange-500' },
     WRONG_ORDER: { label: 'Pedido Incorrecto', color: 'bg-red-500' },
-    QUALITY_ISSUE: { label: 'Problema de Calidad', color: 'bg-purple-500' },
+    QUALITY_ISSUE: { label: 'Problema de Calidad', color: 'bg-primary/100' },
     ALLERGEN_ISSUE: { label: 'Problema de Alérgenos', color: 'bg-red-700' },
     DAMAGED_PACKAGING: { label: 'Envase Dañado', color: 'bg-amber-500' },
     OTHER: { label: 'Otro', color: 'bg-gray-500' },

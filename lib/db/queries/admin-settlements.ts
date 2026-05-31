@@ -1,5 +1,5 @@
 /**
- * Queries CRUD sobre Settlement (comisión Catering → SinTupper).
+ * Queries CRUD sobre Settlement (comisión Catering → Plati).
  */
 
 import { prisma } from '@/lib/db/prisma'

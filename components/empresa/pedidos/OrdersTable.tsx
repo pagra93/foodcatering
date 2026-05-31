@@ -124,7 +124,7 @@ export function OrdersTable({ orders, pagination }: OrdersTableProps) {
                       <div className="flex flex-col">
                         <Link
                           href={`/empresa/empleados/${order.employee.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600"
+                          className="font-medium text-gray-900 hover:text-primary"
                         >
                           {order.employee.name}
                         </Link>

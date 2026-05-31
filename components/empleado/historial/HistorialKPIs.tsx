@@ -42,7 +42,7 @@ export function HistorialKPIs({ data }: HistorialKPIsProps) {
               {data.ordersLast3Months} últimos 3m
             </p>
           </div>
-          <Calendar className="h-8 w-8 text-blue-600" />
+          <Calendar className="h-8 w-8 text-primary" />
         </div>
       </Card>
 

@@ -17,12 +17,42 @@ const config: Config = {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['var(--font-sans)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'sans-serif'],
+        mono: ['var(--font-mono)', 'ui-monospace', 'monospace'],
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        // Colores de marca Plati (HEX crudos, para bg-tomate, text-hierba, etc.)
+        tomate: {
+          DEFAULT: 'var(--plati-tomate)',
+          700: 'var(--plati-tomate-700)',
+          soft: 'var(--plati-tomate-soft)',
+          pale: 'var(--plati-tomate-pale)',
+        },
+        tinta: {
+          DEFAULT: 'var(--plati-tinta)',
+          90: 'var(--plati-tinta-90)',
+        },
+        hueso: {
+          DEFAULT: 'var(--plati-hueso)',
+          warm: 'var(--plati-hueso-warm)',
+          dim: 'var(--plati-hueso-dim)',
+        },
+        yema: {
+          DEFAULT: 'var(--plati-yema)',
+          soft: 'var(--plati-yema-soft)',
+        },
+        hierba: {
+          DEFAULT: 'var(--plati-hierba)',
+          700: 'var(--plati-hierba-700)',
+          soft: 'var(--plati-hierba-soft)',
+        },
         primary: {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
@@ -51,28 +81,36 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        // Colores semánticos del sistema
+        // Colores semánticos del sistema (alineados a la paleta Plati)
         success: {
-          DEFAULT: 'hsl(142 76% 36%)',
-          foreground: 'hsl(0 0% 100%)',
+          DEFAULT: 'var(--plati-hierba)',
+          foreground: 'var(--plati-hueso)',
         },
         warning: {
-          DEFAULT: 'hsl(38 92% 50%)',
-          foreground: 'hsl(0 0% 100%)',
+          DEFAULT: 'var(--plati-yema)',
+          foreground: 'var(--plati-tinta)',
         },
         error: {
-          DEFAULT: 'hsl(0 84% 60%)',
-          foreground: 'hsl(0 0% 100%)',
+          DEFAULT: 'var(--plati-tomate)',
+          foreground: 'var(--plati-hueso)',
         },
         info: {
-          DEFAULT: 'hsl(199 89% 48%)',
-          foreground: 'hsl(0 0% 100%)',
+          DEFAULT: 'var(--plati-tinta)',
+          foreground: 'var(--plati-hueso)',
         },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        pill: 'var(--radius-pill)',
+      },
+      maxWidth: {
+        plati: 'var(--maxw)',
+      },
+      boxShadow: {
+        'plati-1': 'var(--shadow-1)',
+        'plati-2': 'var(--shadow-2)',
       },
       keyframes: {
         'accordion-down': {

@@ -19,7 +19,7 @@ const STATUS_META: Record<
   },
   'coming-soon': {
     label: 'Próximamente',
-    className: 'bg-blue-100 text-blue-700 border-blue-200',
+    className: 'bg-primary/10 text-primary border-primary/30',
     icon: Clock,
   },
   'on-request': {
@@ -29,7 +29,7 @@ const STATUS_META: Record<
   },
   active: {
     label: 'Activa',
-    className: 'bg-purple-100 text-purple-700 border-purple-200',
+    className: 'bg-primary/10 text-primary border-primary/30',
     icon: Clock,
   },
 }
@@ -178,10 +178,10 @@ function ConfigModal({
                 inmediato, pero la habilitamos si un cliente enterprise lo
                 solicita. Escríbenos a{' '}
                 <a
-                  href="mailto:soporte@sintupper.com"
-                  className="text-blue-600 hover:underline"
+                  href="mailto:soporte@plati.es"
+                  className="text-primary hover:underline"
                 >
-                  soporte@sintupper.com
+                  soporte@plati.es
                 </a>
                 .
               </p>

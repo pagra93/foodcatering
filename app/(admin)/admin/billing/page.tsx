@@ -20,9 +20,9 @@ export default async function BillingDashboardPage() {
       <div>
         <h1 className="text-2xl font-bold">Facturación y Planes</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Dos flujos de ingreso: (1) comisión que SinTupper cobra a los
+          Dos flujos de ingreso: (1) comisión que Plati cobra a los
           caterings, calculada como % sobre lo que facturan a las empresas; y
-          (2) facturación SaaS de SinTupper directamente a las empresas por
+          (2) facturación SaaS de Plati directamente a las empresas por
           su plan (Starter/Growth/Enterprise).
         </p>
       </div>
@@ -33,7 +33,7 @@ export default async function BillingDashboardPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">MRR SaaS</p>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <p className="mt-1 text-2xl font-bold">{kpis.mrrSaas.toFixed(2)} €</p>
           <p className="mt-1 text-xs text-gray-500">
@@ -55,7 +55,7 @@ export default async function BillingDashboardPage() {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">SaaS cobrado YTD</p>
-            <CreditCard className="h-4 w-4 text-purple-500" />
+            <CreditCard className="h-4 w-4 text-primary" />
           </div>
           <p className="mt-1 text-2xl font-bold">
             {kpis.saasPaidYTD.toFixed(2)} €
@@ -82,7 +82,7 @@ export default async function BillingDashboardPage() {
         <SubModule
           href="/admin/billing/plans"
           icon={TrendingUp}
-          iconColor="text-blue-600"
+          iconColor="text-primary"
           title="Planes SaaS"
           description="Catálogo editable de planes STARTER/GROWTH/ENTERPRISE con precios, features y límites."
         />
@@ -91,14 +91,14 @@ export default async function BillingDashboardPage() {
           icon={Receipt}
           iconColor="text-emerald-600"
           title="Liquidaciones"
-          description="Comisiones que los caterings pagan a SinTupper cada mes."
+          description="Comisiones que los caterings pagan a Plati cada mes."
         />
         <SubModule
           href="/admin/billing/saas-invoices"
           icon={CreditCard}
-          iconColor="text-purple-600"
+          iconColor="text-primary"
           title="Facturas SaaS"
-          description="Facturación directa de SinTupper a las empresas por su plan."
+          description="Facturación directa de Plati a las empresas por su plan."
         />
         <SubModule
           href="/admin/billing/commissions"
@@ -110,7 +110,7 @@ export default async function BillingDashboardPage() {
         <SubModule
           href="/admin/billing/metrics"
           icon={TrendingUp}
-          iconColor="text-blue-600"
+          iconColor="text-primary"
           title="Métricas MRR/ARR"
           description="Evolución del ingreso recurrente, churn y cohortes de empresas."
         />

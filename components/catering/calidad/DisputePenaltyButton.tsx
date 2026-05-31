@@ -23,7 +23,7 @@ export function DisputePenaltyButton({ penaltyId }: { penaltyId: string }) {
     startTransition(async () => {
       try {
         await disputePenaltyAction({ penaltyId, reason })
-        toast.success('Disputa enviada. SinTupper revisará tu caso.')
+        toast.success('Disputa enviada. Plati revisará tu caso.')
         setOpen(false)
         setReason('')
         router.refresh()
@@ -58,7 +58,7 @@ export function DisputePenaltyButton({ penaltyId }: { penaltyId: string }) {
             required
           />
           <p className="mt-1 text-xs text-gray-500">
-            SinTupper revisará tu caso. Mientras tanto, el descuento queda
+            Plati revisará tu caso. Mientras tanto, el descuento queda
             pausado.
           </p>
         </div>

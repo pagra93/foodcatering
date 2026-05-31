@@ -121,7 +121,7 @@ export function TenantsTable({ tenants, pagination }: TenantsTableProps) {
                 <TableCell>
                   <Link
                     href={detailRoute}
-                    className="flex items-center gap-3 hover:text-blue-600 transition-colors"
+                    className="flex items-center gap-3 hover:text-primary transition-colors"
                   >
                     {tenant.logoUrl ? (
                       <img

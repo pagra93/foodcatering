@@ -50,9 +50,9 @@ export function EmpleadoGdprSection({
 
   const create = (type: GdprRequestType) => {
     const mensajes: Record<GdprRequestType, string> = {
-      ACCESS: `Se abrirá una solicitud de Acceso a Datos RGPD en nombre de ${employeeName}. SinTupper generará un dump JSON con sus datos personales y se lo hará llegar en un plazo máximo de 30 días. ¿Continuar?`,
+      ACCESS: `Se abrirá una solicitud de Acceso a Datos RGPD en nombre de ${employeeName}. Plati generará un dump JSON con sus datos personales y se lo hará llegar en un plazo máximo de 30 días. ¿Continuar?`,
       PORTABILITY: `Se abrirá una solicitud de Portabilidad RGPD en nombre de ${employeeName}. Genera un JSON estructurado transferible a otra plataforma. ¿Continuar?`,
-      ERASURE: `⚠️ Se abrirá una solicitud de Derecho al Olvido. Si SinTupper la resuelve, los datos personales de ${employeeName} serán anonimizados de forma IRREVERSIBLE (nombre, email, teléfono). Los pedidos históricos se conservan por obligación fiscal pero quedan desvinculados. ¿Continuar?`,
+      ERASURE: `⚠️ Se abrirá una solicitud de Derecho al Olvido. Si Plati la resuelve, los datos personales de ${employeeName} serán anonimizados de forma IRREVERSIBLE (nombre, email, teléfono). Los pedidos históricos se conservan por obligación fiscal pero quedan desvinculados. ¿Continuar?`,
       RECTIFICATION: `Se abrirá una solicitud de Rectificación RGPD en nombre de ${employeeName}. Incluye en las notas qué datos son incorrectos. ¿Continuar?`,
     }
     if (!confirm(mensajes[type])) return
@@ -60,7 +60,7 @@ export function EmpleadoGdprSection({
     startTransition(async () => {
       try {
         await createGdprRequestAction({ userId, type })
-        toast.success('Solicitud registrada. SinTupper la gestionará.')
+        toast.success('Solicitud registrada. Plati la gestionará.')
         router.refresh()
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Error')
@@ -71,12 +71,12 @@ export function EmpleadoGdprSection({
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Shield className="h-5 w-5 text-blue-600" />
+        <Shield className="h-5 w-5 text-primary" />
         <h3 className="text-base font-semibold">Derechos RGPD</h3>
       </div>
 
       <p className="mb-4 text-sm text-gray-600">
-        Abre solicitudes RGPD en nombre de {employeeName}. SinTupper las
+        Abre solicitudes RGPD en nombre de {employeeName}. Plati las
         ejecuta y responde en un plazo legal de 30 días. Todas las
         operaciones quedan auditadas.
       </p>
@@ -84,7 +84,7 @@ export function EmpleadoGdprSection({
       <div className="grid gap-3 md:grid-cols-2">
         <GdprButton
           icon={Download}
-          iconColor="text-blue-600"
+          iconColor="text-primary"
           title="Solicitar acceso a datos"
           description="Obtiene un JSON con todos los datos personales del empleado."
           onClick={() => create('ACCESS')}

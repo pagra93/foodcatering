@@ -67,7 +67,7 @@ const DISH_LABELS: Record<string, { icon: any; color: string; label: string }> =
   vegetarian: { icon: Leaf, color: 'bg-green-100 text-green-800 border-green-300', label: 'Vegetariano' },
   vegan: { icon: Leaf, color: 'bg-green-100 text-green-800 border-green-300', label: 'Vegano' },
   gluten_free: { icon: Wheat, color: 'bg-yellow-100 text-yellow-800 border-yellow-300', label: 'Sin Gluten' },
-  lactose_free: { icon: Milk, color: 'bg-blue-100 text-blue-800 border-blue-300', label: 'Sin Lactosa' },
+  lactose_free: { icon: Milk, color: 'bg-primary/10 text-primary border-primary/40', label: 'Sin Lactosa' },
   contains_fish: { icon: Fish, color: 'bg-cyan-100 text-cyan-800 border-cyan-300', label: 'Pescado' },
   contains_eggs: { icon: Egg, color: 'bg-orange-100 text-orange-800 border-orange-300', label: 'Huevo' },
   spicy: { icon: AlertCircle, color: 'bg-red-100 text-red-800 border-red-300', label: 'Picante' },
@@ -222,7 +222,7 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                   {starters} / {mains} / {desserts}
                 </p>
               </div>
-              <ChefHat className="h-8 w-8 text-purple-400" />
+              <ChefHat className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -236,7 +236,7 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                   {(dishes.reduce((sum, d) => sum + d.basePrice, 0) / dishes.length).toFixed(2)}€
                 </p>
               </div>
-              <Euro className="h-8 w-8 text-blue-400" />
+              <Euro className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -377,7 +377,7 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                     <TableCell>
                       {dish.scheduledDays > 0 ? (
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-blue-600" />
+                          <Calendar className="h-4 w-4 text-primary" />
                           <span className="text-sm font-medium text-gray-900">
                             {dish.scheduledDays} días
                           </span>
@@ -446,14 +446,14 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
           <div className="space-y-4">
             {/* Resumen de programación */}
             <div className="grid gap-4 md:grid-cols-3">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-blue-100">
-                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                  <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
+                    <TrendingUp className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-blue-700">Platos Programados</p>
-                    <p className="text-lg font-bold text-blue-900">
+                    <p className="text-xs text-primary">Platos Programados</p>
+                    <p className="text-lg font-bold text-primary">
                       {dishes.filter((d) => d.scheduledDays > 0).length}
                     </p>
                   </div>
@@ -472,14 +472,14 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                 </div>
               </div>
 
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
                 <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-purple-100">
-                    <ChefHat className="h-5 w-5 text-purple-600" />
+                  <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-primary/10">
+                    <ChefHat className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="text-xs text-purple-700">Variedad Media</p>
-                    <p className="text-lg font-bold text-purple-900">
+                    <p className="text-xs text-primary">Variedad Media</p>
+                    <p className="text-lg font-bold text-primary">
                       {Math.round((starters + mains + desserts) / 7)} opciones/día
                     </p>
                   </div>

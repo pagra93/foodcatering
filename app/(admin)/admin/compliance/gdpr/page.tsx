@@ -58,7 +58,7 @@ export default async function GdprPage({
         </Card>
         <Card className="p-4">
           <p className="text-sm text-gray-500">En curso</p>
-          <p className="mt-1 text-2xl font-bold text-blue-600">
+          <p className="mt-1 text-2xl font-bold text-primary">
             {kpis.inProgress}
           </p>
         </Card>

@@ -24,7 +24,7 @@ export async function MyDpaCard({ tenantId }: { tenantId: string }) {
               Mi DPA (Data Processing Agreement)
             </h3>
             <p className="mt-1 text-sm text-amber-800">
-              Aún no hay un DPA vigente firmado con SinTupper. Contacta con
+              Aún no hay un DPA vigente firmado con Plati. Contacta con
               tu responsable de cuenta para completar este requisito RGPD
               (Art. 28).
             </p>

@@ -93,7 +93,7 @@ export function ModuleUnderDevelopment({
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-6">
           <div className="mb-4 flex items-center gap-2">
-            <Target className="h-5 w-5 text-blue-600" />
+            <Target className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold text-gray-900">
               Funcionalidades previstas
             </h2>
@@ -101,7 +101,7 @@ export function ModuleUnderDevelopment({
           <ul className="space-y-2 text-sm text-gray-600">
             {plannedFeatures.map((feature) => (
               <li key={feature} className="flex gap-2">
-                <span className="text-blue-500">›</span>
+                <span className="text-primary">›</span>
                 <span>{feature}</span>
               </li>
             ))}
@@ -127,7 +127,7 @@ export function ModuleUnderDevelopment({
       </div>
 
       {/* Footer info */}
-      <Card className="bg-blue-50/40 p-5 text-sm text-gray-600">
+      <Card className="bg-primary/10/40 p-5 text-sm text-gray-600">
         <p>
           Este módulo está planificado en el roadmap y se activará en una
           próxima iteración. La estructura ya existe en la barra lateral

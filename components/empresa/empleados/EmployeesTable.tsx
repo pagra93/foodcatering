@@ -165,7 +165,7 @@ export function EmployeesTable({ employees, pagination }: EmployeesTableProps) {
                     <div className="flex flex-col">
                       <Link
                         href={`/empresa/empleados/${employee.id}`}
-                        className="font-medium text-gray-900 hover:text-blue-600"
+                        className="font-medium text-gray-900 hover:text-primary"
                         prefetch={false}
                       >
                         {employee.name}

@@ -200,7 +200,7 @@ export function ConfigPlanTab({ policy }: ConfigPlanTabProps) {
       {/* Horarios y Días */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Clock className="h-5 w-5 text-blue-600" />
+          <Clock className="h-5 w-5 text-primary" />
           Horarios y Días Activos
         </h3>
         <div className="space-y-4">

@@ -198,7 +198,7 @@ export function CateringWizard() {
                         h-12 w-12 rounded-full flex items-center justify-center font-semibold transition-colors
                         ${
                           isActive
-                            ? 'bg-blue-600 text-white'
+                            ? 'bg-primary text-white'
                             : isCompleted
                             ? 'bg-green-600 text-white'
                             : 'bg-gray-200 text-gray-500'
@@ -214,7 +214,7 @@ export function CateringWizard() {
                     <span
                       className={`mt-2 text-xs font-medium ${
                         isActive
-                          ? 'text-blue-600'
+                          ? 'text-primary'
                           : isCompleted
                           ? 'text-green-600'
                           : 'text-gray-500'
@@ -247,7 +247,7 @@ export function CateringWizard() {
               const step = STEPS[currentStep - 1]
               if (!step) return null
               const Icon = step.icon
-              return <Icon className="h-5 w-5 text-blue-600" />
+              return <Icon className="h-5 w-5 text-primary" />
             })()}
             Paso {currentStep}: {STEPS[currentStep - 1]?.title}
           </CardTitle>
@@ -453,18 +453,18 @@ export function CateringWizard() {
           {/* Paso 3: Documentación */}
           {currentStep === 3 && (
             <div className="space-y-6">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
                 <div className="flex items-start gap-3">
-                  <Shield className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <h4 className="text-sm font-semibold text-blue-900">
+                    <h4 className="text-sm font-semibold text-primary">
                       Documentación Sanitaria Requerida
                     </h4>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-primary mt-1">
                       Una vez creado el catering, podrás subir los siguientes documentos
                       desde la pestaña "Calidad & Cumplimiento":
                     </p>
-                    <ul className="mt-2 text-xs text-blue-700 space-y-1">
+                    <ul className="mt-2 text-xs text-primary space-y-1">
                       <li>• Registro Sanitario (obligatorio)</li>
                       <li>• Seguro de Responsabilidad Civil (obligatorio)</li>
                       <li>• Certificado APPCC (obligatorio)</li>
@@ -829,14 +829,14 @@ export function CateringWizard() {
           {/* Paso 7: Usuarios y Revisión */}
           {currentStep === 7 && (
             <div className="space-y-6">
-              <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+              <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
                 <div className="flex items-start gap-3">
-                  <Users className="h-5 w-5 text-purple-600 mt-0.5 flex-shrink-0" />
+                  <Users className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <h4 className="text-sm font-semibold text-purple-900">
+                    <h4 className="text-sm font-semibold text-primary">
                       Usuarios Iniciales del Catering
                     </h4>
-                    <p className="text-xs text-purple-700 mt-1">
+                    <p className="text-xs text-primary mt-1">
                       Define los usuarios que tendrán acceso al panel del catering.
                       Podrás agregar más usuarios posteriormente.
                     </p>
@@ -947,7 +947,7 @@ export function CateringWizard() {
               {/* Resumen Final */}
               <div className="p-6 bg-gray-50 rounded-lg border border-gray-200 space-y-4">
                 <h4 className="font-semibold text-gray-900 flex items-center gap-2">
-                  <Eye className="h-5 w-5 text-blue-600" />
+                  <Eye className="h-5 w-5 text-primary" />
                   Resumen del Catering
                 </h4>
 

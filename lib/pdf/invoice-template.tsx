@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * Templates PDF comunes para facturas (catering→empresa), liquidaciones
- * (catering→SinTupper) y facturas SaaS (SinTupper→empresa).
+ * (catering→Plati) y facturas SaaS (Plati→empresa).
  *
  * React-PDF: se renderizan en servidor con renderToBuffer.
  */
@@ -162,7 +162,7 @@ export function InvoicePdf({ invoice, catering, empresa, lines }: InvoicePdfProp
         <View style={styles.header}>
           <View>
             <Text style={styles.brand}>{catering.name}</Text>
-            <Text style={styles.partyDetail}>via SinTupper</Text>
+            <Text style={styles.partyDetail}>via Plati</Text>
           </View>
           <View>
             <Text style={styles.docTitle}>FACTURA</Text>
@@ -235,7 +235,7 @@ export function InvoicePdf({ invoice, catering, empresa, lines }: InvoicePdfProp
         )}
 
         <Text style={styles.footer}>
-          Factura generada por la plataforma SinTupper · Cumple con los
+          Factura generada por la plataforma Plati · Cumple con los
           requisitos de facturación electrónica españoles (Art. 164 LIVA).
         </Text>
       </Page>
@@ -243,7 +243,7 @@ export function InvoicePdf({ invoice, catering, empresa, lines }: InvoicePdfProp
   )
 }
 
-// ─── SettlementPdf (catering → SinTupper) ────────────────────────────
+// ─── SettlementPdf (catering → Plati) ────────────────────────────
 
 export type SettlementPdfProps = {
   settlement: {
@@ -266,7 +266,7 @@ export function SettlementPdf({ settlement, catering }: SettlementPdfProps): Rea
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.brand}>SinTupper</Text>
+            <Text style={styles.brand}>Plati</Text>
             <Text style={styles.partyDetail}>Plataforma SaaS</Text>
           </View>
           <View>
@@ -278,7 +278,7 @@ export function SettlementPdf({ settlement, catering }: SettlementPdfProps): Rea
         <View style={styles.parties}>
           <View style={styles.partyBlock}>
             <Text style={styles.partyLabel}>Emisor</Text>
-            <Text style={styles.partyName}>SinTupper</Text>
+            <Text style={styles.partyName}>Plati</Text>
           </View>
           <View style={styles.partyBlock}>
             <Text style={styles.partyLabel}>Catering liquidado</Text>
@@ -304,7 +304,7 @@ export function SettlementPdf({ settlement, catering }: SettlementPdfProps): Rea
           </View>
           <View style={styles.totalRow}>
             <Text>
-              Comisión SinTupper ({(Number(settlement.commissionRate) * 100).toFixed(2)}%)
+              Comisión Plati ({(Number(settlement.commissionRate) * 100).toFixed(2)}%)
             </Text>
             <Text>{formatEuro(settlement.commissionAmount)}</Text>
           </View>
@@ -328,7 +328,7 @@ export function SettlementPdf({ settlement, catering }: SettlementPdfProps): Rea
         )}
 
         <Text style={styles.footer}>
-          Documento generado automáticamente por la plataforma SinTupper.
+          Documento generado automáticamente por la plataforma Plati.
           Transfiere el neto a la cuenta bancaria facilitada y marca la
           liquidación como pagada en /catering/facturacion.
         </Text>
@@ -337,7 +337,7 @@ export function SettlementPdf({ settlement, catering }: SettlementPdfProps): Rea
   )
 }
 
-// ─── SaasInvoicePdf (SinTupper → empresa) ────────────────────────────
+// ─── SaasInvoicePdf (Plati → empresa) ────────────────────────────
 
 export type SaasInvoicePdfProps = {
   invoice: {
@@ -360,7 +360,7 @@ export function SaasInvoicePdf({ invoice, empresa }: SaasInvoicePdfProps): React
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
           <View>
-            <Text style={styles.brand}>SinTupper</Text>
+            <Text style={styles.brand}>Plati</Text>
             <Text style={styles.partyDetail}>Plataforma SaaS</Text>
           </View>
           <View>
@@ -373,7 +373,7 @@ export function SaasInvoicePdf({ invoice, empresa }: SaasInvoicePdfProps): React
         <View style={styles.parties}>
           <View style={styles.partyBlock}>
             <Text style={styles.partyLabel}>Emisor</Text>
-            <Text style={styles.partyName}>SinTupper</Text>
+            <Text style={styles.partyName}>Plati</Text>
           </View>
           <View style={styles.partyBlock}>
             <Text style={styles.partyLabel}>Cliente</Text>
@@ -421,7 +421,7 @@ export function SaasInvoicePdf({ invoice, empresa }: SaasInvoicePdfProps): React
         </View>
 
         <Text style={styles.footer}>
-          Factura SaaS emitida por SinTupper a {empresa.name}. La factura por
+          Factura SaaS emitida por Plati a {empresa.name}. La factura por
           los pedidos del catering es un documento aparte, emitido por el
           propio catering.
         </Text>

@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth'
 import { getDashboardPath } from '@/lib/auth/permissions'
 
 export const metadata: Metadata = {
-  title: 'Acceso Denegado | Comidas',
+  title: 'Acceso Denegado · Plati',
   description: 'No tienes permisos para acceder a esta página',
 }
 
@@ -61,7 +61,7 @@ export default async function UnauthorizedPage() {
             <>
               <Link
                 href={dashboardPath}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary dark:bg-primary dark:hover:bg-primary"
               >
                 <Home className="h-5 w-5" />
                 Ir al Dashboard
@@ -78,7 +78,7 @@ export default async function UnauthorizedPage() {
           ) : (
             <Link
               href="/login"
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 font-medium text-white transition-colors hover:bg-blue-700"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary"
             >
               Iniciar Sesión
             </Link>
@@ -90,7 +90,7 @@ export default async function UnauthorizedPage() {
           Si crees que deberías tener acceso a esta página,{' '}
           <Link
             href="/soporte"
-            className="font-medium text-blue-600 hover:underline dark:text-blue-400"
+            className="font-medium text-primary hover:underline dark:text-primary"
           >
             contacta con soporte
           </Link>

@@ -49,7 +49,7 @@ export function PrivacySection({
   const openAccessRequest = () => {
     if (
       !confirm(
-        'Se abrirá una solicitud de Acceso a tus Datos. SinTupper te entregará un JSON con tus datos personales (perfil, pedidos, valoraciones, incidencias) en un plazo máximo de 30 días. ¿Continuar?'
+        'Se abrirá una solicitud de Acceso a tus Datos. Plati te entregará un JSON con tus datos personales (perfil, pedidos, valoraciones, incidencias) en un plazo máximo de 30 días. ¿Continuar?'
       )
     )
       return
@@ -67,7 +67,7 @@ export function PrivacySection({
   const openErasureRequest = () => {
     if (
       !confirm(
-        '⚠️ Derecho al Olvido\n\nAl ejercer este derecho, SinTupper anonimizará tus datos personales (nombre, email, teléfono) de forma IRREVERSIBLE. Tus pedidos históricos se conservarán durante 5 años por obligación fiscal, pero quedarán desvinculados de ti.\n\nEsto incluye:\n• Tu cuenta quedará deshabilitada\n• No podrás hacer login\n• No podrás pedir menús\n\n¿Estás seguro?'
+        '⚠️ Derecho al Olvido\n\nAl ejercer este derecho, Plati anonimizará tus datos personales (nombre, email, teléfono) de forma IRREVERSIBLE. Tus pedidos históricos se conservarán durante 5 años por obligación fiscal, pero quedarán desvinculados de ti.\n\nEsto incluye:\n• Tu cuenta quedará deshabilitada\n• No podrás hacer login\n• No podrás pedir menús\n\n¿Estás seguro?'
       )
     )
       return
@@ -75,7 +75,7 @@ export function PrivacySection({
       try {
         await createGdprRequestAction({ userId, type: 'ERASURE' })
         toast.success(
-          'Solicitud registrada. SinTupper la revisará y ejecutará en 30 días máx.'
+          'Solicitud registrada. Plati la revisará y ejecutará en 30 días máx.'
         )
         router.refresh()
       } catch (err) {
@@ -87,12 +87,12 @@ export function PrivacySection({
   return (
     <Card className="p-5">
       <div className="mb-4 flex items-center gap-2">
-        <Lock className="h-5 w-5 text-blue-600" />
+        <Lock className="h-5 w-5 text-primary" />
         <h3 className="text-base font-semibold">Privacidad y Datos</h3>
       </div>
 
       <p className="mb-4 text-sm text-gray-600">
-        Tus derechos RGPD sobre los datos personales que SinTupper guarda
+        Tus derechos RGPD sobre los datos personales que Plati guarda
         sobre ti. El plazo legal de respuesta es de <strong>30 días</strong>.
         Las solicitudes quedan registradas y puedes seguir su estado aquí.
       </p>
@@ -104,7 +104,7 @@ export function PrivacySection({
           disabled={isPending}
           className="flex items-start gap-3 rounded-md border border-gray-200 p-4 text-left transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <Download className="mt-0.5 h-4 w-4 text-blue-600" />
+          <Download className="mt-0.5 h-4 w-4 text-primary" />
           <div>
             <p className="text-sm font-semibold">Descargar mis datos</p>
             <p className="mt-0.5 text-xs text-gray-600">

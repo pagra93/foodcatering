@@ -165,7 +165,7 @@ export function UploadDocumentModal({
             </Label>
             <div className="mt-2">
               {!selectedFile ? (
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition-colors hover:border-blue-400 hover:bg-blue-50">
+                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition-colors hover:border-primary hover:bg-primary/10">
                   <Upload className="h-5 w-5 text-gray-400" />
                   <span className="text-sm text-gray-600">
                     Haz clic para seleccionar un archivo
@@ -179,7 +179,7 @@ export function UploadDocumentModal({
                 </label>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                  <FileText className="h-8 w-8 text-blue-600" />
+                  <FileText className="h-8 w-8 text-primary" />
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
                       {selectedFile.name}
@@ -243,8 +243,8 @@ export function UploadDocumentModal({
 
           {/* Info adicional según tipo */}
           {documentType === 'SANITARY_REGISTRATION' && (
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-              <p className="text-xs text-blue-800">
+            <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
+              <p className="text-xs text-primary">
                 <strong>ℹ️ Registro Sanitario:</strong> Documento obligatorio
                 emitido por la autoridad sanitaria. Debe estar vigente en todo
                 momento.
@@ -253,8 +253,8 @@ export function UploadDocumentModal({
           )}
 
           {documentType === 'LIABILITY_INSURANCE' && (
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
-              <p className="text-xs text-blue-800">
+            <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
+              <p className="text-xs text-primary">
                 <strong>ℹ️ Seguro RC:</strong> Cobertura mínima recomendada de
                 300.000€. Verifica que incluya responsabilidad por
                 intoxicaciones alimentarias.

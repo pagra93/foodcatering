@@ -79,7 +79,7 @@ async function ConfigurationData() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
+                  <Users className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold">Usuarios de Gestión</h3>
                 </div>
                 <p className="mt-1 text-sm text-gray-600">
@@ -97,7 +97,7 @@ async function ConfigurationData() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-blue-600" />
+                  <ShieldCheck className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold">Roles y Permisos</h3>
                 </div>
                 <p className="mt-1 text-sm text-gray-600">
@@ -115,7 +115,7 @@ async function ConfigurationData() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <Palette className="h-4 w-4 text-blue-600" />
+                  <Palette className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold">Branding</h3>
                 </div>
                 <p className="mt-1 text-sm text-gray-600">
@@ -133,7 +133,7 @@ async function ConfigurationData() {
             <div className="flex items-start justify-between gap-3">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <CalendarDays className="h-4 w-4 text-blue-600" />
+                  <CalendarDays className="h-4 w-4 text-primary" />
                   <h3 className="font-semibold">Festivos</h3>
                 </div>
                 <p className="mt-1 text-sm text-gray-600">

@@ -217,7 +217,7 @@ export function BillingPaymentsTab({
                   {totalInvoiced.toFixed(2)}€
                 </p>
               </div>
-              <Euro className="h-8 w-8 text-blue-400" />
+              <Euro className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -270,14 +270,14 @@ export function BillingPaymentsTab({
         <CardContent className="pt-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-blue-100">
-                <Percent className="h-6 w-6 text-blue-600" />
+              <div className="flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-full bg-primary/10">
+                <Percent className="h-6 w-6 text-primary" />
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">
                   Comisión Vigente
                 </p>
-                <p className="text-3xl font-bold text-blue-900">
+                <p className="text-3xl font-bold text-primary">
                   {(restaurant.commission * 100).toFixed(2)}%
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
@@ -537,7 +537,7 @@ export function BillingPaymentsTab({
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
           <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <Percent className="h-5 w-5 text-purple-600" />
+            <Percent className="h-5 w-5 text-primary" />
             Histórico de Comisiones
           </CardTitle>
         </CardHeader>
@@ -591,7 +591,7 @@ export function BillingPaymentsTab({
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
           <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <Download className="h-5 w-5 text-blue-600" />
+            <Download className="h-5 w-5 text-primary" />
             Descargas y Exportaciones
           </CardTitle>
         </CardHeader>

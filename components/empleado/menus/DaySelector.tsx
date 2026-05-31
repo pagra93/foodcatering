@@ -170,7 +170,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
         className={cn(
           'p-4 transition-all',
           isSelected
-            ? 'border-blue-600 border-2 bg-blue-50'
+            ? 'border-primary border-2 bg-primary/10'
             : hasAllergen && !isBlocked
             ? 'border-red-300 border-2 bg-red-50'
             : isBlocked
@@ -186,7 +186,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
             className={cn(
               'mt-1 h-5 w-5 rounded-full border-2 flex items-center justify-center',
               isSelected
-                ? 'border-blue-600 bg-blue-600'
+                ? 'border-primary bg-primary'
                 : 'border-gray-300 bg-white'
             )}
           >
@@ -309,7 +309,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
       {/* Primeros */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Utensils className="h-5 w-5 text-blue-600" />
+          <Utensils className="h-5 w-5 text-primary" />
           Primer Plato (Opcional)
         </h2>
         {data.dishes.starters.length > 0 ? (
@@ -328,7 +328,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
       {/* Segundos */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Utensils className="h-5 w-5 text-blue-600" />
+          <Utensils className="h-5 w-5 text-primary" />
           Segundo Plato (Obligatorio)
         </h2>
         {data.dishes.mains.length > 0 ? (
@@ -347,7 +347,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
       {/* Postres */}
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-          <Utensils className="h-5 w-5 text-blue-600" />
+          <Utensils className="h-5 w-5 text-primary" />
           Postre (Opcional)
         </h2>
         {data.dishes.desserts.length > 0 ? (

@@ -52,7 +52,7 @@ export default async function CateringUsuariosPage() {
         </Card>
         <Card className="p-4">
           <p className="text-sm text-gray-500">Admins</p>
-          <p className="mt-1 text-2xl font-bold text-purple-600">
+          <p className="mt-1 text-2xl font-bold text-primary">
             {kpis.admins}
           </p>
         </Card>

@@ -91,7 +91,7 @@ export function CateringBillingTabs({
               : 'text-gray-600 hover:bg-white/60'
           }`}
         >
-          Pago a SinTupper
+          Pago a Plati
         </button>
       </div>
 
@@ -138,7 +138,7 @@ function CobrarTab({ invoices }: { invoices: CateringInvoiceRow[] }) {
                   href={`/api/billing/invoice/${i.id}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   <Download className="h-3 w-3" />
                   PDF
@@ -165,12 +165,12 @@ function CobrarTab({ invoices }: { invoices: CateringInvoiceRow[] }) {
 function PagarTab({ settlements }: { settlements: SettlementRow[] }) {
   return (
     <div className="space-y-4">
-      <Card className="border-blue-200 bg-blue-50/40 p-4 text-xs text-blue-900">
+      <Card className="border-primary/30 bg-primary/10/40 p-4 text-xs text-primary">
         <p>
-          <strong>Cómo funciona:</strong> cada mes SinTupper genera una
+          <strong>Cómo funciona:</strong> cada mes Plati genera una
           liquidación por tu actividad del mes anterior. La comisión se
           calcula sobre tu facturación bruta a empresas. Cuando recibas la
-          liquidación, paga por transferencia a la cuenta facilitada y SinTupper
+          liquidación, paga por transferencia a la cuenta facilitada y Plati
           la marcará como PAGADA al recibir el ingreso.
         </p>
       </Card>
@@ -224,7 +224,7 @@ function PagarTab({ settlements }: { settlements: SettlementRow[] }) {
                     href={`/api/billing/settlement/${s.id}/pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <Download className="h-3 w-3" />
                     PDF

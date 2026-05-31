@@ -63,7 +63,7 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
         <div className="flex items-start gap-6">
           {/* Avatar */}
           <Avatar className="h-24 w-24">
-            <AvatarFallback className="bg-blue-600 text-white text-2xl">
+            <AvatarFallback className="bg-primary text-white text-2xl">
               {employee.name.charAt(0)}
             </AvatarFallback>
           </Avatar>
@@ -180,7 +180,7 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
       {/* Card de Empresa */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <Building2 className="h-5 w-5 text-blue-600" />
+          <Building2 className="h-5 w-5 text-primary" />
           Mi Empresa
         </h3>
 
@@ -192,8 +192,8 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
               className="h-12 w-12 rounded-lg object-cover"
             />
           ) : (
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
-              <Building2 className="h-6 w-6 text-blue-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+              <Building2 className="h-6 w-6 text-primary" />
             </div>
           )}
 
@@ -225,7 +225,7 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
       {site && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <MapPin className="h-5 w-5 text-blue-600" />
+            <MapPin className="h-5 w-5 text-primary" />
             Mi Sede
           </h3>
 
@@ -245,8 +245,8 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
       />
 
       {/* Nota informativa */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <p className="text-sm text-blue-800">
+      <Card className="p-4 bg-primary/10 border-primary/30">
+        <p className="text-sm text-primary">
           <strong>Nota:</strong> Si necesitas actualizar algún dato de tu perfil
           (nombre, departamento, puesto, etc.), contacta con el departamento de RRHH
           de tu empresa.

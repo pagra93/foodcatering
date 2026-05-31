@@ -41,7 +41,7 @@ const TYPE_LABEL: Record<GdprRequestType, string> = {
 }
 
 const TYPE_COLOR: Record<GdprRequestType, string> = {
-  ACCESS: 'bg-blue-100 text-blue-700',
+  ACCESS: 'bg-primary/10 text-primary',
   ERASURE: 'bg-red-100 text-red-700',
   PORTABILITY: 'bg-emerald-100 text-emerald-700',
   RECTIFICATION: 'bg-amber-100 text-amber-700',
@@ -210,7 +210,7 @@ export function GdprRequestsTable({ rows }: { rows: Row[] }) {
                           title="Descargar dump"
                         >
                           <Button variant="ghost" size="sm">
-                            <Download className="h-4 w-4 text-blue-600" />
+                            <Download className="h-4 w-4 text-primary" />
                           </Button>
                         </a>
                       )}

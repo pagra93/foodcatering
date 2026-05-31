@@ -30,7 +30,7 @@ export default function CateringRolesPage() {
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
           Los 5 roles disponibles en el portal catering. Los permisos son del
           sistema y no editables — si necesitas cambios, contacta con
-          SinTupper. Aquí puedes ver qué puede hacer cada rol antes de
+          Plati. Aquí puedes ver qué puede hacer cada rol antes de
           asignarlo a tu equipo.
         </p>
         <Badge variant="secondary" className="mt-2 gap-1.5">

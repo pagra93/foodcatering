@@ -25,7 +25,7 @@ export default async function NewUserPage() {
       <div>
         <h1 className="text-2xl font-bold">Nuevo Usuario</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Normalmente se usa para crear miembros del equipo SinTupper
+          Normalmente se usa para crear miembros del equipo Plati
           (SUPER_ADMIN, AUDITOR). Para usuarios de empresa o catering,
           prefiere sus portales o impersonación.
         </p>

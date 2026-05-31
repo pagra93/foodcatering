@@ -160,8 +160,8 @@ export function CompanyOverviewTab({
         {/* Pedidos */}
         <Card className="p-4">
           <div className="flex items-center gap-2 mb-3">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <ShoppingCart className="h-4 w-4 text-blue-600" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </div>
             <span className="text-sm font-medium text-gray-600">Pedidos</span>
           </div>
@@ -263,8 +263,8 @@ export function CompanyOverviewTab({
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-purple-100 p-3">
-                <ChefHat className="h-5 w-5 text-purple-600" />
+              <div className="rounded-lg bg-primary/10 p-3">
+                <ChefHat className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Catering Asignado</h3>

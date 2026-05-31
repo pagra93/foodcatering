@@ -141,8 +141,8 @@ export function DocumentUploadDialog({
           {selectedFile && (
             <div className="rounded-lg border p-4 bg-gray-50">
               <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <FileText className="h-5 w-5 text-primary" />
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium text-gray-900">
@@ -158,8 +158,8 @@ export function DocumentUploadDialog({
           )}
 
           {/* Información */}
-          <div className="rounded-lg border p-3 bg-blue-50 border-blue-200">
-            <p className="text-sm text-blue-900">
+          <div className="rounded-lg border p-3 bg-primary/10 border-primary/30">
+            <p className="text-sm text-primary">
               <strong>Nota:</strong> Este documento será almacenado de forma segura y
               podrá descargarse cuando lo necesites.
             </p>

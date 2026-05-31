@@ -75,8 +75,8 @@ export function ProfileStats({ data, monthlyHistory }: ProfileStatsProps) {
                 {stats.thisMonth.orders}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center">
-              <Calendar className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Calendar className="h-6 w-6 text-primary" />
             </div>
           </div>
         </Card>
@@ -116,8 +116,8 @@ export function ProfileStats({ data, monthlyHistory }: ProfileStatsProps) {
                 Límite: {company.dailyLimit.toFixed(2)}€
               </p>
             </div>
-            <div className="h-12 w-12 rounded-lg bg-purple-100 flex items-center justify-center">
-              <TrendingUp className="h-6 w-6 text-purple-600" />
+            <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+              <TrendingUp className="h-6 w-6 text-primary" />
             </div>
           </div>
         </Card>
@@ -144,7 +144,7 @@ export function ProfileStats({ data, monthlyHistory }: ProfileStatsProps) {
       {stats.lastOrder && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-            <Clock className="h-5 w-5 text-blue-600" />
+            <Clock className="h-5 w-5 text-primary" />
             Último Pedido
           </h3>
 
@@ -189,7 +189,7 @@ export function ProfileStats({ data, monthlyHistory }: ProfileStatsProps) {
       {/* Historial Mensual */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-blue-600" />
+          <BarChart3 className="h-5 w-5 text-primary" />
           Historial Últimos 6 Meses
         </h3>
 
@@ -227,11 +227,11 @@ export function ProfileStats({ data, monthlyHistory }: ProfileStatsProps) {
       </Card>
 
       {/* Resumen general */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <h4 className="text-sm font-semibold text-blue-900 mb-2">
+      <Card className="p-4 bg-primary/10 border-primary/30">
+        <h4 className="text-sm font-semibold text-primary mb-2">
           💡 Resumen
         </h4>
-        <ul className="text-sm text-blue-800 space-y-1">
+        <ul className="text-sm text-primary space-y-1">
           <li>
             • Has realizado <strong>{stats.last30Days.orders} pedidos</strong> en
             los últimos 30 días

@@ -120,7 +120,7 @@ export function DeliveryRouteView({ route, stops }: DeliveryRouteViewProps) {
       <div className="flex h-screen items-center justify-center bg-gray-50 p-4">
         <Card className="p-6 max-w-md w-full">
           <div className="text-center">
-            <PlayCircle className="h-16 w-16 text-blue-500 mx-auto mb-4" />
+            <PlayCircle className="h-16 w-16 text-primary mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {route.name}
             </h2>

@@ -154,11 +154,11 @@ export function WeeklyMenuView({
       )}
 
       {/* Ayuda */}
-      <Card className="p-6 bg-blue-50 border-blue-200">
-        <h3 className="font-semibold text-blue-900 mb-2">
+      <Card className="p-6 bg-primary/10 border-primary/30">
+        <h3 className="font-semibold text-primary mb-2">
           Cómo funciona
         </h3>
-        <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+        <ul className="text-sm text-primary space-y-1 list-disc list-inside">
           <li>
             Haz clic en &quot;Crear&quot; o &quot;Editar&quot; para configurar
             el menú de cada día

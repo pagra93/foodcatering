@@ -6,8 +6,8 @@
 import { type Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Autenticación | Comidas',
-  description: 'Accede a tu portal de Comidas',
+  title: 'Acceso · Plati',
+  description: 'Accede a tu portal de Plati',
 }
 
 // /mantenimiento consulta maintenanceWindow en BD; el resto de páginas auth

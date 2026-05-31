@@ -33,7 +33,7 @@ export function OrderHistory({ history }: OrderHistoryProps) {
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-        <History className="h-5 w-5 text-purple-600" />
+        <History className="h-5 w-5 text-primary" />
         Historial de Cambios
       </h3>
 
@@ -45,8 +45,8 @@ export function OrderHistory({ history }: OrderHistoryProps) {
           >
             {/* Timeline dot */}
             <div className="relative">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-purple-600 bg-white">
-                <span className="text-xs font-semibold text-purple-600">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-primary bg-white">
+                <span className="text-xs font-semibold text-primary">
                   v{entry.version}
                 </span>
               </div>

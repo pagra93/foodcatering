@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 export const metadata: Metadata = {
-  title: 'Restablecer Contraseña | Comidas',
+  title: 'Restablecer Contraseña · Plati',
   description: 'Crea una nueva contraseña para tu cuenta',
 }
 
@@ -30,13 +30,13 @@ export default async function ResetPasswordPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
         {/* Card con shadcn */}
         <Card className="shadow-lg">
           <CardHeader className="text-center space-y-4">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="h-6 w-6 text-green-600" />
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-success/10">
+              <CheckCircle2 className="h-6 w-6 text-success" />
             </div>
             <div>
               <CardTitle className="text-2xl">Crear nueva contraseña</CardTitle>
@@ -63,7 +63,7 @@ export default async function ResetPasswordPage({
                   minLength={8}
                   placeholder="••••••••"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Mínimo 8 caracteres, incluye mayúsculas y números
                 </p>
               </div>
@@ -90,10 +90,10 @@ export default async function ResetPasswordPage({
         </Card>
 
         {/* Footer */}
-        <p className="mt-6 text-center text-sm text-gray-600">
+        <p className="mt-6 text-center text-sm text-muted-foreground">
           <Link
             href="/login"
-            className="font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            className="font-medium text-primary hover:text-primary transition-colors"
           >
             Volver al inicio de sesión
           </Link>

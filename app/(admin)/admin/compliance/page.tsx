@@ -81,7 +81,7 @@ export default async function CompliancePage() {
         <SubModule
           href="/admin/compliance/fiscal-audit"
           icon={Scale}
-          iconColor="text-purple-600"
+          iconColor="text-primary"
           title="Auditoría Fiscal"
           description="Vista cross-tenant de FiscalReport — deductibilidad IRPF por empresa, pedidos sobre límite, hash de integridad."
         />
@@ -100,7 +100,7 @@ export default async function CompliancePage() {
         <SubModule
           href="/admin/compliance/gdpr"
           icon={FileCheck}
-          iconColor="text-blue-600"
+          iconColor="text-primary"
           title="Derechos RGPD"
           description="Acceso, rectificación, portabilidad y olvido. Plazo legal 30 días."
           badge={

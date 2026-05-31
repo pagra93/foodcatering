@@ -109,10 +109,10 @@ export function TenantForm({ mode, initialData, tenantId }: TenantFormProps) {
                 setSelectedType('EMPRESA')
                 setValue('type', 'EMPRESA')
               }}
-              className="flex flex-col items-center gap-4 rounded-lg border-2 border-gray-200 p-8 transition-all hover:border-blue-500 hover:bg-blue-50"
+              className="flex flex-col items-center gap-4 rounded-lg border-2 border-gray-200 p-8 transition-all hover:border-primary hover:bg-primary/10"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-                <Building2 className="h-8 w-8 text-blue-600" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                <Building2 className="h-8 w-8 text-primary" />
               </div>
               <div className="text-center">
                 <h3 className="text-lg font-semibold">Empresa</h3>

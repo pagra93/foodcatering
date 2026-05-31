@@ -48,7 +48,7 @@ export function EmployeesKPIs({ total, active, totalSpent }: EmployeesKPIsProps)
           <CardTitle className="text-sm font-medium text-gray-600">
             Gasto Promedio
           </CardTitle>
-          <Euro className="h-5 w-5 text-blue-600" />
+          <Euro className="h-5 w-5 text-primary" />
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-gray-900">

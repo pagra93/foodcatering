@@ -4,7 +4,7 @@
  * Server Actions para /admin/users/*.
  *
  * Crean, editan y gestionan usuarios desde el portal súper admin.
- * Por norma: los usuarios ROOT (equipo SinTupper) se gestionan aquí;
+ * Por norma: los usuarios ROOT (equipo Plati) se gestionan aquí;
  * para usuarios de empresa o catering, el super admin debe usar
  * impersonación y operar desde el portal del tenant correspondiente.
  * Aún así, las actions permiten actuar cross-tenant con el warning

@@ -1,0 +1,113 @@
+# Plati — Resumen completo para LLMs
+
+## Qué es Plati
+
+Plati es una plataforma SaaS B2B multi-tenant diseñada para gestionar el beneficio de comida diaria como entrega en especie en empresas españolas, aprovechando la exención fiscal del Art. 42.3 de la LIRPF (Ley 35/2006). La plataforma conecta a tres tipos de actores: la empresa que ofrece el beneficio, los empleados que eligen y reciben los menús, y los caterings que cocinan y reparten. Cada actor tiene su propio portal (subdominio `<nombre>.plati.es`) con funcionalidades específicas.
+
+## Quién lo usa
+
+- Empresas españolas de 20 a 5000+ empleados que quieren ofrecer comida como beneficio social y necesitan compliance fiscal auditable. Los decisores internos son Recursos Humanos (People Ops) y Dirección Financiera.
+- Empleados de esas empresas, que usan el portal para elegir su menú semanal, indicar alergias, dar de alta preferencias y valorar la experiencia.
+- Operadores de catering que entran en la red B2B de Plati para recibir pedidos recurrentes de múltiples empresas, con la operativa (cocina, packing, rutas, facturación) digitalizada.
+
+## Compliance fiscal (Art. 42.3 LIRPF)
+
+El Art. 42.3 de la Ley 35/2006 del IRPF establece que no tienen la consideración de rendimientos del trabajo en especie las entregas a empleados de productos a precios rebajados en comedores de empresa o economatos de carácter social, incluidas las fórmulas indirectas, cuando la cuantía no supere 11 euros diarios por trabajador y día laborable.
+
+Para aplicar la exención, Hacienda exige evidencia de que la comida se entregó efectivamente al empleado durante la jornada laboral. Plati produce esa evidencia mediante:
+
+1. Selección nominativa: cada pedido queda asociado a un empleado identificable con timestamp de selección.
+2. Prueba de entrega: hora, receptor, foto o firma y geolocalización del punto de entrega.
+3. Factura desglosada: línea por pedido con precio e IVA, enlazada al empleado que recibió la comida.
+4. Snapshot SHA-256 diario: firma criptográfica del estado del día, inmutable, defendible en inspección.
+5. Dossier fiscal mensual: PDF consolidado con ratio de deductibilidad, pedidos sobre límite y pedidos sin justificante.
+6. Export a ERP: CSV con formato SAP, Sage o A3 para contabilidad.
+
+## Portales y funcionalidades
+
+### Portal empresa
+
+- Dashboard con KPIs del mes: número de pedidos, gasto total, empleados activos, porcentaje de adopción del beneficio, alertas configurables.
+- Importador CSV con validación y preview: alta masiva de empleados con invitaciones por token de un solo uso.
+- Configuración de política: copay empresa/empleado, cutoff diario, días activos de la semana, límites.
+- Auditoría fiscal: snapshot diario SHA-256, dossier mensual PDF.
+- Conciliación pedidos ↔ factura: cada línea de factura del catering queda enlazada al pedido concreto y al empleado receptor.
+- Export a ERP: descarga CSV con el formato que espera SAP, Sage, A3 u otros.
+- Permisos por rol: ADMIN_EMPRESA, RRHH, FINANZAS, MANAGER_SEDE.
+
+### Portal empleado
+
+- Selector semanal: 5 días laborables con 3 opciones por día (1º, 2º, postre).
+- Cards de plato con imagen, descripción, alérgenos codificados por color (rojo conflicto con preferencias, naranja presente, gris no contiene), calorías cuando disponibles.
+- Confirmación de pedido con copay visible.
+- Plazo de cambio/cancelación hasta las 11:00 del día del pedido.
+- Incidencias reportables desde la app: tipo (llegó frío, faltaba postre, etc.), severidad, catering resuelve.
+- Rating post-comida: sabor, porción, presentación, comentario.
+- Perfil: gasto YTD, último mes, este mes, gráfica de barras 6 meses, plato favorito.
+- Configuración personal: alergias, preferencias dietéticas, cambio de contraseña.
+
+### Portal catering
+
+- Kitchen Display System (KDS): tablet fullscreen, auto-refresh 30s, consolidación automática ("45 × Gazpacho, 38 × Merluza").
+- Packing display por empleado: etiqueta con alérgenos codificados, sede de destino.
+- Rutas optimizadas: lista de paradas ordenadas por código postal, integración Google Maps, confirmación in-situ.
+- Prueba de entrega: foto, firma o geolocalización por pedido.
+- Platos CRUD: 14 alérgenos UE, etiquetas nutricionales, imagen, precio base, stock limit, estado PUBLISHED/HIDDEN.
+- Menús semanales: publicar 7 días con precios override, stock, estado.
+- Facturación automática mensual el día 1: línea por pedido, IVA 10%, precisión Decimal.
+- Dashboard: pedidos hoy vs capacidad, entregas completadas, tasa puntualidad, incidencias, rating medio.
+
+## Operativa diaria
+
+- Lunes 9:00: los empleados reciben notificación "Ya tienes menús disponibles".
+- Cada día hasta las 11:00: los empleados pueden seleccionar o modificar su menú.
+- 11:05: cierre del día. La lista queda fija, el catering recibe el consolidado.
+- 13:00-14:00: entrega en sede. El reparto confirma con foto/firma/geolocalización.
+- 14:00: notificación al empleado "¿Qué te ha parecido tu menú?" con rating.
+- Día 1 del mes siguiente: factura automática del catering a la empresa; dossier fiscal y export ERP disponibles.
+
+## Precios
+
+- Starter: 3 €/mes por empleado activo. Hasta 50 empleados. Incluye portales, CSV import, dashboard, dossier fiscal, export ERP, soporte email.
+- Growth: 2,50 €/mes por empleado activo. De 51 a 500 empleados. Añade multi-sede con Manager de sede, permisos avanzados, conciliación pedidos-factura, integración con múltiples caterings, SLA 8h.
+- Enterprise: precio a medida. 500+ empleados. Añade SSO (SAML/OIDC), SCIM provisioning, SLA 99.9% por contrato, soporte dedicado y CSM, contrato marco y DPA firmados.
+
+Facturación mensual recurrente por empleado activo, pago SEPA o tarjeta. Sin setup fee. Sin permanencia más allá del mes en curso. Descuento 15% por pago anual. Piloto gratuito de 30 días con hasta 10 empleados para validar.
+
+## Seguridad y RGPD
+
+- Cifrado PII AES-256-GCM en reposo (email, alergias, preferencias).
+- Servidores en la UE. Backups cifrados diarios.
+- DPA firmado como encargado de tratamiento.
+- Derecho de portabilidad y borrado a petición. Retención configurable.
+- Auditoría de accesos: toda consulta a PII queda registrada.
+- Snapshot SHA-256 almacenado por separado de los datos personales (solo referencias).
+
+## Comparativa vs competidores
+
+Plati se diferencia de Cobee, Edenred y Ticket Restaurant en que entrega comida real cocinada por caterings profesionales (no es un ticket para canjear en un restaurante cualquiera) y genera evidencia criptográfica auditable por empleado, plato, hora y sede. Esto lo hace particularmente adecuado para empresas que quieren:
+
+- Blindar la exención IRPF ante inspección fiscal.
+- Ofrecer comida en sede (no teletrabajo) como beneficio social estructurado.
+- Tener conciliación contable línea por línea sin trabajo manual.
+
+Los tickets restaurante tradicionales siguen siendo una opción válida si el objetivo es maximizar la libertad del empleado para elegir restaurante, pero dejan una trazabilidad fiscal más débil y no producen dossier auditable.
+
+## Cómo empezar
+
+1. Solicitar demo en https://plati.es/demo con nombre, email corporativo, empresa, nº de empleados y rol.
+2. Demo de 20 minutos con calculadora aplicada al caso real y dossier ejemplo.
+3. Piloto de 30 días con hasta 10 empleados para validar flujo operativo.
+4. Rollout completo con plan de implantación personalizado (5 a 30 minutos hasta 100 empleados, hasta 2 semanas para despliegues Enterprise con SSO y multi-sede).
+
+## Dominio
+
+- Landing pública: https://plati.es
+- Portal super admin: https://admin.plati.es
+- Portal empresa (subdominio por tenant): https://<empresa>.plati.es
+- Portal catering (subdominio por tenant): https://<catering>.plati.es
+- Portal empleado: mismo subdominio que su empresa, ruta /empleado.
+
+## Frase canónica
+
+Plati: plataforma de menús corporativos con compliance fiscal IRPF Art. 42.3.

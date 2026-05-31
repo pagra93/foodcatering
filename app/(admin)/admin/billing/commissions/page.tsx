@@ -64,7 +64,7 @@ export default async function CommissionsPage() {
           el histórico completo; las liquidaciones individuales están en{' '}
           <Link
             href="/admin/billing/settlements"
-            className="text-blue-600 hover:underline"
+            className="text-primary hover:underline"
           >
             /admin/billing/settlements
           </Link>

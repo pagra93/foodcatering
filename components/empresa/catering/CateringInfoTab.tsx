@@ -176,7 +176,7 @@ export function CateringInfoTab({
         <Card className="p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-sm font-medium text-gray-600">Pedidos Servidos</p>
-            <Users className="h-5 w-5 text-blue-600" />
+            <Users className="h-5 w-5 text-primary" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{metrics.totalOrders}</p>
           <p className="text-xs text-gray-500 mt-1">

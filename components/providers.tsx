@@ -12,6 +12,8 @@ import { SessionProvider } from 'next-auth/react'
 import { ThemeProvider } from 'next-themes'
 import { useState } from 'react'
 
+import { Toaster } from '@/components/ui/sonner'
+
 type ProvidersProps = {
   children: React.ReactNode
 }
@@ -41,6 +43,7 @@ export function Providers({ children }: ProvidersProps) {
           disableTransitionOnChange
         >
           {children}
+          <Toaster position="top-right" richColors />
         </ThemeProvider>
       </QueryClientProvider>
     </SessionProvider>

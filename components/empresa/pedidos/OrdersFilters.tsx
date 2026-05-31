@@ -114,7 +114,7 @@ export function OrdersFilters({ currentFilters }: OrdersFiltersProps) {
 
       {/* Fechas personalizadas */}
       {showCustomDates && (
-        <div className="flex flex-col gap-4 md:flex-row md:items-end p-4 rounded-lg border border-blue-200 bg-blue-50">
+        <div className="flex flex-col gap-4 md:flex-row md:items-end p-4 rounded-lg border border-primary/30 bg-primary/10">
           <div className="space-y-2 flex-1">
             <Label htmlFor="dateFrom" className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />

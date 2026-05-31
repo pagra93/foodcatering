@@ -65,7 +65,7 @@ const CATERING_ROLES: Record<string, { label: string; description: string; color
   ADMIN: {
     label: 'Administrador',
     description: 'Acceso completo a toda la gestión del catering',
-    color: 'bg-purple-100 text-purple-800 border-purple-300',
+    color: 'bg-primary/10 text-primary border-primary/30',
   },
   CHEF: {
     label: 'Chef',
@@ -80,7 +80,7 @@ const CATERING_ROLES: Record<string, { label: string; description: string; color
   DELIVERY: {
     label: 'Reparto',
     description: 'Gestión de logística y entregas',
-    color: 'bg-blue-100 text-blue-800 border-blue-300',
+    color: 'bg-primary/10 text-primary border-primary/40',
   },
   FINANCE: {
     label: 'Finanzas',
@@ -212,7 +212,7 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
                 <p className="text-sm font-medium text-gray-500">Total Usuarios</p>
                 <p className="text-2xl font-bold text-gray-900">{totalUsers}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-400" />
+              <Users className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -234,11 +234,11 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">MFA Activado</p>
-                <p className="text-2xl font-bold text-purple-600">
+                <p className="text-2xl font-bold text-primary">
                   {mfaEnabledUsers}/{totalUsers}
                 </p>
               </div>
-              <Shield className="h-8 w-8 text-purple-400" />
+              <Shield className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -260,7 +260,7 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
           <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <Shield className="h-5 w-5 text-blue-600" />
+            <Shield className="h-5 w-5 text-primary" />
             Roles y Permisos Disponibles
           </CardTitle>
         </CardHeader>
@@ -469,14 +469,14 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
               <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-blue-600 mt-0.5" />
+                <Shield className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-blue-900">
+                  <h4 className="text-sm font-semibold text-primary">
                     Autenticación Multi-Factor (MFA)
                   </h4>
-                  <p className="text-xs text-blue-700 mt-1">
+                  <p className="text-xs text-primary mt-1">
                     Se recomienda activar MFA para todos los usuarios, especialmente
                     Administradores y roles con acceso a datos sensibles. Actualmente{' '}
                     <strong>{mfaEnabledUsers} de {totalUsers}</strong> usuarios tienen
@@ -486,14 +486,14 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
               </div>
             </div>
 
-            <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
               <div className="flex items-start gap-3">
-                <UserCog className="h-5 w-5 text-purple-600 mt-0.5" />
+                <UserCog className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-purple-900">
+                  <h4 className="text-sm font-semibold text-primary">
                     Impersonación de Usuario
                   </h4>
-                  <p className="text-xs text-purple-700 mt-1">
+                  <p className="text-xs text-primary mt-1">
                     Los Super Admins pueden impersonar usuarios del catering para
                     resolver problemas o realizar pruebas. Todas las sesiones de
                     impersonación se registran en el audit log y expiran tras 15

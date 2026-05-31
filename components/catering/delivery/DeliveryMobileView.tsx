@@ -233,7 +233,7 @@ export function DeliveryMobileView({
                           {order.employeePhone && (
                             <a
                               href={`tel:${order.employeePhone}`}
-                              className="text-sm text-blue-600 flex items-center gap-1 mt-1"
+                              className="text-sm text-primary flex items-center gap-1 mt-1"
                             >
                               <Phone className="h-3 w-3" />
                               {order.employeePhone}

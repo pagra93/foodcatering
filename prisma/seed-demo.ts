@@ -39,8 +39,8 @@ async function main() {
     update: {},
     create: {
       id: 'singleton',
-      brandName: 'SinTupper',
-      defaultPrimaryColor: '#3B82F6',
+      brandName: 'Plati',
+      defaultPrimaryColor: '#E0492A',
     },
   })
 
@@ -159,11 +159,11 @@ async function main() {
   })
 
   const superAdmin = await prisma.user.upsert({
-    where: { tenantId_email: { tenantId: rootTenant.id, email: 'admin@sintupper.com' } },
+    where: { tenantId_email: { tenantId: rootTenant.id, email: 'admin@plati.es' } },
     update: {},
     create: {
       tenantId: rootTenant.id,
-      email: 'admin@sintupper.com',
+      email: 'admin@plati.es',
       passwordHash: await hash('Admin123!', 10),
       nameEnc: 'Súper Administrador',
       role: 'SUPER_ADMIN',
@@ -171,7 +171,7 @@ async function main() {
     },
   })
 
-  console.log('   ✅ admin@sintupper.com / Admin123!')
+  console.log('   ✅ admin@plati.es / Admin123!')
 
   // ============================================================================
   // 3. TENANT EMPRESA — "Demo Empresa"
@@ -835,11 +835,11 @@ async function main() {
   console.log('🎉 Seed DEMO completo')
   console.log('='.repeat(64))
   console.log('\n🌐 SUBDOMINIOS')
-  console.log('  admin.sintupper.com          → Portal super admin')
-  console.log('  demoempresa.sintupper.com    → Portal empresa')
-  console.log('  democatering.sintupper.com   → Portal catering')
+  console.log('  admin.plati.es          → Portal super admin')
+  console.log('  demoempresa.plati.es    → Portal empresa')
+  console.log('  democatering.plati.es   → Portal catering')
   console.log('\n👤 USUARIOS')
-  console.log('  SUPER_ADMIN   admin@sintupper.com          / Admin123!')
+  console.log('  SUPER_ADMIN   admin@plati.es          / Admin123!')
   console.log('  ADMIN_EMPRESA admin@demoempresa.com        / Empresa123!')
   console.log('  RRHH          rrhh@demoempresa.com         / Rrhh123!')
   console.log('  FINANZAS      finanzas@demoempresa.com     / Finanzas123!')

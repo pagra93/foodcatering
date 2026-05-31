@@ -2,7 +2,7 @@
  * Queries para /empresa/facturacion — lo que la empresa paga/recibe.
  * 2 flujos:
  * 1. Facturas del catering por los pedidos (Invoice).
- * 2. Facturas SaaS de SinTupper por el plan (SaasInvoice).
+ * 2. Facturas SaaS de Plati por el plan (SaasInvoice).
  */
 
 import { prisma } from '@/lib/db/prisma'

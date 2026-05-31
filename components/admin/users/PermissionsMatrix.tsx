@@ -20,14 +20,14 @@ const SECTION_META: Record<
   { title: string; subtitle: string; accent: string }
 > = {
   ROOT: {
-    title: 'Equipo SinTupper',
+    title: 'Equipo Plati',
     subtitle: 'Roles del portal administrativo.',
-    accent: 'text-purple-700 bg-purple-50 border-purple-200',
+    accent: 'text-primary bg-primary/10 border-primary/30',
   },
   EMPRESA: {
     title: 'Empresas',
     subtitle: 'Roles del portal empresa.',
-    accent: 'text-blue-700 bg-blue-50 border-blue-200',
+    accent: 'text-primary bg-primary/10 border-primary/30',
   },
   CATERING: {
     title: 'Caterings',
@@ -50,7 +50,7 @@ function renderCell(state: PermissionState) {
     case 'wildcard':
       return (
         <span
-          className="text-sm text-blue-500"
+          className="text-sm text-primary"
           title="Heredado por wildcard (p.ej. orders:*)"
         >
           ○
@@ -148,7 +148,7 @@ export function PermissionsMatrix({ permissionsByEntity, entities }: Props) {
           <span className="text-base text-emerald-600">✓</span> directo
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="text-sm text-blue-500">○</span> wildcard (e.g. orders:*)
+          <span className="text-sm text-primary">○</span> wildcard (e.g. orders:*)
         </span>
         <span className="flex items-center gap-1.5">
           <span className="text-gray-300">—</span> denegado

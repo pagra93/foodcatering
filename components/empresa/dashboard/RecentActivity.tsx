@@ -36,7 +36,7 @@ export function RecentActivity({ activities }: RecentActivityProps) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Activity className="h-5 w-5 text-purple-600" />
+          <Activity className="h-5 w-5 text-primary" />
           Actividad Reciente
         </CardTitle>
       </CardHeader>
@@ -58,8 +58,8 @@ export function RecentActivity({ activities }: RecentActivityProps) {
                   key={activity.id}
                   className="flex items-start gap-3 pb-4 border-b last:border-0 last:pb-0"
                 >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50">
-                    <Utensils className="h-5 w-5 text-blue-600" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Utensils className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">

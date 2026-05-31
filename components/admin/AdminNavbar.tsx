@@ -39,7 +39,7 @@ export async function AdminNavbar() {
             <input
               type="text"
               placeholder="Buscar..."
-              className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="h-10 w-full rounded-lg border border-gray-200 bg-gray-50 pl-10 pr-4 text-sm text-gray-900 placeholder-gray-400 transition-colors focus:border-ring focus:bg-white focus:outline-none focus:ring-1 focus:ring-ring"
             />
           </div>
         </div>
@@ -94,7 +94,7 @@ export async function AdminNavbar() {
               </div>
               <DropdownMenuSeparator />
               <div className="p-2 text-center">
-                <button className="text-sm text-blue-600 hover:underline">
+                <button className="text-sm text-primary hover:underline">
                   Ver todas las notificaciones
                 </button>
               </div>
@@ -107,7 +107,7 @@ export async function AdminNavbar() {
               <button className="flex items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-gray-50">
                 <Avatar className="h-9 w-9">
                   <AvatarImage src={undefined} alt={user.name || 'User'} />
-                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-xs font-semibold text-white">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-tinta text-xs font-semibold text-white">
                     {initials}
                   </AvatarFallback>
                 </Avatar>

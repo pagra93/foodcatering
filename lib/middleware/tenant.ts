@@ -31,7 +31,7 @@ export function getSubdomainFromRequest(req: NextRequest): string | null {
   if (!host) return null
 
   // Desarrollo: admin.sintupper.localhost → admin
-  // Producción: admin.sintupper.com → admin
+  // Producción: admin.plati.es → admin
 
   const parts = host.split('.')
 

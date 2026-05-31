@@ -112,8 +112,8 @@ export default async function CateringRoutesPage() {
         <Kpi
           label="En curso"
           value={stats.inProgress}
-          icon={<Truck className="h-5 w-5 text-blue-500" />}
-          accent="text-blue-600"
+          icon={<Truck className="h-5 w-5 text-primary" />}
+          accent="text-primary"
         />
         <Kpi
           label="Completadas hoy"

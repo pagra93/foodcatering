@@ -83,7 +83,7 @@ export default async function MetricsPage() {
                   title={`Comisiones ${s.commissions.toFixed(2)} €`}
                 />
                 <div
-                  className="rounded-sm bg-blue-500"
+                  className="rounded-sm bg-primary"
                   style={{
                     width: `${maxAny === 0 ? 0 : (s.saas / maxAny) * 50}%`,
                   }}
@@ -99,7 +99,7 @@ export default async function MetricsPage() {
             Comisiones catering
           </span>
           <span className="flex items-center gap-1">
-            <span className="inline-block h-2 w-2 bg-blue-500" />
+            <span className="inline-block h-2 w-2 bg-primary" />
             SaaS a empresas
           </span>
         </div>

@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth'
 import { SettlementPdf } from '@/lib/pdf/invoice-template'
 
 /**
- * PDF de liquidación Settlement (catering → SinTupper).
+ * PDF de liquidación Settlement (catering → Plati).
  * SUPER_ADMIN/AUDITOR globales; ADMIN_CATERING/FINANZAS_CATERING de su tenant.
  */
 export async function GET(

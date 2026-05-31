@@ -302,7 +302,7 @@ function RatingsTab({
 
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-blue-600" />
+          <MessageSquare className="h-4 w-4 text-primary" />
           <h3 className="text-base font-semibold">Comentarios recientes</h3>
         </div>
         <div className="space-y-3">
@@ -394,7 +394,7 @@ function AuditsTab({ audits }: { audits: RestaurantAudit[] }) {
                       href={a.reportUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                      className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                     >
                       Ver PDF
                       <ExternalLink className="h-3 w-3" />

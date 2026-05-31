@@ -84,7 +84,7 @@ export function BillingTabs({ kpis, cateringInvoices, saasInvoices }: Props) {
           [
             { id: 'resumen', label: 'Resumen anual' },
             { id: 'catering', label: 'Del catering' },
-            { id: 'saas', label: 'De SinTupper (SaaS)' },
+            { id: 'saas', label: 'De Plati (SaaS)' },
           ] as const
         ).map((t) => (
           <button
@@ -150,7 +150,7 @@ function ResumenTab({ kpis }: { kpis: Props['kpis'] }) {
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Próxima factura SaaS</p>
-            <TrendingUp className="h-4 w-4 text-blue-500" />
+            <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <p className="mt-1 text-2xl font-bold">
             {kpis.currentPlan
@@ -178,9 +178,9 @@ function ResumenTab({ kpis }: { kpis: Props['kpis'] }) {
               del mes. Pagas directamente al catering.
             </p>
           </div>
-          <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-blue-700">
-              De SinTupper
+          <div className="rounded-md border border-primary/30 bg-primary/10 p-4">
+            <p className="text-xs uppercase tracking-wide text-primary">
+              De Plati
             </p>
             <h4 className="mt-1 font-semibold">
               Suscripción plan {kpis.currentPlan?.name ?? 'SaaS'}
@@ -233,7 +233,7 @@ function CateringTab({ invoices }: { invoices: CateringInvoice[] }) {
                   href={`/api/billing/invoice/${i.id}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   <Download className="h-3 w-3" />
                   PDF
@@ -294,7 +294,7 @@ function SaasTab({ invoices }: { invoices: SaasInvoice[] }) {
                   href={`/api/billing/saas-invoice/${i.id}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   <Download className="h-3 w-3" />
                   PDF

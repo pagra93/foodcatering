@@ -210,8 +210,8 @@ const getMockAuditLog = (): AuditLogEntry[] => [
 // Configuración de categorías
 const CATEGORIES = {
   MENU: { label: 'Menús & Platos', icon: Package, color: 'bg-orange-100 text-orange-800 border-orange-300' },
-  DOCUMENTO: { label: 'Documentos', icon: FileText, color: 'bg-blue-100 text-blue-800 border-blue-300' },
-  USUARIO: { label: 'Usuarios', icon: Users, color: 'bg-purple-100 text-purple-800 border-purple-300' },
+  DOCUMENTO: { label: 'Documentos', icon: FileText, color: 'bg-primary/10 text-primary border-primary/40' },
+  USUARIO: { label: 'Usuarios', icon: Users, color: 'bg-primary/10 text-primary border-primary/30' },
   CONFIGURACION: { label: 'Configuración', icon: Settings, color: 'bg-gray-100 text-gray-800 border-gray-300' },
   PEDIDO: { label: 'Pedidos', icon: CheckCircle2, color: 'bg-green-100 text-green-800 border-green-300' },
   FACTURA: { label: 'Facturas', icon: DollarSign, color: 'bg-emerald-100 text-emerald-800 border-emerald-300' },
@@ -338,7 +338,7 @@ export function ActivityLogTab({ cateringId: _cateringId }: ActivityLogTabProps)
                 <p className="text-sm font-medium text-gray-500">Total Acciones</p>
                 <p className="text-2xl font-bold text-gray-900">{totalActions}</p>
               </div>
-              <Activity className="h-8 w-8 text-blue-400" />
+              <Activity className="h-8 w-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -360,9 +360,9 @@ export function ActivityLogTab({ cateringId: _cateringId }: ActivityLogTabProps)
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">Usuarios Activos</p>
-                <p className="text-2xl font-bold text-purple-600">{uniqueUsersCount}</p>
+                <p className="text-2xl font-bold text-primary">{uniqueUsersCount}</p>
               </div>
-              <Users className="h-8 w-8 text-purple-400" />
+              <Users className="h-8 w-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -381,15 +381,15 @@ export function ActivityLogTab({ cateringId: _cateringId }: ActivityLogTabProps)
       </div>
 
       {/* Info de Compliance */}
-      <Card className="border-0 shadow-sm bg-blue-50 border-blue-200">
+      <Card className="border-0 shadow-sm bg-primary/10 border-primary/30">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <Shield className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+            <Shield className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
             <div className="flex-1">
-              <h4 className="text-sm font-semibold text-blue-900">
+              <h4 className="text-sm font-semibold text-primary">
                 Trazabilidad Legal y Compliance
               </h4>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-primary mt-1">
                 Todos los registros se almacenan de forma inmutable y cifrada cumpliendo con GDPR,
                 LOPD y normativa fiscal española (4 años de retención). Los logs incluyen timestamps,
                 IP de origen, y diff completo de cambios para auditorías.

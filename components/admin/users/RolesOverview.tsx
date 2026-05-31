@@ -13,7 +13,7 @@ import type { RoleUsageStat } from '@/lib/db/queries/admin-roles'
 
 const CATEGORY_META = {
   ROOT: {
-    title: 'Equipo SinTupper',
+    title: 'Equipo Plati',
     description:
       'Roles internos del equipo que opera la plataforma. Gestión directa desde este portal.',
     color: 'purple',
@@ -40,8 +40,8 @@ const CATEGORY_META = {
 
 const COLORS = {
   purple:
-    'border-purple-200 bg-purple-50/50 [--color-bar:theme(colors.purple.600)]',
-  blue: 'border-blue-200 bg-blue-50/50 [--color-bar:theme(colors.blue.600)]',
+    'border-primary/30 bg-primary/10/50 [--color-bar:theme(colors.purple.600)]',
+  blue: 'border-primary/30 bg-primary/10/50 [--color-bar:theme(colors.blue.600)]',
   amber:
     'border-amber-200 bg-amber-50/50 [--color-bar:theme(colors.amber.600)]',
 } as const
@@ -165,7 +165,7 @@ function RoleCard({ stat }: { stat: RoleUsageStat }) {
           pathname: '/admin/users',
           query: { role: stat.role },
         }}
-        className="mt-3 inline-flex items-center text-xs font-medium text-blue-600 hover:underline"
+        className="mt-3 inline-flex items-center text-xs font-medium text-primary hover:underline"
       >
         Ver usuarios con este rol
         <ChevronRight className="ml-0.5 h-3 w-3" />

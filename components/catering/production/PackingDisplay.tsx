@@ -188,12 +188,12 @@ export function PackingDisplay({
                     )}
 
                     {order.dishes.second && (
-                      <div className="w-48 rounded-lg bg-blue-100 p-4 text-center">
+                      <div className="w-48 rounded-lg bg-primary/10 p-4 text-center">
                         <div className="mb-2 text-5xl">🍗</div>
-                        <p className="text-xl font-bold text-blue-900">
+                        <p className="text-xl font-bold text-primary">
                           {order.dishes.second.name}
                         </p>
-                        <Badge className="mt-2 bg-blue-600 text-base">
+                        <Badge className="mt-2 bg-primary text-base">
                           Segundo
                         </Badge>
                       </div>

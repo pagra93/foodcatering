@@ -30,7 +30,7 @@ export default function EmpresaRolesPage() {
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
           Los 5 roles disponibles en el portal empresa. La configuración de
           permisos es del sistema y no editable — si necesitas cambios,
-          contacta con SinTupper. Aquí puedes ver qué puede hacer cada rol
+          contacta con Plati. Aquí puedes ver qué puede hacer cada rol
           para decidir qué asignas a cada persona.
         </p>
         <Badge variant="secondary" className="mt-2 gap-1.5">
@@ -46,7 +46,7 @@ export default function EmpresaRolesPage() {
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <h3 className="flex items-center gap-2 font-mono text-sm font-semibold">
-                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                    <ShieldCheck className="h-4 w-4 text-primary" />
                     {role}
                   </h3>
                   <p className="mt-2 text-sm text-gray-600">
@@ -68,7 +68,7 @@ export default function EmpresaRolesPage() {
                       key={p}
                       className="flex items-start gap-2 text-xs text-gray-700"
                     >
-                      <span className="mt-0.5 font-mono text-blue-600">✓</span>
+                      <span className="mt-0.5 font-mono text-primary">✓</span>
                       <span>
                         <code className="mr-1 font-mono">{p}</code>
                         <span className="text-gray-500">

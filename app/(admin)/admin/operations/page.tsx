@@ -28,7 +28,7 @@ export default async function OperationsPage() {
       <div>
         <h1 className="text-2xl font-bold">Operación</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Herramientas internas para el día a día del equipo SinTupper:
+          Herramientas internas para el día a día del equipo Plati:
           trazabilidad de impersonaciones, estado de backups y migraciones,
           ventanas de mantenimiento, health checks y visibilidad del rate
           limiter.
@@ -61,14 +61,14 @@ export default async function OperationsPage() {
         <SubModule
           href="/admin/operations/impersonation"
           icon={UserCog}
-          iconColor="text-purple-600"
+          iconColor="text-primary"
           title="Historial de Impersonaciones"
           description="Trazabilidad auditada: qué super admin ha actuado como qué usuario y cuándo."
         />
         <SubModule
           href="/admin/operations/backups"
           icon={Database}
-          iconColor="text-blue-600"
+          iconColor="text-primary"
           title="Backups"
           description="Registro de pg_dumps de comidas_prod. El cron escribe cada noche."
           badge={
@@ -114,7 +114,7 @@ export default async function OperationsPage() {
         <div className="flex items-start gap-2">
           <Activity className="mt-0.5 h-4 w-4 text-gray-500" />
           <p>
-            Este panel es exclusivo del equipo SinTupper (SUPER_ADMIN /
+            Este panel es exclusivo del equipo Plati (SUPER_ADMIN /
             AUDITOR). Los usuarios de empresa/catering nunca lo ven. Todas las
             acciones realizadas desde aquí quedan auditadas en{' '}
             <code>audit_logs</code>.

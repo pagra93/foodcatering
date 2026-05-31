@@ -21,14 +21,14 @@ export function QuickActionsPanel() {
         <div className="grid gap-3 sm:grid-cols-2">
           <Button asChild variant="outline" className="justify-start border-gray-200 hover:bg-gray-50 hover:border-gray-300">
             <Link href="/admin/empresas/new">
-              <Building2 className="mr-2 h-4 w-4 text-blue-600" />
+              <Building2 className="mr-2 h-4 w-4 text-primary" />
               Crear Empresa
             </Link>
           </Button>
           
           <Button asChild variant="outline" className="justify-start border-gray-200 hover:bg-gray-50 hover:border-gray-300">
             <Link href="/admin/caterings/new">
-              <ChefHat className="mr-2 h-4 w-4 text-purple-600" />
+              <ChefHat className="mr-2 h-4 w-4 text-primary" />
               Crear Catering
             </Link>
           </Button>

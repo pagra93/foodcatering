@@ -86,7 +86,7 @@ export function ProfileSettings({ employeeId: _employeeId }: ProfileSettingsProp
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-              <Lock className="h-5 w-5 text-blue-600" />
+              <Lock className="h-5 w-5 text-primary" />
               Cambiar Contraseña
             </h3>
             <p className="text-sm text-gray-500 mt-1">
@@ -244,8 +244,8 @@ export function ProfileSettings({ employeeId: _employeeId }: ProfileSettingsProp
       </Card>
 
       {/* Información adicional */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
-        <p className="text-sm text-blue-800">
+      <Card className="p-4 bg-primary/10 border-primary/30">
+        <p className="text-sm text-primary">
           <strong>Seguridad:</strong> Tu contraseña se almacena de forma segura
           utilizando encriptación. Nunca compartas tu contraseña con nadie.
         </p>

@@ -61,8 +61,8 @@ export default async function EditarPlatoPage({ params }: PageProps) {
 
       {/* Info adicional */}
       {publishedSchedulesCount > 0 && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
-          <p className="text-sm text-blue-900">
+        <Card className="p-4 bg-primary/10 border-primary/30">
+          <p className="text-sm text-primary">
             Este plato está en{' '}
             <span className="font-semibold">{publishedSchedulesCount}</span>{' '}
             menú(s) publicado(s). Los cambios no afectarán a los menús ya

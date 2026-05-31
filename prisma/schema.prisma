@@ -1661,7 +1661,7 @@ model SecurityReport {
 
 // ─── Facturación (Sprint 4) ────────────────────────────────────────────
 
-/// Catálogo de planes SaaS que SinTupper ofrece a las empresas.
+/// Catálogo de planes SaaS que Plati ofrece a las empresas.
 /// `Company.plan` (enum existente) referencia este catálogo por `code`.
 /// El precio es lo que la empresa paga mensualmente como suscripción SaaS,
 /// separado de la factura que el catering le emite por los pedidos.
@@ -1693,9 +1693,9 @@ enum SettlementStatus {
   @@map("settlement_status")
 }
 
-/// Liquidación mensual de comisión Catering → SinTupper.
+/// Liquidación mensual de comisión Catering → Plati.
 /// Se genera el día 1 de cada mes automáticamente (cron) para el mes
-/// anterior. El catering paga por transferencia; SinTupper marca como
+/// anterior. El catering paga por transferencia; Plati marca como
 /// PAID al recibirlo.
 model Settlement {
   id               String           @id @default(uuid())
@@ -1732,7 +1732,7 @@ enum SaasInvoiceStatus {
   @@map("saas_invoice_status")
 }
 
-/// Factura SaaS mensual emitida por SinTupper a una empresa por su plan.
+/// Factura SaaS mensual emitida por Plati a una empresa por su plan.
 /// Flujo independiente de las facturas que recibe del catering.
 model SaasInvoice {
   id            String            @id @default(uuid())
@@ -1954,11 +1954,11 @@ model IncidentReason {
 /// /admin/templates/branding. Singleton pattern: id fijo.
 model SystemSettings {
   id                    String   @id @default("singleton")
-  defaultPrimaryColor   String   @default("#3B82F6") @map("default_primary_color")
+  defaultPrimaryColor   String   @default("#E0492A") @map("default_primary_color")
   defaultSecondaryColor String?  @map("default_secondary_color")
   defaultLogoUrl        String?  @map("default_logo_url")
   defaultFaviconUrl     String?  @map("default_favicon_url")
-  brandName             String   @default("SinTupper")
+  brandName             String   @default("Plati")
   updatedBy             String?  @map("updated_by")
   updatedAt             DateTime @updatedAt @map("updated_at")
   createdAt             DateTime @default(now()) @map("created_at")

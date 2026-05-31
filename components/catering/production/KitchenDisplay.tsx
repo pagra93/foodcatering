@@ -25,7 +25,7 @@ const COURSE_LABELS = {
 
 const COURSE_COLORS = {
   FIRST: 'bg-yellow-500',
-  SECOND: 'bg-blue-500',
+  SECOND: 'bg-primary',
   DESSERT: 'bg-pink-500',
 }
 

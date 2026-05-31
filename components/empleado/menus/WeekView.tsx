@@ -103,9 +103,9 @@ const STATUS_CONFIG = {
   DELIVERED: {
     label: 'Entregado',
     icon: CheckCircle2,
-    color: 'text-blue-600',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: 'text-primary',
+    bgColor: 'bg-primary/10',
+    borderColor: 'border-primary/30',
   },
 }
 
@@ -113,14 +113,14 @@ export function WeekView({ data }: WeekViewProps) {
   return (
     <div className="space-y-6">
       {/* Info Card */}
-      <Card className="p-4 bg-blue-50 border-blue-200">
+      <Card className="p-4 bg-primary/10 border-primary/30">
         <div className="flex items-start gap-3">
-          <Clock className="h-5 w-5 text-blue-600 mt-0.5" />
+          <Clock className="h-5 w-5 text-primary mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-blue-900">
+            <p className="text-sm font-medium text-primary">
               Horario de selección
             </p>
-            <p className="text-sm text-blue-700 mt-1">
+            <p className="text-sm text-primary mt-1">
               Puedes elegir o modificar tu menú hasta las{' '}
               <span className="font-semibold">{data.week.days[0]?.cutoffTime || '11:00'}</span>{' '}
               del mismo día. Después el pedido se bloquea automáticamente.
@@ -174,7 +174,7 @@ export function WeekView({ data }: WeekViewProps) {
                 <div className="relative h-32 bg-gray-100">
                   {hasOrder && day.order?.selection ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-50 to-purple-50">
-                      <Utensils className="h-12 w-12 text-blue-600" />
+                      <Utensils className="h-12 w-12 text-primary" />
                     </div>
                   ) : hasAvailableDishes ? (
                     <div className="absolute inset-0 flex items-center justify-center bg-gray-50">

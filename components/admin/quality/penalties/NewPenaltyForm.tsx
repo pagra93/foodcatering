@@ -133,7 +133,7 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
             />
           </div>
           <div className="md:col-span-2">
-            <Label htmlFor="notes">Notas internas (solo SinTupper)</Label>
+            <Label htmlFor="notes">Notas internas (solo Plati)</Label>
             <textarea
               id="notes"
               value={notes}

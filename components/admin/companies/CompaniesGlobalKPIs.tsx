@@ -74,8 +74,8 @@ export function CompaniesGlobalKPIs({ kpis }: Props) {
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-blue-100 p-2">
-              <Building2 className="h-4 w-4 text-blue-600" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <Building2 className="h-4 w-4 text-primary" />
             </div>
             <span className="text-sm font-medium text-gray-600">Empresas</span>
           </div>
@@ -123,8 +123,8 @@ export function CompaniesGlobalKPIs({ kpis }: Props) {
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-purple-100 p-2">
-              <ShoppingCart className="h-4 w-4 text-purple-600" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <ShoppingCart className="h-4 w-4 text-primary" />
             </div>
             <span className="text-sm font-medium text-gray-600">Hoy</span>
           </div>
@@ -204,8 +204,8 @@ export function CompaniesGlobalKPIs({ kpis }: Props) {
       <Card className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="rounded-lg bg-indigo-100 p-2">
-              <TrendingUp className="h-4 w-4 text-indigo-600" />
+            <div className="rounded-lg bg-primary/10 p-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
             </div>
             <span className="text-sm font-medium text-gray-600">Tendencia</span>
           </div>

@@ -32,7 +32,7 @@ const STATUS_LABEL = {
 } as const
 
 const CATEGORY_LABEL = {
-  ROOT: 'Equipo SinTupper',
+  ROOT: 'Equipo Plati',
   EMPRESA: 'Portal Empresa',
   CATERING: 'Portal Catering',
 } as const
@@ -153,7 +153,7 @@ export default async function UserDetailPage({
           <h3 className="mb-4 text-lg font-semibold">Rol y permisos</h3>
           <div className="space-y-3 text-sm">
             <div className="flex items-start gap-2">
-              <ShieldCheck className="mt-0.5 h-4 w-4 text-blue-600" />
+              <ShieldCheck className="mt-0.5 h-4 w-4 text-primary" />
               <div>
                 <p className="font-medium">{user.role}</p>
                 <p className="mt-1 text-xs text-gray-600">
@@ -179,7 +179,7 @@ export default async function UserDetailPage({
             </div>
             <Link
               href="/admin/users/permissions"
-              className="inline-block text-xs text-blue-600 hover:underline"
+              className="inline-block text-xs text-primary hover:underline"
             >
               Ver matriz completa de permisos →
             </Link>
@@ -196,7 +196,7 @@ export default async function UserDetailPage({
             <div>
               <p className="text-xs uppercase text-gray-500">Subdominio</p>
               <p className="mt-1 font-mono text-xs">
-                {user.tenant.subdomain}.sintupper.com
+                {user.tenant.subdomain}.plati.es
               </p>
             </div>
             <div>

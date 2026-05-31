@@ -259,7 +259,7 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
                         <Badge
                           key={i}
                           variant="outline"
-                          className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                          className="text-xs bg-primary/10 text-primary border-primary/30"
                         >
                           <MapPin className="h-3 w-3 mr-1" />
                           {zone.name}

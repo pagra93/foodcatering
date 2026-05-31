@@ -312,7 +312,7 @@ export function rolesByTenantType(tenantType: TenantType): UserRole[] {
 export const ROLE_DESCRIPTIONS: Record<UserRole, string> = {
   // ROOT
   SUPER_ADMIN:
-    'Administrador total del sistema SinTupper. Acceso cross-tenant y herramientas operativas.',
+    'Administrador total del sistema Plati. Acceso cross-tenant y herramientas operativas.',
   AUDITOR:
     'Auditor externo con acceso de solo lectura a todos los tenants. No puede modificar datos.',
 
@@ -466,11 +466,11 @@ export const PERMISSION_DESCRIPTIONS: Record<string, string> = {
   // Billing (Sprint 4)
   'billing:read': 'Ver facturas y liquidaciones',
   'billing:*': 'Gestión completa del módulo de facturación',
-  'settlements:read': 'Ver liquidaciones catering→SinTupper',
+  'settlements:read': 'Ver liquidaciones catering→Plati',
   'settlements:create': 'Crear/emitir liquidaciones',
   'settlements:mark_paid': 'Marcar liquidación como pagada',
   'settlements:*': 'Gestión completa de liquidaciones',
-  'saas_invoices:read': 'Ver facturas SaaS SinTupper→empresa',
+  'saas_invoices:read': 'Ver facturas SaaS Plati→empresa',
   'saas_invoices:create': 'Generar facturas SaaS',
   'saas_invoices:mark_paid': 'Marcar factura SaaS como pagada',
   'saas_invoices:*': 'Gestión completa de facturas SaaS',

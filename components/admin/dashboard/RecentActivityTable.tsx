@@ -87,7 +87,7 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                       <TableCell>
                         <Link
                           href={`/admin/tenants/${tenant.id}`}
-                          className="font-medium text-gray-900 hover:text-blue-600 hover:underline"
+                          className="font-medium text-gray-900 hover:text-primary hover:underline"
                         >
                           {tenant.name}
                         </Link>
@@ -148,7 +148,7 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                       <TableCell className="max-w-xs truncate">
                         <Link
                           href={`/admin/quality/incidents/${incident.id}`}
-                          className="text-gray-900 hover:text-blue-600 hover:underline"
+                          className="text-gray-900 hover:text-primary hover:underline"
                         >
                           {incident.type}
                         </Link>

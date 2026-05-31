@@ -15,7 +15,7 @@ import {
 
 const SEVERITY_COLOR: Record<string, string> = {
   INFO: 'bg-gray-100 text-gray-700',
-  LOW: 'bg-blue-100 text-blue-700',
+  LOW: 'bg-primary/10 text-primary',
   MEDIUM: 'bg-amber-100 text-amber-700',
   HIGH: 'bg-orange-100 text-orange-700',
   CRITICAL: 'bg-red-100 text-red-700',
@@ -183,7 +183,7 @@ export default async function SecurityPage() {
                   href={r.pdfUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
                 >
                   Ver PDF
                   <ExternalLink className="h-3 w-3" />

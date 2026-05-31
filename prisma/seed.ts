@@ -41,13 +41,13 @@ async function main() {
     where: { 
       tenantId_email: {
         tenantId: rootTenant.id,
-        email: 'admin@sintupper.com'
+        email: 'admin@plati.es'
       }
     },
     update: {},
     create: {
       tenantId: rootTenant.id,
-      email: 'admin@sintupper.com',
+      email: 'admin@plati.es',
       passwordHash: await hash('Admin123!', 10),
       nameEnc: 'Súper Administrador',
       role: 'SUPER_ADMIN',
@@ -673,13 +673,13 @@ async function main() {
   console.log('📊 RESUMEN DEL SEED COMPLETO')
   console.log('='.repeat(60))
   console.log('\n🏢 TENANTS:')
-  console.log('  ✅ Root (admin.sintupper.com)')
-  console.log('  ✅ ACME Corporation (acme.sintupper.com)')
-  console.log('  ✅ Delicias Express (deliciasexpress.sintupper.com)')
+  console.log('  ✅ Root (admin.plati.es)')
+  console.log('  ✅ ACME Corporation (acme.plati.es)')
+  console.log('  ✅ Delicias Express (deliciasexpress.plati.es)')
   
   console.log('\n👥 USUARIOS:')
   console.log('  ROOT:')
-  console.log('    📧 admin@sintupper.com / Admin123!')
+  console.log('    📧 admin@plati.es / Admin123!')
   console.log('\n  ACME (Empresa):')
   console.log('    📧 rrhh@acme.com / Rrhh123!')
   console.log('    📧 finanzas@acme.com / Finanzas123!')
@@ -704,7 +704,7 @@ async function main() {
   console.log('✅ Seed completado exitosamente!')
   console.log('\n💡 Ahora puedes:')
   console.log('   1. Desplegar en Coolify')
-  console.log('   2. Acceder a acme.sintupper.com/login')
+  console.log('   2. Acceder a acme.plati.es/login')
   console.log('   3. Ver datos reales en todas las páginas')
   console.log('='.repeat(60) + '\n')
 }

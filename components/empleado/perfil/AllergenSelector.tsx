@@ -199,16 +199,16 @@ export function AllergenSelector({
 
           {/* Toggle de bloqueo */}
           {selectedAllergens.length > 0 && (
-            <Card className="p-4 bg-blue-50 border-blue-200">
+            <Card className="p-4 bg-primary/10 border-primary/30">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <Shield className="h-4 w-4 text-blue-600" />
-                    <Label htmlFor="block-enabled" className="text-sm font-semibold text-blue-900">
+                    <Shield className="h-4 w-4 text-primary" />
+                    <Label htmlFor="block-enabled" className="text-sm font-semibold text-primary">
                       Activar bloqueo de alérgenos
                     </Label>
                   </div>
-                  <p className="text-xs text-blue-700">
+                  <p className="text-xs text-primary">
                     Si está activado, <strong>no podrás seleccionar</strong> platos que contengan tus alérgenos.
                     Si está desactivado, verás advertencias pero podrás elegir cualquier plato.
                   </p>

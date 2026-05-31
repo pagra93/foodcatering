@@ -129,7 +129,7 @@ async function main() {
       timezone: 'Europe/Madrid',
       currency: 'EUR',
       language: 'es',
-      primaryColor: '#F59E0B',
+      primaryColor: '#E0492A',
       logoUrl: null,
     },
   })

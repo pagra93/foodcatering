@@ -44,7 +44,7 @@ export async function generateMonthBillingAction(input: {
   const actor = await requireSuperAdmin()
   const { period, dryRun } = generateMonthSchema.parse(input)
 
-  // ── Settlements (comisión catering → SinTupper) ────────────────────
+  // ── Settlements (comisión catering → Plati) ────────────────────
   const caterings = await prisma.tenant.findMany({
     where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
     include: {
@@ -138,7 +138,7 @@ export async function generateMonthBillingAction(input: {
     settlementsCreated++
   }
 
-  // ── SaasInvoices (plan SinTupper → empresa) ────────────────────────
+  // ── SaasInvoices (plan Plati → empresa) ────────────────────────
   const companies = await prisma.company.findMany({
     where: {
       tenant: { status: 'ACTIVE', deletedAt: null },

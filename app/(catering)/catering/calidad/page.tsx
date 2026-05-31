@@ -44,7 +44,7 @@ export default async function CateringCalidadPage() {
         <h1 className="text-2xl font-bold">Calidad</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
           Salud del catering: ratings que te dan, auditorías externas,
-          penalizaciones aplicadas por SinTupper y cumplimiento de SLAs con
+          penalizaciones aplicadas por Plati y cumplimiento de SLAs con
           tus clientes. Todo en un solo sitio.
         </p>
       </div>

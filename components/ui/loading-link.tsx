@@ -36,7 +36,7 @@ export function LoadingLink({ href, children, className, variant = 'link' }: Loa
   const isLoading = isPending || isClicked
 
   const baseClasses = {
-    link: 'text-blue-600 hover:text-blue-700 underline',
+    link: 'text-primary hover:text-primary underline',
     button: 'inline-flex items-center justify-center px-4 py-2 rounded-md bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50',
     ghost: 'inline-flex items-center gap-2',
   }

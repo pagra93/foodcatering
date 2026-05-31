@@ -59,7 +59,7 @@ export default async function SettlementsPage({
       <div>
         <h1 className="text-2xl font-bold">Liquidaciones</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Comisiones mensuales que los caterings pagan a SinTupper. Se
+          Comisiones mensuales que los caterings pagan a Plati. Se
           generan automáticamente con "Generar" en el dashboard billing.
           Marca como pagada cuando recibas la transferencia.
         </p>
@@ -179,7 +179,7 @@ export default async function SettlementsPage({
                       title="Descargar PDF"
                     >
                       <Button variant="ghost" size="sm">
-                        <Download className="h-4 w-4 text-blue-600" />
+                        <Download className="h-4 w-4 text-primary" />
                       </Button>
                     </a>
                     {(s.status === 'ISSUED' || s.status === 'OVERDUE') && (

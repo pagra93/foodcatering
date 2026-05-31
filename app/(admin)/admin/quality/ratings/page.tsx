@@ -169,7 +169,7 @@ export default async function RatingsPage() {
       {/* Stream de comentarios */}
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-blue-600" />
+          <MessageSquare className="h-4 w-4 text-primary" />
           <h3 className="text-base font-semibold">Comentarios recientes</h3>
         </div>
         <div className="space-y-3">
