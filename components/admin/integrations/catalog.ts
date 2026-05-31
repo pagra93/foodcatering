@@ -375,7 +375,7 @@ export const INTEGRATIONS: IntegrationSpec[] = [
     monogram: 'WH',
     status: 'coming-soon',
     configFields: [
-      { label: 'URL destino', type: 'url', placeholder: 'https://mi-sistema.com/webhooks/sintupper' },
+      { label: 'URL destino', type: 'url', placeholder: 'https://mi-sistema.com/webhooks/plati' },
       { label: 'Secret HMAC', type: 'password', help: 'Se firma el payload con este secret' },
       { label: 'Eventos suscritos', type: 'textarea', help: 'Lista de eventos, uno por línea' },
     ],

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 type SymbolTone = 'tomate' | 'tinta' | 'hueso'
 
 const TONE_COLOR: Record<SymbolTone, string> = {
-  tomate: 'var(--plati-tomate)',
+  tomate: 'hsl(var(--plati-tomate))',
   tinta: 'var(--plati-tinta)',
   hueso: 'var(--plati-hueso)',
 }
@@ -64,7 +64,7 @@ export function PlatiWordmark({ className }: { className?: string }) {
               width: '0.17em',
               height: '0.17em',
               marginTop: '-0.04em',
-              background: 'var(--plati-tomate)',
+              background: 'hsl(var(--plati-tomate))',
             }}
           />
         </span>

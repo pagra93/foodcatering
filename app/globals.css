@@ -125,7 +125,7 @@
     font-size: 0.8125rem; /* 13px */
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--plati-tomate);
+    color: hsl(var(--plati-tomate));
   }
   /* El motif del punto: un punto tomate redondo tras un titular. */
   .plati-dot::after {
@@ -134,7 +134,7 @@
     width: 0.16em;
     height: 0.16em;
     border-radius: 50%;
-    background: var(--plati-tomate);
+    background: hsl(var(--plati-tomate));
     vertical-align: baseline;
     margin-left: 0.08em;
   }

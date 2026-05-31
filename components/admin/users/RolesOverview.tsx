@@ -40,8 +40,8 @@ const CATEGORY_META = {
 
 const COLORS = {
   purple:
-    'border-primary/30 bg-primary/10/50 [--color-bar:theme(colors.purple.600)]',
-  blue: 'border-primary/30 bg-primary/10/50 [--color-bar:theme(colors.blue.600)]',
+    'border-primary/30 bg-primary/10 [--color-bar:theme(colors.purple.600)]',
+  blue: 'border-primary/30 bg-primary/10 [--color-bar:theme(colors.blue.600)]',
   amber:
     'border-amber-200 bg-amber-50/50 [--color-bar:theme(colors.amber.600)]',
 } as const

@@ -30,12 +30,12 @@ export function getSubdomainFromRequest(req: NextRequest): string | null {
   const host = req.headers.get('host')
   if (!host) return null
 
-  // Desarrollo: admin.sintupper.localhost → admin
+  // Desarrollo: admin.plati.localhost → admin
   // Producción: admin.plati.es → admin
 
   const parts = host.split('.')
 
-  // Si no hay subdomain (ej: sintupper.localhost)
+  // Si no hay subdomain (ej: plati.localhost)
   if (parts.length < 3) return null
 
   // Extraer el primer segmento

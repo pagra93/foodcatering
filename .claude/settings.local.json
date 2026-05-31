@@ -110,7 +110,13 @@
       "Bash(/usr/bin/head -45)",
       "Bash(awk 'NR>=820 && NR<=865' prisma/seed-demo.ts)",
       "Bash(grep -iE \"\\\\.env$|\\\\.env\\\\.|secret|\\\\.pem|\\\\.key|credential|id_rsa\")",
-      "Bash(grep -iE \"\\\\.env$|\\\\.env\\\\.|\\\\.pem$|\\\\.key$|secret|id_rsa|Imagen de Marca|\\\\.pdf$\")"
+      "Bash(grep -iE \"\\\\.env$|\\\\.env\\\\.|\\\\.pem$|\\\\.key$|secret|id_rsa|Imagen de Marca|\\\\.pdf$\")",
+      "Bash(git rev-list *)",
+      "Bash(git pull *)",
+      "Bash(awk 'NR>=1 && NR<=10 {printf \"%d: %s\\\\n\", NR, $0}' app/globals.css)",
+      "Bash(node --input-type=module -e ' *)",
+      "Bash(grep -iE \"\\\\.env$|secret|\\\\.pem|\\\\.key|Imagen de Marca\")",
+      "Bash(grep -iE \"\\\\.env$|secret|\\\\.pem|Imagen de Marca\")"
     ]
   }
 }

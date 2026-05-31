@@ -127,7 +127,7 @@ export function ModuleUnderDevelopment({
       </div>
 
       {/* Footer info */}
-      <Card className="bg-primary/10/40 p-5 text-sm text-gray-600">
+      <Card className="bg-primary/10 p-5 text-sm text-gray-600">
         <p>
           Este módulo está planificado en el roadmap y se activará en una
           próxima iteración. La estructura ya existe en la barra lateral

@@ -30,26 +30,26 @@ const config: Config = {
         foreground: 'hsl(var(--foreground))',
         // Colores de marca Plati (HEX crudos, para bg-tomate, text-hierba, etc.)
         tomate: {
-          DEFAULT: 'var(--plati-tomate)',
+          DEFAULT: 'hsl(var(--plati-tomate) / <alpha-value>)',
           700: 'var(--plati-tomate-700)',
           soft: 'var(--plati-tomate-soft)',
           pale: 'var(--plati-tomate-pale)',
         },
         tinta: {
-          DEFAULT: 'var(--plati-tinta)',
+          DEFAULT: 'hsl(var(--plati-tinta) / <alpha-value>)',
           90: 'var(--plati-tinta-90)',
         },
         hueso: {
-          DEFAULT: 'var(--plati-hueso)',
+          DEFAULT: 'hsl(var(--plati-hueso) / <alpha-value>)',
           warm: 'var(--plati-hueso-warm)',
           dim: 'var(--plati-hueso-dim)',
         },
         yema: {
-          DEFAULT: 'var(--plati-yema)',
+          DEFAULT: 'hsl(var(--plati-yema) / <alpha-value>)',
           soft: 'var(--plati-yema-soft)',
         },
         hierba: {
-          DEFAULT: 'var(--plati-hierba)',
+          DEFAULT: 'hsl(var(--plati-hierba) / <alpha-value>)',
           700: 'var(--plati-hierba-700)',
           soft: 'var(--plati-hierba-soft)',
         },
@@ -83,20 +83,20 @@ const config: Config = {
         },
         // Colores semánticos del sistema (alineados a la paleta Plati)
         success: {
-          DEFAULT: 'var(--plati-hierba)',
-          foreground: 'var(--plati-hueso)',
+          DEFAULT: 'hsl(var(--plati-hierba) / <alpha-value>)',
+          foreground: 'hsl(var(--plati-hueso) / <alpha-value>)',
         },
         warning: {
-          DEFAULT: 'var(--plati-yema)',
-          foreground: 'var(--plati-tinta)',
+          DEFAULT: 'hsl(var(--plati-yema) / <alpha-value>)',
+          foreground: 'hsl(var(--plati-tinta) / <alpha-value>)',
         },
         error: {
-          DEFAULT: 'var(--plati-tomate)',
-          foreground: 'var(--plati-hueso)',
+          DEFAULT: 'hsl(var(--plati-tomate) / <alpha-value>)',
+          foreground: 'hsl(var(--plati-hueso) / <alpha-value>)',
         },
         info: {
-          DEFAULT: 'var(--plati-tinta)',
-          foreground: 'var(--plati-hueso)',
+          DEFAULT: 'hsl(var(--plati-tinta) / <alpha-value>)',
+          foreground: 'hsl(var(--plati-hueso) / <alpha-value>)',
         },
       },
       borderRadius: {

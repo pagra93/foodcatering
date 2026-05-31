@@ -143,7 +143,7 @@ export async function resolveGdprRequestAction(input: {
     const hash = (v: string) =>
       createHash('sha256').update(v).digest('hex').slice(0, 16)
 
-    const anonEmail = `anon-${hash(user.email)}@anonimizado.sintupper`
+    const anonEmail = `anon-${hash(user.email)}@anonimizado.plati.es`
     const anonName = 'Empleado anonimizado'
 
     await prisma.$transaction([

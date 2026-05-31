@@ -65,7 +65,7 @@ export default function IntegrationsPage() {
       </div>
 
       {/* Info card */}
-      <Card className="border-primary/30 bg-primary/10/40 p-4 text-sm text-primary">
+      <Card className="border-primary/30 bg-primary/10 p-4 text-sm text-primary">
         <p>
           <strong>¿Cómo funciona?</strong> Haz click en cualquier integración
           para ver los campos de configuración que tendrás cuando esté

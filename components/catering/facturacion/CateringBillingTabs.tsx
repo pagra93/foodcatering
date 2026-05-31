@@ -165,7 +165,7 @@ function CobrarTab({ invoices }: { invoices: CateringInvoiceRow[] }) {
 function PagarTab({ settlements }: { settlements: SettlementRow[] }) {
   return (
     <div className="space-y-4">
-      <Card className="border-primary/30 bg-primary/10/40 p-4 text-xs text-primary">
+      <Card className="border-primary/30 bg-primary/10 p-4 text-xs text-primary">
         <p>
           <strong>Cómo funciona:</strong> cada mes Plati genera una
           liquidación por tu actividad del mes anterior. La comisión se
