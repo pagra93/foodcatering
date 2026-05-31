@@ -12,11 +12,11 @@
 @layer base {
   :root {
     /* ---- Marca · colores crudos (HEX, para usos fuera del sistema shadcn) -- */
-    --plati-tomate: #e0492a; /* Acento, titulares de impacto, botones, el punto */
+    --plati-tomate: 12 73% 52%; /* Acento, titulares de impacto, botones, el punto */
     --plati-tomate-700: #b23a20; /* hover / pressed sobre tomate */
     --plati-tomate-soft: #f6e6df; /* fondo lavado tomate */
     --plati-tomate-pale: #fbeee8;
-    --plati-tinta: #1e1a17; /* Texto, fondos oscuros, el negro de marca */
+    --plati-tinta: 26 13% 10%; /* Texto, fondos oscuros, el negro de marca */
     --plati-tinta-90: #2b2723;
     --plati-tinta-80: rgba(30, 26, 23, 0.8);
     --plati-tinta-60: rgba(30, 26, 23, 0.6);
@@ -24,12 +24,12 @@
     --plati-tinta-20: rgba(30, 26, 23, 0.2);
     --plati-tinta-12: rgba(30, 26, 23, 0.12);
     --plati-tinta-08: rgba(30, 26, 23, 0.08);
-    --plati-hueso: #fbf6ec; /* Papel, el fondo por defecto */
+    --plati-hueso: 41 56% 95%; /* Papel, el fondo por defecto */
     --plati-hueso-warm: #f4ecdc; /* papel un punto más cálido */
     --plati-hueso-dim: #efe7d6;
-    --plati-yema: #f4c542; /* Destacados puntuales, etiquetas */
+    --plati-yema: 45 89% 61%; /* Destacados puntuales, etiquetas */
     --plati-yema-soft: #fcefc4;
-    --plati-hierba: #2e7d4f; /* Confirmaciones, frescura, secundario */
+    --plati-hierba: 145 46% 33%; /* Confirmaciones, frescura, secundario */
     --plati-hierba-700: #20603b;
     --plati-hierba-soft: #e4f0e8;
 

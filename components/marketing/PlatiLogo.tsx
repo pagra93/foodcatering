@@ -4,8 +4,8 @@ type SymbolTone = 'tomate' | 'tinta' | 'hueso'
 
 const TONE_COLOR: Record<SymbolTone, string> = {
   tomate: 'hsl(var(--plati-tomate))',
-  tinta: 'var(--plati-tinta)',
-  hueso: 'var(--plati-hueso)',
+  tinta: 'hsl(var(--plati-tinta))',
+  hueso: 'hsl(var(--plati-hueso))',
 }
 
 /**
