@@ -10,13 +10,13 @@ Este documento explica las 5 capas que evitan ese fallo.
 
 ```prisma
 enum TenantType {
-  ROOT      // SinTupper mismo: subdomain "admin"
+  ROOT      // Plati mismo: subdomain "admin"
   EMPRESA   // Cliente B2B: subdomain "acme", "globex"
   CATERING  // Proveedor: subdomain "deliciasexpress"
 }
 ```
 
-- **ROOT**: un único registro con `name = "SinTupper Root"`. Sus usuarios
+- **ROOT**: un único registro con `name = "Plati Root"`. Sus usuarios
   son `SUPER_ADMIN` o `AUDITOR`. Pueden cruzar tenants (wildcard `*:*`
   en permisos).
 - **EMPRESA**: N registros, uno por empresa cliente. `Company` 1:1 con
@@ -32,9 +32,9 @@ Cada tenant tiene `subdomain` único. El middleware (`middleware.ts`)
 extrae el subdominio del `Host` header y lo traduce a `tenantId`:
 
 ```
-acme.sintupper.com     → Tenant{id: "abc-123", type: "EMPRESA"}
+acme.plati.es     → Tenant{id: "abc-123", type: "EMPRESA"}
 deliciasexpress.sint…  → Tenant{id: "xyz-789", type: "CATERING"}
-admin.sintupper.com    → Tenant{id: "root-000", type: "ROOT"}
+admin.plati.es    → Tenant{id: "root-000", type: "ROOT"}
 ```
 
 La resolución está **cacheada en memoria** con TTL 5 min

@@ -1,4 +1,4 @@
-# Documentación del Proyecto — SinTupper (comidas-plataforma)
+# Documentación del Proyecto — Plati (comidas-plataforma)
 
 > Esta carpeta es la **referencia completa para humanos**: explica qué hace
 > el proyecto, cómo está construido y cómo operarlo. Cuando vuelvas tras una

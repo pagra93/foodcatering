@@ -7,20 +7,20 @@
 - Destino: `public/screenshots/`
 - Usar en landing con `next/image` + `placeholder="blur"` + `sizes` responsive
 
-## Portal empresa (`demoempresa.sintupper.com`)
+## Portal empresa (`demoempresa.plati.es`)
 | Archivo | Qué captura | Se usa en |
 |---|---|---|
 | `empresa-dashboard.png` | Dashboard con KPIs (pedidos mes, gasto, adopción %, alertas) | Hero home `/` |
 | `empresa-auditoria.png` | Página de auditoría fiscal con dossier mensual | `/compliance`, `/producto` |
 | `empresa-importador.png` | Importador CSV con preview + validación | `/producto` (feature onboarding) |
 
-## Portal empleado (`demoempresa.sintupper.com/empleado/menus`)
+## Portal empleado (`demoempresa.plati.es/empleado/menus`)
 | Archivo | Qué captura | Se usa en |
 |---|---|---|
 | `empleado-selector.png` | Selector semanal 5 días × 3 opciones con cards | `/producto`, refuerzo home |
 | `empleado-alergenos.png` | Card de plato con badges alérgenos coloreados | `/producto` |
 
-## Portal catering (`democatering.sintupper.com`)
+## Portal catering (`democatering.plati.es`)
 | Archivo | Qué captura | Se usa en |
 |---|---|---|
 | `catering-kds.png` | Kitchen Display System con consolidación ("45 × Gazpacho") | Hero `/caterings` |

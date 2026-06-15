@@ -1,4 +1,4 @@
-# Los usuarios de SinTupper
+# Los usuarios de Plati
 
 La plataforma tiene **4 tipos de usuario** organizados en **14 roles RBAC**.
 Cada uno entra por su propio portal y ve solo lo que necesita.
@@ -7,10 +7,10 @@ Cada uno entra por su propio portal y ve solo lo que necesita.
 
 | Portal | Subdominio ejemplo | Tipos de tenant | Roles que entran |
 |---|---|---|---|
-| Súper Admin | `admin.sintupper.com` | ROOT | `SUPER_ADMIN`, `AUDITOR` |
-| Empresa | `acme.sintupper.com` | EMPRESA | `ADMIN_EMPRESA`, `RRHH`, `FINANZAS`, `MANAGER_SEDE`, `EMPLEADO` |
-| Catering | `deliciasexpress.sintupper.com` | CATERING | `ADMIN_CATERING`, `CHEF`, `COCINERO`, `REPARTIDOR`, `FINANZAS_CATERING` |
-| Empleado | `acme.sintupper.com` (mismo subdominio que empresa) | EMPRESA | `EMPLEADO` |
+| Súper Admin | `admin.plati.es` | ROOT | `SUPER_ADMIN`, `AUDITOR` |
+| Empresa | `acme.plati.es` | EMPRESA | `ADMIN_EMPRESA`, `RRHH`, `FINANZAS`, `MANAGER_SEDE`, `EMPLEADO` |
+| Catering | `deliciasexpress.plati.es` | CATERING | `ADMIN_CATERING`, `CHEF`, `COCINERO`, `REPARTIDOR`, `FINANZAS_CATERING` |
+| Empleado | `acme.plati.es` (mismo subdominio que empresa) | EMPRESA | `EMPLEADO` |
 
 > Empleado no tiene subdominio propio: entra por el subdominio de **su
 > empresa**. El portal se elige por rol tras el login (ver `getDashboardPath`
@@ -18,9 +18,9 @@ Cada uno entra por su propio portal y ve solo lo que necesita.
 
 ---
 
-## 1. Súper Admin (SinTupper)
+## 1. Súper Admin (Plati)
 
-**Quién**: Equipo operativo de SinTupper. Son los "dueños" de la plataforma.
+**Quién**: Equipo operativo de Plati. Son los "dueños" de la plataforma.
 
 **Qué quiere conseguir**:
 
@@ -70,7 +70,7 @@ Dentro de una empresa hay varios perfiles:
   regla de no-show (cobrar, no cobrar, parcial).
 - Tener un dashboard que le diga cuántos empleados usan el beneficio
   (adopción), cuánto se gasta, si hay incidencias abiertas.
-- Cambiar de catering si el actual no cumple SLA (SinTupper asiste).
+- Cambiar de catering si el actual no cumple SLA (Plati asiste).
 - Firmar el contrato y subir documentación.
 
 ### 2.b RRHH
@@ -122,7 +122,7 @@ Ver sección 3.
 ## 3. Empleado
 
 **Quién**: El que se come la comida. Persona trabajando en una empresa
-cliente de SinTupper.
+cliente de Plati.
 
 **Qué quiere conseguir**:
 

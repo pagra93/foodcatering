@@ -1,7 +1,7 @@
-# 🚨 INFORME DE PROBLEMAS EN PRODUCCIÓN - sintupper.com
+# 🚨 INFORME DE PROBLEMAS EN PRODUCCIÓN - plati.es
 
 **Fecha:** 20 de Noviembre de 2025  
-**Dominio:** sintupper.com  
+**Dominio:** plati.es  
 **Estado:** 🔴 CRÍTICO - Sistema NO OPERATIVO  
 **Autor:** Análisis Técnico Exhaustivo
 
@@ -22,10 +22,10 @@
 ## 📊 RESUMEN EJECUTIVO
 
 ### Estado Actual
-- **Landing Page (sintupper.com):** ✅ OPERATIVA
+- **Landing Page (plati.es):** ✅ OPERATIVA
 - **Portal de Login (/auth/login):** ❌ ERROR 500
 - **Portal de Login Alternativo (/login):** ❌ ERROR 404 después de autenticación
-- **Todos los Subdominios (*.sintupper.com):** ❌ "Service not available"
+- **Todos los Subdominios (*.plati.es):** ❌ "Service not available"
 
 ### Impacto
 - **Usuarios afectados:** 100% (sistema completamente inoperativo)
@@ -45,33 +45,33 @@ Múltiples problemas de configuración y rutas:
 
 ### 1. Landing Page Funciona (✅ Parcial)
 ```
-URL: https://sintupper.com/
+URL: https://plati.es/
 Estado: ✅ Carga correctamente
 Problema: Botón "Acceder" lleva a ruta rota
 ```
 
 ### 2. Botón "Acceder" → Error 500
 ```
-URL Origen: https://sintupper.com/ → Click en "Acceder"
-URL Destino: https://sintupper.com/auth/login
+URL Origen: https://plati.es/ → Click en "Acceder"
+URL Destino: https://plati.es/auth/login
 Resultado: ❌ ERROR 500 (Internal Server Error)
 ```
 
 ### 3. Login Directo → Error 404 después de autenticar
 ```
-URL: https://sintupper.com/login
+URL: https://plati.es/login
 Estado: ✅ Página carga
 Acción: Usuario completa login
-Resultado: ❌ Redirige a https://sintupper.com/auth/error?error=Configuration
+Resultado: ❌ Redirige a https://plati.es/auth/error?error=Configuration
 Después: ❌ ERROR 404
 ```
 
 ### 4. Subdominios Completamente Inoperativos
 ```
 URL Probadas:
-- https://admin.sintupper.com/ → ❌ "Service not available"
-- https://acme.sintupper.com/ → ❌ "Service not available"
-- https://deliciasexpress.sintupper.com/ → ❌ "Service not available"
+- https://admin.plati.es/ → ❌ "Service not available"
+- https://acme.plati.es/ → ❌ "Service not available"
+- https://deliciasexpress.plati.es/ → ❌ "Service not available"
 
 Estado: Todos los subdominios devuelven error de servidor
 ```
@@ -90,7 +90,7 @@ NextAuth requiere variables de entorno específicas para funcionar. El error `er
 **1. NEXTAUTH_URL** (❌ NO CONFIGURADA)
 ```env
 # REQUERIDO:
-NEXTAUTH_URL="https://sintupper.com"
+NEXTAUTH_URL="https://plati.es"
 
 # ACTUAL: NO EXISTE o está mal configurada
 ```
@@ -118,7 +118,7 @@ openssl rand -base64 32
 **3. WILDCARD_DOMAIN** (❌ PROBABLEMENTE NO CONFIGURADA)
 ```env
 # REQUERIDO para multi-tenancy:
-WILDCARD_DOMAIN=".sintupper.com"
+WILDCARD_DOMAIN=".plati.es"
 ```
 
 **Consecuencias:**
@@ -214,21 +214,21 @@ Los subdominios devuelven "Service not available", lo que indica que Coolify no 
 **A. Dominios NO configurados en Coolify**
 ```
 Estado Esperado en Coolify → Application → Domains:
-✅ sintupper.com
-✅ *.sintupper.com (wildcard)
+✅ plati.es
+✅ *.plati.es (wildcard)
 
 Estado Actual (probable):
-❌ Solo sintupper.com configurado
+❌ Solo plati.es configurado
 ❌ Wildcard NO configurado
 ```
 
 **B. DNS NO propagado correctamente**
 ```bash
 # Test de DNS:
-$ nslookup admin.sintupper.com
+$ nslookup admin.plati.es
 # Debería devolver: 5.78.124.107 (según documentación)
 
-$ nslookup acme.sintupper.com
+$ nslookup acme.plati.es
 # Debería devolver: 5.78.124.107
 ```
 
@@ -376,7 +376,7 @@ Este error específico de NextAuth significa:
 - Error es consistente (no es 404 de tenant, es error de servidor)
 - Coolify necesita configuración explícita de wildcard
 
-**Solución:** Configurar `*.sintupper.com` en Domains de Coolify
+**Solución:** Configurar `*.plati.es` en Domains de Coolify
 
 ---
 
@@ -402,9 +402,9 @@ Este error específico de NextAuth significa:
 |---------|--------|--------|---------|
 | **Público** | Visitar landing | ✅ OK | Ninguno |
 | **Público** | Click "Acceder" | ❌ Error 500 | No puede acceder |
-| **Super Admin** | Acceder a admin.sintupper.com | ❌ No disponible | Bloqueado |
-| **Empresa (ACME)** | Acceder a acme.sintupper.com | ❌ No disponible | Bloqueado |
-| **Catering** | Acceder a deliciasexpress.sintupper.com | ❌ No disponible | Bloqueado |
+| **Super Admin** | Acceder a admin.plati.es | ❌ No disponible | Bloqueado |
+| **Empresa (ACME)** | Acceder a acme.plati.es | ❌ No disponible | Bloqueado |
+| **Catering** | Acceder a deliciasexpress.plati.es | ❌ No disponible | Bloqueado |
 | **Empleado** | Login desde cualquier portal | ❌ Error Config | Bloqueado |
 
 ### Severidad por Módulo
@@ -448,9 +448,9 @@ RPO (Recovery Point Objective): N/A (no hay pérdida de datos)
 
 ```env
 # === CRÍTICAS - CONFIGURAR YA ===
-NEXTAUTH_URL=https://sintupper.com
+NEXTAUTH_URL=https://plati.es
 NEXTAUTH_SECRET=[GENERAR NUEVO - ver abajo]
-WILDCARD_DOMAIN=.sintupper.com
+WILDCARD_DOMAIN=.plati.es
 DATABASE_URL=[verificar que sea correcta]
 NODE_ENV=production
 
@@ -485,15 +485,15 @@ NODE_ENV=production
 
 ```
 Dominio Principal:
-[✓] sintupper.com
+[✓] plati.es
 
 Wildcard (CRÍTICO):
-[✓] *.sintupper.com
+[✓] *.plati.es
 
 O subdominios individuales:
-[✓] admin.sintupper.com
-[✓] acme.sintupper.com
-[✓] deliciasexpress.sintupper.com
+[✓] admin.plati.es
+[✓] acme.plati.es
+[✓] deliciasexpress.plati.es
 ```
 
 3. **Habilitar SSL:**
@@ -581,10 +581,10 @@ git push origin main
 
 ```bash
 # Desde terminal local:
-nslookup admin.sintupper.com
+nslookup admin.plati.es
 # Esperado: Address: [IP de Coolify]
 
-nslookup acme.sintupper.com
+nslookup acme.plati.es
 # Esperado: Address: [IP de Coolify]
 ```
 
@@ -596,16 +596,16 @@ Si no resuelven, esperar hasta 24h para propagación DNS.
 
 ```bash
 # Test 1: Landing
-Abrir: https://sintupper.com
+Abrir: https://plati.es
 Esperado: ✅ Landing carga correctamente
 
 # Test 2: Click en Acceder
 Click en botón "Acceder"
-Esperado: ✅ Lleva a https://sintupper.com/auth/login
+Esperado: ✅ Lleva a https://plati.es/auth/login
 Esperado: ✅ Formulario de login carga sin error 500
 
 # Test 3: Login directo
-Abrir: https://sintupper.com/login
+Abrir: https://plati.es/login
 Esperado: ✅ Redirige a /auth/login O muestra 404 limpio
 ```
 
@@ -614,10 +614,10 @@ Esperado: ✅ Redirige a /auth/login O muestra 404 limpio
 #### Test 4: Login como Super Admin
 
 ```
-URL: https://admin.sintupper.com/auth/login
-o https://sintupper.com/auth/login
+URL: https://admin.plati.es/auth/login
+o https://plati.es/auth/login
 
-Email: admin@sintupper.com
+Email: admin@plati.es
 Password: Admin123!
 
 Esperado:
@@ -633,15 +633,15 @@ Esperado:
 
 ```bash
 # Super Admin
-https://admin.sintupper.com/
+https://admin.plati.es/
 Esperado: ✅ Redirige a login O muestra dashboard si ya está autenticado
 
 # Empresa
-https://acme.sintupper.com/
+https://acme.plati.es/
 Esperado: ✅ Redirige a login O dashboard empresa
 
 # Catering
-https://deliciasexpress.sintupper.com/
+https://deliciasexpress.plati.es/
 Esperado: ✅ Redirige a login O dashboard catering
 ```
 
@@ -652,14 +652,14 @@ Esperado: ✅ Redirige a login O dashboard catering
 ### Checklist Fase 1 (Emergencia)
 - [ ] Acceder a Coolify
 - [ ] Generar `NEXTAUTH_SECRET` con `openssl rand -base64 32`
-- [ ] Configurar `NEXTAUTH_URL=https://sintupper.com`
+- [ ] Configurar `NEXTAUTH_URL=https://plati.es`
 - [ ] Configurar `NEXTAUTH_SECRET=[valor generado]`
-- [ ] Configurar `WILDCARD_DOMAIN=.sintupper.com`
+- [ ] Configurar `WILDCARD_DOMAIN=.plati.es`
 - [ ] Verificar `DATABASE_URL` sea correcta
 - [ ] Configurar `NODE_ENV=production`
 - [ ] Guardar variables de entorno
-- [ ] Configurar dominio `sintupper.com` en Domains
-- [ ] Configurar wildcard `*.sintupper.com` en Domains
+- [ ] Configurar dominio `plati.es` en Domains
+- [ ] Configurar wildcard `*.plati.es` en Domains
 - [ ] Habilitar SSL (Let's Encrypt)
 - [ ] Hacer Redeploy
 - [ ] Esperar 2-3 minutos
@@ -677,15 +677,15 @@ Esperado: ✅ Redirige a login O dashboard catering
 
 ### Checklist Fase 3 (Validación)
 - [ ] Verificar logs de Coolify (sin errores de env vars)
-- [ ] Test DNS con `nslookup admin.sintupper.com`
-- [ ] Acceder a `https://sintupper.com` (landing OK)
+- [ ] Test DNS con `nslookup admin.plati.es`
+- [ ] Acceder a `https://plati.es` (landing OK)
 - [ ] Click en "Acceder" (debe ir a /auth/login sin error)
-- [ ] Acceder a `https://sintupper.com/auth/login` (formulario OK)
-- [ ] Login como admin@sintupper.com (debe funcionar)
+- [ ] Acceder a `https://plati.es/auth/login` (formulario OK)
+- [ ] Login como admin@plati.es (debe funcionar)
 - [ ] Verificar redirección a `/admin` después de login
-- [ ] Acceder a `https://admin.sintupper.com/` (debe cargar)
-- [ ] Acceder a `https://acme.sintupper.com/` (debe cargar)
-- [ ] Acceder a `https://deliciasexpress.sintupper.com/` (debe cargar)
+- [ ] Acceder a `https://admin.plati.es/` (debe cargar)
+- [ ] Acceder a `https://acme.plati.es/` (debe cargar)
+- [ ] Acceder a `https://deliciasexpress.plati.es/` (debe cargar)
 
 ---
 
@@ -763,7 +763,7 @@ Esperado: ✅ Redirige a login O dashboard catering
 
 ### Documentos Relacionados
 - `docs/DIAGNOSTICO-PROBLEMAS-RUTAS.md` - Análisis previo
-- `docs/CONFIGURACION-DNS-SINTUPPER.md` - Configuración DNS
+- `docs/CONFIGURACION-DNS-PLATI.md` - Configuración DNS
 - `docs/DESPLIEGUE-Y-DOMINIOS.md` - Guía de despliegue
 - `docs/CREDENCIALES-PRUEBA.md` - Usuarios de prueba
 

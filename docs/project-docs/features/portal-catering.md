@@ -1,6 +1,6 @@
 # Portal Catering
 
-**Subdominio**: `<catering>.sintupper.com` (ej: `deliciasexpress.sintupper.com`)
+**Subdominio**: `<catering>.plati.es` (ej: `deliciasexpress.plati.es`)
 **Path prefix**: `/catering/*`
 **Roles**: `ADMIN_CATERING`, `CHEF`, `COCINERO`, `REPARTIDOR`, `FINANZAS_CATERING`
 **Páginas**: 14

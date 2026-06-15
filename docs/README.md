@@ -25,7 +25,7 @@ Documentación viva del proyecto **comidas**.
 ## Despliegue
 - [DESPLIEGUE-COOLIFY.md](./despliegue/DESPLIEGUE-COOLIFY.md) — deploy en Coolify
 - [SETUP-COOLIFY.md](./despliegue/SETUP-COOLIFY.md) — configuración Coolify
-- [CONFIGURACION-DNS-SINTUPPER.md](./despliegue/CONFIGURACION-DNS-SINTUPPER.md) — DNS y subdominios
+- [CONFIGURACION-DNS-PLATI.md](./despliegue/CONFIGURACION-DNS-PLATI.md) — DNS y subdominios
 - [DESPLIEGUE-Y-DOMINIOS.md](./despliegue/DESPLIEGUE-Y-DOMINIOS.md) — deploy + dominios
 
 ## QA
@@ -35,7 +35,7 @@ Documentación viva del proyecto **comidas**.
 
 ## Diagnóstico
 - [DIAGNOSTICO-EXHAUSTIVO-2026-04.md](./diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md) — diagnóstico completo + plan de sprints
-- [INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md](./diagnostico/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md) — incidencias activas en prod
+- [INFORME-PROBLEMAS-PRODUCCION-PLATI.md](./diagnostico/INFORME-PROBLEMAS-PRODUCCION-PLATI.md) — incidencias activas en prod
 
 ## Histórico
 [`archive/`](./archive/) — docs de fases completadas, fixes aplicados y resúmenes antiguos. Se mantienen por trazabilidad.

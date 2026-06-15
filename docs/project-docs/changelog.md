@@ -36,7 +36,7 @@ quedaron como scaffolding tras el cero-404. Detalle completo en
   CRUD webhooks + retries, API keys con hash seguro, UI de SSO/Pagos/ERP
   (conectores reales fuera de scope).
 - **Sprint 7 — Facturación**: planes SaaS, liquidaciones
-  catering→SinTupper, comisiones SinTupper→empresa, métricas MRR/ARR/churn,
+  catering→Plati, comisiones Plati→empresa, métricas MRR/ARR/churn,
   reglas fiscales regionales.
 - **Sprint 8 — Catálogos globales**: `Allergen`, `Holiday`,
   `HolidayOverride`, `MenuTemplate`, `DeliveryZone`, `IncidentReason`.

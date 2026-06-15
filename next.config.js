@@ -30,7 +30,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '**.sintupper.com',
+        hostname: '**.plati.es',
       },
     ],
   },

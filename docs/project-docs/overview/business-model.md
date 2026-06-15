@@ -1,9 +1,9 @@
 # Modelo de negocio y compliance fiscal
 
-## Cómo gana dinero SinTupper
+## Cómo gana dinero Plati
 
-SinTupper cobra **una comisión por transacción** al catering, no a la
-empresa ni al empleado. Esto alinea incentivos: SinTupper gana si el
+Plati cobra **una comisión por transacción** al catering, no a la
+empresa ni al empleado. Esto alinea incentivos: Plati gana si el
 catering factura, y el catering factura si hay pedidos, y hay pedidos si
 los empleados encuentran útil el beneficio.
 
@@ -13,9 +13,9 @@ los empleados encuentran útil el beneficio.
 - Ciclo de pago (`Restaurant.paymentCycle`): `SEMANAL`, `QUINCENAL` o
   `MENSUAL`.
 
-La empresa **no paga a SinTupper directamente** — paga al catering la
+La empresa **no paga a Plati directamente** — paga al catering la
 factura completa, y el catering retiene y transfiere la comisión a
-SinTupper. Esto simplifica la operativa fiscal de la empresa cliente (un
+Plati. Esto simplifica la operativa fiscal de la empresa cliente (un
 solo proveedor en su contabilidad).
 
 ## Compliance fiscal IRPF (Art. 42.3 LIRPF)
@@ -35,7 +35,7 @@ si demuestra que:
 3. Se consume **en el marco de la jornada laboral**.
 4. Hay **justificante** individual por entrega.
 
-### Qué genera SinTupper para demostrar cada punto
+### Qué genera Plati para demostrar cada punto
 
 | Requisito | Evidencia en el sistema |
 |---|---|
@@ -109,7 +109,7 @@ solo logística — es fiscal:
 
 ## Precios en el sistema
 
-SinTupper usa **Decimal(8,2)** o **Decimal(10,2)** para todo importe, nunca
+Plati usa **Decimal(8,2)** o **Decimal(10,2)** para todo importe, nunca
 Float. Razón: la suma de 30 pedidos × 11.00€ × 365 días debe dar exacto; un
 float de precisión simple acumula error.
 

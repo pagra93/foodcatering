@@ -1,6 +1,6 @@
 # Portal Empresa
 
-**Subdominio**: `<empresa>.sintupper.com` (ej: `acme.sintupper.com`)
+**Subdominio**: `<empresa>.plati.es` (ej: `acme.plati.es`)
 **Path prefix**: `/empresa/*`
 **Roles**: `ADMIN_EMPRESA`, `RRHH`, `FINANZAS`, `MANAGER_SEDE`
 **Páginas**: 11

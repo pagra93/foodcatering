@@ -25,7 +25,7 @@
 Usuario escribe en /login
   email: rrhh@acme.com
   password: xxx
-  (no escribe subdominio: se infiere del host acme.sintupper.com)
+  (no escribe subdominio: se infiere del host acme.plati.es)
     │
     ▼
 POST /api/auth/callback/credentials
@@ -62,7 +62,7 @@ POST /api/auth/callback/credentials
 ## El flujo de cada request autenticada
 
 ```
-GET acme.sintupper.com/empresa/pedidos
+GET acme.plati.es/empresa/pedidos
     │
     ▼ Edge Runtime
     middleware.ts:
@@ -262,7 +262,7 @@ SUPER_ADMIN pulsa "Impersonar" en /admin/users/[id]
 - Firma con `NEXTAUTH_SECRET` (mínimo 32 chars; en `.env`). Rotarla
   invalida todas las sesiones.
 - `NEXTAUTH_URL` debe coincidir con el dominio — en dev
-  `http://localhost:3000`, en prod `https://sintupper.com`.
+  `http://localhost:3000`, en prod `https://plati.es`.
 
 ## Recuperación de contraseña
 

@@ -1,6 +1,6 @@
 # Portal Súper Admin
 
-**Subdominio**: `admin.sintupper.com`
+**Subdominio**: `admin.plati.es`
 **Path prefix**: `/admin/*`
 **Roles**: `SUPER_ADMIN` (operativos) / `AUDITOR` (solo lectura)
 **Páginas**: 16

@@ -40,7 +40,7 @@ git push origin main
 # El contenedor arranca con `docker-entrypoint.sh`:
 #   - prisma migrate deploy  (no hay migraciones pendientes → no-op)
 #   - next start
-# El DNS de sintupper.com apunta al nuevo contenedor en 2-5 min.
+# El DNS de plati.es apunta al nuevo contenedor en 2-5 min.
 ```
 
 ### 2. Cambios con modificación de schema
@@ -92,9 +92,9 @@ FEATURE_AUTO_SELECTION=false
 ```
 DATABASE_URL="postgresql://comidas_prod_user:...@<internal-coolify-host>:5432/comidas_prod?schema=public"
 NEXTAUTH_SECRET="<otro distinto del dev>"
-NEXTAUTH_URL="https://sintupper.com"
+NEXTAUTH_URL="https://plati.es"
 NODE_ENV="production"
-WILDCARD_DOMAIN=".sintupper.com"
+WILDCARD_DOMAIN=".plati.es"
 PII_ENCRYPTION_KEY="..."   ← cuando se active
 FEATURE_AI_NUTRITION=false
 FEATURE_AUTO_SELECTION=false
@@ -199,10 +199,10 @@ en el servidor perdería los backups locales).
 
 ## DNS y SSL
 
-- Dominio: `sintupper.com` registrado con su DNS apuntando a la IP de
+- Dominio: `plati.es` registrado con su DNS apuntando a la IP de
   Hetzner.
-- Wildcard `*.sintupper.com` también apunta al mismo para soportar
-  subdominios dinámicos (`acme.sintupper.com`, etc.).
+- Wildcard `*.plati.es` también apunta al mismo para soportar
+  subdominios dinámicos (`acme.plati.es`, etc.).
 - Coolify gestiona certificados Let's Encrypt automáticos con DNS
   challenge (para wildcard) o HTTP challenge (para raíz).
 - Renovación automática cada 60-90 días.
@@ -226,7 +226,7 @@ Hoy: **aplazado**. Justificación (abril 2026):
 
 Cuando se añada:
 - Crear BD `comidas_staging` en el mismo Postgres con su usuario.
-- Servicio aparte en Coolify en `staging.sintupper.com`.
+- Servicio aparte en Coolify en `staging.plati.es`.
 - Rama `release` que mergea desde `main` a prod; `main` deployaría
   staging.
 - El flujo pasaría a ser: feature branch → main (deploy a staging) →

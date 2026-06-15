@@ -28,8 +28,8 @@
 
 ## Identidad Plati
 - **Color principal**: azul HSL `221 83% 53%` (ya en `globals.css`, primary token)
-- **Dominio**: `sintupper.com`
-- **Subdominios**: `admin.sintupper.com`, `<empresa>.sintupper.com`, `<catering>.sintupper.com`
+- **Dominio**: `plati.es`
+- **Subdominios**: `admin.plati.es`, `<empresa>.plati.es`, `<catering>.plati.es`
 - **Fuente**: Inter (ya cargada)
 - **Tono de voz**: profesional, cercano, directo. Evitar jerga corporativa hueca ("liderazgo", "paradigma"). Preferir cifras y hechos ("11€/día", "cierre 11:05", "factura automática día 1").
 

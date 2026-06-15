@@ -62,7 +62,7 @@ Abrir `http://localhost:3000`. Para entrar a un portal concreto:
 
 | Portal | Email | Password |
 |---|---|---|
-| Super Admin | `admin@sintupper.com` | `Admin123!` |
+| Super Admin | `admin@plati.es` | `Admin123!` |
 | Empresa (RRHH ACME) | `rrhh@acme.com` | `Rrhh123!` |
 | Empresa (Finanzas ACME) | `finanzas@acme.com` | `Finanzas123!` |
 | Empleado | `laura.gomez@acme.com` | `Empleado123!` |

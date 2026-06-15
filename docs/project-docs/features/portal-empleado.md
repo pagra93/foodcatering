@@ -1,6 +1,6 @@
 # Portal Empleado
 
-**Subdominio**: `<empresa>.sintupper.com` (el mismo que la empresa —
+**Subdominio**: `<empresa>.plati.es` (el mismo que la empresa —
 el rol decide qué portal abre).
 **Path prefix**: `/empleado/*`
 **Rol**: `EMPLEADO`

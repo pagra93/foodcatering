@@ -1,4 +1,4 @@
-# 🌐 Configuración DNS para sintupper.com
+# 🌐 Configuración DNS para plati.es
 
 ## 📋 Tabla de Contenidos
 
@@ -14,25 +14,25 @@
 
 Según tu base de datos actual (definida en `prisma/seed.ts`), necesitas configurar estos subdominios:
 
-### 1. **admin.sintupper.com** (Portal Root/Super Admin)
+### 1. **admin.plati.es** (Portal Root/Super Admin)
 - **Tenant ID:** ROOT
 - **Tipo:** Portal de administración general
 - **Usuarios:** Super Administrador
 - **Función:** Gestión de todos los tenants, configuración global
 
-### 2. **acme.sintupper.com** (Portal Empresa ACME)
+### 2. **acme.plati.es** (Portal Empresa ACME)
 - **Tenant ID:** ACME Corporation
 - **Tipo:** Portal de empresa
 - **Usuarios:** RRHH, Finanzas, Empleados
 - **Función:** Gestión de empleados, políticas de comida, dashboard empresa
 
-### 3. **deliciasexpress.sintupper.com** (Portal Catering)
+### 3. **deliciasexpress.plati.es** (Portal Catering)
 - **Tenant ID:** Delicias Express
 - **Tipo:** Portal de catering
 - **Usuarios:** Chef, Personal de reparto
 - **Función:** Gestión de menús, pedidos, entregas
 
-### 4. **sintupper.com** (Landing Page)
+### 4. **plati.es** (Landing Page)
 - **Tipo:** Página principal pública
 - **Función:** Landing page, información del servicio, registro
 
@@ -57,10 +57,10 @@ A       *                       5.78.124.107     3600
 ```
 
 **Explicación:**
-- `@` → Dominio raíz (`sintupper.com`)
-- `admin` → Subdominio admin (`admin.sintupper.com`)
-- `acme` → Subdominio ACME (`acme.sintupper.com`)
-- `deliciasexpress` → Subdominio catering (`deliciasexpress.sintupper.com`)
+- `@` → Dominio raíz (`plati.es`)
+- `admin` → Subdominio admin (`admin.plati.es`)
+- `acme` → Subdominio ACME (`acme.plati.es`)
+- `deliciasexpress` → Subdominio catering (`deliciasexpress.plati.es`)
 - `*` → Wildcard para futuros subdominios (opcional pero recomendado)
 
 ### Opción B: Registro CNAME (Alternativa)
@@ -71,9 +71,9 @@ Si tu proveedor no permite A records para subdominios, usa CNAME:
 Tipo    Nombre                  Valor                           TTL
 ────────────────────────────────────────────────────────────────────
 A       @                       5.78.124.107                    3600
-CNAME   admin                   sintupper.com                   3600
-CNAME   acme                    sintupper.com                   3600
-CNAME   deliciasexpress         sintupper.com                   3600
+CNAME   admin                   plati.es                   3600
+CNAME   acme                    plati.es                   3600
+CNAME   deliciasexpress         plati.es                   3600
 ```
 
 ### 📸 Ejemplo Visual (Cloudflare)
@@ -106,10 +106,10 @@ En la configuración de tu aplicación en Coolify, actualiza:
 
 ```env
 # Variable WILDCARD_DOMAIN
-WILDCARD_DOMAIN=.sintupper.com
+WILDCARD_DOMAIN=.plati.es
 
 # NextAuth URL (opcional, se puede detectar automáticamente)
-NEXTAUTH_URL=https://sintupper.com
+NEXTAUTH_URL=https://plati.es
 ```
 
 ### 2. Configurar Dominios en Coolify
@@ -118,15 +118,15 @@ En la sección **Domains** de tu aplicación:
 
 1. **Dominio Principal:**
    ```
-   sintupper.com
+   plati.es
    ```
 
 2. **Dominios Adicionales** (opcional, Coolify puede usar wildcard):
    ```
-   admin.sintupper.com
-   acme.sintupper.com
-   deliciasexpress.sintupper.com
-   *.sintupper.com
+   admin.plati.es
+   acme.plati.es
+   deliciasexpress.plati.es
+   *.plati.es
    ```
 
 ### 3. Habilitar HTTPS
@@ -145,17 +145,17 @@ Espera 5-10 minutos (a veces hasta 24h) y verifica:
 
 ```bash
 # Verificar dominio principal
-nslookup sintupper.com
+nslookup plati.es
 
 # Verificar subdominios
-nslookup admin.sintupper.com
-nslookup acme.sintupper.com
-nslookup deliciasexpress.sintupper.com
+nslookup admin.plati.es
+nslookup acme.plati.es
+nslookup deliciasexpress.plati.es
 ```
 
 **Resultado esperado:**
 ```
-Name:   admin.sintupper.com
+Name:   admin.plati.es
 Address: 5.78.124.107
 ```
 
@@ -165,25 +165,25 @@ Accede a cada URL y verifica que cargue:
 
 ✅ **Landing Page:**
 ```
-https://sintupper.com
+https://plati.es
 ```
 → Debería mostrar la landing page
 
 ✅ **Portal Admin:**
 ```
-https://admin.sintupper.com/login
+https://admin.plati.es/login
 ```
 → Debería mostrar el login
 
 ✅ **Portal ACME:**
 ```
-https://acme.sintupper.com/empleado
+https://acme.plati.es/empleado
 ```
 → Debería mostrar el portal de empleado
 
 ✅ **Portal Catering:**
 ```
-https://deliciasexpress.sintupper.com/catering
+https://deliciasexpress.plati.es/catering
 ```
 → Debería mostrar el portal de catering
 
@@ -191,14 +191,14 @@ https://deliciasexpress.sintupper.com/catering
 
 ## 🔑 Credenciales de Acceso
 
-### Super Administrador (admin.sintupper.com)
+### Super Administrador (admin.plati.es)
 ```
-URL:      https://admin.sintupper.com/login
-Email:    admin@sintupper.com
+URL:      https://admin.plati.es/login
+Email:    admin@plati.es
 Password: Admin123!
 ```
 
-### ACME Corporation (acme.sintupper.com)
+### ACME Corporation (acme.plati.es)
 
 **RRHH:**
 ```
@@ -224,7 +224,7 @@ Email:    pedro.martinez@acme.com
 Password: Empleado123!
 ```
 
-### Delicias Express (deliciasexpress.sintupper.com)
+### Delicias Express (deliciasexpress.plati.es)
 
 **Chef:**
 ```
@@ -247,7 +247,7 @@ Password: Reparto123!
 **Causa:** El subdominio no está en la base de datos o DNS no resuelve correctamente.
 
 **Solución:**
-1. Verifica que el DNS esté propagado: `nslookup admin.sintupper.com`
+1. Verifica que el DNS esté propagado: `nslookup admin.plati.es`
 2. Verifica que el subdominio exista en la tabla `tenants`:
    ```sql
    SELECT subdomain, name, status FROM tenants;
@@ -281,10 +281,10 @@ Password: Reparto123!
 - [ ] Actualizar `WILDCARD_DOMAIN` en Coolify
 - [ ] Configurar dominios en Coolify
 - [ ] Habilitar HTTPS (Let's Encrypt)
-- [ ] Verificar acceso a `sintupper.com`
-- [ ] Verificar acceso a `admin.sintupper.com`
-- [ ] Verificar acceso a `acme.sintupper.com`
-- [ ] Verificar acceso a `deliciasexpress.sintupper.com`
+- [ ] Verificar acceso a `plati.es`
+- [ ] Verificar acceso a `admin.plati.es`
+- [ ] Verificar acceso a `acme.plati.es`
+- [ ] Verificar acceso a `deliciasexpress.plati.es`
 - [ ] Hacer login con cada usuario de prueba
 - [ ] Verificar que cada portal muestre su contenido correcto
 
@@ -294,15 +294,15 @@ Password: Reparto123!
 
 Una vez completados todos los pasos, tu aplicación estará accesible en:
 
-- 🌐 **Landing:** https://sintupper.com
-- 👨‍💼 **Admin:** https://admin.sintupper.com
-- 🏢 **Empresa (ACME):** https://acme.sintupper.com
-- 🍴 **Catering:** https://deliciasexpress.sintupper.com
+- 🌐 **Landing:** https://plati.es
+- 👨‍💼 **Admin:** https://admin.plati.es
+- 🏢 **Empresa (ACME):** https://acme.plati.es
+- 🍴 **Catering:** https://deliciasexpress.plati.es
 
 **¿Necesitas añadir más tenants?**
 
-1. Accede al panel admin: `https://admin.sintupper.com`
-2. Login con `admin@sintupper.com`
+1. Accede al panel admin: `https://admin.plati.es`
+2. Login con `admin@plati.es`
 3. Ve a la sección **Tenants**
 4. Crea un nuevo tenant con su subdominio
 5. Configura el subdominio en DNS (si no usas wildcard `*`)
@@ -310,6 +310,6 @@ Una vez completados todos los pasos, tu aplicación estará accesible en:
 ---
 
 **Última actualización:** Noviembre 2024
-**Dominio:** sintupper.com
+**Dominio:** plati.es
 **Servidor:** 5.78.124.107
 

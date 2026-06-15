@@ -88,7 +88,7 @@ y [`despliegue/RUNBOOK.md`](./despliegue/RUNBOOK.md).
 6. Coolify detecta push, rebuild del Docker, arranca nuevo contenedor. El
    `docker-entrypoint.sh` ejecuta `prisma migrate deploy` → aplica solo
    migraciones pendientes a `comidas_prod`.
-7. `sintupper.com` sirve la versión nueva en 2-5 min.
+7. `plati.es` sirve la versión nueva en 2-5 min.
 
 Runbook completo con 12 escenarios (rollback, backup, restore, etc.) →
 [`despliegue/RUNBOOK.md`](./despliegue/RUNBOOK.md).
@@ -141,4 +141,4 @@ Artefactos en `docs/working-docs/<feature>/`.
 - **Sprint actual**: [`../tasks/todo.md`](../tasks/todo.md).
 - **Lessons learned**: [`../tasks/lessons.md`](../tasks/lessons.md).
 - **Diagnóstico 2026-04**: [`diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md`](./diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md).
-- **Problemas producción (activos)**: [`diagnostico/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md`](./diagnostico/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md).
+- **Problemas producción (activos)**: [`diagnostico/INFORME-PROBLEMAS-PRODUCCION-PLATI.md`](./diagnostico/INFORME-PROBLEMAS-PRODUCCION-PLATI.md).

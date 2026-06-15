@@ -8,10 +8,10 @@ navegar el mismo modelo de datos compartido.
 
 | Portal | Subdominio | Página inicial | Páginas | Documentación |
 |---|---|---|---|---|
-| Súper Admin | `admin.sintupper.com` | `/admin` | 50+ | [portal-admin.md](./portal-admin.md) · [módulos operativos (sprints 1-8)](./portal-admin-modulos.md) |
-| Empresa | `<empresa>.sintupper.com` | `/empresa/dashboard` | 11+ | [portal-empresa.md](./portal-empresa.md) |
-| Catering | `<catering>.sintupper.com` | `/catering/dashboard` | 14+ | [portal-catering.md](./portal-catering.md) |
-| Empleado | `<empresa>.sintupper.com` (mismo subdominio) | `/empleado/menus` | 5 | [portal-empleado.md](./portal-empleado.md) |
+| Súper Admin | `admin.plati.es` | `/admin` | 50+ | [portal-admin.md](./portal-admin.md) · [módulos operativos (sprints 1-8)](./portal-admin-modulos.md) |
+| Empresa | `<empresa>.plati.es` | `/empresa/dashboard` | 11+ | [portal-empresa.md](./portal-empresa.md) |
+| Catering | `<catering>.plati.es` | `/catering/dashboard` | 14+ | [portal-catering.md](./portal-catering.md) |
+| Empleado | `<empresa>.plati.es` (mismo subdominio) | `/empleado/menus` | 5 | [portal-empleado.md](./portal-empleado.md) |
 
 Total: **46 páginas de portal** + 5 de auth + 1 de landing + 4 páginas
 globales (unauthorized, error) = **56 páginas** en total.

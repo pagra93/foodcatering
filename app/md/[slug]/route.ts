@@ -184,7 +184,7 @@ ${renderPricing(pricingTiers)}
 ${comparisonMatrix
   .map(
     (row) =>
-      `- **${row.feature}**: Plati=${fmt(row.sintupper)} · Cobee=${fmt(row.cobee)} · Edenred=${fmt(row.edenred)} · Ticket Restaurant=${fmt(row.ticketkey)}`,
+      `- **${row.feature}**: Plati=${fmt(row.plati)} · Cobee=${fmt(row.cobee)} · Edenred=${fmt(row.edenred)} · Ticket Restaurant=${fmt(row.ticketkey)}`,
   )
   .join('\n')}
 

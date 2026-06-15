@@ -16,7 +16,7 @@ type Column = {
 
 const columns: Column[] = [
   { key: 'feature', label: 'Funcionalidad' },
-  { key: 'sintupper', label: 'Plati', highlight: true },
+  { key: 'plati', label: 'Plati', highlight: true },
   { key: 'cobee', label: 'Cobee' },
   { key: 'edenred', label: 'Edenred' },
   { key: 'ticketkey', label: 'Ticket Restaurant' },

@@ -42,7 +42,7 @@ export type PricingTier = {
 
 export type ComparisonRow = {
   feature: string
-  sintupper: boolean | string
+  plati: boolean | string
   cobee: boolean | string
   edenred: boolean | string
   ticketkey: boolean | string

@@ -20,7 +20,7 @@ git push origin main
 ```
 
 Coolify detecta el push y redeployea automáticamente. Tarda 2-5 minutos.
-Verifica en `https://sintupper.com` y revisa los logs del service en Coolify
+Verifica en `https://plati.es` y revisa los logs del service en Coolify
 si algo no carga.
 
 ---
@@ -154,7 +154,7 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       tenantId: rootTenant.id,
-      email: 'admin@sintupper.com',
+      email: 'admin@plati.es',
       passwordHash: await bcrypt.hash('<PASSWORD_FUERTE>', 10),
       nameEnc: 'Super Admin',
       role: 'SUPER_ADMIN',
@@ -173,11 +173,11 @@ Cambia la password en el primer login.
 
 ## 8. Invitar un tenant nuevo (empresa / catering)
 
-Via panel super admin en `https://sintupper.com/admin/tenants/new`. El
+Via panel super admin en `https://plati.es/admin/tenants/new`. El
 formulario:
 
 1. Nombre de la empresa/catering.
-2. Subdominio (`acme` → `acme.sintupper.com`).
+2. Subdominio (`acme` → `acme.plati.es`).
 3. Tipo (`EMPRESA` o `CATERING`).
 4. Datos de contacto.
 

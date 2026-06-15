@@ -6,7 +6,7 @@ Activos que hay que proteger, ordenados por criticidad:
 
 1. **Datos fiscales IRPF** de las empresas (pedidos, facturas, reportes).
    Si se filtran o manipulan, Hacienda puede rechazar deductibilidad →
-   la empresa pierde miles de € y confianza en SinTupper.
+   la empresa pierde miles de € y confianza en Plati.
 2. **PII de empleados** (nombre, teléfono, alergias, historial de
    comidas). GDPR sensible.
 3. **Credenciales** (passwords hashed, JWT, secrets de integraciones).

@@ -5,7 +5,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                           NAVEGADOR                                 │
-│  acme.sintupper.com · deliciasexpress.sintupper.com · ...           │
+│  acme.plati.es · deliciasexpress.plati.es · ...           │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │ HTTPS
                                ▼
@@ -63,7 +63,7 @@
 
 Corre en Edge Runtime de Next.js para todas las requests. Responsabilidades:
 
-- Extraer subdominio del `Host` header (`acme` de `acme.sintupper.com`).
+- Extraer subdominio del `Host` header (`acme` de `acme.plati.es`).
 - Validar sesión JWT con NextAuth edge-safe (`lib/auth/edge.ts`).
 - Si no hay sesión y la ruta está protegida → redirect a `/login`.
 - Si hay sesión → inyectar headers `x-tenant-id` y `x-tenant-type` en la
@@ -246,7 +246,7 @@ GitHub                                       │
   │                                     Ejecuta docker-entrypoint.sh:
   │                                        ├─ prisma migrate deploy
   │                                        └─ next start
-  │                                     sintupper.com sirve versión nueva
+  │                                     plati.es sirve versión nueva
   │                                          ▲
   │                                          │
   │  GitHub Actions CI:                     │

@@ -54,7 +54,7 @@ existentes.
 
 - **Incidencias cross-tenant**: agregado de `Incident` con KPIs (abiertas,
   en curso, resueltas, compensadas) + filtros por empresa, catering,
-  severidad, fechas. Permite asignar supervisor SinTupper.
+  severidad, fechas. Permite asignar supervisor Plati.
 - **Auditorías**: listado de `RestaurantAudit` (sanitarias, operativas,
   satisfacción) con PDF embebido. Crear auditoría nueva con upload.
 - **Ratings**: agregaciones sobre `OrderRating`. Top 10 mejor/peor
@@ -245,9 +245,9 @@ AES-256-GCM vía `lib/crypto/pii-cipher.ts`.
 ### Triple flujo de facturación
 
 1. **Catering → Empresa**: `Invoice` con pedidos del mes + IVA.
-2. **Catering → SinTupper**: comisión sobre esas facturas (configurable
+2. **Catering → Plati**: comisión sobre esas facturas (configurable
    en `Restaurant.commission`).
-3. **SinTupper → Empresa**: cuota SaaS según `SaasPlan` (modelo
+3. **Plati → Empresa**: cuota SaaS según `SaasPlan` (modelo
    separado `SaasInvoice`).
 
 ### Modelos nuevos

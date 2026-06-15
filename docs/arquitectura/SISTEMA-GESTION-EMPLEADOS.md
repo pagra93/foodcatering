@@ -176,7 +176,7 @@ const updateFullEmployeeSchema = z.object({
 ### 2. TESTING RECOMENDADO 🧪
 
 **Crear Empleado**:
-1. Ve a `https://acme.sintupper.com/empresa/empleados`
+1. Ve a `https://acme.plati.es/empresa/empleados`
 2. Click "Nuevo Empleado"
 3. Completa formulario (email, nombre, sede obligatorios)
 4. Click "Crear Empleado"

@@ -1,8 +1,8 @@
-# Qué hace SinTupper
+# Qué hace Plati
 
 ## Una frase
 
-**SinTupper es un SaaS multi-tenant que digitaliza el beneficio de comida
+**Plati es un SaaS multi-tenant que digitaliza el beneficio de comida
 corporativa en España**: conecta a las empresas que lo ofrecen, a los
 caterings que lo sirven y a los empleados que lo consumen, garantizando
 compliance fiscal IRPF.
@@ -21,7 +21,7 @@ Tiene dos fricciones grandes:
    pagar, guardar comprobante. Si la oficina está en un polígono sin
    restaurantes, el ticket pierde gran parte de su utilidad.
 
-**SinTupper sustituye el ticket por un flujo end-to-end**:
+**Plati sustituye el ticket por un flujo end-to-end**:
 
 - El empleado elige cada día (antes del cutoff, normalmente 11:00) qué
   menú quiere de los que su catering asignado ofrece.
@@ -39,7 +39,7 @@ Tiene dos fricciones grandes:
 
 El Art. 42.3 de la Ley IRPF permite a las empresas deducir hasta **11€ por
 día laborable y empleado** en concepto de comida en el puesto de trabajo.
-SinTupper se diseñó desde el día 1 para generar la evidencia que Hacienda
+Plati se diseñó desde el día 1 para generar la evidencia que Hacienda
 pide si inspecciona:
 
 - Selección nominativa (qué empleado pidió qué plato qué día).
@@ -59,7 +59,7 @@ política para evitarlo.
 ### 2. Multi-tenant sin mezclas
 
 Cada empresa y cada catering es un **tenant** con su propio subdominio
-(`acme.sintupper.com`, `deliciasexpress.sintupper.com`). Los datos nunca
+(`acme.plati.es`, `deliciasexpress.plati.es`). Los datos nunca
 se mezclan:
 
 - Toda query Prisma sobre tablas multi-tenant lleva filtro
@@ -79,7 +79,7 @@ a veces contrapuestos:
 - **Catering** (Chef, Repartidor, Finanzas): quiere pedidos claros y
   pago puntual.
 - **Empleado**: quiere elegir comida rico y que llegue.
-- **Súper Admin SinTupper**: quiere que todos funcionen y cobrar comisión.
+- **Súper Admin Plati**: quiere que todos funcionen y cobrar comisión.
 
 El producto da a cada uno **su portal** con vista y permisos propios, pero
 sobre los **mismos datos subyacentes**. Un pedido creado por el empleado
@@ -90,7 +90,7 @@ métrica agregada.
 
 ```
 08:00   Chef publica menús de la semana (1º + 2º + postre por día).
-        SinTupper valida y manda notificación a empresas.
+        Plati valida y manda notificación a empresas.
 
 08:00   Empleado recibe notificación, entra al portal y elige sus comidas
         de la semana. Cada selección respeta alergias (bloqueo de
@@ -125,10 +125,10 @@ métrica agregada.
 Día 1    Cron job de facturación:
 del mes  - Catering emite factura mensual a empresa (una línea por pedido).
          - Empresa recibe factura + CSV para ERP.
-         - SinTupper retiene comisión (config por catering, default 5%).
+         - Plati retiene comisión (config por catering, default 5%).
 ```
 
-## Qué NO es SinTupper
+## Qué NO es Plati
 
 Para evitar confusiones por si alguien lo compara con productos adyacentes:
 
@@ -147,7 +147,7 @@ Para evitar confusiones por si alguien lo compara con productos adyacentes:
 
 | Portal | Para quién | Funciones principales | Estado |
 |---|---|---|---|
-| **Súper Admin** | SinTupper | Dashboard global, CRUD tenants/empresas/caterings/users, KPIs, auditoría cross-tenant | 🟡 90% |
+| **Súper Admin** | Plati | Dashboard global, CRUD tenants/empresas/caterings/users, KPIs, auditoría cross-tenant | 🟡 90% |
 | **Empresa** | RRHH, Finanzas, Manager de Sede | Empleados, pedidos, facturación, incidencias, catering asignado, auditoría fiscal, configuración | 🟡 85% |
 | **Catering** | Chef, Cocinero, Repartidor, Finanzas | Platos, menús semanales, rutas, KDS, facturas mensuales, incidencias | 🟡 80% |
 | **Empleado** | Empleado de empresa cliente | Selector semanal, historial, perfil, incidencias | 🟡 75% |

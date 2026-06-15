@@ -98,7 +98,7 @@ type DishLabels = string[]  // Array de códigos de alérgenos + etiquetas diet�
 ### 1️⃣ ADMIN CREA ALÉRGENOS (Una sola vez)
 
 ```
-Portal Admin (sintupper.com/admin)
+Portal Admin (plati.es/admin)
   ↓
 SUPER_ADMIN crea/edita alérgenos
   ↓
@@ -121,7 +121,7 @@ Disponibles para TODOS los tenants
 ### 2️⃣ CATERING ETIQUETA PLATOS
 
 ```
-Portal Catering (deliciasexpress.sintupper.com/catering)
+Portal Catering (deliciasexpress.plati.es/catering)
   ↓
 Chef/Admin selecciona alérgenos del plato
   ↓
@@ -139,7 +139,7 @@ Guarda en `Dish.labels` usando CÓDIGOS
 ### 3️⃣ EMPLEADO CONFIGURA SUS ALERGIAS
 
 ```
-Portal Empleado (acme.sintupper.com/empleado/perfil)
+Portal Empleado (acme.plati.es/empleado/perfil)
   ↓
 Empleado selecciona sus alergias
   ↓

@@ -25,7 +25,7 @@ distintos.
 │   └───────────────────┘     └───────────────────┘             │
 │                                       ▲                       │
 │  Coolify service "comidas"            │                       │
-│  sintupper.com ───► env vars panel ───┘                       │
+│  plati.es ───► env vars panel ───┘                       │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -70,14 +70,14 @@ NODE_ENV="development"
 
 ```
 DATABASE_URL=postgresql://comidas_prod_user:***@<internal-host>:5432/comidas_prod?schema=public
-NEXTAUTH_URL=https://sintupper.com
+NEXTAUTH_URL=https://plati.es
 NEXTAUTH_SECRET=<otro distinto al de dev>
-WILDCARD_DOMAIN=.sintupper.com
+WILDCARD_DOMAIN=.plati.es
 NODE_ENV=production
 PII_ENCRYPTION_KEY=<32 bytes hex, rotable>
 ```
 
-`docs/diagnostico/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md` es la guía
+`docs/diagnostico/INFORME-PROBLEMAS-PRODUCCION-PLATI.md` es la guía
 detallada de cómo fijar estas env vars en Coolify + DNS wildcard.
 
 ## Qué NO tiene cada entorno
@@ -93,7 +93,7 @@ detallada de cómo fijar estas env vars en Coolify + DNS wildcard.
 
 Cuando el primer cliente real firme contrato, se añade un tercer entorno:
 
-- `staging.sintupper.com` + BD `comidas_staging` + usuario
+- `staging.plati.es` + BD `comidas_staging` + usuario
   `comidas_staging_user`.
 - Nuevo servicio en Coolify apuntando a rama `main`.
 - Prod pasa a deplogarse solo desde rama `release` (merge manual desde

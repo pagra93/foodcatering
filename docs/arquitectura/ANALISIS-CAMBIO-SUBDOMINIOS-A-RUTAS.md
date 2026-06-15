@@ -2,7 +2,7 @@
 
 ## 🎯 Resumen Ejecutivo
 
-**Pregunta**: ¿Cuánto costaría cambiar de subdominios (`acme.sintupper.com`) a rutas basadas en path (`sintupper.com/empresa/acme`)?
+**Pregunta**: ¿Cuánto costaría cambiar de subdominios (`acme.plati.es`) a rutas basadas en path (`plati.es/empresa/acme`)?
 
 **Respuesta Corta**: **Es un cambio de arquitectura MEDIO-GRANDE** que afectaría a ~40-50 archivos, requeriría 3-5 días de desarrollo, y tendría implicaciones significativas en seguridad, UX y escalabilidad.
 
@@ -16,16 +16,16 @@
 
 ```
 Empresas:
-  - https://acme.sintupper.com/empresa/dashboard
-  - https://globex.sintupper.com/empresa/pedidos
-  - https://acme.sintupper.com/empleado/menus
+  - https://acme.plati.es/empresa/dashboard
+  - https://globex.plati.es/empresa/pedidos
+  - https://acme.plati.es/empleado/menus
 
 Caterings:
-  - https://delicias.sintupper.com/catering/dashboard
-  - https://gourmet.sintupper.com/catering/produccion
+  - https://delicias.plati.es/catering/dashboard
+  - https://gourmet.plati.es/catering/produccion
 
 Admin:
-  - https://admin.sintupper.com/admin/empresas
+  - https://admin.plati.es/admin/empresas
 ```
 
 **Resolución de tenant**:
@@ -38,16 +38,16 @@ Admin:
 
 ```
 Empresas:
-  - https://sintupper.com/empresa/acme/dashboard
-  - https://sintupper.com/empresa/globex/pedidos
-  - https://sintupper.com/empresa/acme/empleado/menus
+  - https://plati.es/empresa/acme/dashboard
+  - https://plati.es/empresa/globex/pedidos
+  - https://plati.es/empresa/acme/empleado/menus
 
 Caterings:
-  - https://sintupper.com/catering/delicias/dashboard
-  - https://sintupper.com/catering/gourmet/produccion
+  - https://plati.es/catering/delicias/dashboard
+  - https://plati.es/catering/gourmet/produccion
 
 Admin:
-  - https://sintupper.com/admin/empresas
+  - https://plati.es/admin/empresas
 ```
 
 **Resolución de tenant**:
@@ -153,14 +153,14 @@ app/
 ```typescript
 // ANTES (lib/auth/config.ts)
 async redirect({ url, baseUrl }) {
-  // baseUrl = https://acme.sintupper.com
+  // baseUrl = https://acme.plati.es
   if (url.startsWith('/')) return `${baseUrl}${url}`
   return url
 }
 
 // DESPUÉS
 async redirect({ url, baseUrl }) {
-  // baseUrl = https://sintupper.com
+  // baseUrl = https://plati.es
   // Necesitas incluir el slug del tenant en la redirección
   const tenantSlug = getTenantSlugFromSession(session)
   if (url.startsWith('/')) return `${baseUrl}/empresa/${tenantSlug}${url}`
@@ -172,11 +172,11 @@ async redirect({ url, baseUrl }) {
 
 ```tsx
 // ANTES: LoginForm.tsx
-// Usuario va a acme.sintupper.com/auth/login
+// Usuario va a acme.plati.es/auth/login
 // El subdomain identifica al tenant automáticamente
 
 // DESPUÉS
-// Usuario va a sintupper.com/auth/login
+// Usuario va a plati.es/auth/login
 // Necesitas un selector de empresa/catering en el login
 <Select>
   <option>Acme Corp</option>
@@ -351,10 +351,10 @@ function SidebarNav() {
 
 ```typescript
 // ANTES
-await page.goto('https://acme.sintupper.localhost:3000/empresa/dashboard')
+await page.goto('https://acme.plati.localhost:3000/empresa/dashboard')
 
 // DESPUÉS
-await page.goto('https://sintupper.localhost:3000/empresa/acme/dashboard')
+await page.goto('https://plati.localhost:3000/empresa/acme/dashboard')
 ```
 
 **Tests afectados**: Todos los E2E (~10 archivos potenciales)
@@ -367,14 +367,14 @@ await page.goto('https://sintupper.localhost:3000/empresa/acme/dashboard')
 
 **ANTES**:
 ```
-*.sintupper.com → Wildcard DNS apuntando a servidor
-acme.sintupper.com → Resuelve automáticamente
-globex.sintupper.com → Resuelve automáticamente
+*.plati.es → Wildcard DNS apuntando a servidor
+acme.plati.es → Resuelve automáticamente
+globex.plati.es → Resuelve automáticamente
 ```
 
 **DESPUÉS**:
 ```
-sintupper.com → Un solo dominio
+plati.es → Un solo dominio
 (No se necesitan wildcard DNS)
 ```
 
@@ -388,7 +388,7 @@ sintupper.com → Un solo dominio
 
 ```bash
 # ANTES
-WILDCARD_DOMAIN=".sintupper.com"
+WILDCARD_DOMAIN=".plati.es"
 
 # DESPUÉS
 # No se necesita
@@ -398,11 +398,11 @@ WILDCARD_DOMAIN=".sintupper.com"
 
 ```env
 # ANTES
-NEXTAUTH_URL=https://acme.sintupper.com
-WILDCARD_DOMAIN=".sintupper.com"
+NEXTAUTH_URL=https://acme.plati.es
+WILDCARD_DOMAIN=".plati.es"
 
 # DESPUÉS
-NEXTAUTH_URL=https://sintupper.com
+NEXTAUTH_URL=https://plati.es
 # WILDCARD_DOMAIN ya no es necesario
 ```
 
@@ -447,13 +447,13 @@ NEXTAUTH_URL=https://sintupper.com
 2. **📝 Experiencia de usuario afectada**
    - Usuarios deben **seleccionar su organización** en el login
    - URLs más largas: `/empresa/acme/dashboard` vs `/dashboard`
-   - Menos "white-label" feeling (todos ven "sintupper.com")
+   - Menos "white-label" feeling (todos ven "plati.es")
    - Más difícil de recordar ("¿Era /empresa/acme o /acme/empresa?")
 
 3. **🎨 Branding más limitado**
-   - No puedes tener dominios custom fácilmente (`acme.com` → `acme.sintupper.com`)
+   - No puedes tener dominios custom fácilmente (`acme.com` → `acme.plati.es`)
    - Menos percepción de "plataforma exclusiva"
-   - Bar de navegación siempre muestra "sintupper.com"
+   - Bar de navegación siempre muestra "plati.es"
 
 4. **⚡ Performance potencialmente peor**
    - Cache de CDN menos efectivo (más paths dinámicos)
@@ -536,7 +536,7 @@ NEXTAUTH_URL=https://sintupper.com
 
 3. **Breaking change MASIVO**
    - Todos los links existentes (bookmarks, emails, etc.) dejarán de funcionar
-   - Necesitas redirects permanentes: `acme.sintupper.com` → `sintupper.com/empresa/acme`
+   - Necesitas redirects permanentes: `acme.plati.es` → `plati.es/empresa/acme`
 
 4. **Complejidad en middleware**
    - Parsear paths es más complejo que extraer subdominios
@@ -583,10 +583,10 @@ Si realmente necesitas rutas por alguna razón, considera un **enfoque híbrido*
 
 ```
 Producción:
-  - acme.sintupper.com/dashboard (subdominios - MANTENER)
+  - acme.plati.es/dashboard (subdominios - MANTENER)
 
 Alternativa (opcional):
-  - sintupper.com/empresa/acme/dashboard (rutas - agregar como alias)
+  - plati.es/empresa/acme/dashboard (rutas - agregar como alias)
   
 Implementación:
   - Middleware detecta AMBOS patrones

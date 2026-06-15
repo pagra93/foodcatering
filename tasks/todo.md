@@ -36,10 +36,10 @@ Pasos para el usuario (con comandos en `docs/despliegue/RUNBOOK.md`):
 
 - [ ] Drop + create `comidas_prod` (vacía actualmente, sin riesgo).
 - [ ] Resolver problemas de Coolify (env vars + DNS) según
-      `docs/diagnostico/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md`.
+      `docs/diagnostico/INFORME-PROBLEMAS-PRODUCCION-PLATI.md`.
 - [ ] Push del código nuevo → Coolify rebuild → `prisma migrate deploy`
       automático aplica schema a `comidas_prod`.
-- [ ] Verificar `sintupper.com` responde.
+- [ ] Verificar `plati.es` responde.
 - [ ] Configurar cron de backups automáticos
       (`scripts/setup-prod-backups.md`).
 - [ ] Crear primer super-admin en prod (RUNBOOK sección 7).

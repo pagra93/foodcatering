@@ -8,12 +8,12 @@ Este documento contiene todas las credenciales de usuarios de prueba creados por
 
 ## 👨‍💼 SUPER ADMINISTRADOR (Root)
 
-**Subdominio:** `admin.sintupper.com`  
-**URL:** `https://admin.sintupper.com/login`
+**Subdominio:** `admin.plati.es`  
+**URL:** `https://admin.plati.es/login`
 
 | Campo | Valor |
 |-------|-------|
-| **Email** | `admin@sintupper.com` |
+| **Email** | `admin@plati.es` |
 | **Password** | `Admin123!` |
 | **Rol** | `SUPER_ADMIN` |
 | **Tenant** | ROOT |
@@ -28,7 +28,7 @@ Este documento contiene todas las credenciales de usuarios de prueba creados por
 
 ## 🏢 EMPRESA: ACME Corporation
 
-**Subdominio:** `acme.sintupper.com`  
+**Subdominio:** `acme.plati.es`  
 **Tenant ID:** ACME Corporation  
 **Tipo:** EMPRESA
 
@@ -112,7 +112,7 @@ Este documento contiene todas las credenciales de usuarios de prueba creados por
 
 ## 🍴 CATERING: Delicias Express
 
-**Subdominio:** `deliciasexpress.sintupper.com`  
+**Subdominio:** `deliciasexpress.plati.es`  
 **Tenant ID:** Delicias Express  
 **Tipo:** CATERING
 
@@ -184,18 +184,18 @@ Este documento contiene todas las credenciales de usuarios de prueba creados por
 
 ### Super Admin
 ```
-https://admin.sintupper.com/login
+https://admin.plati.es/login
 ```
 
 ### Portal Empresa (ACME)
 ```
-https://acme.sintupper.com/empresa/dashboard    → RRHH/Finanzas
-https://acme.sintupper.com/empleado/menus      → Empleados
+https://acme.plati.es/empresa/dashboard    → RRHH/Finanzas
+https://acme.plati.es/empleado/menus      → Empleados
 ```
 
 ### Portal Catering (Delicias Express)
 ```
-https://deliciasexpress.sintupper.com/catering/dashboard
+https://deliciasexpress.plati.es/catering/dashboard
 ```
 
 ---
@@ -216,7 +216,7 @@ Todas las contraseñas siguen este patrón:
 
 ## ⚠️ Notas Importantes
 
-1. **Dominio:** Las credenciales están configuradas para `sintupper.com`. Si usas otro dominio, los emails pueden variar.
+1. **Dominio:** Las credenciales están configuradas para `plati.es`. Si usas otro dominio, los emails pueden variar.
 
 2. **MFA:** El usuario Super Admin tiene MFA habilitado (`mfaEnabled: true`), pero en desarrollo puede estar desactivado.
 

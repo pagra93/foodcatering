@@ -55,7 +55,7 @@ documento te da el mapa mental por dominio y las relaciones clave.
 
 ### `Tenant`
 
-La raíz. Representa una organización (SinTupper, una empresa o un
+La raíz. Representa una organización (Plati, una empresa o un
 catering).
 
 | Campo | Notas |
@@ -63,7 +63,7 @@ catering).
 | `id` | UUID, @id |
 | `type` | ROOT / EMPRESA / CATERING |
 | `name` | Razón social o nombre comercial |
-| `subdomain` | Único. `acme` en `acme.sintupper.com`. |
+| `subdomain` | Único. `acme` en `acme.plati.es`. |
 | `status` | ACTIVE / SUSPENDED / INACTIVE |
 | `primaryColor`, `logoUrl` | Branding del portal |
 | `contactEmail`, `contactPhone`, `address`, `city`, `postalCode`, `country` | Contacto y dirección |
@@ -210,7 +210,7 @@ catering.
 | `leadTimeMinutes` | Antelación requerida (180 = 3h antes del servicio) |
 | `operationalDays` | JSON array días laborables |
 | `zones` | JSON: `[{name, postalCodes, maxDistance, operator}]` — zonas de reparto |
-| `commission` | Decimal(5,4). `0.05` = 5% a SinTupper |
+| `commission` | Decimal(5,4). `0.05` = 5% a Plati |
 | `minimumBilling` | Umbral mínimo facturable |
 | `paymentCycle` | SEMANAL / QUINCENAL / MENSUAL |
 | `punctualityRate`, `incidentRate`, `averageRating` | KPIs cacheados |

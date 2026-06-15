@@ -11,7 +11,7 @@
 
 Tu proyecto es ambicioso y, en el papel, está bien pensado: multi-tenant con 31 tablas, RBAC con 14 roles, workflow fiscal IRPF, auditoría con hash SHA-256, snapshots diarios, impersonación con expiración. La arquitectura de alto nivel (Next.js 15 App Router, Prisma, NextAuth v5, Zod, shadcn/ui) es moderna y correcta.
 
-Pero al abrir el capó aparecen **3 bloqueantes críticos, 5 altos y ~15 medios** que explican por qué el proyecto se te aparcó y por qué producción (sintupper.com) no va:
+Pero al abrir el capó aparecen **3 bloqueantes críticos, 5 altos y ~15 medios** que explican por qué el proyecto se te aparcó y por qué producción (plati.es) no va:
 
 | # | Hallazgo | Severidad | Dónde |
 |---|---|---|---|
@@ -422,11 +422,11 @@ Mejoras:
 
 ### 5.3 Coolify y producción
 
-Según `docs/INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md` (805 líneas, 2025-11-20):
+Según `docs/INFORME-PROBLEMAS-PRODUCCION-PLATI.md` (805 líneas, 2025-11-20):
 
 - Landing carga, login devuelve 500, subdominios inaccesibles.
 - Causa raíz: `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `WILDCARD_DOMAIN` no configuradas en Coolify.
-- DNS wildcard (`*.sintupper.com`) no configurado.
+- DNS wildcard (`*.plati.es`) no configurado.
 
 Eso + el hecho de que Coolify probablemente ejecute `db push --accept-data-loss` sobre tu BD real explica los problemas.
 
@@ -552,7 +552,7 @@ No encontré rate limiting en ningún sitio. Recomendación: `@upstash/ratelimit
 
 ### 8.1 Los 5 docs más relevantes hoy
 
-1. **`INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md`** (805 líneas) — explica por qué producción no va. **Leer antes de tocar Coolify.**
+1. **`INFORME-PROBLEMAS-PRODUCCION-PLATI.md`** (805 líneas) — explica por qué producción no va. **Leer antes de tocar Coolify.**
 2. **`RESUMEN-FINAL-TODOS-LOS-FIXES.md`** (266 líneas) — último pase de fixes pre-aparcado.
 3. **`PROGRESO.md`** (358 líneas) — estado de fases. Según esto: Fase 0 ✅, Fase 1 40%, 2-4 sin empezar. **Obsoleto** si contamos que hay UI de portal catering/empresa/empleado con bastante avance.
 4. **`prd.md`** (141 KB, ~4100 líneas) — especificación del producto. Sigue válida en el plano funcional.
@@ -644,7 +644,7 @@ Objetivo: que el sistema sea **seguro para producción** sin añadir features.
 
 ### Sprint 4 — Producción estable (3-5 días)
 
-- [ ] Seguir `INFORME-PROBLEMAS-PRODUCCION-SINTUPPER.md` para desplegar Coolify con env vars y DNS wildcard correctos.
+- [ ] Seguir `INFORME-PROBLEMAS-PRODUCCION-PLATI.md` para desplegar Coolify con env vars y DNS wildcard correctos.
 - [ ] Backup automático Postgres (antes de correr migraciones).
 - [ ] Monitoring (Sentry o equivalente) — ya viene prepared en `env.example`.
 - [ ] Redis para cache de tenant y sesiones si se escala a >1 instancia.

@@ -42,7 +42,7 @@ Last updated: 2026-04-18
   que prod). Elección explícita del user para no instalar Docker en
   laptop.
 - **2026-04-18:** Staging aplazado hasta tener clientes reales. Cuando
-  llegue el momento → `staging.sintupper.com` + `comidas_staging` + rama
+  llegue el momento → `staging.plati.es` + `comidas_staging` + rama
   `release` para prod.
 - **2026-04-18:** Scaffolding PM x10 instalado (tasks/, memory/,
   qa-reports/, working-docs/, PROJECT_KNOWLEDGE.md,
