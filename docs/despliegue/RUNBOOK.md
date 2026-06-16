@@ -185,6 +185,40 @@ Al guardar, se crea el `Tenant` + su `Company` / `Restaurant` asociado con
 defaults mínimos. Luego hay que completar `legalName`, `cif`,
 `billingAddress` desde el detalle del tenant.
 
+### ⚠️ Paso obligatorio: dar de alta el subdominio en Coolify
+
+Crear el tenant en la app **no** hace que `<slug>.plati.es` funcione. Hace
+falta un paso manual en infraestructura:
+
+1. **DNS**: ya está cubierto. El registro wildcard `*.plati.es → 5.78.124.107`
+   resuelve cualquier subdominio nuevo automáticamente. **No hay que tocar el
+   DNS** por cada tenant.
+2. **Coolify → service "comidas" → Domains**: añadir el subdominio nuevo a la
+   lista (separados por coma), por ejemplo:
+
+   ```
+   https://plati.es,https://admin.plati.es,https://acme.plati.es
+   ```
+
+   Al guardar, Traefik pide a Let's Encrypt el certificado del subdominio
+   (challenge HTTP-01) y, como el DNS ya resuelve, lo emite en segundos.
+
+**Cómo saber si falta este paso**: si al abrir `https://<slug>.plati.es` ves
+un error de certificado SSL, el subdominio no está en Domains. Verifícalo:
+
+```bash
+echo | openssl s_client -servername <slug>.plati.es -connect 5.78.124.107:443 2>/dev/null \
+  | openssl x509 -noout -subject
+# "CN=TRAEFIK DEFAULT CERT"  → falta añadirlo en Coolify Domains
+# "CN=<slug>.plati.es"       → ya está OK
+```
+
+> **Mejora futura (opcional)**: montar un certificado wildcard `*.plati.es`
+> vía **DNS-01 challenge** en Coolify elimina este paso manual — cualquier
+> `<slug>.plati.es` funcionaría sin tocar Domains. Tiene más setup inicial
+> (Coolify necesita credenciales de API del DNS para resolver el challenge).
+> Mientras haya pocos tenants, listar el subdominio a mano es más simple.
+
 ---
 
 ## 9. Ver qué está pasando en prod
