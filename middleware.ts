@@ -19,7 +19,12 @@ export async function middleware(req: NextRequest) {
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
     pathname === '/llms.txt' ||
-    pathname === '/llms-full.txt'
+    pathname === '/llms-full.txt' ||
+    // Imágenes de metadatos generadas por convención de Next (sin extensión en
+    // la URL, así que el matcher de abajo no las excluye). Las usan los
+    // crawlers de redes sociales y deben ser públicas.
+    pathname.startsWith('/opengraph-image') ||
+    pathname.startsWith('/twitter-image')
   ) {
     return NextResponse.next()
   }

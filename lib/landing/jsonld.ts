@@ -15,7 +15,7 @@ export function organizationSchema() {
     '@type': 'Organization',
     name: 'Plati',
     url: baseUrl,
-    logo: `${baseUrl}/logo.svg`,
+    logo: `${baseUrl}/brand/png/plati-logo-horizontal-transparent.png`,
     description:
       'Plataforma B2B de menús corporativos con compliance fiscal IRPF Art. 42.3.',
     contactPoint: [
