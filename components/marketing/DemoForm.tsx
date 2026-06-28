@@ -178,7 +178,7 @@ export function DemoForm() {
             Enviando…
           </>
         ) : (
-          'Reservar demo'
+          'Pedir demo'
         )}
       </Button>
       <p className="text-xs text-muted-foreground text-center">

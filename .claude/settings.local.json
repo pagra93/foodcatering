@@ -121,7 +121,11 @@
       "Bash(awk 'NR>=12 && NR<=60 {printf \"%d: %s\\\\n\", NR, $0}' app/globals.css)",
       "Bash(awk '$1>2')",
       "Bash(rm -rf .next)",
-      "Bash(echo \"build exit: $?\")"
+      "Bash(echo \"build exit: $?\")",
+      "Bash(perl -i -pe 's/Solicitar demo/Pedir demo/g' 'app/\\(landing\\)/producto/page.tsx' 'app/\\(landing\\)/precios/page.tsx' 'app/\\(landing\\)/compliance/page.tsx' components/marketing/ComingSoon.tsx lib/landing/content.ts)",
+      "Bash(perl -i -pe \"s/'Reservar demo'/'Pedir demo'/g\" \"components/marketing/DemoForm.tsx\")",
+      "Bash(perl -i -pe \"s/Solicitar propuesta con este caso/Pedir demo con este caso/g\" \"components/marketing/IRPFCalculator.tsx\")",
+      "Bash(perl -i -pe \"s/label: 'Solicitar propuesta'/label: 'Pedir demo'/g\" \"app/\\(landing\\)/calculadora/page.tsx\")"
     ]
   }
 }

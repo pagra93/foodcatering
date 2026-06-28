@@ -1,12 +1,14 @@
 import { type Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import {
   ArrowRight,
   Check,
-  Clock,
+  ClipboardList,
   FileText,
-  LayoutGrid,
+  MailX,
   PackageCheck,
+  Tags,
   TrendingUp,
 } from 'lucide-react'
 
@@ -18,67 +20,70 @@ import { faqSchema, howToSchema } from '@/lib/landing/jsonld'
 import { faqsCatering, howItWorksCatering } from '@/lib/landing/content'
 
 export const metadata: Metadata = {
-  title: 'Llena tu cocina entre semana',
+  title: 'Llena tu cocina y digitaliza tu operativa',
   description:
-    'Plati lleva tus menús a empresas de tu ciudad. Tú cocinas; nosotros traemos los pedidos, la logística y el cobro. Comisión 5–8%, facturación directa, sin permanencia.',
+    'Plati lleva tus menús a empresas de tu ciudad y digitaliza toda tu operativa: pedidos, recuento por plato, etiquetado y factura. Sin emails, sin Excel, sin recontar a mano.',
   alternates: { canonical: '/caterings' },
   openGraph: {
-    title: 'Plati para caterings — Llena tu cocina entre semana',
+    title: 'Plati para caterings — Llena tu cocina y olvídate del papeleo',
     description:
-      'Demanda recurrente de empresas de tu ciudad, panel de pedidos y facturación directa. Comisión 5–8%.',
+      'Demanda recurrente de empresas de tu ciudad y el software para gestionarla: recuento automático, etiquetado y factura el día 1.',
     type: 'website',
     locale: 'es_ES',
   },
 }
 
+// El enemigo real del catering no es el delivery (no trabajan con él): es el
+// caos manual de gestionar pedidos de empresa con email, WhatsApp y Excel.
 const PAINS = [
   {
-    stat: '30%',
-    title: 'Comisiones que ahogan',
-    body: 'Cada pedido por delivery se lleva casi un tercio. A final de mes, tu margen real es mínimo.',
+    stat: 'A mano',
+    title: 'Pedidos por email y WhatsApp',
+    body: 'Llegan sueltos, los apuntas en una hoja y recuentas cada plato a mano. Un cambio de última hora y vuelta a empezar.',
   },
   {
-    stat: '12-3',
-    title: 'Solo viven del mediodía',
-    body: 'Las horas punta se concentran en 3 horas. El resto, la cocina y el equipo están parados.',
+    stat: 'Fin de mes',
+    title: 'Cuadrar a ciegas',
+    body: 'Repasar qué se pidió, quién no pidió y montar la factura empresa por empresa. Horas que no estás cocinando.',
   },
   {
-    stat: '?',
-    title: 'Ingresos imprevisibles',
-    body: 'Sin saber cuántos cubiertos harás mañana, compras de más o de menos. Y tiras comida.',
+    stat: 'A ojo',
+    title: 'Compras sin saber',
+    body: 'Sin saber cuántos cubiertos saldrán mañana, compras de más o de menos. Y acabas tirando comida.',
   },
 ]
 
+// Plati = software que digitaliza la operativa + demanda recurrente.
 const TOOLS = [
   {
     icon: TrendingUp,
     title: 'Demanda recurrente',
-    body: 'Empresas que piden cada día, no pedidos sueltos. Planifica con semanas de antelación.',
+    body: 'Empresas de tu ciudad que piden cada día, no pedidos sueltos. Planifica con semanas de antelación.',
   },
   {
-    icon: LayoutGrid,
-    title: 'Panel de pedidos',
-    body: 'Ve cuántos menús de cada plato tienes que cocinar hoy. Sin llamadas, sin notas sueltas.',
+    icon: ClipboardList,
+    title: 'Recuento automático',
+    body: 'El sistema suma los pedidos por plato: «38 cremas, 29 currys». Sin contar a mano, sin notas sueltas.',
   },
   {
     icon: PackageCheck,
     title: 'Previsión de compra',
-    body: 'Con la demanda confirmada, sabes exactamente qué comprar. Cero desperdicio.',
+    body: 'Con la demanda confirmada cada día, sabes exactamente qué comprar. Cero desperdicio.',
+  },
+  {
+    icon: Tags,
+    title: 'Etiquetado por persona',
+    body: 'Cada menú sale con el nombre, la empresa y los alérgenos. Reparto ordenado, cero errores.',
   },
   {
     icon: FileText,
-    title: 'Facturación directa',
-    body: 'Facturas a la empresa, sin intermediarios. El dinero es tuyo, no de una app.',
+    title: 'Factura automática el día 1',
+    body: 'Se genera sola, con una línea por pedido. Tú revisas y envías. Se acabó cuadrar a mano.',
   },
   {
-    icon: PackageCheck,
-    title: 'Entrega etiquetada',
-    body: 'Cada menú sale con el nombre de la persona y su empresa. Reparto ordenado en segundos.',
-  },
-  {
-    icon: Clock,
-    title: 'Comisión 5–8%',
-    body: 'Pagas solo por lo que vendes a través de Plati. Sin cuotas fijas, sin permanencia.',
+    icon: MailX,
+    title: 'Sin emails ni Excel',
+    body: 'Los pedidos entran solos en tu panel. Adiós a la hoja de cálculo y al WhatsApp del mediodía.',
   },
 ]
 
@@ -95,14 +100,21 @@ const STEPS = [
   },
   {
     n: '03',
-    title: 'Te asignamos empresas',
-    body: 'Conectamos tu cocina con empresas de tu zona que ya quieren comer contigo.',
+    title: 'Recibes los pedidos',
+    body: 'Tus empresas piden desde su portal. Tú los ves ya contados por plato, sin recontar nada.',
   },
   {
     n: '04',
     title: 'Cocinas y facturas',
-    body: 'Recibes pedidos, cocinas lo justo y facturas directo. Nosotros nos llevamos 5–8%.',
+    body: 'Cocinas lo justo y la factura se genera sola el día 1. Tú solo cocinas.',
   },
+]
+
+const TRUST_CHIPS = [
+  'Sin permanencia',
+  'Facturación directa',
+  'Tus clientes son tuyos',
+  'Datos en la UE',
 ]
 
 export default function CateringsPage() {
@@ -131,8 +143,9 @@ export default function CateringsPage() {
                 entre semana<span className="plati-dot" />
               </h1>
               <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
-                Plati lleva tus menús a empresas de tu ciudad. Tú cocinas;
-                nosotros traemos los pedidos, la logística y el cobro.
+                Plati te trae empresas de tu ciudad que comen contigo cada día —
+                y digitaliza toda tu operativa: pedidos, recuento por plato,
+                etiquetado y factura. Sin emails, sin Excel, sin recontar a mano.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-3">
                 <Button asChild size="lg" className="rounded-pill">
@@ -150,33 +163,40 @@ export default function CateringsPage() {
                   <Link href="#tool">Ver la herramienta</Link>
                 </Button>
               </div>
-              <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground/80">
+              <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
                 <Check
                   className="h-4 w-4 flex-none text-hierba"
                   aria-hidden="true"
                 />
-                Comisión 5–8% · facturación directa · sin permanencia
+                Facturación directa · sin permanencia · tus clientes son tuyos
               </p>
             </AnimatedOnView>
 
             <AnimatedOnView delay={0.1} className="relative">
-              <div className="flex h-[360px] items-center justify-center rounded-[16px] bg-tomate-soft text-center text-sm font-medium text-tomate md:h-[480px]">
-                Cocinero emplatando
-                <br />
-                en cocina profesional
+              <div className="relative h-[360px] overflow-hidden rounded-[16px] md:h-[480px]">
+                <Image
+                  src="/landing/catering_plati.webp"
+                  alt="Cocinero de un catering local preparando los menús del día"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 48vw, 100vw"
+                  className="object-cover"
+                />
               </div>
               <div className="absolute -left-4 bottom-7 rounded-[10px] bg-tinta px-5 py-4 text-hueso shadow-plati-2">
                 <div className="font-display text-[17px] font-extrabold leading-tight">
-                  +220 menús/día
+                  Tu día, en una pantalla
                 </div>
-                <div className="text-xs opacity-70">media por catering activo</div>
+                <div className="text-xs opacity-70">
+                  pedidos, recuento y factura
+                </div>
               </div>
             </AnimatedOnView>
           </div>
         </div>
       </section>
 
-      {/* PROBLEMA (panel oscuro) */}
+      {/* PROBLEMA (panel oscuro) — el caos manual */}
       <section id="problema" className="scroll-mt-24 py-24">
         <div className="mx-auto max-w-plati px-[5vw]">
           <AnimatedOnView>
@@ -185,12 +205,12 @@ export default function CateringsPage() {
                 <div className="max-w-2xl">
                   <p className="plati-eyebrow">El problema</p>
                   <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)] text-hueso">
-                    El delivery se come tu margen
+                    Tu cocina va sobre emails y hojas de cálculo
                   </h2>
                   <p className="mt-4 text-lg leading-relaxed text-hueso/70">
-                    Las plataformas de reparto cobran hasta un 30 % por pedido y
-                    te esconden al cliente. Tu cocina trabaja para ellas, no para
-                    ti.
+                    Servir a empresas debería ser tu mejor negocio: pedidos fijos
+                    cada día. Pero gestionarlo a mano se come tu mañana — y la
+                    administración no la cobras.
                   </p>
                 </div>
                 <div className="mt-10 grid gap-6 md:grid-cols-3">
@@ -223,11 +243,12 @@ export default function CateringsPage() {
           <AnimatedOnView className="max-w-2xl">
             <p className="plati-eyebrow">La herramienta</p>
             <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
-              Una cocina llena, en piloto automático
+              Toda tu operativa, en una pantalla
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              Plati te trae demanda recurrente de empresas y te da el panel para
-              gestionarla sin caos.
+              Plati te trae la demanda y te da el software para gestionarla sin
+              papeleo: lo que antes era una mañana de administración, ahora son
+              dos clics.
             </p>
           </AnimatedOnView>
 
@@ -301,37 +322,42 @@ export default function CateringsPage() {
         </div>
       </section>
 
-      {/* COMISIÓN + CTA */}
+      {/* MODELO + CONFIANZA + CTA */}
       <section id="alta" className="scroll-mt-24 pb-24">
         <div className="mx-auto max-w-plati px-[5vw]">
+          {/* Modelo (sin cifras públicas: invita a contacto) */}
           <AnimatedOnView>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-[16px] border border-border/70 bg-card p-8">
-                <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-muted-foreground">
-                  Delivery tradicional
-                </div>
-                <div className="mt-2 font-display text-5xl font-extrabold text-tinta/40">
-                  30 %
-                </div>
-                <p className="mt-3 text-[15px] text-muted-foreground">
-                  de comisión por pedido. Y no sabes quién es tu cliente.
-                </p>
-              </div>
-              <div className="rounded-[16px] border-2 border-tomate bg-tomate-soft p-8">
-                <div className="text-[11px] font-bold uppercase tracking-[0.1em] text-tomate">
-                  Con Plati
-                </div>
-                <div className="mt-2 font-display text-5xl font-extrabold text-tomate">
-                  5–8 %
-                </div>
-                <p className="mt-3 text-[15px] text-tinta/80">
-                  de comisión. Facturas directo a la empresa y el cliente es
-                  tuyo.
-                </p>
-              </div>
+            <div className="rounded-[16px] border border-border/70 bg-card p-8 text-center md:p-10">
+              <h2 className="plati-display text-[clamp(1.75rem,3.5vw,2.5rem)]">
+                Un modelo sencillo, sin sorpresas
+              </h2>
+              <p className="mx-auto mt-3 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+                Sin permanencia y sin ataduras. Lo ajustamos a tu caso, según las
+                empresas que traes tú y las que te llevamos nosotros. Cuéntanos tu
+                cocina y te explicamos cómo encajamos.
+              </p>
             </div>
           </AnimatedOnView>
 
+          {/* Franja de confianza */}
+          <AnimatedOnView className="mt-4">
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 rounded-[16px] border border-border/70 bg-hueso-warm px-6 py-5">
+              {TRUST_CHIPS.map((chip) => (
+                <li
+                  key={chip}
+                  className="flex items-center gap-2 text-[14px] font-medium text-muted-foreground"
+                >
+                  <Check
+                    className="h-4 w-4 flex-none text-hierba"
+                    aria-hidden="true"
+                  />
+                  {chip}
+                </li>
+              ))}
+            </ul>
+          </AnimatedOnView>
+
+          {/* CTA */}
           <AnimatedOnView delay={0.1} className="mt-4">
             <div className="rounded-[16px] bg-tomate px-[5vw] py-16 text-center text-hueso">
               <h2 className="plati-display mx-auto max-w-2xl text-[clamp(2.125rem,5vw,3.625rem)] text-hueso">

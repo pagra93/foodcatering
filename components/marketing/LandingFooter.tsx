@@ -57,7 +57,7 @@ export function LandingFooter() {
               Comer juntos es cultura<span className="plati-dot" />
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              El menú de hoy, cocinado hoy por un catering local, en tu oficina.
+              El menú del día, cocinado hoy por un catering local, en tu oficina.
             </p>
           </div>
 

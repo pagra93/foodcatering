@@ -24,7 +24,7 @@ export function ComingSoon({ title, description }: Props) {
       ) : null}
       <div className="mt-10 flex flex-wrap justify-center gap-3">
         <Button asChild>
-          <Link href="/demo">Solicitar demo</Link>
+          <Link href="/demo">Pedir demo</Link>
         </Button>
         <Button asChild variant="outline">
           <Link href="/">

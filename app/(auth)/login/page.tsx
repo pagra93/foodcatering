@@ -84,7 +84,7 @@ export default async function LoginPage() {
 
             {/* Título y eslogan */}
             <h2 className="plati-display mb-4 text-4xl text-hueso">
-              El menú de hoy, en tu oficina<span className="plati-dot" />
+              El menú del día, en tu oficina<span className="plati-dot" />
             </h2>
             <p className="mb-8 text-xl text-hueso/70">
               Caterings locales cocinan cada día y lo llevamos a tu empresa. Comer

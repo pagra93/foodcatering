@@ -45,7 +45,8 @@ export function CateringTeaser({ className }: Props) {
                 </h2>
                 <p className="mt-3 max-w-xl text-sm text-muted-foreground md:text-base text-pretty">
                   Lista cerrada a las 11:05, KDS en tablet, rutas optimizadas
-                  y factura automática el día 1. Sin comisiones por pedido.
+                  y factura automática el día 1. Tú cocinas; del papeleo nos
+                  encargamos nosotros.
                 </p>
               </div>
             </div>

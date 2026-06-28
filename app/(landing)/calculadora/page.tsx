@@ -25,8 +25,8 @@ export default function CalculadoraPage() {
       <section className="container mx-auto px-4 pb-8 pt-16 md:pt-24">
         <SectionHeader
           eyebrow="Calculadora"
-          title="Calcula tu ahorro fiscal en 30 segundos"
-          subtitle="Ajusta los parámetros a tu caso real. Comparte el enlace con tu equipo o úsalo para pedirnos una propuesta concreta."
+          title="Mira lo que cuesta y lo que te ahorras"
+          subtitle="Ajústala a tu caso en 30 segundos. Comparte el enlace con tu equipo o úsala para pedirnos una propuesta concreta."
         />
       </section>
 
@@ -50,31 +50,33 @@ export default function CalculadoraPage() {
           <dl className="mt-6 space-y-5 text-sm text-muted-foreground md:text-base">
             <div>
               <dt className="font-semibold text-foreground">
-                Coste anual de empresa
+                Lo que paga tu empresa
               </dt>
               <dd className="mt-1 leading-relaxed">
-                empleados × días/mes × aportación empresa/día × 11 meses
-                (descontamos 1 mes de vacaciones).
+                Tus empleados, por los días que comen al mes, por lo que pone la
+                empresa cada día, durante 11 meses (descontamos un mes de
+                vacaciones).
               </dd>
             </div>
             <div>
               <dt className="font-semibold text-foreground">
-                Base imponible anual ahorrada
+                Coste real, tras impuestos
               </dt>
               <dd className="mt-1 leading-relaxed">
-                min(aportación/día, 11 €) × días/mes × 11 × empleados. La
-                aportación por encima de 11 € al día tributa como rendimiento
-                en especie.
+                El gasto en comida es 100% deducible en el Impuesto sobre
+                Sociedades. Estimamos que recuperas en torno a un 25%, así que el
+                coste real es menor que lo que pagas.
               </dd>
             </div>
             <div>
               <dt className="font-semibold text-foreground">
-                Ahorro fiscal del empleado
+                Lo que se ahorra tu equipo
               </dt>
               <dd className="mt-1 leading-relaxed">
-                base imponible ahorrada × tipo marginal IRPF. El tipo medio en
-                España (2024) ronda el 30 %; ajústalo al perfil salarial real
-                de tu plantilla.
+                Hasta 11 € al día está exento de IRPF. Tomamos esa parte exenta y
+                la multiplicamos por los días y por el IRPF medio del equipo
+                (~30% en España). Lo que pongas por encima de 11 €/día sí
+                tributa.
               </dd>
             </div>
           </dl>
@@ -89,7 +91,7 @@ export default function CalculadoraPage() {
       <CTABanner
         title="¿Quieres que lo aterricemos en tu empresa?"
         subtitle="Reserva una demo de 20 minutos y te pasamos la propuesta adaptada a los valores que acabas de introducir."
-        primary={{ label: 'Solicitar propuesta', href: '/demo' }}
+        primary={{ label: 'Pedir demo', href: '/demo' }}
         secondary={{ label: 'Ver precios', href: '/precios' }}
       />
     </>

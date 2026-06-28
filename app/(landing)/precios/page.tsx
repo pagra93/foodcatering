@@ -39,12 +39,12 @@ export default function PreciosPage() {
         eyebrow="Precios"
         title={
           <>
-            Tarifa plana{' '}
-            <span className="text-primary">por empleado activo</span>.
+            Pagas solo por{' '}
+            <span className="text-primary">quien come</span>.
           </>
         }
-        subtitle="Sin setup fee, sin permanencia. Solo pagas por los empleados que realmente usan el beneficio cada mes."
-        primaryCta={{ label: 'Solicitar demo', href: '/demo' }}
+        subtitle="Sin cuota de alta, sin permanencia. Cada mes pagas solo por los empleados que de verdad han usado el beneficio — ni uno más."
+        primaryCta={{ label: 'Pedir demo', href: '/demo' }}
         secondaryCta={{ label: 'Calcular ahorro', href: '/calculadora' }}
         alignment="center"
       />
@@ -94,7 +94,7 @@ export default function PreciosPage() {
       <CTABanner
         title="¿Listo para ver el plan aplicado a tu empresa?"
         subtitle="20 minutos de demo con calculadora y dossier ejemplo adaptados a tu plantilla."
-        primary={{ label: 'Solicitar demo', href: '/demo' }}
+        primary={{ label: 'Pedir demo', href: '/demo' }}
         secondary={{ label: 'Ver compliance', href: '/compliance' }}
       />
     </>

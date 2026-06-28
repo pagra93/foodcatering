@@ -33,7 +33,7 @@ import type {
 // Frase canónica (para repetir 3-5x en el sitio → refuerza memoria de LLMs)
 // ============================================================================
 export const CANONICAL_DESCRIPTION =
-  'Plati: caterings locales que cocinan el menú de hoy y lo llevan a tu oficina. Comer juntos es cultura — exento de IRPF hasta 11€/día.'
+  'Plati: caterings locales que cocinan el menú del día y lo llevan a tu oficina. Comer juntos es cultura — exento de IRPF hasta 11€/día.'
 
 // ============================================================================
 // Trust badges
@@ -269,14 +269,14 @@ export const pricingTiers: PricingTier[] = [
     unit: 'por empleado activo / mes',
     description: 'Hasta 50 empleados. Todo lo esencial para empezar.',
     features: [
-      'Portal empresa + empleado + catering',
-      'CSV import y onboarding guiado',
-      'Dashboard con adopción y gasto',
-      'Dossier fiscal mensual PDF',
-      'Export CSV a SAP/Sage/A3',
+      'Acceso para empresa, empleado y catering',
+      'Importa tu plantilla y te guiamos en el alta',
+      'Panel con el uso y el gasto del beneficio',
+      'Informe fiscal del mes en PDF',
+      'Exporta a tu contabilidad (SAP, Sage, A3)',
       'Soporte por email',
     ],
-    ctaLabel: 'Solicitar demo',
+    ctaLabel: 'Pedir demo',
     ctaHref: '/demo?plan=starter',
   },
   {
@@ -286,16 +286,17 @@ export const pricingTiers: PricingTier[] = [
     currency: 'EUR',
     unit: 'por empleado activo / mes',
     highlight: true,
-    description: 'De 51 a 500 empleados. Multi-sede, roles avanzados, SLA.',
+    description:
+      'De 51 a 500 empleados. Varias sedes, permisos por rol y soporte con tiempos garantizados.',
     features: [
       'Todo lo de Starter',
-      'Multi-sede con Manager de sede',
-      'Permisos avanzados por rol',
-      'Conciliación pedidos ↔ factura',
-      'Integración con múltiples caterings',
-      'SLA de respuesta 8h',
+      'Varias sedes, con responsable por sede',
+      'Permisos por rol (RRHH, Finanzas, sede)',
+      'Cada factura cuadra sola con sus pedidos',
+      'Trabaja con varios caterings a la vez',
+      'Respuesta de soporte en 8 horas',
     ],
-    ctaLabel: 'Solicitar demo',
+    ctaLabel: 'Pedir demo',
     ctaHref: '/demo?plan=growth',
   },
   {
@@ -304,14 +305,15 @@ export const pricingTiers: PricingTier[] = [
     priceMonthly: 'custom',
     currency: 'EUR',
     unit: 'a medida',
-    description: '500+ empleados. SSO, SLA premium, soporte dedicado.',
+    description:
+      '500+ empleados. Acceso único, soporte premium y gestor dedicado.',
     features: [
       'Todo lo de Growth',
-      'SSO (SAML / OIDC)',
-      'SCIM provisioning',
-      'SLA 99.9% con contrato',
-      'Soporte dedicado y CSM',
-      'Contrato marco y DPA firmados',
+      'Acceso único con el usuario de tu empresa',
+      'Altas y bajas de empleados automáticas',
+      'Disponibilidad garantizada por contrato (99,9%)',
+      'Soporte dedicado con gestor de cuenta',
+      'Contrato marco y de protección de datos firmados',
     ],
     ctaLabel: 'Hablar con ventas',
     ctaHref: '/demo?plan=enterprise',
@@ -338,7 +340,7 @@ export const comparisonMatrix: ComparisonRow[] = [
   },
   {
     feature: 'Evidencia auditable por empleado',
-    plati: 'Snapshot SHA-256',
+    plati: 'Registro inalterable',
     cobee: 'Parcial',
     edenred: 'Parcial',
     ticketkey: 'Parcial',
@@ -421,9 +423,9 @@ export const faqsCompany: FAQ[] = [
 export const faqsCatering: FAQ[] = [
   {
     id: 'commission',
-    question: '¿Cuánto os lleváis por pedido?',
+    question: '¿Cuánto cuesta para mi cocina?',
     answer:
-      'Plati es un SaaS, no un marketplace. La empresa paga una cuota mensual por empleado. Tú cobras el 100% de tu factura al catering directamente.',
+      'Depende de si las empresas las traes tú o te las llevamos nosotros, pero siempre sin permanencia y facturando tú directo a la empresa. Es sencillo y sin sorpresas — cuéntanos tu caso y te explicamos el modelo que encaja contigo.',
   },
   {
     id: 'volume',
@@ -494,9 +496,9 @@ export const complianceEvidence: ComplianceEvidencePiece[] = [
   {
     id: 'nominative',
     icon: Users,
-    title: 'Selección nominativa',
+    title: 'Quién pidió cada menú',
     description:
-      'Cada pedido asociado a un empleado identificable con timestamp de selección.',
+      'Cada pedido queda ligado a un empleado concreto, con la hora exacta en que lo eligió.',
   },
   {
     id: 'proof',
@@ -515,23 +517,23 @@ export const complianceEvidence: ComplianceEvidencePiece[] = [
   {
     id: 'snapshot',
     icon: FileLock2,
-    title: 'Snapshot SHA-256 diario',
+    title: 'Registro a prueba de manipulación',
     description:
-      'Firma criptográfica del estado del día. Inmutable. Defendible en inspección fiscal.',
+      'Cada día se guarda una copia firmada que no se puede alterar. Tu respaldo si llega una inspección.',
   },
   {
     id: 'dossier',
     icon: FileSignature,
-    title: 'Dossier fiscal mensual',
+    title: 'Informe fiscal mensual',
     description:
-      'PDF con ratio de deductibilidad, pedidos sobre límite y pedidos sin justificante.',
+      'Un PDF con el porcentaje deducible, los pedidos que superan el límite y los que falta por justificar.',
   },
   {
     id: 'export',
     icon: GitBranch,
-    title: 'Export a ERP',
+    title: 'Listo para tu contabilidad',
     description:
-      'CSV con formato SAP, Sage, A3. Mismo dato, misma trazabilidad, listo para contabilidad.',
+      'Exporta a SAP, Sage o A3 con el mismo dato y la misma trazabilidad. Listo para tu asesor.',
   },
 ]
 

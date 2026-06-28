@@ -30,9 +30,9 @@ const benefits = [
   {
     id: 'dossier',
     icon: FileCheck2,
-    title: 'Dossier fiscal de ejemplo',
+    title: 'Informe fiscal de ejemplo',
     description:
-      'Verás el PDF con ratio de deductibilidad, snapshot SHA-256 y evidencia por empleado.',
+      'Verás el PDF con el porcentaje deducible, el respaldo inalterable y la evidencia por empleado.',
   },
   {
     id: 'plan',
