@@ -103,25 +103,25 @@ export function IRPFCalculator({
           <div className="flex items-center gap-2 text-primary">
             <TrendingUp className="h-5 w-5" aria-hidden="true" />
             <span className="text-sm font-semibold uppercase tracking-wider">
-              Calculadora Art. 42.3 LIRPF
+              Calculadora de coste y ahorro
             </span>
           </div>
           <h2
             id="irpf-calc-heading"
             className="mt-3 text-2xl font-semibold tracking-tight text-foreground md:text-3xl text-balance"
           >
-            ¿Cuánto puedes ahorrar con comida como beneficio en especie?
+            ¿Cuánto cuesta dar de comer a tu equipo?
           </h2>
           <p className="mt-3 text-sm text-muted-foreground md:text-base text-pretty">
-            Ajusta los valores y verás en tiempo real el coste anual para la
-            empresa y el ahorro fiscal estimado para tus empleados.
+            Mueve los valores y verás al momento lo que paga tu empresa, lo que
+            te deduces y el plus que se lleva tu equipo.
           </p>
 
           <div className="mt-8 space-y-6">
             <Field
               id="calc-employees"
-              label="Número de empleados"
-              hint="Empleados que usarán el beneficio."
+              label="¿Cuántos empleados?"
+              hint="Los que usarán el beneficio de comida."
             >
               <Input
                 id="calc-employees"
@@ -138,8 +138,8 @@ export function IRPFCalculator({
 
             <Field
               id="calc-days"
-              label="Días de uso por empleado al mes"
-              hint="Días laborables que se espera que cada empleado use el beneficio."
+              label="Días que comen al mes"
+              hint="Días al mes que cada empleado comerá, de media."
             >
               <Input
                 id="calc-days"
@@ -156,8 +156,8 @@ export function IRPFCalculator({
 
             <Field
               id="calc-copay-e"
-              label="Aportación empresa por día (€)"
-              hint={`El Art. 42.3 LIRPF exime hasta ${IRPF_LIMIT_PER_DAY}€/día. El exceso tributa.`}
+              label="Lo que pone la empresa al día (€)"
+              hint={`Hasta ${IRPF_LIMIT_PER_DAY} € al día está exento de impuestos para el empleado.`}
             >
               <Input
                 id="calc-copay-e"
@@ -180,8 +180,8 @@ export function IRPFCalculator({
               <>
                 <Field
                   id="calc-copay-w"
-                  label="Aportación empleado por día (€)"
-                  hint="Copay que paga el empleado (normalmente por nómina)."
+                  label="Lo que pone el empleado al día (€)"
+                  hint="Opcional: si quieres que el empleado comparta parte del coste."
                 >
                   <Input
                     id="calc-copay-w"
@@ -202,10 +202,10 @@ export function IRPFCalculator({
 
                 <Field
                   id="calc-tmi"
-                  label={`Tipo marginal IRPF medio (${Math.round(
+                  label={`IRPF medio de tu equipo (${Math.round(
                     input.marginalTaxRate * 100,
                   )}%)`}
-                  hint="Tipo marginal estimado de los empleados. Ajusta al perfil salarial real."
+                  hint="Solo para estimar su ahorro. Si no lo sabes, déjalo en la media (~30%)."
                 >
                   <input
                     id="calc-tmi"
@@ -242,39 +242,56 @@ export function IRPFCalculator({
                 aria-hidden="true"
               />
               <p className="text-muted-foreground leading-relaxed">
-                Superas el límite del Art. 42.3 en{' '}
+                Por encima de {IRPF_LIMIT_PER_DAY} €/día, ese extra (
                 <strong className="text-foreground">
                   {formatPrice(result.excessPerDay)}
                 </strong>
-                /día. El exceso tributa como rendimiento en especie.
+                /día) ya no está exento para el empleado. Puedes bajar la
+                aportación para quedarte dentro.
               </p>
             </div>
           ) : null}
         </div>
 
         <div className="relative bg-gradient-to-br from-primary/5 via-background to-primary/10 p-6 md:p-10">
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4">
             <Result
-              label="Ahorro fiscal anual estimado (empleados)"
-              value={result.annualEmployeeTaxSaving}
+              label="Coste al mes para tu empresa"
+              value={result.monthlyCompanyCost}
+              sublabel={`≈ ${formatPrice(result.annualCompanyCost)} al año`}
               highlight
               reduced={reduced ?? false}
             />
             <Result
-              label="Coste anual para la empresa"
-              value={result.annualCompanyCost}
+              label="Coste real, tras deducir en Sociedades"
+              value={result.monthlyCompanyNetCost}
+              sublabel={`Es gasto 100% deducible: te ahorras ~${formatPrice(
+                result.monthlyCompanyTaxDeduction,
+              )} al mes`}
               reduced={reduced ?? false}
             />
             <Result
-              label="Coste mensual para la empresa"
-              value={result.monthlyCompanyCost}
-              reduced={reduced ?? false}
-            />
-            <Result
-              label="Gasto medio por empleado al mes"
+              label="Por empleado al mes"
               value={result.avgMonthlyPerEmployee}
               reduced={reduced ?? false}
             />
+
+            {/* El plus para el equipo (secundario, no asusta) */}
+            <div className="rounded-2xl border border-hierba/30 bg-hierba/5 p-5">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                Y además, tu equipo se ahorra
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-tight tabular-nums text-hierba md:text-3xl">
+                {formatPrice(result.annualEmployeeTaxSaving)}
+                <span className="text-base font-normal text-muted-foreground">
+                  {' '}
+                  al año en IRPF
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Un plus que reciben sin que pase por la nómina.
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 flex flex-col gap-2 sm:flex-row">
@@ -286,7 +303,7 @@ export function IRPFCalculator({
                     : '/demo'
                 }
               >
-                Solicitar propuesta con este caso
+                Pedir demo con este caso
                 <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
               </Link>
             </Button>
@@ -319,9 +336,10 @@ export function IRPFCalculator({
           <p className="mt-6 flex items-start gap-2 text-xs text-muted-foreground">
             <Info className="mt-0.5 h-3.5 w-3.5 flex-none" aria-hidden="true" />
             <span>
-              Estimación orientativa basada en Art. 42.3 LIRPF (límite{' '}
-              {IRPF_LIMIT_PER_DAY}€/día laborable). Asume 11 meses efectivos de
-              uso. No constituye asesoramiento fiscal; consulta con tu asesor.
+              Estimación orientativa según el Art. 42.3 LIRPF (exención hasta{' '}
+              {IRPF_LIMIT_PER_DAY} €/día laborable). Asume 11 meses de uso y un
+              25% de deducción en el Impuesto sobre Sociedades. No es
+              asesoramiento fiscal; consulta con tu asesor.
             </span>
           </p>
         </div>
@@ -359,11 +377,13 @@ function Field({
 function Result({
   label,
   value,
+  sublabel,
   highlight = false,
   reduced,
 }: {
   label: string
   value: number
+  sublabel?: string
   highlight?: boolean
   reduced: boolean
 }) {
@@ -391,6 +411,11 @@ function Result({
       >
         {formatPrice(value)}
       </motion.p>
+      {sublabel ? (
+        <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+          {sublabel}
+        </p>
+      ) : null}
     </div>
   )
 }

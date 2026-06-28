@@ -59,6 +59,7 @@ export async function middleware(req: NextRequest) {
     '/demo',
     '/privacidad',
     '/terminos',
+    '/cookies',
     '/md',
   ]
   const isPublic = publicPaths.some(path => pathname.startsWith(path))

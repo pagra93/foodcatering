@@ -13,7 +13,7 @@ import { breadcrumbSchema } from '@/lib/landing/jsonld'
 export const metadata: Metadata = {
   title: 'Compliance fiscal Art. 42.3 LIRPF',
   description:
-    'Evidencia auditable de la exención IRPF por comida en el puesto de trabajo: selección nominativa, prueba de entrega, snapshot SHA-256 y dossier mensual.',
+    'Toda la evidencia de la exención IRPF por comida en el trabajo, guardada sola: quién comió, prueba de entrega, registro inalterable e informe mensual listo para tu asesor.',
   alternates: { canonical: '/compliance' },
   openGraph: {
     title: 'Compliance fiscal · Plati',
@@ -43,8 +43,8 @@ export default function CompliancePage() {
             <span className="text-primary">Defendible</span> en inspección.
           </>
         }
-        subtitle="Plati produce la evidencia que exige el Art. 42.3 de la LIRPF: selección nominativa, entrega verificada, factura desglosada y snapshot criptográfico diario. Todo listo para tu dossier mensual."
-        primaryCta={{ label: 'Solicitar demo', href: '/demo' }}
+        subtitle="Plati guarda automáticamente todo lo que Hacienda puede pedirte: quién comió, qué comió, cuándo se entregó y cuánto costó. Cada mes tienes el informe listo para tu asesor."
+        primaryCta={{ label: 'Pedir demo', href: '/demo' }}
         secondaryCta={{ label: 'Ver calculadora', href: '/calculadora' }}
         alignment="center"
       />
@@ -155,8 +155,8 @@ export default function CompliancePage() {
             },
             {
               step: 5,
-              title: 'Dossier y snapshot',
-              text: 'Cada día se firma un snapshot SHA-256 con el estado de pedidos y entregas. Cada mes se emite un dossier PDF consolidado.',
+              title: 'Informe y respaldo',
+              text: 'Cada día se guarda una copia firmada e inalterable de los pedidos y entregas. Cada mes se emite el informe en PDF, listo para tu asesor.',
             },
           ].map((s) => (
             <li
@@ -208,12 +208,12 @@ export default function CompliancePage() {
           </div>
           <ul className="space-y-4 text-sm md:text-base">
             {[
-              'Cifrado AES-256-GCM de PII en reposo (email, alergias, preferencias dietéticas).',
-              'DPA firmado como encargado de tratamiento antes de operar.',
-              'Servidores en la UE, backups cifrados y rotados diariamente.',
-              'Retención configurable. Derecho de portabilidad y borrado a petición.',
-              'Auditoría de accesos: toda consulta a PII queda registrada.',
-              'Snapshot SHA-256 separado de los datos personales (solo referencias).',
+              'Datos personales (email, alergias, preferencias) cifrados en nuestros servidores.',
+              'Firmamos el contrato de protección de datos (DPA) antes de empezar.',
+              'Servidores en la UE, con copias de seguridad cifradas cada día.',
+              'Tú decides cuánto se conservan; portabilidad y borrado a petición.',
+              'Cada consulta a un dato personal queda registrada.',
+              'El registro firmado no guarda datos personales, solo referencias.',
             ].map((line) => (
               <li
                 key={line}
@@ -233,7 +233,7 @@ export default function CompliancePage() {
       <CTABanner
         title="Prepárate para tu próxima inspección con tranquilidad"
         subtitle="Te enseñamos un dossier fiscal ejemplo en 20 minutos. Sin compromiso."
-        primary={{ label: 'Solicitar demo', href: '/demo' }}
+        primary={{ label: 'Pedir demo', href: '/demo' }}
         secondary={{ label: 'Calcular mi ahorro', href: '/calculadora' }}
       />
     </>

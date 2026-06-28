@@ -9,14 +9,14 @@ import { SectionHeader } from '@/components/marketing/SectionHeader'
 import { softwareApplicationSchema } from '@/lib/landing/jsonld'
 
 export const metadata: Metadata = {
-  title: 'Producto — un SaaS, tres portales',
+  title: 'Producto — una herramienta, tres portales',
   description:
-    'Plati se compone de tres portales conectados: empresa (RRHH/CFO), empleado (selector semanal) y catering (KDS, rutas, facturación).',
+    'Plati conecta tres portales: empresa (RRHH y finanzas), empleado (elige su menú) y catering (cocina, reparto y factura). Todos trabajan sobre la misma información.',
   alternates: { canonical: '/producto' },
   openGraph: {
-    title: 'Plati — un producto, tres portales',
+    title: 'Plati — una herramienta, tres formas de usarla',
     description:
-      'Portal empresa, empleado y catering. Un solo dato, una sola trazabilidad.',
+      'Empresa, empleado y catering sobre la misma información. Sin correos cruzados ni hojas de cálculo.',
     type: 'website',
     locale: 'es_ES',
   },
@@ -26,30 +26,30 @@ const integrations = [
   {
     id: 'sap',
     icon: Database,
-    title: 'SAP · Sage · A3',
+    title: 'Tu programa de contabilidad',
     description:
-      'Export CSV con el formato exacto que tu ERP espera. Sin manipulación manual.',
+      'Exporta los datos a SAP, Sage o A3 en su formato exacto. Sin copiar y pegar a mano.',
   },
   {
     id: 'sso',
     icon: KeyRound,
-    title: 'SSO (SAML / OIDC)',
+    title: 'Un solo acceso para tu equipo',
     description:
-      'Acceso unificado con tu proveedor de identidad. Disponible en plan Enterprise.',
+      'Tus empleados entran con el mismo usuario de la empresa, sin otra contraseña que recordar. (Inicio de sesión único, en plan Enterprise.)',
   },
   {
     id: 'scim',
     icon: Layers,
-    title: 'SCIM provisioning',
+    title: 'Altas y bajas automáticas',
     description:
-      'Alta y baja automática de empleados desde tu IdP. Disponible en plan Enterprise.',
+      'Cuando alguien entra o sale de tu empresa, su acceso a Plati se actualiza solo. (Sincronización con tu sistema de personal, en plan Enterprise.)',
   },
   {
     id: 'pii',
     icon: Lock,
-    title: 'Cifrado PII AES-256-GCM',
+    title: 'Datos sensibles, bien guardados',
     description:
-      'Alergias, emails y datos sensibles cifrados en reposo. DPA firmado, servidores UE.',
+      'Alergias, emails y datos personales cifrados y alojados en la UE, con contrato de protección de datos firmado.',
   },
 ]
 
@@ -61,13 +61,13 @@ export default function ProductoPage() {
         eyebrow="Producto"
         title={
           <>
-            Un SaaS, <span className="text-primary">tres portales</span>.
+            Una herramienta.
             <br />
-            Una sola trazabilidad.
+            <span className="text-primary">Tres formas de usarla.</span>
           </>
         }
-        subtitle="Empresa, empleado y catering viven del mismo dato. Lo que se pide, se cocina, se entrega, se factura y se audita — sin re-teclear, sin hojas de cálculo paralelas."
-        primaryCta={{ label: 'Solicitar demo', href: '/demo' }}
+        subtitle="Empresa, empleado y catering trabajan sobre la misma información. Lo que se pide, se cocina, se entrega y se factura solo — sin correos cruzados ni hojas de cálculo paralelas."
+        primaryCta={{ label: 'Pedir demo', href: '/demo' }}
         secondaryCta={{ label: 'Ver precios', href: '/precios' }}
         alignment="center"
       />
@@ -92,8 +92,8 @@ export default function ProductoPage() {
       >
         <SectionHeader
           eyebrow="Integraciones"
-          title="Encaja con tu stack actual"
-          subtitle="ERPs, IdPs, cifrado y cumplimiento — resueltos de serie."
+          title="Funciona con lo que ya usas"
+          subtitle="Tu programa de contabilidad, el acceso de tu empresa y la seguridad de los datos — ya resueltos."
         />
         <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {integrations.map((item) => (
@@ -121,7 +121,7 @@ export default function ProductoPage() {
       <CTABanner
         title="Ve el producto con tus propios datos"
         subtitle="Reserva una demo de 20 minutos y te lo enseñamos sobre un caso parecido al tuyo."
-        primary={{ label: 'Solicitar demo', href: '/demo' }}
+        primary={{ label: 'Pedir demo', href: '/demo' }}
         secondary={{ label: 'Ver precios', href: '/precios' }}
       />
     </>

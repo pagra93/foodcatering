@@ -5,11 +5,11 @@ import { LandingNavbar } from '@/components/marketing/LandingNavbar'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Plati — El menú de hoy, en tu oficina',
+    default: 'Plati — El menú del día, en tu oficina',
     template: '%s · Plati',
   },
   description:
-    'Plati conecta tu empresa con caterings locales para llevar el menú de hoy, cocinado hoy, a la oficina. Comer juntos es cultura.',
+    'Plati conecta tu empresa con caterings locales para llevar el menú del día, cocinado hoy, a la oficina. Comer juntos es cultura.',
 }
 
 export default function LandingLayout({

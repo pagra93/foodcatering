@@ -1,4 +1,5 @@
 import { type Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import {
@@ -17,12 +18,12 @@ import { faqSchema, howToSchema } from '@/lib/landing/jsonld'
 import { faqsCompany, howItWorksCompany } from '@/lib/landing/content'
 
 export const metadata: Metadata = {
-  title: 'El menú de hoy, en tu oficina',
+  title: 'El menú del día, en tu oficina',
   description:
     'Plati conecta tu empresa con caterings locales que cocinan cada día y lo llevan a tu oficina. Tu equipo come bien, come junto y tiene un motivo más para venir.',
   alternates: { canonical: '/' },
   openGraph: {
-    title: 'Plati — El menú de hoy, en tu oficina',
+    title: 'Plati — El menú del día, en tu oficina',
     description:
       'Caterings locales cocinan cada día y lo llevamos a tu empresa. Comer juntos es cultura.',
     type: 'website',
@@ -81,41 +82,54 @@ const COMPARISON: { row: string; ticket: string; plati: string }[] = [
 
 const AUDIENCES = [
   {
-    who: 'Para RRHH',
+    who: 'Para RRHH y dirección',
     title: 'El beneficio que llena la oficina',
-    body: 'Sube la asistencia, la retención y la cultura — sin montar una cocina ni gestionar proveedores. Lo operamos nosotros.',
+    body: 'Más asistencia, más retención y un equipo que se conoce y rinde mejor — sin montar una cocina ni gestionar proveedores. Lo operamos nosotros.',
+    image: '/landing/rrhh_plati.webp',
+    alt: 'Responsable de RRHH revisando la adopción del beneficio de comida en la oficina',
   },
   {
     who: 'Para el empleado',
     title: 'Comida de verdad, sin salir',
     body: 'Cocinada hoy y esperándote. Sin colas, sin gastar tu hora, sin pensar qué comer. Solo sentarte a la mesa.',
+    image: '/landing/Empleado_plati.webp',
+    alt: 'Empleados comiendo juntos el menú del día en la oficina',
   },
   {
     who: 'Para el catering',
     title: 'Tu cocina, nuestros clientes',
     body: 'Demanda estable cada día y visibilidad ante empresas de tu ciudad. Tú cocinas; nosotros ponemos las mesas.',
+    image: '/landing/catering_plati.webp',
+    alt: 'Cocinero de un catering local preparando los menús del día',
   },
 ]
 
-const DISHES = [
+// Formatos de menú que la empresa puede ofrecer. Los platos concretos los pone
+// cada catering local (cambian por ciudad y cocina); esto es la fórmula.
+const FORMATS = [
   {
-    course: 'Primero · elige 1',
-    name: 'Crema de calabaza & picatostes',
-    by: 'Casa Lola · Granada',
-    tags: ['Vegetariano', '240 kcal'],
+    name: 'Menú completo',
+    detail: 'Primero, segundo y postre.',
+    note: 'El día redondo.',
   },
   {
-    course: 'Segundo · elige 1',
-    name: 'Pollo al curry & arroz basmati',
-    by: 'Casa Lola · Granada',
-    tags: ['Sin lactosa', '680 kcal'],
+    name: 'Plato y postre',
+    detail: 'Un principal y postre.',
+    note: 'El equilibrio justo.',
   },
   {
-    course: 'Postre · elige 1',
-    name: 'Yogur casero & frutos rojos',
-    by: 'Casa Lola · Granada',
-    tags: ['Sin gluten', '180 kcal'],
+    name: 'Solo principal',
+    detail: 'Un único plato principal.',
+    note: 'Para el que va con prisa.',
   },
+]
+
+const TRUST_CHIPS = [
+  'Sin permanencia',
+  'Sin cuota de alta',
+  'Servidores en la UE',
+  'RGPD y DPA firmado',
+  'Cifrado AES-256',
 ]
 
 export default function HomePage() {
@@ -139,7 +153,7 @@ export default function HomePage() {
             <AnimatedOnView>
               <p className="plati-eyebrow">Beneficio de comida en empresa</p>
               <h1 className="plati-display mt-4 text-[clamp(2.75rem,6vw,4.75rem)]">
-                El menú de hoy,
+                El menú del día,
                 <br />
                 en tu oficina<span className="plati-dot" />
               </h1>
@@ -160,23 +174,28 @@ export default function HomePage() {
                   variant="outline"
                   className="rounded-pill"
                 >
-                  <Link href="#como">Cómo funciona</Link>
+                  <Link href="/calculadora">Calcular mi ahorro</Link>
                 </Button>
               </div>
-              <p className="mt-5 flex items-center gap-2 text-sm text-muted-foreground/80">
+              <p className="mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground/80">
                 <Check
                   className="h-4 w-4 flex-none text-hierba"
                   aria-hidden="true"
                 />
-                Mismo presupuesto que un ticket restaurante · exento de IRPF
+                Piloto de 30 días sin coste · exento de IRPF · sin permanencia
               </p>
             </AnimatedOnView>
 
             <AnimatedOnView delay={0.1} className="relative">
-              <div className="flex h-[360px] items-center justify-center rounded-[16px] bg-tomate-soft text-center text-sm font-medium text-tomate md:h-[480px]">
-                Foto cenital de un menú apetecible
-                <br />
-                (mesa compartida)
+              <div className="relative h-[360px] overflow-hidden rounded-[16px] md:h-[480px]">
+                <Image
+                  src="/landing/hero_plati.webp"
+                  alt="Menú del día servido en una mesa compartida en la oficina"
+                  fill
+                  priority
+                  sizes="(min-width: 1024px) 48vw, 100vw"
+                  className="object-cover"
+                />
               </div>
               <div className="absolute -left-4 bottom-7 flex items-center gap-3 rounded-[10px] bg-tinta px-5 py-4 text-hueso shadow-plati-2">
                 <UtensilsCrossed
@@ -197,14 +216,14 @@ export default function HomePage() {
         {/* Trust band */}
         <div className="mt-12 border-y border-border/70 py-6">
           <div className="mx-auto flex max-w-plati flex-wrap items-center justify-between gap-4 px-[5vw]">
-            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground/70">
-              Caterings locales que cocinan para Plati
+            <span className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+              Caterings locales ya cocinando para equipos
             </span>
             <div className="flex flex-wrap gap-9">
               {CATERINGS.map((name) => (
                 <span
                   key={name}
-                  className="font-display text-xl font-bold text-tinta/30"
+                  className="font-display text-xl font-bold text-tinta/70"
                 >
                   {name}
                 </span>
@@ -214,47 +233,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ───────────── CÓMO FUNCIONA ───────────── */}
-      <section id="como" className="scroll-mt-24 py-24">
-        <div className="mx-auto max-w-plati px-[5vw]">
-          <AnimatedOnView className="max-w-2xl">
-            <p className="plati-eyebrow">Cómo funciona</p>
-            <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
-              Plati es la herramienta. La comida, local
-            </h2>
-            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-              No cocinamos ni decidimos el menú: conectamos a tu empresa con
-              caterings de tu ciudad y automatizamos todo lo demás, cada día.
-            </p>
-          </AnimatedOnView>
-
-          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {STEPS.map((step, i) => (
-              <AnimatedOnView key={step.n} delay={i * 0.06} as="article">
-                <div className="h-full rounded-[16px] border border-border/70 bg-card p-6">
-                  <span className="font-mono text-[13px] font-medium text-tomate">
-                    {step.n}
-                  </span>
-                  <step.icon
-                    className="my-4 h-[30px] w-[30px] text-tomate"
-                    strokeWidth={1.8}
-                    aria-hidden="true"
-                  />
-                  <h3 className="font-display text-[23px] font-extrabold leading-tight tracking-[-0.02em]">
-                    {step.title}
-                  </h3>
-                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
-                    {step.body}
-                  </p>
-                </div>
-              </AnimatedOnView>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ───────────── POR QUÉ PLATI ───────────── */}
-      <section id="porque" className="scroll-mt-24 pb-24">
+      {/* ───────────── POR QUÉ PLATI (tensión / posicionamiento) ───────────── */}
+      <section id="porque" className="scroll-mt-24 py-24">
         <div className="mx-auto max-w-plati px-[5vw]">
           <AnimatedOnView>
             <div className="overflow-hidden rounded-[16px] bg-tinta text-hueso">
@@ -266,8 +246,8 @@ export default function HomePage() {
                   </h2>
                   <p className="mt-4 text-lg leading-relaxed text-hueso/70">
                     Los vales de comida reparten al equipo por la ciudad, cada
-                    uno por su lado. Plati hace lo contrario: trae la comida y
-                    junta a la gente.
+                    uno por su lado, y a nadie le emociona una tarjeta más. Plati
+                    hace lo contrario: trae la comida y junta a la gente.
                   </p>
                 </div>
 
@@ -313,6 +293,103 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ───────────── CÓMO FUNCIONA ───────────── */}
+      <section id="como" className="scroll-mt-24 pb-24">
+        <div className="mx-auto max-w-plati px-[5vw]">
+          <AnimatedOnView className="max-w-2xl">
+            <p className="plati-eyebrow">Cómo funciona</p>
+            <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
+              Plati es la herramienta. La comida, local
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+              No cocinamos ni decidimos el menú: conectamos a tu empresa con
+              caterings de tu ciudad y automatizamos todo lo demás, cada día.
+            </p>
+          </AnimatedOnView>
+
+          <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {STEPS.map((step, i) => (
+              <AnimatedOnView key={step.n} delay={i * 0.06} as="article">
+                <div className="h-full rounded-[16px] border border-border/70 bg-card p-6">
+                  <span className="font-mono text-[13px] font-medium text-tomate">
+                    {step.n}
+                  </span>
+                  <step.icon
+                    className="my-4 h-[30px] w-[30px] text-tomate"
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  <h3 className="font-display text-[23px] font-extrabold leading-tight tracking-[-0.02em]">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                    {step.body}
+                  </p>
+                </div>
+              </AnimatedOnView>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ───────────── EL MENÚ Y EL FORMATO ───────────── */}
+      <section id="menu" className="scroll-mt-24 pb-24">
+        <div className="mx-auto max-w-plati px-[5vw]">
+          <AnimatedOnView className="max-w-2xl">
+            <p className="plati-eyebrow">El menú lo pone tu catering</p>
+            <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
+              Tú eliges la fórmula. El catering, los platos
+            </h2>
+            <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
+              No cocinamos ni decidimos la carta: cada catering local publica su
+              propio menú del día, así que los platos cambian con la ciudad y la
+              cocina. Tú eliges el formato que ofreces a tu equipo. Agua y pan,
+              siempre incluidos.
+            </p>
+          </AnimatedOnView>
+
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {FORMATS.map((f, i) => (
+              <AnimatedOnView key={f.name} delay={i * 0.06} as="article">
+                <div className="flex h-full flex-col rounded-[16px] border border-border/70 bg-card p-7">
+                  <UtensilsCrossed
+                    className="h-7 w-7 text-tomate"
+                    strokeWidth={1.8}
+                    aria-hidden="true"
+                  />
+                  <h3 className="mt-4 font-display text-[22px] font-extrabold leading-tight tracking-[-0.02em]">
+                    {f.name}
+                  </h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">
+                    {f.detail}
+                  </p>
+                  <p className="mt-1 text-[13.5px] text-muted-foreground/70">
+                    {f.note}
+                  </p>
+                  <span className="mt-5 inline-flex w-fit items-center rounded-pill border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground">
+                    Agua y pan incluidos
+                  </span>
+                </div>
+              </AnimatedOnView>
+            ))}
+          </div>
+
+          {/* Copago — mensaje para la empresa */}
+          <AnimatedOnView className="mt-6">
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-2 rounded-[16px] bg-hueso-warm px-7 py-6">
+              <span className="font-display text-[17px] font-extrabold tracking-[-0.01em]">
+                Copago a tu medida.
+              </span>
+              <span className="text-[15px] leading-relaxed text-muted-foreground">
+                La empresa decide cuánto pone y cuánto el empleado: desde cubrir
+                el menú entero hasta compartir el coste. Hasta 11 €/día, exento
+                de IRPF.
+              </span>
+            </div>
+          </AnimatedOnView>
+        </div>
+      </section>
+
       {/* ───────────── PARA QUIÉN ───────────── */}
       <section id="quien" className="scroll-mt-24 pb-24">
         <div className="mx-auto max-w-plati px-[5vw]">
@@ -327,8 +404,14 @@ export default function HomePage() {
             {AUDIENCES.map((a, i) => (
               <AnimatedOnView key={a.who} delay={i * 0.06} as="article">
                 <div className="flex h-full flex-col overflow-hidden rounded-[16px] border border-border/70 bg-card">
-                  <div className="flex h-[180px] items-center justify-center bg-hueso-warm text-sm font-medium text-tomate">
-                    {a.who}
+                  <div className="relative h-[180px] overflow-hidden">
+                    <Image
+                      src={a.image}
+                      alt={a.alt}
+                      fill
+                      sizes="(min-width: 768px) 33vw, 100vw"
+                      className="object-cover"
+                    />
                   </div>
                   <div className="p-7">
                     <span className="plati-eyebrow">{a.who}</span>
@@ -346,77 +429,23 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ───────────── EL MENÚ ───────────── */}
-      <section id="menu" className="scroll-mt-24 pb-24">
-        <div className="mx-auto max-w-plati px-[5vw]">
-          <AnimatedOnView>
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <div className="max-w-xl">
-                <p className="plati-eyebrow">El menú lo pone tu catering</p>
-                <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
-                  Tú solo eliges
-                </h2>
-                <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
-                  No cocinamos nosotros. Cada catering local publica su menú del
-                  día y tu equipo elige un primero, un segundo y un postre desde
-                  el móvil.
-                </p>
-              </div>
-              <span className="inline-flex items-center gap-2 rounded-pill bg-tomate px-3 py-1.5 text-[11.5px] font-bold text-hueso">
-                <UtensilsCrossed className="h-3.5 w-3.5" aria-hidden="true" />
-                Hoy · por Casa Lola
-              </span>
-            </div>
-          </AnimatedOnView>
-
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {DISHES.map((d, i) => (
-              <AnimatedOnView key={d.name} delay={i * 0.06} as="article">
-                <div className="overflow-hidden rounded-[16px] border border-border/70 bg-card">
-                  <div className="flex h-[200px] items-center justify-center bg-hueso-warm text-sm font-medium text-tomate">
-                    {d.name}
-                  </div>
-                  <div className="p-6">
-                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.1em] text-tomate">
-                      {d.course}
-                    </span>
-                    <h3 className="mt-3 font-display text-[21px] font-extrabold leading-tight tracking-[-0.02em]">
-                      {d.name}
-                    </h3>
-                    <div className="mt-2 text-[13.5px] text-muted-foreground">
-                      {d.by}
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {d.tags.map((t) => (
-                        <span
-                          key={t}
-                          className="rounded-pill border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground"
-                        >
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </AnimatedOnView>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ───────────── FISCAL + CALCULADORA ───────────── */}
       <section id="precio" className="scroll-mt-24 pb-24">
         <div className="mx-auto max-w-plati px-[5vw]">
           <AnimatedOnView className="max-w-2xl">
             <p className="plati-eyebrow">Fiscalidad</p>
             <h2 className="plati-display mt-3 text-[clamp(2rem,4.4vw,3.125rem)]">
-              11 € al día. 100 % deducible
+              Hasta 11 €/día, exentos. Y 100 % deducible
             </h2>
             <p className="mt-4 text-lg leading-relaxed text-muted-foreground">
               El beneficio de comida está exento de IRPF para el empleado hasta
               11 €/día, y para la empresa es gasto 100 % deducible en el Impuesto
               sobre Sociedades. Y si quieres, el coste se comparte entre empresa
               y empleado.
+            </p>
+            <p className="mt-3 text-[13px] text-muted-foreground/80">
+              Estimación orientativa según el Art. 42.3 LIRPF. No constituye
+              asesoramiento fiscal; consulta con tu asesor.
             </p>
           </AnimatedOnView>
 
@@ -435,6 +464,28 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ───────────── FRANJA DE CONFIANZA ───────────── */}
+      <section className="pb-24">
+        <div className="mx-auto max-w-plati px-[5vw]">
+          <AnimatedOnView>
+            <ul className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 rounded-[16px] border border-border/70 bg-hueso-warm px-6 py-5">
+              {TRUST_CHIPS.map((chip) => (
+                <li
+                  key={chip}
+                  className="flex items-center gap-2 text-[14px] font-medium text-muted-foreground"
+                >
+                  <Check
+                    className="h-4 w-4 flex-none text-hierba"
+                    aria-hidden="true"
+                  />
+                  {chip}
+                </li>
+              ))}
+            </ul>
+          </AnimatedOnView>
+        </div>
+      </section>
+
       {/* ───────────── CTA ───────────── */}
       <section className="pb-24">
         <div className="mx-auto max-w-plati px-[5vw]">
@@ -444,7 +495,8 @@ export default function HomePage() {
                 Que mañana el equipo coma junto<span className="plati-dot" />
               </h2>
               <p className="mx-auto mt-5 max-w-md text-lg text-hueso/90">
-                Cuéntanos cómo es tu oficina y te montamos una semana de prueba.
+                Cuéntanos cómo es tu oficina y te montamos un piloto de 30 días
+                sin coste.
               </p>
               <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <Button

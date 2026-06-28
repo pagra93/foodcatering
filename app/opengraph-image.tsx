@@ -8,7 +8,7 @@ import { ImageResponse } from 'next/og'
 // defina su propia OG image. Reutilizada como Twitter card (summary_large_image).
 export const runtime = 'nodejs'
 
-export const alt = 'Plati — El menú de hoy, cocinado hoy, en tu oficina'
+export const alt = 'Plati — El menú del día, cocinado hoy, en tu oficina'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -53,7 +53,7 @@ export default function OpengraphImage() {
             color: TINTA,
           }}
         >
-          El menú de hoy, cocinado hoy, en tu oficina.
+          El menú del día, cocinado hoy, en tu oficina.
         </div>
         {/* Barra inferior tomate de marca */}
         <div
