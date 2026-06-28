@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tailwind Play CDN (zero-build). Colores mapeados a las variables CSS → paleta compartida con styles.css (claro/oscuro) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      corePlugins: { preflight: false },  // NO reset global: convive con styles.css sin pisar los componentes existentes
+      theme: { extend: {
+        colors: {
+          bg: 'var(--bg)', surface: 'var(--bg2)', surface2: 'var(--bg3)',
+          brd: 'var(--border)', text: 'var(--text)', muted: 'var(--text2)', faint: 'var(--text3)',
+          accent: 'var(--cyan)', ok: 'var(--green)', warn: 'var(--orange)', danger: 'var(--red)',
+          info: 'var(--blue)', special: 'var(--purple)',
+        },
+        fontFamily: { sans: ['DM Sans','system-ui','sans-serif'], mono: ['DM Mono','ui-monospace','monospace'] },
+      } },
+    };
+  </script>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ─────── Header ─────── -->
+  <header id="topbar">
+    <div class="brand">
+      <span class="brand-mark">●</span>
+      <span class="brand-text" id="brand-text">Dashboard</span>
+      <span class="brand-version">v2.10</span>
+    </div>
+    <div class="topbar-right">
+      <span id="project-name" class="project-name">—</span>
+      <button id="theme-toggle" class="theme-toggle" type="button" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">
+        <span class="theme-toggle-icon">◐</span>
+      </button>
+      <span id="connection-status" class="conn-status conn-status--unknown" title="Estado del bridge">
+        <span class="conn-dot"></span>
+        <span class="conn-label">comprobando…</span>
+      </span>
+    </div>
+  </header>
+
+  <!-- ─────── Layout principal ─────── -->
+  <div id="main-layout">
+
+    <!-- Sidebar lateral: lista de áreas como pantallas -->
+    <aside id="sidebar">
+      <nav id="area-nav" class="area-nav">
+        <div class="area-nav-section">
+          <button class="area-row active" data-area="inicio">
+            <span class="area-icon">◆</span>
+            <span class="area-name">Inicio</span>
+          </button>
+          <button class="area-row" data-area="cerebro">
+            <span class="area-icon">🧠</span>
+            <span class="area-name">Cerebro</span>
+          </button>
+        </div>
+        <div class="area-nav-section">
+          <div class="area-nav-title">Áreas</div>
+          <button class="area-row" data-area="general">
+            <span class="area-icon">🏠</span>
+            <span class="area-name">General</span>
+          </button>
+          <button class="area-row" data-area="producto">
+            <span class="area-icon">▶</span>
+            <span class="area-name">Producto</span>
+            <span class="area-badge" id="badge-producto"></span>
+          </button>
+          <!-- Las áreas extra (marketing, rrhh, operaciones, newsletter, ...)
+               se inyectan dinámicamente desde pm/config.json > areas. -->
+          <div id="dynamic-areas-slot"></div>
+        </div>
+        <div class="area-nav-section">
+          <div class="area-nav-title">Sistema</div>
+          <button class="area-row" data-area="_system">
+            <span class="area-icon">⚙</span>
+            <span class="area-name">PM Sistema</span>
+          </button>
+        </div>
+        <div class="area-nav-section">
+          <div class="area-nav-title">Guías de uso</div>
+          <a class="area-row" href="/guia-pmx.html" target="_blank" rel="noopener" title="Abre la guía completa del sistema PM x10 en pestaña nueva">
+            <span class="area-icon">📖</span>
+            <span class="area-name">Guía PMX</span>
+          </a>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- Main panel: cambia según área activa -->
+    <main id="main-panel">
+
+      <!-- ───── ÁREA: Inicio (panel de startup) ───── -->
+      <section class="area-view" data-area-view="inicio">
+        <div class="area-header">
+          <div>
+            <h1 class="area-title">Inicio</h1>
+            <p class="area-subtitle">Resumen de toda la empresa de un vistazo.</p>
+          </div>
+          <button id="btn-refresh-overview" class="btn btn--ghost" type="button">↻ Refrescar</button>
+        </div>
+        <div id="overview-view" class="overview-view"></div>
+      </section>
+
+      <!-- ───── ÁREA: Cerebro (wiki + reuniones) ───── -->
+      <section class="area-view" data-area-view="cerebro">
+        <div class="area-header">
+          <div>
+            <h1 class="area-title">Cerebro</h1>
+            <p class="area-subtitle">El conocimiento de la empresa, sin silos. Todo clasificado y enlazado.</p>
+          </div>
+        </div>
+        <div class="area-subtabs">
+          <button class="atab active" data-area="cerebro" data-subtab="wiki">Wiki</button>
+          <button class="atab" data-area="cerebro" data-subtab="reuniones">Reuniones</button>
+          <button class="atab" data-area="cerebro" data-subtab="docs">Documentos</button>
+        </div>
+        <div class="atab-content" data-area="cerebro" data-subtab="wiki">
+          <div id="wiki-view" class="wiki-view"></div>
+        </div>
+        <div class="atab-content hidden" data-area="cerebro" data-subtab="reuniones">
+          <div id="meetings-view" class="meetings-view"></div>
+        </div>
+        <div class="atab-content hidden" data-area="cerebro" data-subtab="docs">
+          <div class="docs-toolbar" style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">
+            <button id="btn-add-brain" class="btn btn--primary" type="button">+ Añadir al cerebro</button>
+            <button class="btn" data-new-doc="docs/general" type="button">+ Nuevo doc</button>
+            <span class="area-subtitle" style="margin:0">Todo el conocimiento de la empresa, sin silos. "Añadir al cerebro" captura para que la IA lo categorice con <code>/wiki ingestar</code>.</span>
+          </div>
+          <div class="area-docs-layout">
+            <div class="area-docs-tree" id="tree-cerebro"></div>
+            <div class="area-docs-viewer" data-viewer-slot="cerebro"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───── ÁREA: General ───── -->
+      <section class="area-view" data-area-view="general">
+        <div class="area-header">
+          <div>
+            <h1 class="area-title">General</h1>
+            <p class="area-subtitle">Dashboard global del proyecto.</p>
+          </div>
+        </div>
+        <div class="area-subtabs">
+          <button class="atab active" data-area="general" data-subtab="dashboard">Dashboard</button>
+          <button class="atab" data-area="general" data-subtab="docs">Docs</button>
+        </div>
+
+        <div class="atab-content" data-area="general" data-subtab="dashboard">
+          <div id="general-cards" class="resumen-cards"></div>
+          <div class="resumen-grid">
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Áreas</h3>
+              <div id="general-areas" class="resumen-list"></div>
+            </div>
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Documentos clave</h3>
+              <div id="general-keydocs" class="resumen-list"></div>
+            </div>
+          </div>
+          <div class="resumen-grid" style="grid-template-columns: 1fr;">
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Últimas modificaciones (cross-área)</h3>
+              <div id="general-recent" class="resumen-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="atab-content hidden" data-area="general" data-subtab="docs">
+          <div class="docs-toolbar">
+            <button class="btn btn--primary" data-new-doc="docs/general" type="button">+ Nuevo</button>
+            <span class="docs-toolbar-hint">Crear archivo .md o carpeta dentro de <code>docs/general/</code></span>
+          </div>
+          <div class="area-docs-layout">
+            <div class="area-docs-tree" id="tree-general"></div>
+            <div class="area-docs-viewer" data-viewer-slot="general"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───── ÁREA: Producto ───── -->
+      <section class="area-view hidden" data-area-view="producto">
+        <div class="area-header">
+          <div>
+            <h1 class="area-title">Producto</h1>
+            <p class="area-subtitle">Pipeline completo del área Producto.</p>
+          </div>
+          <button class="btn btn--primary" data-open-new-feature type="button">+ Nueva funcionalidad</button>
+        </div>
+        <div class="area-subtabs">
+          <button class="atab active" data-area="producto" data-subtab="resumen">Resumen</button>
+          <button class="atab" data-area="producto" data-subtab="funcionalidades">Funcionalidades</button>
+          <button class="atab" data-area="producto" data-subtab="dossiers">Dossiers</button>
+          <button class="atab" data-area="producto" data-subtab="kanban">Kanban</button>
+          <button class="atab" data-area="producto" data-subtab="arquitectura">Arquitectura</button>
+          <button class="atab" data-area="producto" data-subtab="docs">Docs</button>
+        </div>
+
+        <!-- Sub-tab: Resumen -->
+        <div class="atab-content" data-area="producto" data-subtab="resumen">
+          <div id="resumen-cards" class="resumen-cards"></div>
+          <div class="resumen-grid">
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Próximas a arrancar <small>(deps resueltas)</small></h3>
+              <div id="resumen-next" class="resumen-list"></div>
+            </div>
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Últimas modificaciones</h3>
+              <div id="resumen-recent" class="resumen-list"></div>
+            </div>
+          </div>
+          <div id="resumen-drift" class="resumen-drift hidden">
+            <h3 class="resumen-block-title" style="color:var(--red)">Drift detectado</h3>
+            <div id="resumen-drift-list"></div>
+          </div>
+        </div>
+
+        <!-- Sub-tab: Funcionalidades -->
+        <div class="atab-content hidden" data-area="producto" data-subtab="funcionalidades">
+          <div id="func-feature-tabs" class="func-category-tabs"></div>
+          <div class="func-filters">
+            <label class="kfilter">
+              <span class="kfilter-label">Estado</span>
+              <select id="func-filter-status">
+                <option value="">— Todos —</option>
+                <option value="backlog">Backlog (sin prio + prio)</option>
+                <option value="curso">En curso (todas las en_*)</option>
+                <option value="hecho">Hecho</option>
+                <option value="bloqueado">Bloqueado</option>
+              </select>
+            </label>
+            <label class="kfilter">
+              <span class="kfilter-label">Categoría</span>
+              <select id="func-filter-category"><option value="">— Todas —</option></select>
+            </label>
+            <label class="kfilter">
+              <span class="kfilter-label">Platform</span>
+              <select id="func-filter-platform"><option value="">— Todas —</option></select>
+            </label>
+            <label class="kfilter">
+              <span class="kfilter-label">Agente</span>
+              <select id="func-filter-agent"><option value="">— Todos —</option></select>
+            </label>
+            <span id="func-count" class="func-count"></span>
+          </div>
+          <div class="func-table-wrap">
+            <table id="func-table" class="func-table">
+              <thead>
+                <tr>
+                  <th data-sort="story_id" class="sortable">ID</th>
+                  <th data-sort="title" class="sortable">Name</th>
+                  <th data-sort="priority" class="sortable">Priority</th>
+                  <th data-sort="status" class="sortable">Status</th>
+                  <th data-sort="platform" class="sortable">Platform</th>
+                  <th data-sort="category" class="sortable">Category</th>
+                  <th data-sort="agent_suggested" class="sortable">Agente</th>
+                  <th data-sort="updated_at" class="sortable">Updated</th>
+                </tr>
+              </thead>
+              <tbody id="func-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Sub-tab: Dossiers (V3.1) -->
+        <div class="atab-content hidden" data-area="producto" data-subtab="dossiers">
+          <p class="kanban-sub">Vista contextual por feature. Cada dossier agrega idea + challenge + análisis + definición + arquitectura + sprint + build + review + aprendizajes + decisiones críticas.</p>
+          <div class="dossiers-layout">
+            <aside id="dossiers-list" class="dossiers-list" aria-label="Lista de features">
+              <div class="dossiers-list-header">
+                <input id="dossiers-search" class="dossiers-search" type="text" placeholder="Buscar feature..." />
+              </div>
+              <div id="dossiers-items" class="dossiers-items"></div>
+            </aside>
+            <section id="dossier-viewer" class="dossier-viewer">
+              <div class="dossier-empty">Selecciona una feature de la izquierda para ver su dossier.</div>
+            </section>
+          </div>
+        </div>
+
+        <!-- Sub-tab: Kanban -->
+        <div class="atab-content hidden" data-area="producto" data-subtab="kanban">
+          <p class="kanban-sub">Arrastra una tarjeta entre columnas para cambiar su estado. Click para ver el .md asociado.</p>
+          <!-- V2.0.3: leyenda colapsable de columnas → agentes → comandos -->
+          <details class="kanban-legend" id="kanban-legend">
+            <summary><span class="legend-icon">ℹ</span> Leyenda: qué agente trabaja cada columna</summary>
+            <div class="kanban-legend-body" id="kanban-legend-body"></div>
+          </details>
+          <div id="kanban-board" class="kanban-board"></div>
+          <div class="kanban-meta-inline">
+            <span id="kanban-counts" class="kanban-counts"></span>
+            <span id="kanban-last-sync" class="kanban-last-sync">Sin datos.</span>
+            <button id="btn-refresh-tasks" class="btn btn--ghost" type="button" title="Recargar">↻ Refrescar</button>
+          </div>
+          <div id="kanban-drift" class="kanban-drift hidden"></div>
+        </div>
+
+        <!-- Sub-tab: Arquitectura (mapa auto-mantenido por ski-architecture-map) -->
+        <div class="atab-content hidden" data-area="producto" data-subtab="arquitectura">
+          <div class="arch-toolbar">
+            <span class="arch-meta" id="arch-meta">Mapa de arquitectura del proyecto.</span>
+            <button id="btn-refresh-arch" class="btn btn--ghost" type="button" title="Recargar">↻ Refrescar</button>
+          </div>
+          <div id="arch-view" class="arch-view"></div>
+        </div>
+
+        <!-- Sub-tab: Docs -->
+        <div class="atab-content hidden" data-area="producto" data-subtab="docs">
+          <div class="docs-toolbar">
+            <button class="btn btn--primary" data-new-doc="docs/producto" type="button">+ Nuevo</button>
+            <span class="docs-toolbar-hint">Crear archivo .md o carpeta dentro de <code>docs/producto/</code></span>
+          </div>
+          <div class="area-docs-layout">
+            <div class="area-docs-tree" id="tree-producto"></div>
+            <div class="area-docs-viewer" data-viewer-slot="producto"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ───── ÁREAS DINÁMICAS ─────
+           Las áreas declaradas en pm/config.json > areas (excepto general/producto/_system)
+           se inyectan aquí dinámicamente por app.js > renderDynamicAreaViews().
+           - Si area.active === false: vista "preparada pero no activada"
+           - Si area.active === true: vista de docs con browser del primer path -->
+      <div id="dynamic-area-views-slot"></div>
+
+      <!-- ───── PM SISTEMA ───── -->
+      <section class="area-view hidden" data-area-view="_system">
+        <div class="area-header">
+          <div>
+            <h1 class="area-title">PM Sistema</h1>
+            <p class="area-subtitle">Estado operativo del PM. No editar a mano salvo que sepas lo que haces.</p>
+          </div>
+        </div>
+        <div class="area-subtabs">
+          <button class="atab active" data-area="_system" data-subtab="estado">Estado</button>
+          <button class="atab" data-area="_system" data-subtab="files">Files</button>
+        </div>
+
+        <div class="atab-content" data-area="_system" data-subtab="estado">
+          <div id="system-state-cards" class="resumen-cards"></div>
+          <div class="resumen-grid" style="grid-template-columns: 1fr;">
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Archivos del PM</h3>
+              <div id="system-files-quicklinks" class="resumen-list"></div>
+            </div>
+          </div>
+          <div class="resumen-grid" style="grid-template-columns: 1fr;">
+            <div class="resumen-block">
+              <h3 class="resumen-block-title">Drift activo</h3>
+              <div id="system-drift" class="resumen-list">
+                <div class="resumen-list-empty">Sin drift detectado.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="atab-content hidden" data-area="_system" data-subtab="files">
+          <div class="area-docs-layout">
+            <div class="area-docs-tree" id="tree-_system"></div>
+            <div class="area-docs-viewer" data-viewer-slot="_system"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Error global -->
+      <div id="error-state" class="error-state hidden">
+        <h2>Algo no funciona</h2>
+        <p id="error-message" class="error-message">—</p>
+      </div>
+
+    </main>
+
+  </div>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <span>PM x10 Dashboard · V2.10 · Bridge en <code id="bridge-url">—</code></span>
+  </footer>
+
+</div>
+
+<!-- Viewer ÚNICO compartido (se mueve al data-viewer-slot del área activa con sub-tab Docs/Files) -->
+<div id="shared-viewer-host" class="shared-viewer hidden">
+  <div id="welcome-state" class="welcome-mini">
+    <p>Selecciona un archivo del árbol para verlo.</p>
+  </div>
+  <div id="viewer" class="viewer hidden">
+    <div class="viewer-header">
+      <div id="breadcrumb" class="breadcrumb">—</div>
+      <div class="viewer-actions">
+        <span id="file-meta" class="file-meta"></span>
+        <span id="readonly-badge" class="readonly-badge hidden">read-only</span>
+        <span id="dirty-badge" class="dirty-badge hidden">●&nbsp;modificado</span>
+        <button id="btn-edit" class="btn btn--primary hidden" type="button">✎ Editar</button>
+        <button id="btn-preview" class="btn hidden" type="button">👁 Preview</button>
+        <button id="btn-save" class="btn btn--primary hidden" type="button">Guardar</button>
+        <button id="btn-cancel" class="btn btn--ghost hidden" type="button">Cancelar</button>
+      </div>
+    </div>
+    <article id="markdown-output" class="markdown-output"></article>
+    <textarea id="editor" class="editor hidden" spellcheck="false"></textarea>
+  </div>
+</div>
+
+<!-- V2.7: Panel lateral de detalle de tarea (slide-over) -->
+<aside id="task-detail-panel" class="task-detail-panel hidden" role="dialog" aria-label="Detalle de tarea">
+  <div class="td-overlay" data-close-detail></div>
+  <div class="td-content">
+    <header class="td-header">
+      <div>
+        <span id="td-id" class="td-id">—</span>
+        <h2 id="td-title" class="td-title">—</h2>
+      </div>
+      <button class="td-close" data-close-detail type="button" title="Cerrar (Esc)">×</button>
+    </header>
+    <div id="td-epic-link" class="td-epic-link hidden"></div>
+    <div class="td-meta-grid" id="td-meta-grid"></div>
+    <!-- V2.0.3: prompt_override editable desde el panel -->
+    <div class="td-prompt-section" id="td-prompt-section"></div>
+    <div class="td-body" id="td-body">
+      <div class="loading">Cargando…</div>
+    </div>
+    <footer class="td-footer">
+      <div class="td-footer-left" style="position:relative">
+        <button class="btn btn--ghost" id="td-btn-move" type="button">📁 Mover a…</button>
+        <div id="td-move-popover" class="edit-popover hidden" style="position:absolute;bottom:100%;left:0;margin-bottom:6px;min-width:220px;z-index:10"></div>
+      </div>
+      <div class="td-footer-right">
+        <button class="btn btn--ghost" id="td-btn-docs" type="button">✎ Ver/editar en Docs</button>
+        <button class="btn" data-close-detail type="button">Cerrar</button>
+      </div>
+    </footer>
+  </div>
+</aside>
+
+<!-- Toast (siempre visible flotante) -->
+<div id="save-toast" class="save-toast hidden"></div>
+
+<!-- Modal "+ Nuevo archivo/carpeta" (V2.8) -->
+<div id="new-doc-modal" class="modal hidden" role="dialog">
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">+ Nuevo</h2>
+      <button class="modal-close" data-close-modal type="button">×</button>
+    </div>
+    <form id="new-doc-form" class="modal-form">
+      <div class="modal-field">
+        <span class="modal-label">Tipo</span>
+        <div class="seg-control" id="new-doc-type">
+          <label><input type="radio" name="kind" value="file" checked> 📄 Archivo .md</label>
+          <label><input type="radio" name="kind" value="folder"> 📁 Carpeta</label>
+        </div>
+      </div>
+      <label class="modal-field">
+        <span class="modal-label">Carpeta destino</span>
+        <input type="text" name="parent" id="new-doc-parent" required placeholder="docs/general" autocomplete="off" readonly>
+        <small class="modal-hint">Se creará dentro de esta carpeta. Para anidar, usa <code>/</code> en el nombre.</small>
+      </label>
+      <label class="modal-field">
+        <span class="modal-label">Nombre <span id="new-doc-extension-hint" style="color:var(--text3);font-weight:400">(se añadirá <code>.md</code> automáticamente)</span></span>
+        <input type="text" name="name" required placeholder="ej: notas-reunion-2026-05" autocomplete="off">
+        <small class="modal-hint">Solo letras, números, guiones, espacios y <code>/</code>. Si pones <code>foo/bar</code> creará la carpeta foo y dentro bar.</small>
+      </label>
+      <label class="modal-field" id="new-doc-content-field">
+        <span class="modal-label">Contenido inicial (opcional)</span>
+        <textarea name="content" rows="5" placeholder="# Título&#10;&#10;Notas, contexto, lo que quieras..."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Crear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal "+ Añadir al cerebro" (captura → raw/ → /wiki ingestar categoriza) -->
+<div id="capture-modal" class="modal hidden" role="dialog">
+  <div class="modal-backdrop" data-close-capture></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">+ Añadir al cerebro</h2>
+      <button class="modal-close" data-close-capture type="button">×</button>
+    </div>
+    <form id="capture-form" class="modal-form">
+      <label class="modal-field">
+        <span class="modal-label">Tipo</span>
+        <select name="tipo" class="modal-input">
+          <option value="notas">Nota</option>
+          <option value="articulos">Artículo</option>
+          <option value="transcripciones">Transcripción</option>
+        </select>
+      </label>
+      <label class="modal-field">
+        <span class="modal-label">Título</span>
+        <input type="text" name="title" required placeholder="ej: Reunión con proveedor X / Idea de pricing" autocomplete="off">
+      </label>
+      <label class="modal-field">
+        <span class="modal-label">Tags <span style="color:var(--text3);font-weight:400">(opcional, separadas por comas)</span></span>
+        <input type="text" name="tags" placeholder="ej: producto, pricing, proveedores" autocomplete="off">
+      </label>
+      <label class="modal-field">
+        <span class="modal-label">Contenido</span>
+        <textarea name="content" rows="9" required placeholder="Pega o escribe aquí. Transcripción, notas, el artículo... lo que sea. La IA lo clasificará al ejecutar /wiki ingestar."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--ghost" data-close-capture>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Guardar en el cerebro</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal "+ Nueva funcionalidad" -->
+<div id="new-feature-modal" class="modal hidden" role="dialog">
+  <div class="modal-backdrop" data-close-modal></div>
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 class="modal-title">+ Nueva funcionalidad</h2>
+      <button class="modal-close" data-close-modal type="button">×</button>
+    </div>
+    <form id="new-feature-form" class="modal-form">
+      <label class="modal-field">
+        <span class="modal-label">Título *</span>
+        <input type="text" name="title" required placeholder="Ej: Login con Google" autocomplete="off">
+      </label>
+      <div class="modal-row">
+        <label class="modal-field">
+          <span class="modal-label">Feature (carpeta)</span>
+          <select name="feature" id="new-feature-feature-select">
+            <!-- inyectado dinámicamente con las features existentes + "Nueva carpeta..." -->
+          </select>
+          <input type="text" name="feature_new" id="new-feature-feature-new" placeholder="nombre de la nueva carpeta" autocomplete="off" style="margin-top:6px;display:none">
+          <small class="modal-hint">Selecciona una carpeta existente o crea una nueva. Letras/números/guiones.</small>
+        </label>
+        <label class="modal-field">
+          <span class="modal-label">Priority</span>
+          <select name="priority">
+            <option value="">— Sin priorizar —</option>
+            <option value="1">★☆☆☆☆ (1)</option>
+            <option value="2">★★☆☆☆ (2)</option>
+            <option value="3">★★★☆☆ (3)</option>
+            <option value="4">★★★★☆ (4)</option>
+            <option value="5">★★★★★ (5)</option>
+          </select>
+        </label>
+      </div>
+      <div class="modal-row">
+        <label class="modal-field">
+          <span class="modal-label">Platform</span>
+          <input type="text" name="platform" list="modal-platforms" placeholder="App / Widget / Mac / ..." autocomplete="off">
+          <datalist id="modal-platforms"></datalist>
+        </label>
+        <label class="modal-field">
+          <span class="modal-label">Category</span>
+          <input type="text" name="category" list="modal-categories" placeholder="Ej: Funcionalidad App" autocomplete="off">
+          <datalist id="modal-categories"></datalist>
+        </label>
+      </div>
+      <label class="modal-field">
+        <span class="modal-label">Descripción (opcional)</span>
+        <textarea name="description" rows="4" placeholder="Notas, contexto, lo que quieras..."></textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn btn--ghost" data-close-modal>Cancelar</button>
+        <button type="submit" class="btn btn--primary">Crear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script src="/app.js" defer></script>
+</body>
+</html>

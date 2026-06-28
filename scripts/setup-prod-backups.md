@@ -82,7 +82,7 @@ PG_CONTAINER=otro_container DB_NAME=comidas_staging /root/backup-prod.sh
 
 ## Restaurar un backup
 
-Ver `docs/despliegue/RUNBOOK.md` — sección "Restaurar desde un backup".
+Ver `docs/general/despliegue/RUNBOOK.md` — sección "Restaurar desde un backup".
 
 ## Off-site backup (opcional, recomendado)
 

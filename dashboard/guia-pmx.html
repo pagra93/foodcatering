@@ -1,0 +1,1601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PM x10 — Guía operativa</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════ Tokens ═══════════════ */
+  :root {
+    /* Background (tinted, no pure black) */
+    --bg:           oklch(15% 0.01 50);
+    --surface:      oklch(18% 0.015 50);
+    --surface-2:    oklch(22% 0.02 50);
+
+    /* Accent: terracota cálido — único color decorativo */
+    --accent:       oklch(67% 0.15 50);
+    --accent-soft:  color-mix(in oklch, var(--accent) 12%, transparent);
+    --accent-edge:  color-mix(in oklch, var(--accent) 35%, transparent);
+
+    /* Texto (3 niveles, todos WCAG AA) */
+    --text:    oklch(96% 0.005 50);
+    --text-2:  oklch(74% 0.01 50);
+    --text-3:  oklch(58% 0.01 50);
+
+    /* Semánticos (3 estrictos, solo cuando comunican) */
+    --success: oklch(70% 0.13 145);
+    --warning: oklch(78% 0.13 80);
+    --danger:  oklch(66% 0.18 25);
+
+    /* Borders */
+    --border:        color-mix(in oklch, var(--text) 6%, transparent);
+    --border-strong: color-mix(in oklch, var(--text) 14%, transparent);
+
+    /* Tipografía: DM Sans protagonista, DM Mono solo en código real */
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --mono: 'DM Mono', ui-monospace, monospace;
+
+    /* Type scale fluida */
+    --t-xs:   clamp(11px, 0.72vw, 12px);
+    --t-sm:   clamp(12.5px, 0.82vw, 13.5px);
+    --t-base: clamp(14.5px, 0.95vw, 16px);
+    --t-lg:   clamp(17px, 1.2vw, 20px);
+    --t-xl:   clamp(22px, 2vw, 30px);
+    --t-2xl:  clamp(32px, 3.4vw, 48px);
+    --t-eyebrow: 10.5px;
+
+    /* Spacing fluida con ritmo variado */
+    --s-1: clamp(4px, 0.4vw, 6px);
+    --s-2: clamp(8px, 0.8vw, 12px);
+    --s-3: clamp(12px, 1.2vw, 18px);
+    --s-4: clamp(18px, 1.8vw, 26px);
+    --s-5: clamp(28px, 3vw, 44px);
+    --s-6: clamp(40px, 5vw, 72px);
+
+    /* Radii */
+    --r-sm: 4px;
+    --r-md: 8px;
+    --r-lg: 14px;
+
+    /* Easing */
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  /* ═══════════════ Reset ═══════════════ */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: var(--t-base);
+    line-height: 1.6;
+    font-feature-settings: "ss01", "kern";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+  code, pre { font-family: var(--mono); font-size: 0.92em; }
+
+  /* ═══════════════ Focus visible ═══════════════ */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: var(--r-sm);
+  }
+
+  /* ═══════════════ Header ═══════════════ */
+  .site-header {
+    padding: var(--s-5) var(--s-5) var(--s-3);
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  .brand-eyebrow {
+    display: inline-block;
+    font-size: var(--t-eyebrow);
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--s-2);
+  }
+  .brand-title {
+    font-size: var(--t-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.05;
+    margin-bottom: var(--s-2);
+  }
+  .brand-title .v {
+    font-weight: 400;
+    color: var(--text-3);
+    margin-left: var(--s-2);
+    font-size: 0.55em;
+    letter-spacing: 0;
+  }
+  .brand-lead {
+    font-size: var(--t-base);
+    color: var(--text-2);
+    max-width: 60ch;
+    margin-bottom: var(--s-4);
+  }
+  .quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1);
+  }
+  .qa {
+    font-family: var(--mono);
+    font-size: var(--t-sm);
+    padding: var(--s-1) var(--s-2);
+    color: var(--text-2);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    transition: all 180ms var(--ease);
+    text-decoration: none;
+  }
+  .qa:hover {
+    color: var(--accent);
+    border-color: var(--accent-edge);
+    background: var(--accent-soft);
+    text-decoration: none;
+  }
+  .qa-label {
+    color: var(--text-3);
+    font-size: var(--t-xs);
+    margin-right: var(--s-2);
+    align-self: center;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ═══════════════ Tabs ═══════════════ */
+  .tabs {
+    display: flex;
+    gap: 0;
+    padding: 0 var(--s-5);
+    max-width: 1280px;
+    margin: var(--s-3) auto 0;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  .tab {
+    min-height: 44px;
+    padding: 0 var(--s-3);
+    font-size: var(--t-sm);
+    font-weight: 600;
+    color: var(--text-3);
+    border-bottom: 2px solid transparent;
+    transition: color 180ms var(--ease), border-color 180ms var(--ease);
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-selected="true"] {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* ═══════════════ Layout ═══════════════ */
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: var(--s-5);
+  }
+  .panel {
+    display: grid;
+    grid-template-columns: 200px minmax(0, 1fr);
+    gap: var(--s-6);
+    align-items: start;
+  }
+  .panel[hidden] { display: none; }
+  @media (max-width: 920px) {
+    .panel { grid-template-columns: 1fr; gap: var(--s-3); }
+  }
+
+  /* ═══════════════ Sub-nav lateral ═══════════════ */
+  .subnav {
+    position: sticky;
+    top: var(--s-3);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--s-2) 0;
+    border-left: 1px solid var(--border);
+  }
+  @media (max-width: 920px) {
+    .subnav { position: static; flex-direction: row; flex-wrap: wrap; border-left: 0; padding: var(--s-2) 0; gap: var(--s-1); }
+  }
+  .subnav a {
+    padding: var(--s-1) var(--s-3);
+    font-size: var(--t-sm);
+    color: var(--text-3);
+    border-left: 2px solid transparent;
+    margin-left: -1px;
+    transition: all 160ms var(--ease);
+    text-decoration: none;
+  }
+  @media (max-width: 920px) {
+    .subnav a { border-left: 0; border-bottom: 1px solid transparent; padding: var(--s-1) var(--s-2); margin: 0; }
+  }
+  .subnav a:hover { color: var(--text); text-decoration: none; }
+  .subnav a.is-active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* ═══════════════ Tipografía de contenido ═══════════════ */
+  .panel h2 {
+    font-size: var(--t-xl);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    margin-top: var(--s-5);
+    margin-bottom: var(--s-2);
+    scroll-margin-top: var(--s-5);
+  }
+  .panel h2:first-child { margin-top: 0; }
+  .panel h3 {
+    font-size: var(--t-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin-top: var(--s-4);
+    margin-bottom: var(--s-2);
+    scroll-margin-top: var(--s-5);
+  }
+  .panel h4 {
+    font-size: var(--t-base);
+    font-weight: 600;
+    margin-top: var(--s-3);
+    margin-bottom: var(--s-1);
+  }
+  .panel p {
+    color: var(--text-2);
+    max-width: 68ch;
+    margin-bottom: var(--s-2);
+  }
+  .panel p + p { margin-top: var(--s-2); }
+  .panel strong { color: var(--text); font-weight: 600; }
+  .panel code {
+    background: var(--surface);
+    padding: 1px 6px;
+    border-radius: var(--r-sm);
+    color: var(--text);
+  }
+  .panel ul, .panel ol {
+    color: var(--text-2);
+    margin: var(--s-2) 0;
+    padding-left: var(--s-4);
+    max-width: 68ch;
+  }
+  .panel li { margin-bottom: var(--s-1); }
+  .panel li::marker { color: var(--text-3); }
+
+  /* Eyebrow / lead intro de tab */
+  .panel-lead {
+    font-size: var(--t-lg);
+    color: var(--text-2);
+    max-width: 60ch;
+    margin-bottom: var(--s-5);
+    line-height: 1.5;
+  }
+  .panel-eyebrow {
+    display: inline-block;
+    font-size: var(--t-eyebrow);
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: var(--s-2);
+  }
+
+  /* ═══════════════ Bloques específicos ═══════════════ */
+
+  /* Recipe: situación + comando(s). Patrón principal de Tab Hoy. */
+  .recipe {
+    padding: var(--s-3) 0;
+    border-top: 1px solid var(--border);
+  }
+  .recipe:first-of-type { border-top: 0; padding-top: 0; }
+  .recipe-when {
+    font-size: var(--t-base);
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: var(--s-1);
+  }
+  .recipe-meta {
+    font-size: var(--t-sm);
+    color: var(--text-3);
+    margin-bottom: var(--s-2);
+  }
+  .recipe-flow {
+    font-family: var(--mono);
+    font-size: var(--t-sm);
+    color: var(--text-2);
+    background: var(--surface);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md);
+    margin-top: var(--s-2);
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.7;
+  }
+  .recipe-flow .cmd { color: var(--accent); font-weight: 500; }
+  .recipe-flow .you { color: var(--text-3); }
+  .recipe-flow .agent { color: var(--text); }
+  .recipe-flow .note { color: var(--text-3); font-style: italic; }
+  .recipe-examples {
+    font-size: var(--t-sm);
+    color: var(--text-3);
+    margin-top: var(--s-2);
+    padding-left: var(--s-3);
+    border-left: 1px solid var(--border);
+  }
+  .recipe-examples li { font-style: italic; margin-bottom: 2px; }
+
+  /* Pill (size indicator) */
+  .pill {
+    display: inline-block;
+    font-size: var(--t-xs);
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 99px;
+    letter-spacing: 0.04em;
+    margin-left: var(--s-2);
+  }
+  .pill-trivial { background: color-mix(in oklch, var(--success) 14%, transparent); color: var(--success); }
+  .pill-small   { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent); }
+  .pill-medium  { background: color-mix(in oklch, var(--warning) 14%, transparent); color: var(--warning); }
+  .pill-large   { background: color-mix(in oklch, var(--danger) 14%, transparent); color: var(--danger); }
+  .pill-special { background: color-mix(in oklch, var(--text-2) 14%, transparent); color: var(--text-2); }
+
+  /* Notas inline */
+  .note-inline {
+    display: block;
+    font-size: var(--t-sm);
+    color: var(--text-3);
+    background: var(--surface);
+    border-left: 2px solid var(--accent-edge);
+    padding: var(--s-2) var(--s-3);
+    margin: var(--s-2) 0;
+    border-radius: 0 var(--r-md) var(--r-md) 0;
+  }
+
+  /* Tabla (Referencia) */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--s-2) 0 var(--s-4);
+    font-size: var(--t-sm);
+  }
+  thead { border-bottom: 1px solid var(--border-strong); }
+  th {
+    text-align: left;
+    font-size: var(--t-xs);
+    font-weight: 600;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: var(--s-2) var(--s-3) var(--s-2) 0;
+  }
+  td {
+    padding: var(--s-2) var(--s-3) var(--s-2) 0;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  td:first-child { color: var(--text); font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+
+  /* Details/summary para Capturar (colapsable) */
+  details {
+    border-top: 1px solid var(--border);
+    padding: var(--s-3) 0;
+  }
+  details:first-of-type { border-top: 0; padding-top: 0; }
+  details summary {
+    font-size: var(--t-lg);
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before {
+    content: "+";
+    display: inline-block;
+    width: 18px;
+    color: var(--text-3);
+    font-weight: 400;
+    transition: transform 180ms var(--ease);
+  }
+  details[open] summary::before { content: "−"; }
+  details summary:hover { color: var(--accent); }
+  details > *:not(summary) { margin-top: var(--s-3); }
+
+  /* Diagrama ASCII / pre */
+  .diagram {
+    font-family: var(--mono);
+    font-size: var(--t-sm);
+    color: var(--text-2);
+    background: var(--surface);
+    padding: var(--s-3);
+    border-radius: var(--r-md);
+    margin: var(--s-2) 0;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.7;
+  }
+  .diagram .em { color: var(--accent); font-weight: 500; }
+
+  /* ═══════════════ Footer ═══════════════ */
+  .site-footer {
+    max-width: 1280px;
+    margin: var(--s-6) auto 0;
+    padding: var(--s-3) var(--s-5);
+    border-top: 1px solid var(--border);
+    font-size: var(--t-xs);
+    color: var(--text-3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+    justify-content: space-between;
+  }
+
+  /* ═══════════════ Reduce motion ═══════════════ */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <span class="brand-eyebrow">Guía operativa</span>
+  <h1 class="brand-title">PM x10<span class="v">v3.0</span></h1>
+  <p class="brand-lead">Sistema de Product Management con IA. 19 agentes, 19 comandos, una idea: usar el mínimo necesario para cada tarea.</p>
+  <nav class="quick-actions" aria-label="Comandos más usados">
+    <span class="qa-label">Más usados</span>
+    <a href="#hoy-idea" class="qa">/story</a>
+    <a href="#hoy-auto" class="qa">/auto</a>
+    <a href="#hoy-pequeno" class="qa">/define</a>
+    <a href="#hoy-grande" class="qa">/design-discovery</a>
+    <a href="#hoy-build" class="qa">/build</a>
+    <a href="#hoy-review" class="qa">/review</a>
+    <a href="#capturar-pm" class="qa">/pm</a>
+    <a href="#capturar-wiki" class="qa">/wiki</a>
+  </nav>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Secciones de la guía">
+  <button class="tab" role="tab" aria-selected="true"  aria-controls="tab-hoy"     data-tab="hoy">Hoy</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="tab-capturar"  data-tab="capturar">Capturar</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="tab-operar"    data-tab="operar">Operar</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="tab-funciona"  data-tab="funciona">Cómo funciona</button>
+  <button class="tab" role="tab" aria-selected="false" aria-controls="tab-referencia" data-tab="referencia">Referencia</button>
+</nav>
+
+<main class="container">
+
+<!-- ═══════════════════════════ HOY ═══════════════════════════ -->
+<article class="panel" id="tab-hoy" role="tabpanel" aria-labelledby="tab-hoy-btn">
+  <aside class="subnav" aria-label="Secciones de Hoy">
+    <a href="#hoy-trivial">Trivial</a>
+    <a href="#hoy-idea">Idea fresca</a>
+    <a href="#hoy-pequeno">Feature pequeña</a>
+    <a href="#hoy-mediano">Feature mediana</a>
+    <a href="#hoy-grande">Proyecto grande</a>
+    <a href="#hoy-validar">Validar idea</a>
+    <a href="#hoy-bug">Bug fix</a>
+    <a href="#hoy-aprender">Capturar</a>
+    <a href="#hoy-directo">Sin pipeline</a>
+  </aside>
+  <section class="content">
+    <span class="panel-eyebrow">Hoy · Decision tree</span>
+    <h2 id="hoy-top">¿Qué uso ahora?</h2>
+    <p class="panel-lead">Identifica tu situación. Cada bloque te dice el comando exacto y un ejemplo concreto. Sin teoría.</p>
+
+    <h3 id="hoy-trivial">Trivial <span class="pill pill-trivial">&lt;30 s</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Cambio de una sola línea, typo, pregunta rápida.</div>
+      <div class="recipe-meta">0 agentes · prompt directo a Claude Code.</div>
+      <ul class="recipe-examples">
+        <li>"Cambia el color del botón a azul"</li>
+        <li>"Corrige el typo en login"</li>
+        <li>"¿Qué hace esta función?"</li>
+      </ul>
+    </div>
+
+    <h3 id="hoy-idea">Idea fresca <span class="pill pill-small">1–4 h sin PRD</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Tienes una idea o un problema, pero no PRD ni research previo.</div>
+      <div class="recipe-meta">2–3 agentes · story-builder + design-analyst.</div>
+      <pre class="recipe-flow"><span class="you">Tú: "Los usuarios abandonan el checkout porque tarda mucho"</span>
+
+<span class="cmd">/story</span>      <span class="agent">story-builder</span> <span class="note">// 7 fases internas: JTBD, Wendel, Behavior Change, scoring 6D, design analysis</span>
+            Recomienda: "Crea un diseño en Pencil"
+
+<span class="note"># Diseñas en Pencil basándote en la story draft</span>
+
+<span class="cmd">/design-to-prd</span>  <span class="agent">design-analyst</span> <span class="note">// 6 capas reales desde el diseño</span>
+<span class="cmd">/plan</span> → <span class="cmd">/build</span> → <span class="cmd">/save</span> → <span class="cmd">/review</span></pre>
+      <p class="note-inline">Fast track: si la story es deployable sin diseño, salta directo a <code>/plan</code> tras <code>/story</code>. Mayor riesgo de retrabajo en UX.</p>
+    </div>
+
+    <h3 id="hoy-pequeno">Feature pequeña <span class="pill pill-small">1–4 h con research</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Idea clara, contexto entendido, no necesita análisis previo.</div>
+      <div class="recipe-meta">2–3 agentes · jtbd-architect + story-writer + quality-coach.</div>
+      <pre class="recipe-flow"><span class="you">Tú: "Quiero un botón de exportar a PDF en la lista de pedidos.
+     Debe incluir: fecha, items, precio, total."</span>
+
+<span class="cmd">/define</span>  → JTBD + story con acceptance criteria + scoring
+<span class="cmd">/build</span>   → contexto fresco por story
+<span class="cmd">/save</span>    → commit + push
+<span class="cmd">/review</span>  <span class="note">// opcional para cosas pequeñas</span></pre>
+      <ul class="recipe-examples">
+        <li>"Añade búsqueda por nombre en la lista de productos"</li>
+        <li>"Muestra el total del carrito en el header"</li>
+      </ul>
+    </div>
+
+    <h3 id="hoy-mediano">Feature mediana <span class="pill pill-medium">1–3 días</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Hay incertidumbre. Necesitas validar el problema antes de invertir.</div>
+      <div class="recipe-meta">6–10 agentes · pipeline completo en contextos separados.</div>
+      <pre class="recipe-flow"><span class="cmd">/analyze</span>  <span class="agent">quality-guard</span> + <span class="agent">researcher</span>  <span class="note">// gaps en el problema</span>
+<span class="cmd">/define</span>   <span class="agent">jtbd-architect</span> + <span class="agent">story-writer</span> + <span class="agent">quality-coach</span> + <span class="agent">story-splitter</span>
+<span class="cmd">/plan</span>     <span class="agent">tech-architect</span> + <span class="agent">sprint-planner</span>  <span class="note">// ADR + sprint priorizado</span>
+<span class="cmd">/build</span>    sub-agente fresco por story <span class="note">// context engineering</span>
+<span class="cmd">/save</span> → <span class="cmd">/review</span> → "¿Genero docs?"</pre>
+      <ul class="recipe-examples">
+        <li>"Sistema de notificaciones push para nuevos pedidos"</li>
+        <li>"Dashboard de métricas de ventas por producto"</li>
+        <li>"Flujo de recuperación de password completo"</li>
+      </ul>
+    </div>
+
+    <h3 id="hoy-auto">Que se haga solo (gobernado) <span class="pill pill-special">NUEVO</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Quieres lanzar una cosa y que recorra el pipeline sola, parando solo donde tú debes decidir.</div>
+      <div class="recipe-meta">1 comando · pipeline completo · 3 paradas de aprobación (scope, arquitectura, done).</div>
+      <pre class="recipe-flow"><span class="cmd">/auto</span> &lt;feature | HU | idea&gt;
+  detecta entrada + estado → research/definición → <span class="note">⛔ GATE 1: Scope</span>
+  → <span class="cmd">/plan</span> <span class="agent">tech-architect</span> + <span class="agent">sprint-planner</span> → <span class="note">⛔ GATE 2: Arquitectura</span>
+  → <span class="cmd">/build</span> sub-agente por story (commit atómico) <span class="note">// para si se bloquea</span>
+  → <span class="cmd">/review</span> tests + seguridad + audit + evaluate + optimize → <span class="note">⛔ GATE 3: Done</span></pre>
+      <p class="note-inline">Entre gates trabaja solo; en los 3 puntos que <em>componen</em> (scope, arquitectura, merge) para y apruebas tú. <strong>El push nunca es automático</strong> (sigue siendo <code>/save</code>). Para tope de gasto real, lánzalo en headless: <code>claude -p "/auto X" --max-budget-usd N</code>.</p>
+      <ul class="recipe-examples">
+        <li>"/auto sistema de notificaciones push para nuevos pedidos"</li>
+        <li>"/auto HU-042"</li>
+      </ul>
+    </div>
+
+    <h3 id="hoy-grande">Proyecto grande <span class="pill pill-large">1+ semana</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Tienes diseños en Pencil. Vas por features.</div>
+      <div class="recipe-meta">Pipeline repartido en sesiones, una feature a la vez.</div>
+
+      <h4>Discovery funcional (opcional, recomendado si hay lógica de negocio compleja) <span class="pill pill-special">NUEVO V2.3</span></h4>
+      <pre class="recipe-flow"><span class="cmd">/design-discovery</span>  <span class="agent">design-discoverer</span> <span class="note">// te entrega TODAS las preguntas a la vez (batch),
+                              // numeradas y agrupadas por feature, sobre lo que el diseño
+                              // NO muestra (reglas, validaciones, permisos por rol, edge cases).
+                              // Respondes del tirón. Genera functional-brief.md.</span></pre>
+      <p class="note-inline">El brief enriquece el siguiente paso: <code>/design-to-prd</code> lo detecta y marca las secciones cubiertas como <code>[VALIDADO via functional-brief]</code> en vez de <code>[DERIVADO]</code>. Salta este paso si tu diseño es trivial o el dominio bien conocido.</p>
+
+      <h4>Fast Track (diseño detallado, dominio conocido)</h4>
+      <pre class="recipe-flow"><span class="cmd">/design-discovery</span> <span class="note">// opcional</span> → <span class="cmd">/design-to-prd</span> → <span class="cmd">/plan</span> → <span class="cmd">/build</span> → <span class="cmd">/save</span> → <span class="cmd">/review</span></pre>
+      <h4>Full Pipeline (incertidumbre, dominio nuevo)</h4>
+      <pre class="recipe-flow"><span class="cmd">/design-discovery</span> <span class="note">// opcional</span> → <span class="cmd">/design-to-prd</span> → <span class="cmd">/analyze</span> → <span class="cmd">/define</span> <span class="note">// enriquece, no duplica</span>
+              → <span class="cmd">/plan</span> → <span class="cmd">/build</span> → <span class="cmd">/save</span> → <span class="cmd">/review</span></pre>
+      <ul class="recipe-examples">
+        <li>"Módulo de facturación completo (10 pantallas)"</li>
+        <li>"Portal de administración con roles y permisos"</li>
+      </ul>
+    </div>
+
+    <h3 id="hoy-validar">Validar idea o plan <span class="pill pill-special">en cualquier momento</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Quieres pushback honesto antes de invertir tiempo.</div>
+      <div class="recipe-meta">1 agente supervisor · strategic-challenger (read-only).</div>
+      <pre class="recipe-flow"><span class="cmd">/challenge idea</span>  <span class="note">// 6 forcing questions: demanda real, status quo, especificidad,
+                        wedge, observación, future-fit</span>
+<span class="cmd">/challenge plan</span>  <span class="note">// 5 lentes: premisas, scope, inversión (Munger),
+                        alternativas, agujeros</span></pre>
+      <p>Anti-sycophancy: nunca dice "interesante". Toma posición. Empuja hasta incomodidad. Úsalo <strong>antes</strong> de <code>/analyze</code> o <strong>después</strong> de <code>/plan</code>.</p>
+    </div>
+
+    <h3 id="hoy-bug">Bug fix <span class="pill pill-special">cualquier tamaño</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Algo está roto. Quieres arreglar y aprender.</div>
+      <div class="recipe-meta">Pipeline corto, siempre guarda el aprendizaje.</div>
+      <pre class="recipe-flow">Trivial:   prompt directo  <span class="note">// "el botón de login no funciona en Safari"</span>
+Con impacto: <span class="cmd">/hotfix</span>      <span class="note">// "los pedidos no se guardan si hay >10 items"</span></pre>
+      <p><code>/hotfix</code> siempre guarda causa raíz, solución y cómo prevenir.</p>
+    </div>
+
+    <h3 id="hoy-aprender">Capturar conocimiento <span class="pill pill-special">en cualquier momento</span></h3>
+    <div class="recipe">
+      <div class="recipe-when">Aprendiste algo, leíste un artículo, tuviste una reunión, anotaste una idea.</div>
+      <div class="recipe-meta">0 agentes (learned) o 1 agente (wiki-curator).</div>
+      <pre class="recipe-flow"><span class="cmd">/learned</span>           <span class="note">// "el bug de timezone se resuelve con UTC siempre"</span>
+                     → docs/producto/lessons.md + memory/MEMORY.md
+
+<span class="cmd">/wiki articulo</span>      <span class="note">// pegas un artículo o URL</span>
+<span class="cmd">/wiki reunion</span>        <span class="note">// crea plantilla de reunión rellenable</span>
+<span class="cmd">/wiki anotar</span>         <span class="note">// captura libre de una idea</span>
+                     → todo va a la wiki transversal, ver tab Capturar</pre>
+    </div>
+
+    <h3 id="hoy-directo">Sin pipeline — invocar agentes sueltos</h3>
+    <p>Cuando quieres un agente específico fuera del pipeline, los invocas por nombre:</p>
+    <table>
+      <thead>
+        <tr><th>Cuando</th><th>Cómo</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Evaluar si tu PRD está bien</td><td><code>Usa el agente quality-guard para evaluar este PRD: [pega PRD]</code></td></tr>
+        <tr><td>Investigar competencia</td><td><code>Usa el skill ski-competitive-analysis para analizar [sector]</code></td></tr>
+        <tr><td>Crear PRD desde cero</td><td><code>Usa el skill ski-prd-builder para crear un PRD sobre [idea]</code></td></tr>
+        <tr><td>Stories muy grandes</td><td><code>Usa el agente story-splitter para descomponer: [story]</code></td></tr>
+        <tr><td>Code review profundo</td><td><code>Usa el agente code-reviewer para revisar los cambios recientes</code></td></tr>
+        <tr><td>Riesgos no visibles</td><td><code>/unknown-unknowns</code></td></tr>
+      </tbody>
+    </table>
+    <p class="note-inline"><strong>Cuándo no usar agentes:</strong> tareas &lt;30 s, typos, preguntas rápidas, one-liners. Solo agentes para trabajo sustancial.</p>
+
+    <h3 id="hoy-rutina">Rutina diaria sugerida</h3>
+    <ol>
+      <li><strong>Al abrir sesión:</strong> <code>/pm</code> → ves estado del proyecto + qué arrancar.</li>
+      <li><strong>Capturas durante el día</strong> en <code>docs/producto/inbox.md</code> o vía <code>/wiki anotar</code>.</li>
+      <li><strong>Trabajo principal:</strong> según el tamaño, ver cards arriba.</li>
+      <li><strong>Cuando aprendes algo:</strong> <code>/learned</code>.</li>
+      <li><strong>Al cerrar:</strong> <code>/save</code> + <code>/review</code> si terminaste un feature.</li>
+    </ol>
+  </section>
+</article>
+
+<!-- ═══════════════════════════ CAPTURAR ═══════════════════════════ -->
+<article class="panel" id="tab-capturar" role="tabpanel" hidden>
+  <aside class="subnav" aria-label="Secciones de Capturar">
+    <a href="#capturar-wiki">Wiki</a>
+    <a href="#capturar-pm">PM Producto</a>
+    <a href="#capturar-dossiers">Dossiers (V3.1)</a>
+    <a href="#capturar-memoria">Memoria & Lessons</a>
+    <a href="#capturar-registry">Project Registry</a>
+    <a href="#capturar-qa">QA Layer</a>
+  </aside>
+  <section class="content">
+    <span class="panel-eyebrow">Capturar · Conocimiento que persiste</span>
+    <h2 id="capturar-top">Lo que el sistema mantiene en el tiempo</h2>
+    <p class="panel-lead">Cinco zonas donde se acumula conocimiento entre sesiones. Sin estas, el LLM empieza de cero cada vez. Con estas, tienes memoria operativa real.</p>
+
+    <!-- ━━━ Wiki ━━━ -->
+    <details open id="capturar-wiki">
+      <summary>Wiki transversal · <code>/wiki</code></summary>
+      <p>Memoria viva del proyecto, transversal a todas las áreas (Producto, Marketing, RRHH, Operaciones). Procesa sources brutos (artículos, reuniones, notas, transcripciones) y los sintetiza en páginas semánticas con wikilinks <code>[[slug]]</code>. La gestiona <code>age-spe-wiki-curator</code>.</p>
+
+      <h4>Estructura física</h4>
+      <p><code>raw/</code> es la fuente de verdad inmutable. <code>docs/general/wiki/</code> es síntesis derivada (regenerable).</p>
+      <pre class="diagram">raw/
+├── articulos/         <span class="em">// blogs, papers, recursos externos</span>
+├── reuniones/         <span class="em">// asistentes, agenda, decisiones, action items</span>
+├── notas/             <span class="em">// capturas rápidas, ideas</span>
+├── transcripciones/   <span class="em">// audio→texto</span>
+└── otros/
+
+docs/general/wiki/
+├── README.md   index.md   log.md   tags.md
+├── entities/          <span class="em">// personas, herramientas, APIs, productos</span>
+├── concepts/          <span class="em">// decisiones, patrones, principios</span>
+├── topics/            <span class="em">// áreas / temas exploratorios</span>
+└── sources/           <span class="em">// summaries de cada raw + citations</span></pre>
+
+      <h4>Comandos</h4>
+      <table>
+        <thead><tr><th>Comando</th><th>Tipo</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td><code>/wiki ingestar &lt;path&gt;</code></td><td>Write</td><td>Procesa un raw. Crea source page. Detecta entidades/conceptos. Si es reunión: extrae <code>DECISIÓN:</code> y action items.</td></tr>
+          <tr><td><code>/wiki anotar &lt;texto&gt;</code></td><td>Write</td><td>Captura rápida. Crea raw nota e ingesta.</td></tr>
+          <tr><td><code>/wiki articulo &lt;input&gt;</code></td><td>Write</td><td>URL, path o texto pegado → raw artículo + ingesta.</td></tr>
+          <tr><td><code>/wiki reunion &lt;título&gt;</code></td><td>Write</td><td>Crea plantilla rellenable (Agenda / Notas / Decisiones / Action items). NO ingesta hasta que rellenes.</td></tr>
+          <tr><td><code>/wiki etiqueta &lt;p&gt; &lt;tag&gt;…</code></td><td>Write</td><td>Añade tags + recalcula <code>tags.md</code>.</td></tr>
+          <tr><td><code>/wiki revisar</code></td><td>Read</td><td>Health check: orphans, broken wikilinks, duplicados. Solo reporta.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Disciplina (reglas de captura en CLAUDE.md)</h4>
+      <ol>
+        <li><strong>Source nuevo</strong>: si pegas un artículo o copy-paste largo → "¿lo guardo en raw/ y lo ingesto?"</li>
+        <li><strong>Entidad/concepto nuevo</strong>: si aparece persona/librería/API → "¿creo entity page?"</li>
+        <li><strong>Reuniones</strong>: si mencionas "tuve una reunión con X" → ejecuta <code>/wiki reunion</code>.</li>
+        <li><strong>Antes de responder consultas no-triviales</strong>: lee la wiki primero. Cita con wikilinks.</li>
+        <li><strong>Filtrar buenas respuestas</strong>: si tu respuesta es densa y valiosa → "¿la archivo como concept page?"</li>
+        <li><strong>Action items de reuniones → tareas PM</strong>: sugiere <code>/pm capture</code>, no ejecutes automáticamente.</li>
+      </ol>
+
+      <p class="note-inline"><strong>Curator nunca</strong>: modifica raw existente · escribe a docs/&lt;area&gt;/ · invoca a otros agentes · crea entity/concept sin confirmación.</p>
+    </details>
+
+    <!-- ━━━ PM Producto ━━━ -->
+    <details open id="capturar-pm">
+      <summary>PM Producto · <code>/pm</code></summary>
+      <p>Coordinador del área Producto. No produce contenido (eso lo hacen los otros 17 agentes). <strong>Indexa, mantiene visible y permite acciones explícitas</strong>. Es agente por área: Marketing/RRHH/Operaciones tendrán el suyo.</p>
+
+      <h4>Archivos del PM</h4>
+      <table>
+        <thead><tr><th>Archivo</th><th>Para qué</th></tr></thead>
+        <tbody>
+          <tr><td><code>docs/producto/inbox.md</code></td><td>Buzón libre. Tú o los agentes anotan ideas. El PM las procesa con <code>/pm inbox</code>.</td></tr>
+          <tr><td><code>pm/tasks.json</code></td><td>Índice maestro derivado del filesystem. Si se borra, el PM lo regenera escaneando los .md.</td></tr>
+          <tr><td><code>pm/id-counters.json</code></td><td>~50 tokens. Lo leen los agentes generadores (story-writer/builder/design-analyst) en lugar de tasks.json completo (~9K tokens). Ahorra contexto.</td></tr>
+          <tr><td><code>pm/config.json</code></td><td>Áreas, agentes, estados, transiciones. Editar para activar Marketing/RRHH/Operaciones.</td></tr>
+          <tr><td><code>pm/events.jsonl</code></td><td>Activity log opcional. Sin él, el PM funciona inferenciando por filesystem.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Modelo de estados V2.0 — Kanban como cola de trabajo por agente <span class="pill pill-special">NUEVO</span></h4>
+      <p><strong>Cambio fundamental respecto a V1</strong>: cada columna del kanban representa <strong>el agente que debe trabajar esa tarea</strong>. Tú arrastras tareas entre columnas para asignar trabajo a agentes. El PM ve la columna donde está la tarea y sabe qué agente lanzar. <strong>Tú controlas el estado</strong>, el PM observa los artefactos.</p>
+
+      <table>
+        <thead><tr><th>Columna</th><th>Tipo</th><th>Agente que toca trabajar</th><th>Comando</th><th>Output (artefacto)</th></tr></thead>
+        <tbody>
+          <tr><td><code>sin_priorizar</code></td><td>bandeja</td><td>— (tú decides)</td><td>—</td><td>—</td></tr>
+          <tr><td><code>priorizada</code></td><td>bandeja</td><td>— (tú decides siguiente paso)</td><td>—</td><td>—</td></tr>
+          <tr><td><code>research</code></td><td>agente</td><td>age-spe-researcher + quality-guard</td><td><code>/analyze</code></td><td><code>research.md</code></td></tr>
+          <tr><td><code>definicion</code></td><td>agente</td><td>design-analyst / story-writer / story-builder (según contexto)</td><td><code>/design-to-prd</code>, <code>/define</code>, <code>/story</code></td><td><code>stories.md</code></td></tr>
+          <tr><td><code>planning</code></td><td>agente</td><td>age-spe-tech-architect + sprint-planner</td><td><code>/plan</code></td><td><code>architecture.md</code></td></tr>
+          <tr><td><code>build</code></td><td>agente</td><td>sub-agente de /build</td><td><code>/build</code></td><td>entrada en <code>build-state.md</code></td></tr>
+          <tr><td><code>review</code></td><td>agente</td><td>test-engineer + code-reviewer + supervisores</td><td><code>/review</code></td><td>entrada aprobada en <code>qa.md</code></td></tr>
+          <tr><td><code>hecho</code></td><td>terminal</td><td>—</td><td>—</td><td>—</td></tr>
+          <tr><td><code>bloqueada</code> <em>(tray)</em></td><td>lateral</td><td>—</td><td><code>/pm block</code></td><td>—</td></tr>
+          <tr><td><code>cancelada</code> <em>(tray)</em></td><td>lateral</td><td>—</td><td><code>/pm cancel</code></td><td>—</td></tr>
+        </tbody>
+      </table>
+
+      <h5>Sub-indicador en cada card (⏸ pendiente / ✅ completado)</h5>
+      <p>Cada card muestra si el agente ya hizo su parte:</p>
+      <ul>
+        <li><strong>⏸ pendiente</strong>: tarea está en la columna pero el agente NO ha sido lanzado. El artefacto esperado no existe en filesystem.</li>
+        <li><strong>✅ completado</strong>: el agente terminó. El artefacto esperado (<code>research.md</code>, <code>stories.md</code>, etc.) existe.</li>
+      </ul>
+      <p>Cuando una tarea está <strong>⏸ pendiente</strong>, la card muestra un botón <code>📋 /comando</code> que copia el comando al portapapeles para que lo pegues en Claude Code.</p>
+      <p>Cuando está <strong>✅ completado</strong>, la card muestra una sugerencia textual: <em>"⤷ Próximo: arrastra a Planning y lanza /plan"</em>.</p>
+
+      <h5>Columna "Definición" — 3 rutas alternativas</h5>
+      <p>La columna <code>definicion</code> puede ser ejecutada por <strong>3 agentes distintos</strong> según el contexto. Pablo elige qué comando lanzar:</p>
+      <ul>
+        <li><strong>Hay diseños en Pencil</strong> → <code>/design-discovery</code> (opcional, captura lógica funcional vía entrevista al PM) → <code>/design-to-prd</code> (design-analyst)</li>
+        <li><strong>Existe research.md previo</strong> → <code>/define</code> (jtbd-architect + story-writer enriquece)</li>
+        <li><strong>Idea autónoma sin diseños ni research</strong> → <code>/story</code> (story-builder)</li>
+      </ul>
+      <p>Los 3 producen <code>stories.md</code> (sub-indicador pasa a ✅ completado), y la tarea avanza igual al siguiente estado.</p>
+
+      <h5>Transiciones: TODAS LIBRES</h5>
+      <p>Cualquier estado puede ir a cualquier otro. El sistema confía en el humano. Si quieres mover una tarea de <code>hecho</code> a <code>research</code> (bug post-aprobación) o saltar de <code>sin_priorizar</code> directo a <code>build</code> (experimento), se permite.</p>
+      <p>Si en el futuro quieres restringir transiciones, edita la matriz <code>transitions</code> en <code>pm/config.json</code> → <code>areas.producto.transitions</code> manualmente.</p>
+
+      <h5>UI del kanban</h5>
+      <p>8 columnas principales (sin_priorizar → hecho) horizontales + <strong>tray lateral colapsable</strong> a la derecha con <code>bloqueada</code> y <code>cancelada</code>. Click en el botón "▶ Tray" para colapsar/expandir.</p>
+
+      <h5>Inferencia bootstrap (solo tareas nuevas)</h5>
+      <p>Si una tarea recién creada no tiene <code>status</code> aún, el PM infiere uno razonable según artefactos existentes (qa.md → hecho, build-state.md → build, architecture.md → planning, stories.md → definicion, research.md → research, sprint.md → priorizada, default → sin_priorizar). <strong>Una sola vez por tarea</strong>: después, el humano controla.</p>
+
+      <h5>Migración desde V1 (estados viejos)</h5>
+      <p>Proyectos creados antes de V2.0 tenían los 8 estados viejos (<code>en_definicion</code>, <code>en_build</code>, etc.). Para migrar:</p>
+      <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/migrate-states-v2.sh" "/ruta/proyecto" --apply</pre>
+      <p>El script:</p>
+      <ul>
+        <li>Re-mapea <code>status</code> de cada tarea en <code>pm/tasks.json</code> y en frontmatter de stories.md</li>
+        <li>Mueve <code>states</code>/<code>transitions</code> del nivel global de <code>config.json</code> a <code>areas.producto.*</code></li>
+        <li>Añade <code>state_meta</code> con info de agente/comando/artefacto por estado</li>
+        <li>Backup automático. Idempotente. Dry-run por defecto.</li>
+      </ul>
+
+      <h4>Modos de <code>/pm</code></h4>
+      <table>
+        <thead><tr><th>Comando</th><th>Tipo</th><th>Qué hace</th></tr></thead>
+        <tbody>
+          <tr><td><code>/pm</code></td><td>Read</td><td>sync + next + status (default).</td></tr>
+          <tr><td><code>/pm sync</code></td><td>Read</td><td>Reindexa filesystem, reporta drift y tareas nuevas.</td></tr>
+          <tr><td><code>/pm inbox</code></td><td>Write</td><td>Procesa <code>inbox.md</code>: clasifica, asigna ID, vacía consumidas.</td></tr>
+          <tr><td><code>/pm next</code></td><td>Read</td><td>Propone 3–5 tareas listas para arrancar.</td></tr>
+          <tr><td><code>/pm status</code></td><td>Read</td><td>Resumen visual: contadores, drift, inbox pendiente.</td></tr>
+          <tr><td><code>/pm prioritize HU-XXX</code></td><td>Write</td><td>Mueve a <code>backlog_priorizado</code> + entrada en <code>sprint.md</code>.</td></tr>
+          <tr><td><code>/pm block HU-XXX &lt;razón&gt;</code></td><td>Write</td><td>Marca bloqueado, guarda <code>previous_status</code>, actualiza frontmatter.</td></tr>
+          <tr><td><code>/pm unblock HU-XXX</code></td><td>Write</td><td>Restaura el estado anterior al bloqueo.</td></tr>
+          <tr><td><code>/pm done HU-XXX</code></td><td>Write</td><td>Aprueba sin pasar por <code>/review</code>. Para ideas descartadas o tareas no-build.</td></tr>
+          <tr><td><code>/pm cancel HU-XXX &lt;razón&gt;</code></td><td>Write</td><td>Estado terminal cancelado. Archivada pero visible en histórico.</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Vista en el dashboard</h4>
+      <p>Al pulsar la pestaña <strong>Proyecto</strong> del dashboard, ves 3 sub-pestañas: <strong>Resumen</strong> (cards + drift + próximas a arrancar), <strong>Funcionalidades</strong> (tabla editable inline tipo Notion), <strong>Kanban</strong> (8 columnas con drag &amp; drop). Botón <strong>+ Nueva funcionalidad</strong> en Resumen y Funcionalidades crea stories sin salir.</p>
+
+      <p class="note-inline"><strong>PM nunca</strong>: escribe a <code>stories.md</code> (excepto frontmatter en block/unblock) · invoca a otros agentes · bloquea flujo · esconde drift.</p>
+
+      <h4>PRD canónico por épica <span class="pill pill-special">NUEVO V3.3</span></h4>
+      <p>Cada épica tiene un <code>prd.md</code> como <strong>definición canónica</strong> (problema, métricas, AS-IS/TO-BE, actores, scope, diseño técnico). El PRD es <strong>nivel feature/épica</strong>, NO nivel user story — las stories son las unidades de trabajo dentro del PRD.</p>
+
+      <h5>Cuándo se crea</h5>
+      <table>
+        <thead><tr><th>Comando</th><th>Crea PRD esqueleto</th></tr></thead>
+        <tbody>
+          <tr><td><code>/pm inbox</code></td><td>SÍ — al crear EPIC con feature slug, genera <code>docs/producto/features/&lt;slug&gt;/prd.md</code> con la idea original injertada en sección "Problema". Origin: <code>inbox</code>.</td></tr>
+          <tr><td><code>/story</code></td><td>SÍ — tras escribir <code>stories.md</code>, crea <code>prd.md</code> esqueleto si no existe. Origin: <code>story</code>.</td></tr>
+          <tr><td><code>/design-to-prd</code></td><td>SÍ (comportamiento legacy) — genera PRD rico desde diseños. Si ya existe esqueleto (del inbox), lo enriquece. Origin: <code>design</code>.</td></tr>
+          <tr><td><code>/analyze</code></td><td>Enriquece secciones "Métricas" y "AS-IS" del PRD existente.</td></tr>
+          <tr><td><code>/define</code></td><td>Enriquece sección "Actores" del PRD existente con JTBDs.</td></tr>
+          <tr><td><code>/plan</code></td><td>Enriquece sección "Diseño técnico" con link a <code>architecture.md</code>.</td></tr>
+        </tbody>
+      </table>
+
+      <h5>Idempotencia</h5>
+      <p>Si <code>prd.md</code> ya existe, los comandos NO sobrescriben — solo enriquecen secciones marcadas con <code>&lt;!-- AUTO:&lt;sección&gt; --&gt;</code>. La sección <code>&lt;!-- USER:notes --&gt;</code> está fuera de marcadores AUTO y se preserva siempre.</p>
+
+      <h5>Vista en el dashboard</h5>
+      <p>Click en una card <strong>EPIC</strong> del kanban o de Funcionalidades → panel detalle a la derecha muestra:</p>
+      <ul>
+        <li>📄 <strong>Definición de la épica (PRD)</strong> destacada arriba (markdown renderizado, secciones colapsables)</li>
+        <li>📋 <strong>User Stories hijas</strong> en tabla compacta (click → abre panel de la HU)</li>
+        <li>Botón "Ver/Editar archivo" para abrir el <code>prd.md</code> raw</li>
+      </ul>
+
+      <p class="note-inline">Las HU individuales siguen mostrando su propio ticket de story (Historia, Definición, Diseño, Notas técnicas, Criterios, Plan de pruebas, Scoring). El PRD es para la épica; las stories son para las tareas.</p>
+
+      <h5>PRD evolutivo — secciones se enriquecen con cada comando <span class="pill pill-special">V3.3</span></h5>
+      <p>El PRD se crea esqueleto (vacío con placeholders) y se va llenando progresivamente. Cada sección está delimitada por marcadores <code>&lt;!-- AUTO:section --&gt; ... &lt;!-- /AUTO:section --&gt;</code>. El <strong>PM en modo dossier</strong> (auto-sync post-comando) actualiza solo las secciones AUTO, preservando el resto.</p>
+
+      <table>
+        <thead><tr><th>Comando</th><th>Sección AUTO que enriquece</th><th>Cómo</th></tr></thead>
+        <tbody>
+          <tr><td><code>/pm inbox</code> o <code>/story</code></td><td><code>AUTO:problema</code></td><td>Inyecta la idea cruda del inbox como declaración del problema</td></tr>
+          <tr><td><code>/challenge</code></td><td><code>AUTO:problema</code></td><td>Refina con asunciones detectadas del challenge-brief</td></tr>
+          <tr><td><code>/analyze</code></td><td><code>AUTO:metricas</code> + <code>AUTO:as_is_to_be</code></td><td>Métricas con baseline + análisis AS-IS/TO-BE del researcher</td></tr>
+          <tr><td><code>/define</code></td><td><code>AUTO:actores</code></td><td>Job performers + descripción + frecuencia desde JTBDs</td></tr>
+          <tr><td><code>/design-to-prd</code></td><td>TODAS las secciones AUTO</td><td>Genera el PRD entero desde diseños con marcadores AUTO</td></tr>
+          <tr><td><code>/plan</code></td><td><code>AUTO:diseno_tecnico</code></td><td>Decisión arquitectural clave + link a architecture.md</td></tr>
+          <tr><td>cualquier comando</td><td><code>AUTO:stories</code></td><td>El PM regenera lista de HUs hijas con ID + título + status</td></tr>
+        </tbody>
+      </table>
+
+      <h5>Reglas operativas del enriquecimiento</h5>
+      <ul>
+        <li><strong>Conservador</strong>: si el PRD NO tiene marcadores AUTO (legacy sin migrar), el PM <strong>no lo toca</strong>. Migrar con script (ver abajo).</li>
+        <li><strong>Defensivo</strong>: si el artefacto fuente no existe (ej. aún no hay research.md), la sección AUTO mantiene su contenido <code>[Pendiente]</code>.</li>
+        <li><strong>Idempotente</strong>: si el contenido extraído coincide con lo escrito, no se escribe (evita actualizar mtime sin motivo).</li>
+        <li><strong>USER:notes preservada SIEMPRE</strong>. Sección fuera de marcadores AUTO, los agentes nunca la tocan.</li>
+        <li><strong>Contenido no-AUTO preservado</strong>. Secciones extra (Restricciones, Riesgos, etc.) que escribas a mano permanecen intactas.</li>
+      </ul>
+
+      <h5>Migración de PRDs legacy</h5>
+      <p>Para proyectos con PRDs antiguos sin marcadores AUTO (ej. PRDs creados antes de V3.3 por <code>/design-to-prd</code> legacy):</p>
+      <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/migrate-prd-to-auto-markers.sh" "/ruta/proyecto" --apply</pre>
+      <p>El script:</p>
+      <ul>
+        <li>Detecta las 6-7 secciones canónicas por heading (Problema, Métricas, AS-IS/TO-BE, Actores, Scope, Diseño técnico, User Stories)</li>
+        <li>Envuelve cada una en marcadores AUTO</li>
+        <li><strong>Preserva secciones extra</strong> (Restricciones, Riesgos, Siguiente Paso...) fuera de marcadores</li>
+        <li>Añade sección <code>USER:notes</code> al final si no existe</li>
+        <li>Backup automático en <code>prd.md.bak-YYYYMMDD-HHMMSS</code></li>
+        <li>Idempotente: si el PRD ya tiene marcadores AUTO, no se toca</li>
+      </ul>
+
+      <h4>Auto-sync post-comando (V3.1) <span class="pill pill-special">NUEVO</span></h4>
+      <p>8 comandos invocan <code>age-spe-pm-producto</code> con modo <code>sync</code> automáticamente al terminar:</p>
+      <p><code>/story</code> · <code>/define</code> · <code>/design-to-prd</code> · <code>/plan</code> · <code>/build</code> · <code>/review</code> · <code>/hotfix</code> · <code>/analyze</code></p>
+      <p>Esto significa que tras lanzar uno de estos comandos, el dashboard refleja el nuevo estado <strong>sin que tú tengas que ejecutar <code>/pm sync</code> manual</strong>. Si el sync detecta drift (contradicción entre archivos), se reporta al final del output del comando. Si no, el sync es silencioso.</p>
+      <p>Comandos <strong>sin auto-sync</strong> (no modifican estado de tareas): <code>/save</code> · <code>/code-review</code> · <code>/new-project</code> · <code>/unknown-unknowns</code> · <code>/docs</code> · <code>/challenge</code> · <code>/learned</code> · <code>/wiki</code> · <code>/pm</code> (sería recursivo).</p>
+    </details>
+
+    <!-- ━━━ Feature Dossiers (V3.1) ━━━ -->
+    <details open id="capturar-dossiers">
+      <summary>Feature Dossiers · <code>/pm dossier</code> <span class="pill pill-special">NUEVO V3.1</span></summary>
+      <p><strong>El problema que resolvía esta capa:</strong> cuando una idea entraba al sistema, todos los artefactos generados (challenge brief, research, JTBDs, stories, architecture, qa, lessons) quedaban dispersos en carpetas. Para entender una feature había que abrir 6-8 archivos en orden manual. Y las decisiones humanas conversacionales se perdían.</p>
+
+      <p>El <strong>Feature Dossier</strong> es un archivo agregador por feature folder que reúne todo en una vista unificada navegable desde el dashboard.</p>
+
+      <h4>Estructura</h4>
+      <pre class="diagram">docs/producto/features/&lt;feature&gt;/
+├── _dossier.md          <span class="em">// NUEVO — vista agregada auto-mantenida</span>
+├── _events.jsonl        <span class="em">// NUEVO — timeline cronológico append-only</span>
+├── research.md          <span class="em">// existente (de /analyze)</span>
+├── jtbds.md             <span class="em">// existente (de /define)</span>
+├── stories.md           <span class="em">// existente (de /define)</span>
+├── architecture.md      <span class="em">// existente (de /plan)</span>
+└── challenge-brief.md   <span class="em">// existente (de /challenge)</span></pre>
+
+      <h4>Lifecycle</h4>
+      <ol>
+        <li>Cualquier comando del pipeline ejecuta <code>/pm sync</code> + <code>/pm dossier all</code> al terminar (auto-sync).</li>
+        <li>El PM detecta qué feature folders se han modificado en los últimos 60s.</li>
+        <li>Para cada una, lee TODOS sus artefactos + tasks.json + sprint.md + qa.md.</li>
+        <li>Regenera <code>_dossier.md</code> rellenando 10 secciones (Estado · Idea · Challenge · Análisis · Definición · Arquitectura · Sprint · Build · Review · Aprendizajes · Decisiones · Artefactos).</li>
+        <li>Append un evento a <code>_events.jsonl</code> describiendo lo que el comando hizo.</li>
+      </ol>
+
+      <h4>Idempotencia + sección de usuario</h4>
+      <p>Marcadores <code>&lt;!-- AUTO:section --&gt;</code> delimitan zonas auto-generadas. La sección <code>&lt;!-- USER:notes --&gt;</code> está fuera de los marcadores AUTO: <strong>el PM nunca la sobrescribe</strong>. Pablo puede editar sus notas libremente en cualquier momento.</p>
+      <p>Ejecutar <code>/pm dossier all</code> dos veces produce el mismo dossier (excepto <code>last_updated_at</code>). Los eventos en <code>_events.jsonl</code> NO se duplican (detección por <code>(ts, agent, event, entity)</code>).</p>
+
+      <h4>Decisiones humanas críticas en el timeline</h4>
+      <p>4 comandos (<code>/analyze</code>, <code>/define</code>, <code>/plan</code>, <code>/hotfix</code>) capturan decisiones críticas como evento <code>agent: "human"</code>:</p>
+      <ul>
+        <li>Proceder con Quality Guard score &lt;7 sin corregir gaps</li>
+        <li>Override del quality-coach (mantener story tal cual)</li>
+        <li>Aprobar ADR de arquitectura con tradeoffs</li>
+        <li>Confirmar resolución de bug (en hotfix)</li>
+      </ul>
+      <p>Las aprobaciones rutinarias NO se logan — solo las críticas.</p>
+
+      <h4>Vista en el dashboard</h4>
+      <p>Nueva sub-pestaña <strong>Dossiers</strong> entre Funcionalidades y Kanban. A la izquierda lista de features con buscador, a la derecha el dossier renderizado completo + timeline visual de los eventos. Las decisiones humanas se destacan en color naranja.</p>
+
+      <h4>Migración para proyectos existentes</h4>
+      <p>Script <code>scripts/regenerate-dossiers.sh /ruta/proyecto --apply</code> crea esqueletos de dossier para todas las features ya existentes. Tras esto, ejecuta <code>/pm dossier all</code> en Claude Code para rellenarlos con la información real.</p>
+
+      <p class="note-inline"><strong>El dossier es derivado, no fuente.</strong> Si lo borras, se regenera desde los artefactos atómicos. Los <code>.md</code> de research, stories, architecture, etc. siguen siendo la única fuente de verdad.</p>
+    </details>
+
+    <!-- ━━━ Memoria & Lessons ━━━ -->
+    <details id="capturar-memoria">
+      <summary>Memoria & Lessons · <code>/learned</code></summary>
+      <p>Sistema de memoria persistente entre sesiones. Sin esto, cada sesión de Claude Code empieza de cero.</p>
+
+      <h4>Archivos</h4>
+      <table>
+        <thead><tr><th>Archivo</th><th>Quién lee</th><th>Quién escribe</th><th>Cuándo</th></tr></thead>
+        <tbody>
+          <tr><td><code>memory/MEMORY.md</code></td><td>Todos al inicio</td><td>code-reviewer + optimizer</td><td>Después de <code>/review</code></td></tr>
+          <tr><td><code>docs/producto/lessons.md</code></td><td>Todos al inicio</td><td>optimizer + <code>/learned</code></td><td>Después de <code>/review</code> o cuando lances <code>/learned</code></td></tr>
+          <tr><td><code>docs/general/PROJECT_KNOWLEDGE.md</code></td><td>Todos al inicio</td><td>ski-doc-updater</td><td>Después de cada feature</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Memoria persistente del Code Reviewer</h4>
+      <p>Único agente con <code>memory: project</code> en su <code>agent.yaml</code>. Claude Code gestiona su memoria automáticamente entre sesiones. Acumula patrones del proyecto, issues recurrentes, decisiones de review previas.</p>
+
+      <h4>Captura proactiva con <code>/learned</code></h4>
+      <p>Cuando resuelvas algo difícil, lánzalo. Te pregunta qué pasó, por qué, cómo lo resolviste, qué hacer diferente. Clasifica en 7 categorías (bug, edge-case, performance, architecture, tooling, process, mistake) y escribe en <code>lessons.md</code> + <code>MEMORY.md</code>.</p>
+
+      <p class="note-inline">Cuando MEMORY.md supera 200 líneas, las entradas antiguas se archivan en <code>memory/archive/[YYYY-MM].yaml</code> (retención: 1 año).</p>
+    </details>
+
+    <!-- ━━━ Project Registry ━━━ -->
+    <details id="capturar-registry">
+      <summary>Project Registry · inventario técnico</summary>
+      <p><strong>Problema que resuelve:</strong> sin registry, cuando creas Feature B los agentes no saben qué tablas/APIs/componentes ya creó Feature A. Con registry, todo está conectado.</p>
+
+      <h4>Archivo único</h4>
+      <p><code>docs/general/project-registry.md</code> — 6 categorías base obligatorias en formato tabla:</p>
+      <ul>
+        <li><strong>DB Models</strong>: tablas, campos clave, relaciones, feature origen, status.</li>
+        <li><strong>API Endpoints</strong>: método, path, auth, feature origen, status.</li>
+        <li><strong>Shared Components</strong>: nombre, path, props/interface, feature origen.</li>
+        <li><strong>Services & Utilities</strong>: nombre, path, exports clave, feature origen.</li>
+        <li><strong>Types & Interfaces</strong>: nombre, path, campos clave, feature origen.</li>
+        <li><strong>External Integrations</strong>: servicio, propósito, feature origen, status.</li>
+      </ul>
+
+      <h4>Ciclo de vida de assets</h4>
+      <ol>
+        <li><strong>planned</strong>: una story se crea (<code>/design-to-prd</code>, <code>/define</code>, <code>/story</code>) y los assets de su sección "Crea" se añaden al registry.</li>
+        <li><strong>active</strong>: <code>/review</code> verifica que el asset existe en el codebase y lo promueve.</li>
+        <li><strong>deprecated</strong>: asset reemplazado o eliminado. Tras 2 sprints se archiva.</li>
+      </ol>
+
+      <h4>Story template: Dependencias del proyecto</h4>
+      <p>Cada story ticket lleva una sección <strong>Usa</strong> (assets existentes del registry que reusa) + <strong>Crea</strong> (assets nuevos para añadir al registry). Esto previene duplicación.</p>
+
+      <p class="note-inline">No hay <code>/registry</code>. Es automático: <code>/design-to-prd</code>, <code>/define</code>, <code>/story</code> escriben (planned). <code>/plan</code> y <code>/build</code> leen. <code>/review</code> promueve a active. Si el archivo no existe, los comandos saltan la parte del registry sin romperse.</p>
+    </details>
+
+    <!-- ━━━ QA Layer ━━━ -->
+    <details id="capturar-qa">
+      <summary>QA Layer · <code>/review</code></summary>
+      <p>Ciclo de 3 supervisores que corre automáticamente tras cada <code>/review</code>. Verifica calidad, puntúa, propone mejoras. Ningún otro sistema lo tiene.</p>
+
+      <h4>El ciclo</h4>
+      <pre class="diagram"><span class="em">/review</span> dispara:
+
+  1. test-engineer    Validation loop: tests + coverage + 3 ciclos máx
+  2. code-reviewer    Calidad, seguridad, performance (con memoria)
+                       │
+                       ▼
+  ──── QA CYCLE (supervisores read-only) ────
+  3. auditor          Compliance con rules/ (binario sí/no)
+  4. evaluator        Puntúa 4 dimensiones (0–10)
+  5. optimizer        Detecta patrones cross-review, propone mejoras
+                       │
+                       ▼
+  6. PM: "¿Genero docs?"   <span class="em">// SIEMPRE pregunta</span>
+       sí → ski-project-docs genera docs/general/exportable/features/[feature].md</pre>
+
+      <h4>4 dimensiones del Evaluator</h4>
+      <table>
+        <thead><tr><th>Dimensión</th><th>Peso</th><th>Mide</th></tr></thead>
+        <tbody>
+          <tr><td>Completeness</td><td>30%</td><td>¿Se entregó todo lo planificado?</td></tr>
+          <tr><td>Quality</td><td>30%</td><td>¿El output está bien hecho?</td></tr>
+          <tr><td>Compliance</td><td>25%</td><td>¿Cumple las reglas? (del Auditor)</td></tr>
+          <tr><td>Efficiency</td><td>15%</td><td>¿Se hizo sin desperdicio?</td></tr>
+        </tbody>
+      </table>
+
+      <h4>QA Tiers (configurable en <code>qa/qa-config.yaml</code>)</h4>
+      <table>
+        <thead><tr><th>Tier</th><th>Corre</th><th>Cuándo</th></tr></thead>
+        <tbody>
+          <tr><td>none</td><td>Nada</td><td>Prototipos, código desechable</td></tr>
+          <tr><td>light</td><td>Solo Auditor</td><td>Cambios pequeños, hotfixes</td></tr>
+          <tr><td><strong>full</strong></td><td>Auditor → Evaluator → Optimizer</td><td>Sprint reviews, features completas (<strong>default</strong>)</td></tr>
+        </tbody>
+      </table>
+
+      <p class="note-inline"><code>docs/producto/qa.md</code> es <strong>append-only</strong>. El Optimizer lee TODAS las entradas anteriores para detectar tendencias ("Error handling apareció en 3 de las últimas 5 auditorías → propone <code>rul-api-error-handling</code>"). Optimizer propone, PM decide. Nunca se aplican cambios automáticos.</p>
+    </details>
+  </section>
+</article>
+
+<!-- ═══════════════════════════ OPERAR ═══════════════════════════ -->
+<article class="panel" id="tab-operar" role="tabpanel" hidden>
+  <aside class="subnav" aria-label="Secciones de Operar">
+    <a href="#operar-pmx10">Atajo: pmx10</a>
+    <a href="#operar-install">Instalación</a>
+    <a href="#operar-upgrade">Actualizar sistema</a>
+    <a href="#operar-actualizar-proyecto">Actualizar 1 proyecto</a>
+    <a href="#operar-migrar">Migrar V2 → V3</a>
+    <a href="#operar-dashboard">Dashboard</a>
+    <a href="#operar-troubleshoot">Si algo falla</a>
+  </aside>
+  <section class="content">
+    <span class="panel-eyebrow">Operar · Setup y mantenimiento</span>
+    <h2 id="operar-top">Instalar, actualizar, depurar</h2>
+    <p class="panel-lead">Tareas que haces 1 vez al mes pero que son críticas. Aisladas para no estorbar el día a día.</p>
+
+    <h3 id="operar-pmx10">Atajo: <code>pmx10</code> <span class="pill pill-special">NUEVO V3.2</span></h3>
+    <p>En lugar de ejecutar 3-4 scripts en orden para actualizar el sistema y un proyecto, hay un <strong>wrapper único</strong> que orquesta todo. Se instala automáticamente con <code>install.sh</code> en <code>~/.claude/pmx10</code>.</p>
+
+    <h4>Configurar el alias (una sola vez)</h4>
+    <p>Para escribir <code>pmx10</code> en lugar de <code>bash ~/.claude/pmx10</code>:</p>
+    <pre class="diagram">echo 'alias pmx10="bash $HOME/.claude/pmx10"' &gt;&gt; ~/.zshrc
+source ~/.zshrc</pre>
+    <p>A partir de aquí los ejemplos asumen que tienes el alias configurado. Si no, usa <code>bash ~/.claude/pmx10 ...</code> en su lugar.</p>
+
+    <h4>Comandos disponibles</h4>
+    <table>
+      <thead><tr><th>Comando</th><th>Qué hace</th></tr></thead>
+      <tbody>
+        <tr><td><code>pmx10 install</code></td><td>Actualiza el sistema global (<code>~/.claude/</code>) desde el repo.</td></tr>
+        <tr><td><code>pmx10 upgrade &lt;ruta&gt;</code></td><td><strong>Actualiza UN proyecto completo</strong>: install global + dashboard + dossiers retroactivos. Los 3 pasos en orden con un solo comando.</td></tr>
+        <tr><td><code>pmx10 upgrade-all</code></td><td>Actualiza TODOS los proyectos registrados en <code>~/.claude/pm-projects.txt</code>.</td></tr>
+        <tr><td><code>pmx10 dashboards &lt;ruta&gt;</code></td><td>Solo sincroniza el <code>dashboard/</code> de un proyecto.</td></tr>
+        <tr><td><code>pmx10 dossiers &lt;ruta&gt;</code></td><td>Solo regenera esqueletos de <code>_dossier.md</code>.</td></tr>
+        <tr><td><code>pmx10 list</code></td><td>Muestra los proyectos registrados.</td></tr>
+        <tr><td><code>pmx10 add &lt;ruta&gt;</code></td><td>Añade un proyecto a la lista <code>~/.claude/pm-projects.txt</code>.</td></tr>
+        <tr><td><code>pmx10 remove &lt;ruta&gt;</code></td><td>Quita un proyecto de la lista.</td></tr>
+        <tr><td><code>pmx10 version</code></td><td>Versión del repo + del bridge.</td></tr>
+        <tr><td><code>pmx10 help</code></td><td>Esta ayuda con ejemplos.</td></tr>
+      </tbody>
+    </table>
+
+    <h4>Flujo típico end-to-end</h4>
+    <pre class="diagram"><span class="em"># 1. Una sola vez: registra tu proyecto</span>
+pmx10 add "/Users/pablogranados/Desktop/PABLO/Trabajos/Cuerva/Cuerva Smart Industry"
+
+<span class="em"># 2. Cada vez que actualices el repo del sistema PM x10:</span>
+pmx10 upgrade-all       <span class="em"># actualiza TODOS los proyectos registrados</span>
+
+<span class="em"># 3. (En Claude Code de cada proyecto, una sola vez tras upgrade-all)</span>
+/new-project            <span class="em"># añade carpetas/templates nuevos</span>
+/pm dossier all         <span class="em"># rellena los dossiers retroactivos con info real</span>
+
+<span class="em"># 4. Si el bridge.py corría, reinícialo (lo recuerda pmx10 al final)</span>
+pkill -f "python3.*dashboard/bridge.py"
+cd /ruta/proyecto && python3 dashboard/bridge.py
+<span class="em"># + Cmd+Shift+R en navegador</span></pre>
+
+    <h4>Para un solo proyecto</h4>
+    <pre class="diagram">pmx10 upgrade "/ruta/a/tu/proyecto"</pre>
+    <p>Ejecuta los 3 pasos en orden (install global + dashboard + dossiers retroactivos) y al final te recuerda los pasos manuales pendientes (<code>/new-project</code> y <code>/pm dossier all</code> en Claude Code, reinicio del bridge).</p>
+
+    <p class="note-inline">El alias hace que <code>pmx10</code> sea ejecutable desde cualquier carpeta. Si prefieres no configurarlo, los comandos siguen funcionando con el prefijo <code>bash ~/.claude/pmx10</code>. Por ejemplo: <code>bash ~/.claude/pmx10 upgrade "/ruta"</code>.</p>
+
+    <p><strong>Lo que viene a continuación</strong> (instalación inicial, actualizar sistema, actualizar 1 proyecto manualmente, migrar V2 → V3) es la versión <em>granular</em> de lo que hace <code>pmx10</code>. Útil para depurar o entender qué hace cada paso, pero para el día a día <code>pmx10 upgrade-all</code> basta.</p>
+
+    <h3 id="operar-install">Instalación inicial</h3>
+    <p>Solo se hace una vez (o cuando actualizas el repo del sistema PM x10). Copia los 19 agentes, 18 commands, 7 skills, 8 rules, 7 knowledge bases, templates y dashboard-template a <code>~/.claude/</code>.</p>
+
+    <p><strong>Importante:</strong> ejecuta esto en una <strong>terminal</strong> (Warp, iTerm, Terminal.app), <strong>no</strong> dentro de Claude Code.</p>
+
+    <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/install.sh"</pre>
+
+    <p>El script:</p>
+    <ul>
+      <li>Compila cada agente (<code>agent.yaml</code> + <code>SOUL.md</code> + <code>DUTIES.md</code>) en un único <code>.md</code> y lo deja en <code>~/.claude/agents/</code>.</li>
+      <li>Inlinea las skills declaradas en <code>skills:</code> de cada agent.yaml en su <code>.md</code> compilado (cero coste de contexto en runtime).</li>
+      <li>Copia <code>commands/</code>, <code>skills/</code>, <code>rules/</code>, <code>knowledge/</code>, <code>templates/</code>, <code>dashboard-template/</code>.</li>
+      <li>Detecta proyectos existentes con CLAUDE.md y ofrece actualizarlos.</li>
+    </ul>
+
+    <p class="note-inline">Si todo dice <code>[identical]</code>, ya estaba al día. Si dice <code>[exists]</code>, te pregunta si sobrescribir.</p>
+
+    <h3 id="operar-upgrade">Actualizar el sistema global</h3>
+    <p>Cuando el repo PM x10 cambia (nueva regla, nuevo agente, nuevo command, nuevo template), actualizas tu sistema global <code>~/.claude/</code>. Esto es lo que Claude Code lee al ejecutar comandos.</p>
+
+    <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/install.sh"</pre>
+
+    <p>El script recompila los 19 agentes (inlineando skills declaradas), copia commands, skills, rules, knowledge, templates y el dashboard-template. <strong>Idempotente</strong>: si todo dice <code>[identical]</code>, ya estaba al día.</p>
+
+    <p class="note-inline">Esto NO modifica tus proyectos. Los proyectos solo cogen lo nuevo cuando abres Claude Code en ellos (commands/agentes leen de <code>~/.claude/</code>). Para el dashboard local de cada proyecto, ver siguiente sección.</p>
+
+    <h3 id="operar-actualizar-proyecto">Actualizar un proyecto existente al sistema más nuevo</h3>
+
+    <p>Tras actualizar el sistema global, hay <strong>4 niveles</strong> que pueden necesitar sincronización en cada proyecto. Hazlos en este orden:</p>
+
+    <h4>1. Sistema global (ya hecho si seguiste la sección anterior)</h4>
+    <p>Los agentes, commands, skills, rules, knowledge se actualizan en <code>~/.claude/</code> con <code>bash install.sh</code>. <strong>Esto basta para que Claude Code use lo nuevo</strong> en cualquier proyecto al abrirlo. No necesitas hacer nada por proyecto para esto.</p>
+
+    <h4>2. Dashboard local del proyecto</h4>
+    <p>Cada proyecto tiene su <strong>copia local</strong> del dashboard (<code>bridge.py</code>, <code>index.html</code>, <code>styles.css</code>, <code>app.js</code>). NO se actualiza automáticamente. Para sincronizarlo:</p>
+    <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/update-dashboards.sh" --apply "/ruta/a/tu/proyecto"
+
+<span class="em">// múltiples a la vez:</span>
+bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/update-dashboards.sh" --apply "/ruta/proyecto1" "/ruta/proyecto2"
+
+<span class="em">// sin --apply hace dry-run (solo muestra qué cambiaría)</span></pre>
+
+    <p>Si has registrado los proyectos en <code>~/.claude/pm-projects.txt</code> (uno por línea), no necesitas pasar los paths.</p>
+
+    <h4>3. Estructura de carpetas del proyecto (carpetas nuevas)</h4>
+    <p>Cuando el sistema añade nuevas carpetas que tu proyecto no tiene (ej. <code>raw/</code>, <code>docs/general/wiki/</code>, <code>pm/</code>), las sincronizas abriendo Claude Code <strong>dentro del proyecto</strong> y ejecutando:</p>
+    <pre class="diagram"><span class="em">// dentro de Claude Code en el proyecto:</span>
+/new-project</pre>
+    <p><code>/new-project</code> es <strong>idempotente y no-destructivo</strong>: detecta CLAUDE.md existente y solo añade carpetas/archivos que falten. No toca lo existente.</p>
+
+    <p class="note-inline">Alternativa para proyectos muy antiguos (V1/V2 → V3): script <code>bash "$HOME/.../Agente IA/scripts/migrate-to-v3.sh" "/ruta"</code> (ver sección "Migrar V2 → V3" más abajo).</p>
+
+    <h4>4. (V3.1) Regenerar Feature Dossiers retroactivos</h4>
+    <p>Si tu proyecto tiene features ya creadas antes de V3.1, no tienen <code>_dossier.md</code>. Crea esqueletos vacíos y luego los llenas:</p>
+    <pre class="diagram"><span class="em">// 1. Crea esqueletos (idempotente: no toca dossiers existentes)</span>
+bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/regenerate-dossiers.sh" "/ruta/a/tu/proyecto" --apply
+
+<span class="em">// 2. Llena los esqueletos con info real (en Claude Code del proyecto):</span>
+/pm dossier all</pre>
+
+    <h4>5. Reiniciar el bridge si estaba corriendo</h4>
+    <p>El <code>bridge.py</code> vive como proceso en memoria. Si lo arrancaste antes de actualizar, sigue ejecutando código viejo. Tras los cambios:</p>
+    <pre class="diagram"><span class="em">// Mata el bridge actual:</span>
+pkill -f "python3.*dashboard/bridge.py"
+
+<span class="em">// Arranca con el nuevo código:</span>
+cd /ruta/a/tu/proyecto
+python3 dashboard/bridge.py
+
+<span class="em">// En el navegador: Cmd+Shift+R (hard reload para limpiar caché del app.js)</span></pre>
+
+    <h4>Resumen visual</h4>
+    <pre class="diagram"><span class="em">Cuando actualizo el repo del sistema PM x10:</span>
+
+  ┌─ bash "$HOME/.../Agente IA/install.sh"             → ~/.claude/ (sistema global)
+  │                                                      afecta TODOS los proyectos automáticamente
+  ├─ bash "$HOME/.../Agente IA/scripts/update-dashboards.sh" --apply "ruta"
+  │                                                    → dashboard/ del proyecto
+  ├─ (en Claude Code del proyecto)  /new-project       → carpetas/archivos nuevos
+  │                                                      del proyecto si los hay
+  ├─ bash "$HOME/.../Agente IA/scripts/regenerate-dossiers.sh" "ruta" --apply
+  │                                                    → _dossier.md retroactivos
+  │                                                      (solo si hay features viejas)
+  └─ pkill + python3 dashboard/bridge.py                → recargar proceso del bridge
+                                                          (+ Cmd+Shift+R navegador)</pre>
+
+    <h3 id="operar-migrar">Migrar V2 → V3 (proyectos muy antiguos)</h3>
+    <p>Si tu proyecto usaba V1/V2 (sin <code>pm/</code>, <code>raw/</code>, <code>docs/general/wiki/</code>, sin separación por áreas), hay 2 caminos. Los dos son <strong>no-destructivos</strong>: hacen backup automático.</p>
+
+    <h4>Camino A (recomendado para casos simples)</h4>
+    <p>Desde Claude Code del proyecto:</p>
+    <pre class="diagram">/new-project</pre>
+    <p>Detecta CLAUDE.md existente y solo añade lo que falta. Es el mismo comando del paso 3 de la sección anterior.</p>
+
+    <h4>Camino B (proyectos más complejos)</h4>
+    <pre class="diagram">bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/scripts/migrate-to-v3.sh" "/ruta/a/tu/proyecto"</pre>
+    <p>Hace backup automático antes de tocar. Si algo falla, los archivos originales están en <code>.backup-YYYYMMDD/</code> del proyecto.</p>
+
+    <h3 id="operar-dashboard">Dashboard local</h3>
+    <p>UI visual del proyecto. Bridge HTTP en Python (sin dependencias) + HTML/CSS/JS vanilla.</p>
+
+    <h4>Arrancar</h4>
+    <pre class="diagram">cd /ruta/a/tu/proyecto
+python3 dashboard/bridge.py
+<span class="em">// abre http://localhost:7700/</span></pre>
+
+    <h4>Qué tiene</h4>
+    <ul>
+      <li><strong>Sidebar</strong>: General, Producto (activa), Marketing/RRHH/Operaciones (preparadas, "sin activar"), PM Sistema.</li>
+      <li><strong>Pestaña Producto</strong>: Resumen (cards + drift) · Funcionalidades (tabla editable inline) · Kanban (8 columnas + drag&amp;drop).</li>
+      <li><strong>Botón "+ Nueva funcionalidad"</strong>: crea stories desde el dashboard sin salir.</li>
+      <li><strong>Editor markdown</strong>: edita cualquier .md inline con Cmd+S.</li>
+      <li><strong>Conflict detection</strong>: HTTP 409 si el archivo cambió fuera mientras editabas.</li>
+    </ul>
+
+    <p class="note-inline">El dashboard lee <code>pm/config.json</code> para saber qué áreas mostrar y cuáles están activas. Editar ese archivo es la forma de activar Marketing/RRHH/Operaciones cuando llegue su PM.</p>
+
+    <h3 id="operar-troubleshoot">Si algo falla</h3>
+    <table>
+      <thead><tr><th>Síntoma</th><th>Probable causa</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code no encuentra <code>/wiki</code> o <code>/pm</code></td><td>install.sh no se ejecutó o está desactualizado</td><td><code>bash "$HOME/Desktop/PABLO/Proyectos/AgentArchitect/exports/pmx-product/install.sh"</code></td></tr>
+        <tr><td>Agente no carga una skill (ej. ortografía sin acentos)</td><td>install.sh ejecutado antes de añadir skill al <code>agent.yaml</code></td><td>Re-ejecuta install.sh para recompilar</td></tr>
+        <tr><td>Dashboard "Cannot connect" en localhost:7700</td><td>Bridge no corriendo o puerto ocupado</td><td><code>python3 dashboard/bridge.py</code> o <code>lsof -i :7700</code> para ver qué bloquea</td></tr>
+        <tr><td>Dashboard 409 al guardar</td><td>El .md cambió fuera mientras editabas</td><td>Recarga el archivo en el dashboard, vuelve a editar</td></tr>
+        <tr><td>tasks.json desincronizado</td><td>Edición manual de stories.md fuera del PM</td><td><code>/pm sync</code> reindexa el filesystem</td></tr>
+        <tr><td>"Drift detectado" en /pm status</td><td>Story marcada done en sprint.md sin entrada en qa.md</td><td>Decisión humana: aprobar con <code>/pm done HU-X</code> o investigar contradicción</td></tr>
+        <tr><td>Wiki no captura entidades de un raw</td><td>Frontmatter <code>type:</code> ausente o mal formado</td><td>Verifica que el raw tenga <code>type: article|meeting|note</code></td></tr>
+      </tbody>
+    </table>
+  </section>
+</article>
+
+<!-- ═══════════════════════════ CÓMO FUNCIONA ═══════════════════════════ -->
+<article class="panel" id="tab-funciona" role="tabpanel" hidden>
+  <aside class="subnav" aria-label="Secciones de Cómo funciona">
+    <a href="#funciona-pipeline">Pipeline</a>
+    <a href="#funciona-principios">Principios</a>
+    <a href="#funciona-context">Context engineering</a>
+    <a href="#funciona-coding">Coding Discipline</a>
+    <a href="#funciona-wiki">Wiki Discipline</a>
+    <a href="#funciona-memoria">Modelo de memoria</a>
+  </aside>
+  <section class="content">
+    <span class="panel-eyebrow">Cómo funciona · Modelo mental</span>
+    <h2 id="funciona-top">Para entender, no para hacer</h2>
+    <p class="panel-lead">Si vienes a debugar un comportamiento extraño, a entender por qué algo pasa, o a hacer onboarding del sistema — empieza aquí.</p>
+
+    <h3 id="funciona-pipeline">Pipeline general</h3>
+    <p>Idea → producción en 6 estaciones. No tienes que pasar por todas; usa solo las que tu tarea necesita (ver tab <a href="#tab-hoy">Hoy</a>).</p>
+    <pre class="diagram"><span class="em">/challenge</span>   ← validar idea o plan, en cualquier momento
+     │
+<span class="em">/analyze</span>     evaluar PRD + research
+     │
+<span class="em">/define</span>      JTBDs + stories + scoring 6D + split si &gt;3 días
+     │      <span class="em">// alternativa: /story (autónomo, 7 fases)</span>
+     │      <span class="em">// alternativa: /design-to-prd (desde Pencil)</span>
+<span class="em">/plan</span>        arquitectura + sprint plan
+     │
+<span class="em">/build</span>       sub-agente fresco por story (200k tokens c/u)
+     │
+<span class="em">/save</span>        commit + push
+     │
+<span class="em">/review</span>      tests + code review + QA layer + docs
+
+<span class="em">/hotfix</span>      pipeline corto para bugs (4 pasos)
+<span class="em">/learned</span>     captura aprendizajes en cualquier momento
+<span class="em">/pm</span>          coordinador del área Producto
+<span class="em">/wiki</span>        captura conocimiento (artículos, reuniones, notas)</pre>
+
+    <h3 id="funciona-principios">5 principios de diseño</h3>
+
+    <h4>1. Analysis Informs, Never Blocks</h4>
+    <p>Los agentes identifican riesgos. El humano decide. Ningún agente puede bloquear progreso. Si <code>/analyze</code> da score bajo, el PM decide si proceder con riesgo o corregir.</p>
+
+    <h4>2. Supervisors Observe, Never Impose</h4>
+    <p>Los 5 supervisores (auditor, evaluator, optimizer, quality-coach, strategic-challenger) son <strong>read-only</strong>. Reportan, puntúan, proponen. Nunca modifican código ni stories.</p>
+
+    <h4>3. Vertical Value Delivery</h4>
+    <p>Cada story debe entregar valor end-to-end (UI → API → DB). Story-splitter rompe horizontales (DB schema → API → Frontend) en verticales (User puede ver lista → puede filtrar → puede ordenar).</p>
+
+    <h4>4. Evidence Over Assumptions</h4>
+    <p>Quality Guard requiere baseline cuantificada antes de aprobar PRDs. "Reduce clicks 50%" es hipótesis sin baseline. "40% abandono en paso de pago, 7 pantallas, 45 campos" es problema documentado.</p>
+
+    <h4>5. Minimum Viable Complexity</h4>
+    <p>Usa lo mínimo necesario. Typo → prompt directo. Idea fresca → <code>/story</code>. Feature pequeña → <code>/define + /build</code>. Solo proyecto grande necesita el pipeline completo.</p>
+
+    <h3 id="funciona-context">Context engineering</h3>
+    <p>Los agentes <strong>no se cargan todos a la vez</strong>. Cada uno se ejecuta en su propio contexto separado. Si <code>/define</code> usa 4 agentes, son 4 contextos independientes — la calidad es PEAK para cada uno.</p>
+
+    <p><code>/build</code> va más allá: <strong>spawna un sub-agente fresco (200k tokens) por cada story</strong>. La story 5 se implementa con la misma calidad que la story 1, sin importar cuántas haya.</p>
+
+    <h4>Qué se carga automáticamente</h4>
+    <table>
+      <thead><tr><th>Qué</th><th>Dónde</th><th>Coste</th></tr></thead>
+      <tbody>
+        <tr><td>Commands (<code>*.md</code>)</td><td><code>~/.claude/commands/</code></td><td>Solo el que invocas (~30–50 líneas)</td></tr>
+        <tr><td>Rules (<code>rul-*.md</code>)</td><td><code>~/.claude/skills/</code> (instaladas)</td><td>Inlineadas en agentes que las declaran. Cero coste runtime.</td></tr>
+        <tr><td>CLAUDE.md</td><td><code>proyecto/.claude/</code></td><td>Siempre (~50–100 líneas)</td></tr>
+        <tr><td>SOUL.md / DUTIES.md</td><td><code>~/.claude/agents/</code></td><td>Solo cuando ese agente se invoca</td></tr>
+        <tr><td>Knowledge (<code>kno-*.md</code>)</td><td><code>~/.claude/skills/</code></td><td>Solo si <code>always_load: true</code> (ninguno lo tiene hoy)</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="funciona-coding">Coding Discipline <span class="pill pill-special">NUEVA</span></h3>
+    <p>4 principios que atacan los antipatrones más comunes de coding asistido por LLMs (asunciones silenciosas, sobre-construcción, cambios orthogonales, criterios débiles). Los carga <code>rul-llm-coding-discipline</code> en <code>tech-architect</code>, <code>code-reviewer</code> y <code>test-engineer</code>. También aplican a Claude Code directamente cuando edita código.</p>
+
+    <h4>1. Think Before Coding</h4>
+    <p>No asumas en silencio. Si hay ambigüedad: pregunta. Si hay 2+ enfoques: presenta tradeoffs. Si te confundes: para. Push back honesto cuando algo parece sub-óptimo.</p>
+
+    <h4>2. Simplicity First</h4>
+    <p>Mínimo código que resuelva. No abstracciones para código de un solo uso. No "flexibility" no pedida. Test del senior: <em>"¿diría sobre-construido?"</em>. Si 200 líneas pueden ser 50, reescribe.</p>
+
+    <h4>3. Surgical Changes</h4>
+    <p>Cada línea modificada debe trazar al request original. No "mejores" código adyacente. Si ves dead code o deuda técnica: <strong>menciónalo en el reporte</strong>, no lo arregles aquí. <em>Boy Scout Rule:</em> la cleanup va en commit aparte.</p>
+
+    <h4>4. Goal-Driven Execution</h4>
+    <p>Antes de codear: define cómo se ve "hecho". Transforma imperativo vago → criterio testable. "Arregla bug" → "test que reproduce el bug, hazlo pasar". Multi-step: enuncia plan numerado con verificación por paso.</p>
+
+    <p class="note-inline">Origen: notas de Andrej Karpathy sobre LLM coding (dic 2025) + sistematización "Four Principles" de la comunidad. Adaptado al sistema PM x10 con caveat del Boy Scout Rule.</p>
+
+    <h3 id="funciona-wiki">Wiki Discipline</h3>
+    <p>6 reglas en CLAUDE.md de cada proyecto que mantienen la wiki viva. Sin esto, la wiki queda vacía porque nadie alimenta el raw.</p>
+    <ol>
+      <li><strong>Source nuevo</strong>: pegas un artículo o copy-paste largo → "¿lo guardo en raw/ y lo ingesto?"</li>
+      <li><strong>Entidad/concepto nuevo</strong>: aparece persona/librería/API → "¿creo entity page?"</li>
+      <li><strong>Reuniones</strong>: mencionas "tuve una reunión con X" → ejecuta <code>/wiki reunion</code>.</li>
+      <li><strong>Antes de responder consultas no-triviales</strong>: lee la wiki primero. Cita con wikilinks <code>[[entities/x]]</code>.</li>
+      <li><strong>Filtrar buenas respuestas</strong>: respuesta densa y valiosa → "¿la archivo como concept page?"</li>
+      <li><strong>Action items de reuniones → tareas PM</strong>: sugiere <code>/pm capture</code>, no ejecutes automáticamente.</li>
+    </ol>
+
+    <h3 id="funciona-memoria">Modelo de memoria</h3>
+    <p>Tres archivos persistentes entre sesiones:</p>
+    <table>
+      <thead><tr><th>Archivo</th><th>Lee</th><th>Escribe</th><th>Cuándo</th></tr></thead>
+      <tbody>
+        <tr><td><code>memory/MEMORY.md</code></td><td>Todos al inicio</td><td>code-reviewer, optimizer</td><td>Tras <code>/review</code></td></tr>
+        <tr><td><code>docs/producto/lessons.md</code></td><td>Todos al inicio</td><td>optimizer, <code>/learned</code></td><td>Tras <code>/review</code> o cuando lances <code>/learned</code></td></tr>
+        <tr><td><code>docs/general/PROJECT_KNOWLEDGE.md</code></td><td>Todos al inicio</td><td>ski-doc-updater</td><td>Tras cada feature</td></tr>
+        <tr><td><code>docs/general/wiki/</code></td><td>Antes de consultas no-triviales</td><td>wiki-curator</td><td>Cuando ejecutas <code>/wiki ingestar</code></td></tr>
+      </tbody>
+    </table>
+    <p>Code Reviewer es el único agente con <code>memory: project</code> en su <code>agent.yaml</code> — Claude Code gestiona su memoria automáticamente entre sesiones.</p>
+  </section>
+</article>
+
+<!-- ═══════════════════════════ REFERENCIA ═══════════════════════════ -->
+<article class="panel" id="tab-referencia" role="tabpanel" hidden>
+  <aside class="subnav" aria-label="Secciones de Referencia">
+    <a href="#ref-commands">18 commands</a>
+    <a href="#ref-agentes">19 agentes</a>
+    <a href="#ref-rules">Rules + Skills + Knowledge</a>
+    <a href="#ref-workflows">16 workflows</a>
+    <a href="#ref-carpetas">Carpetas V3</a>
+  </aside>
+  <section class="content">
+    <span class="panel-eyebrow">Referencia · Tablas planas</span>
+    <h2 id="ref-top">Para buscar "¿qué hace X?"</h2>
+    <p class="panel-lead">Sin storytelling. Solo tablas. Cuando necesitas encontrar un agente, command o regla específica.</p>
+
+    <h3 id="ref-commands">18 commands</h3>
+    <table>
+      <thead><tr><th>Comando</th><th>Qué hace</th><th>Profundizar</th></tr></thead>
+      <tbody>
+        <tr><td><code>/challenge</code></td><td>Sparring partner: desafía premisas, debate, fuerza evidencia. Modos: idea / plan.</td><td><a href="#hoy-validar">Hoy</a></td></tr>
+        <tr><td><code>/analyze</code></td><td>Evalúa problema o PRD: Quality Guard + Researcher.</td><td><a href="#hoy-mediano">Hoy</a></td></tr>
+        <tr><td><code>/define</code></td><td>JTBDs + stories con scoring 6D + split si &gt;3 días. Modos: create / enrich.</td><td><a href="#hoy-pequeno">Hoy</a></td></tr>
+        <tr><td><code>/story</code></td><td>Story Builder autónomo (7 fases internas). De idea a story completa.</td><td><a href="#hoy-idea">Hoy</a></td></tr>
+        <tr><td><code>/design-discovery</code> <span class="pill pill-special">NUEVO V2.3</span></td><td>Cuestionario funcional batch al PM sobre el diseño (todas las preguntas a la vez, numeradas, citando pantalla+elemento) → <code>functional-brief.md</code>. Paso opcional antes de <code>/design-to-prd</code>.</td><td><a href="#hoy-grande">Hoy</a></td></tr>
+        <tr><td><code>/design-to-prd</code></td><td>Pencil → análisis 6 capas → stories verticales + PRDs por feature. Lee <code>functional-brief.md</code> si existe.</td><td><a href="#hoy-grande">Hoy</a></td></tr>
+        <tr><td><code>/plan</code></td><td>Arquitectura + sprint plan en <code>docs/producto/sprint.md</code>.</td><td><a href="#hoy-mediano">Hoy</a></td></tr>
+        <tr><td><code>/build</code></td><td>Implementa stories. Sub-agente fresco por story (200k tokens c/u).</td><td><a href="#hoy-mediano">Hoy</a></td></tr>
+        <tr><td><code>/save</code></td><td>Commit + push: valida branch, detecta secrets, sugiere tipo de commit.</td><td><a href="#hoy-rutina">Hoy</a></td></tr>
+        <tr><td><code>/review</code></td><td>Tests → code review → audit → evaluator → optimizer → "¿genero docs?"</td><td><a href="#capturar-qa">Capturar</a></td></tr>
+        <tr><td><code>/hotfix</code></td><td>Pipeline corto para bugs. Siempre guarda causa raíz + solución + prevención.</td><td><a href="#hoy-bug">Hoy</a></td></tr>
+        <tr><td><code>/code-review</code></td><td>Solo code review en paralelo con tests. Sin audit/evaluator/optimizer.</td><td><a href="#hoy-directo">Hoy</a></td></tr>
+        <tr><td><code>/new-project</code></td><td>Inicializa estructura V3 en proyecto nuevo o existente. No-destructivo.</td><td><a href="#operar-install">Operar</a></td></tr>
+        <tr><td><code>/unknown-unknowns</code></td><td>Detecta riesgos en 8 dimensiones (security, legal, costs, UX, AI, etc.).</td><td><a href="#hoy-directo">Hoy</a></td></tr>
+        <tr><td><code>/docs</code></td><td>Genera <code>docs/general/exportable/</code> con misión, features, arquitectura, API.</td><td><a href="#hoy-directo">Hoy</a></td></tr>
+        <tr><td><code>/learned</code></td><td>Captura aprendizaje en el momento. 7 categorías. → lessons.md + MEMORY.md.</td><td><a href="#hoy-aprender">Hoy</a></td></tr>
+        <tr><td><code>/pm</code></td><td>Coordinador del área Producto. Modos: sync, inbox, next, status, prioritize, block, unblock, done, cancel.</td><td><a href="#capturar-pm">Capturar</a></td></tr>
+        <tr><td><code>/wiki</code></td><td>Wiki transversal de empresa. Modos: ingestar, anotar, articulo, reunion, nota, etiqueta, vincular, revisar.</td><td><a href="#capturar-wiki">Capturar</a></td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="ref-agentes">19 agentes</h3>
+
+    <h4>Specialists (14)</h4>
+    <table>
+      <thead><tr><th>Agente</th><th>Qué hace</th><th>Trigger</th></tr></thead>
+      <tbody>
+        <tr><td><code>age-spe-design-discoverer</code> <span class="pill pill-special">NUEVO V2.3</span></td><td>Discovery funcional sobre diseños. Lee Pencil, identifica puntos ciegos funcionales en 6 categorías (acciones ambiguas, estados intermedios, validaciones, visibilidad/permisos, cálculos, edge cases) y entrega al PM un <strong>cuestionario batch completo</strong> — todas las preguntas a la vez, numeradas, agrupadas por feature, ordenadas por criticidad, con técnica de <code>kno-elicitation-methods</code> visible (Socratic, 5-whys, Pre-mortem, Devil's Advocate, Reverse Assumption, Red-team). Tras las respuestas, una única ronda corta de clarificaciones si hace falta. Genera <code>docs/producto/functional-brief.md</code>.</td><td><code>/design-discovery</code></td></tr>
+        <tr><td><code>age-spe-quality-guard</code></td><td>Evalúa PRDs/problemas en 4 dimensiones. Detecta 5 antipatrones de contaminación.</td><td><code>/analyze</code></td></tr>
+        <tr><td><code>age-spe-researcher</code></td><td>Investiga gaps con Mom Test methodology. Genera research brief.</td><td><code>/analyze</code></td></tr>
+        <tr><td><code>age-spe-design-analyst</code></td><td>Analiza diseños Pencil en 6 capas → stories verticales con formato ticket. Lee <code>functional-brief.md</code> si existe y marca secciones cubiertas como <code>[VALIDADO via functional-brief]</code>.</td><td><code>/design-to-prd</code></td></tr>
+        <tr><td><code>age-spe-jtbd-architect</code></td><td>Genera Jobs-to-be-Done desde research. Wendel + Behavior Change.</td><td><code>/define</code></td></tr>
+        <tr><td><code>age-spe-story-writer</code></td><td>Convierte JTBDs en stories deployables con scoring 6D.</td><td><code>/define</code></td></tr>
+        <tr><td><code>age-spe-story-builder</code></td><td>Autónomo (7 fases). De idea a story con JTBD + Wendel + Behavior Change + design.</td><td><code>/story</code></td></tr>
+        <tr><td><code>age-spe-story-splitter</code></td><td>Descompone stories &gt;3 días en incrementos verticales independientes.</td><td><code>/define</code>, <code>/story</code></td></tr>
+        <tr><td><code>age-spe-tech-architect</code></td><td>Arquitectura técnica. ADRs. Lee project-registry para no duplicar.</td><td><code>/plan</code></td></tr>
+        <tr><td><code>age-spe-sprint-planner</code></td><td>Prioriza stories. Crea sprint plan en <code>docs/producto/sprint.md</code>.</td><td><code>/plan</code></td></tr>
+        <tr><td><code>age-spe-test-engineer</code></td><td>Validation loop: tests + suite + coverage + 3 ciclos máx. Testing Trophy.</td><td><code>/review</code></td></tr>
+        <tr><td><code>age-spe-code-reviewer</code></td><td>Code review con memoria persistente entre sesiones (único agente con <code>memory: project</code>).</td><td><code>/review</code>, <code>/code-review</code></td></tr>
+        <tr><td><code>age-spe-pm-producto</code></td><td>Coordinador del área Producto: índice + buzón + acciones explícitas.</td><td><code>/pm</code></td></tr>
+        <tr><td><code>age-spe-wiki-curator</code></td><td>Curator transversal: procesa raw, sintetiza entidades/conceptos, mantiene índice/log/tags.</td><td><code>/wiki</code></td></tr>
+      </tbody>
+    </table>
+
+    <h4>Supervisors (5) — read-only</h4>
+    <table>
+      <thead><tr><th>Agente</th><th>Qué hace</th><th>Trigger</th></tr></thead>
+      <tbody>
+        <tr><td><code>age-sup-strategic-challenger</code></td><td>Sparring partner. 6 forcing questions (idea) o 5 lentes (plan). Anti-sycophancy.</td><td><code>/challenge</code></td></tr>
+        <tr><td><code>age-sup-quality-coach</code></td><td>Evalúa stories en 6D. Detecta 7 antipatrones. Sugiere reescrituras. NUNCA modifica.</td><td><code>/define</code></td></tr>
+        <tr><td><code>age-sup-auditor</code></td><td>Compliance binario con rules/. Lee, no juzga subjetivamente.</td><td><code>/review</code></td></tr>
+        <tr><td><code>age-sup-evaluator</code></td><td>Puntúa 4 dimensiones (completeness 30% / quality 30% / compliance 25% / efficiency 15%).</td><td><code>/review</code></td></tr>
+        <tr><td><code>age-sup-optimizer</code></td><td>Lee histórico de qa.md. Detecta patrones cross-review. Propone (no aplica).</td><td><code>/review</code></td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="ref-rules">Skills · Rules · Knowledge</h3>
+
+    <h4>7 Skills (procedimientos reutilizables)</h4>
+    <table>
+      <thead><tr><th>Skill</th><th>Para qué</th></tr></thead>
+      <tbody>
+        <tr><td><code>ski-prd-builder</code></td><td>Construir PRDs estructurados desde cero.</td></tr>
+        <tr><td><code>ski-competitive-analysis</code></td><td>Análisis competitivo de un sector.</td></tr>
+        <tr><td><code>ski-plan-mode</code></td><td>Helpers para trabajar en plan mode estructurado.</td></tr>
+        <tr><td><code>ski-doc-updater</code></td><td>Actualizar PROJECT_KNOWLEDGE.md tras una feature.</td></tr>
+        <tr><td><code>ski-unknown-unknowns</code></td><td>Detección de riesgos en 8 dimensiones.</td></tr>
+        <tr><td><code>ski-project-docs</code></td><td>Generar documentación exportable (Docusaurus / Nextra / GitBook).</td></tr>
+        <tr><td><code>ski-impeccable-guide</code></td><td>Cuándo y cómo usar Impeccable (herramienta externa de design quality) en el pipeline.</td></tr>
+      </tbody>
+    </table>
+
+    <h4>8 Rules (cargadas automáticamente por agentes)</h4>
+    <table>
+      <thead><tr><th>Rule</th><th>Cuándo aplica</th><th>La carga</th></tr></thead>
+      <tbody>
+        <tr><td><code>rul-definition-of-done</code></td><td>Cuando una story está completa</td><td>test-engineer, code-reviewer, auditor</td></tr>
+        <tr><td><code>rul-definition-of-ready</code></td><td>Cuando una story entra en sprint</td><td>quality-coach, sprint-planner</td></tr>
+        <tr><td><code>rul-antipatterns</code></td><td>Detecta 5 PRD + 7 story antipatterns</td><td>quality-guard, quality-coach</td></tr>
+        <tr><td><code>rul-scoring-dimensional</code></td><td>Scoring 6D de stories</td><td>quality-coach, story-writer</td></tr>
+        <tr><td><code>rul-naming-conventions</code></td><td>IDs (HU-XXX), slugs, kebab-case</td><td>story-writer, story-builder, design-analyst, pm-producto, wiki-curator</td></tr>
+        <tr><td><code>rul-git-branch-management</code></td><td>Branching strategy</td><td>save, hotfix, test-engineer</td></tr>
+        <tr><td><code>rul-spanish-orthography</code></td><td>Acentos, ñ, ¿, ¡ en markdown</td><td>la mayoría de agentes</td></tr>
+        <tr><td><code>rul-llm-coding-discipline</code></td><td>4 principios: think before / simplicity / surgical / goal-driven</td><td>tech-architect, code-reviewer, test-engineer</td></tr>
+      </tbody>
+    </table>
+
+    <h4>7 Knowledge bases (cargadas bajo demanda)</h4>
+    <table>
+      <thead><tr><th>Knowledge</th><th>Contenido</th></tr></thead>
+      <tbody>
+        <tr><td><code>kno-jtbd-framework</code></td><td>JTBD Reforzado + Wendel framework.</td></tr>
+        <tr><td><code>kno-mom-test</code></td><td>Mom Test (Rob Fitzpatrick) para entrevistas user research.</td></tr>
+        <tr><td><code>kno-story-splitting</code></td><td>9 heurísticas de Eduardo Ferro para split vertical.</td></tr>
+        <tr><td><code>kno-testing-strategy</code></td><td>Testing Trophy: tipos de test, coverage, regresión, TDD.</td></tr>
+        <tr><td><code>kno-story-ticket-template</code></td><td>Formato universal de story ticket (design-analyst, story-writer, story-builder).</td></tr>
+        <tr><td><code>kno-strategic-thinking</code></td><td>Bezos, Munger, Jobs · forcing questions · anti-sycophancy.</td></tr>
+        <tr><td><code>kno-elicitation-methods</code> <span class="pill pill-special">NUEVO V2.3</span></td><td>Catálogo de técnicas de cuestionamiento: Socrático, Pre-mortem, Red-team, 5-whys, Inversion (Munger), Devil's Advocate, Reverse Assumption. Cargado por <code>design-discoverer</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="ref-workflows">16 workflows (DAG formal)</h3>
+    <p>Cada slash command tiene un workflow YAML que define el orden de ejecución, dependencias y data flow. Excepción: <code>/pm</code> y <code>/wiki</code> invocan a su agente directamente sin YAML intermedio (más simple, mismo efecto).</p>
+    <table>
+      <thead><tr><th>Workflow</th><th>Pipeline</th></tr></thead>
+      <tbody>
+        <tr><td><code>wor-challenge</code></td><td>gather_context → detect_mode → challenge_session → save_brief</td></tr>
+        <tr><td><code>wor-analyze</code></td><td>gather_context → quality_guard → pm_decision → research → deliver</td></tr>
+        <tr><td><code>wor-define</code></td><td>detect_existing → generate_jtbds → pm_approve → write_stories (enrich/create) → quality_review → split_large</td></tr>
+        <tr><td><code>wor-story</code></td><td>story_build (7 fases) → pm_confirm → split_if_large</td></tr>
+        <tr><td><code>wor-design-discovery</code> <span class="pill pill-special">NUEVO V2.3</span></td><td>read_designs (silent) → analyze_blind_spots (6 cats, internal) → prioritize → preview → generate_batch_questionnaire (all-at-once, numbered, per feature, with technique) → wait_for_pm_responses → clarification_round (only if needed) → summary → confirm → write_functional_brief → pm_sync</td></tr>
+        <tr><td><code>wor-design-to-prd</code></td><td>read_designs → read_functional_brief (if exists) → analyze_6_layers → generate_stories ([VALIDADO] where brief covers, [DERIVADO] otherwise) → generate_prd → pm_review</td></tr>
+        <tr><td><code>wor-plan</code></td><td>design_architecture → pm_approve → sprint_planning → pm_approve</td></tr>
+        <tr><td><code>wor-build</code></td><td>recover_state → read_sprint (metadata) → build_stories (sub-agente fresco) → frontend_quality → remind_review</td></tr>
+        <tr><td><code>wor-save</code></td><td>validate_branch → check_changes → detect_secrets → stage → commit → sync_remote</td></tr>
+        <tr><td><code>wor-review</code></td><td>test → code_review → fix_critical → scan_stubs → verify_must_haves → audit → evaluate → optimize → update_docs → final_check</td></tr>
+        <tr><td><code>wor-hotfix</code></td><td>quick_guard → fix → test → quick_audit (4 pasos)</td></tr>
+        <tr><td><code>wor-code-review</code></td><td>code_review ‖ test (paralelo) → audit → evaluate</td></tr>
+        <tr><td><code>wor-new-project</code></td><td>interview → create_structure → confirm</td></tr>
+        <tr><td><code>wor-unknown-unknowns</code></td><td>detect_mode → scan → select_dimensions → analyze_8 → findings → prioritize</td></tr>
+        <tr><td><code>wor-docs</code></td><td>detect_mode → scan → generate_docs → update_changelog</td></tr>
+        <tr><td><code>wor-learned</code></td><td>classify (7 categorías) → format → save_to_lessons → update_memory</td></tr>
+      </tbody>
+    </table>
+
+    <h3 id="ref-carpetas">Estructura V3 — "Cerebro digital de empresa"</h3>
+    <p>Cada proyecto inicializado con <code>/new-project</code> tiene esta estructura. Escalable: cuando llegue Marketing/RRHH/Operaciones, solo se crea su carpeta espejo dentro de <code>docs/</code>.</p>
+    <pre class="diagram">proyecto/
+├── .claude/
+│   └── CLAUDE.md           <span class="em">// config + Wiki Disciplina + Coding Disciplina</span>
+├── docs/
+│   ├── general/
+│   │   ├── PROJECT_KNOWLEDGE.md     <span class="em">// READ FIRST when returning</span>
+│   │   ├── project-registry.md      <span class="em">// inventario técnico</span>
+│   │   ├── exportable/              <span class="em">// output de /docs (Docusaurus, etc.)</span>
+│   │   └── wiki/                    <span class="em">// wiki transversal — síntesis</span>
+│   │       ├── README.md  index.md  log.md  tags.md
+│   │       ├── entities/  concepts/  topics/  sources/
+│   ├── producto/
+│   │   ├── inbox.md         <span class="em">// buzón de ideas</span>
+│   │   ├── sprint.md        <span class="em">// sprint plan + progress</span>
+│   │   ├── lessons.md       <span class="em">// patterns + mistakes</span>
+│   │   ├── qa.md            <span class="em">// QA audit trail (append-only)</span>
+│   │   └── features/[feature]/   <span class="em">// stories, jtbds, prd, architecture, research</span>
+│   ├── marketing/  rrhh/  operaciones/    <span class="em">// preparadas, sin activar hasta tener su PM</span>
+├── raw/                              <span class="em">// fuente de verdad de la wiki (inmutable)</span>
+│   ├── articulos/  reuniones/  notas/  transcripciones/  otros/
+├── pm/                               <span class="em">// estado operativo del PM (no editar a mano)</span>
+│   ├── tasks.json   id-counters.json   config.json   build-state.md   events.jsonl
+├── memory/
+│   └── MEMORY.md            <span class="em">// memoria persistente del code-reviewer</span>
+├── dashboard/                        <span class="em">// UI visual (V2.10)</span>
+│   ├── bridge.py   index.html   styles.css   app.js</pre>
+  </section>
+</article>
+
+</main>
+
+<footer class="site-footer">
+  <span><strong>PM x10</strong> v3.0</span>
+  <span>19 agentes · 18 commands · 16 workflows · 7 skills · 8 rules · 7 knowledge</span>
+  <span>Mercadona Methodology + Wiki transversal + Coding Discipline</span>
+</footer>
+
+<script>
+  // ═══════════════ Tabs ═══════════════
+  const tabButtons = document.querySelectorAll('.tab[role="tab"]');
+  const panels = document.querySelectorAll('.panel[role="tabpanel"]');
+
+  function showTab(id) {
+    tabButtons.forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+    panels.forEach(p => {
+      const isActive = p.id === 'tab-' + id;
+      if (isActive) p.removeAttribute('hidden');
+      else p.setAttribute('hidden', '');
+    });
+    history.replaceState(null, '', '#' + id);
+  }
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    btn.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      const arr = [...tabButtons];
+      const i = arr.indexOf(btn);
+      const next = e.key === 'ArrowRight' ? (i + 1) % arr.length : (i - 1 + arr.length) % arr.length;
+      arr[next].focus();
+      showTab(arr[next].dataset.tab);
+    });
+  });
+
+  // Soporte para deep-links (#hoy-idea abre tab Hoy y scrollea)
+  function handleHash() {
+    const h = location.hash.slice(1);
+    if (!h) return;
+    const tabId = ['hoy','capturar','operar','funciona','referencia'].find(t => h === t || h.startsWith(t + '-'));
+    if (tabId) {
+      showTab(tabId);
+      const target = document.getElementById(h);
+      if (target && h !== tabId) {
+        requestAnimationFrame(() => target.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      }
+    }
+  }
+  window.addEventListener('hashchange', handleHash);
+  handleHash();
+
+  // ═══════════════ Sub-nav active highlight ═══════════════
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      const id = e.target.id;
+      if (!id) return;
+      document.querySelectorAll('.subnav a').forEach(a => {
+        a.classList.toggle('is-active', a.getAttribute('href') === '#' + id);
+      });
+    });
+  }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+  document.querySelectorAll('.panel h2[id], .panel h3[id]').forEach(h => observer.observe(h));
+</script>
+
+</body>
+</html>

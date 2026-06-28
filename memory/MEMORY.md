@@ -45,7 +45,7 @@ Last updated: 2026-04-18
   llegue el momento → `staging.plati.es` + `comidas_staging` + rama
   `release` para prod.
 - **2026-04-18:** Scaffolding PM x10 instalado (tasks/, memory/,
-  qa-reports/, working-docs/, PROJECT_KNOWLEDGE.md,
+  docs/producto/qa.md, working-docs/, PROJECT_KNOWLEDGE.md,
   project-registry.md).
 - **2026-04-18:** Rollbacks documentados: Next 15→16, Prisma 5→7,
   `@hookform/resolvers` 3→5, `@vitejs/plugin-react` 4→6 — todos en
@@ -54,13 +54,13 @@ Last updated: 2026-04-18
 ## Open Questions
 
 Ninguna abierta. La próxima decisión viene cuando se aplique la Fase A del
-plan de entornos (crear `comidas_dev` en servidor) — ver `tasks/todo.md`.
+plan de entornos (crear `comidas_dev` en servidor) — ver `docs/producto/sprint.md`.
 
 ## Pointers
 
-- **Runbook operativo:** `docs/despliegue/RUNBOOK.md`
-- **Arquitectura de entornos:** `docs/despliegue/ARQUITECTURA-ENTORNOS.md`
-- **Conocimiento vivo:** `docs/PROJECT_KNOWLEDGE.md`
-- **Inventario técnico:** `docs/project-registry.md`
-- **Lessons learned:** `tasks/lessons.md`
+- **Runbook operativo:** `docs/general/despliegue/RUNBOOK.md`
+- **Arquitectura de entornos:** `docs/general/despliegue/ARQUITECTURA-ENTORNOS.md`
+- **Conocimiento vivo:** `docs/general/PROJECT_KNOWLEDGE.md`
+- **Inventario técnico:** `docs/general/project-registry.md`
+- **Lessons learned:** `docs/producto/lessons.md`
 - **Reglas de trabajo (para Claude):** `CLAUDE.md` + `.cursorrules`

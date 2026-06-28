@@ -206,8 +206,8 @@ test: tests
 
 ## 🗺️ Estado del proyecto
 
-Estado vivo detallado → [`docs/ESTADO.md`](./docs/ESTADO.md).
-Diagnóstico técnico y plan de sprints → [`docs/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md`](./docs/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md).
+Estado vivo detallado → [`docs/general/ESTADO.md`](./docs/general/ESTADO.md).
+Diagnóstico técnico y plan de sprints → [`docs/general/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md`](./docs/general/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md).
 
 Resumen rápido:
 - **Fase 0 · Base**: ✅ 100% (TS estricto, schema Prisma con 34 modelos, auth, guards, RBAC, impersonación auditada)
@@ -220,7 +220,7 @@ Trabajo en curso: sprints 0-3 (estabilización + seguridad + infra) tras un diag
 
 ## 📚 Documentación
 
-Todo el índice en [`docs/README.md`](./docs/README.md).
+Todo el índice en [`docs/general/README.md`](./docs/general/README.md).
 
 ## 📄 Licencia
 

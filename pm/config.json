@@ -1,0 +1,163 @@
+{
+  "schema_version": "2.0.0",
+  "primary_area": "producto",
+  "pm_agent": "age-spe-pm-producto",
+  "areas": {
+    "general": {
+      "label": "General",
+      "active": true,
+      "paths": ["docs/general"]
+    },
+    "producto": {
+      "label": "Producto",
+      "active": true,
+      "paths": ["docs/producto"],
+      "states": [
+        "sin_priorizar",
+        "priorizada",
+        "research",
+        "definicion",
+        "planning",
+        "build",
+        "review",
+        "hecho",
+        "bloqueada",
+        "cancelada"
+      ],
+      "state_meta": {
+        "sin_priorizar": {
+          "label": "Sin priorizar",
+          "type": "tray",
+          "command": null,
+          "artifact": null
+        },
+        "priorizada": {
+          "label": "Priorizada",
+          "type": "tray",
+          "command": null,
+          "artifact": null
+        },
+        "research": {
+          "label": "Research",
+          "type": "agent",
+          "agent": "age-spe-researcher",
+          "command": "/analyze",
+          "artifact": "research.md"
+        },
+        "definicion": {
+          "label": "Definición",
+          "type": "agent",
+          "agent": "design-analyst | story-writer | story-builder",
+          "command": "/define",
+          "command_options": [
+            {"cmd": "/design-to-prd", "when": "hay diseños en Pencil"},
+            {"cmd": "/define",        "when": "existe research.md previo"},
+            {"cmd": "/story",         "when": "idea autónoma sin diseños ni research"}
+          ],
+          "artifact": "stories.md"
+        },
+        "planning": {
+          "label": "Planning",
+          "type": "agent",
+          "agent": "age-spe-tech-architect",
+          "command": "/plan",
+          "artifact": "architecture.md"
+        },
+        "build": {
+          "label": "Build",
+          "type": "agent",
+          "agent": "sub-agente de /build",
+          "command": "/build",
+          "artifact": "build-state.md"
+        },
+        "review": {
+          "label": "Review",
+          "type": "agent",
+          "agent": "age-spe-test-engineer + code-reviewer + supervisores",
+          "command": "/review",
+          "artifact": "qa.md (aprobado)"
+        },
+        "hecho": {
+          "label": "Hecho",
+          "type": "terminal",
+          "command": null,
+          "artifact": null
+        },
+        "bloqueada": {
+          "label": "Bloqueada",
+          "type": "lateral",
+          "command": null,
+          "artifact": null
+        },
+        "cancelada": {
+          "label": "Cancelada",
+          "type": "lateral",
+          "command": null,
+          "artifact": null
+        }
+      },
+      "kanban_groups": {
+        "main": ["sin_priorizar", "priorizada", "research", "definicion", "planning", "build", "review", "hecho"],
+        "tray": ["bloqueada", "cancelada"]
+      },
+      "transitions": {
+        "sin_priorizar": ["priorizada", "research", "definicion", "planning", "build", "review", "hecho", "bloqueada", "cancelada"],
+        "priorizada":    ["sin_priorizar", "research", "definicion", "planning", "build", "review", "hecho", "bloqueada", "cancelada"],
+        "research":      ["sin_priorizar", "priorizada", "definicion", "planning", "build", "review", "hecho", "bloqueada", "cancelada"],
+        "definicion":    ["sin_priorizar", "priorizada", "research", "planning", "build", "review", "hecho", "bloqueada", "cancelada"],
+        "planning":      ["sin_priorizar", "priorizada", "research", "definicion", "build", "review", "hecho", "bloqueada", "cancelada"],
+        "build":         ["sin_priorizar", "priorizada", "research", "definicion", "planning", "review", "hecho", "bloqueada", "cancelada"],
+        "review":        ["sin_priorizar", "priorizada", "research", "definicion", "planning", "build", "hecho", "bloqueada", "cancelada"],
+        "hecho":         ["sin_priorizar", "priorizada", "research", "definicion", "planning", "build", "review", "bloqueada", "cancelada"],
+        "bloqueada":     ["sin_priorizar", "priorizada", "research", "definicion", "planning", "build", "review", "hecho", "cancelada"],
+        "cancelada":     ["sin_priorizar", "priorizada", "research", "definicion", "planning", "build", "review", "hecho", "bloqueada"]
+      },
+      "_transitions_doc": "V2: transiciones TODAS LIBRES (cualquier estado a cualquier otro). El sistema confía en el humano. Si quieres restringir, edita esta matriz manualmente.",
+      "default_phase_agents": {
+        "research":   ["age-spe-researcher", "age-spe-quality-guard"],
+        "definicion": ["age-spe-design-analyst", "age-spe-jtbd-architect", "age-spe-story-writer", "age-spe-story-builder", "age-spe-story-splitter", "age-sup-quality-coach"],
+        "planning":   ["age-spe-tech-architect", "age-spe-sprint-planner"],
+        "build":      [],
+        "review":     ["age-spe-test-engineer", "age-spe-code-reviewer", "age-sup-auditor", "age-sup-evaluator", "age-sup-optimizer"]
+      }
+    },
+    "marketing": {
+      "label": "Marketing",
+      "active": false,
+      "paths": ["docs/marketing"]
+    },
+    "rrhh": {
+      "label": "RRHH",
+      "active": false,
+      "paths": ["docs/rrhh"]
+    },
+    "operaciones": {
+      "label": "Operaciones",
+      "active": false,
+      "paths": ["docs/operaciones"]
+    }
+  },
+  "agents": [
+    "age-spe-quality-guard",
+    "age-spe-researcher",
+    "age-spe-design-analyst",
+    "age-spe-jtbd-architect",
+    "age-spe-story-writer",
+    "age-spe-story-builder",
+    "age-spe-story-splitter",
+    "age-spe-tech-architect",
+    "age-spe-sprint-planner",
+    "age-spe-test-engineer",
+    "age-spe-code-reviewer",
+    "age-sup-quality-coach",
+    "age-sup-auditor",
+    "age-sup-evaluator",
+    "age-sup-optimizer",
+    "age-sup-strategic-challenger"
+  ],
+  "id_format": {
+    "epic": "EPIC-{seq:03d}",
+    "task": "HU-{seq:03d}",
+    "subtask": "{parent_id}-S{seq:02d}"
+  }
+}
