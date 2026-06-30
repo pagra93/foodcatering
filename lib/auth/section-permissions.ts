@@ -24,7 +24,6 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
 
   // Catálogos globales
   { prefix: '/admin/catalogs/allergens', permission: 'allergen:view' },
-  { prefix: '/admin/catalogs/menu-templates', permission: 'menu-template:view' },
   { prefix: '/admin/catalogs/calendars', permission: 'calendar:view' },
   { prefix: '/admin/catalogs/zones', permission: 'zone:view' },
   { prefix: '/admin/catalogs/incident-reasons', permission: 'incident-reason:view' },

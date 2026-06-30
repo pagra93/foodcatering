@@ -79,10 +79,9 @@ const navItems: NavItem[] = [
     title: 'Catálogos Globales',
     href: '/admin/catalogs',
     icon: BookOpen,
-    description: 'Alérgenos, menús tipo, festivos, zonas',
+    description: 'Alérgenos, festivos, zonas',
     subItems: [
       { title: 'Alérgenos', href: '/admin/catalogs/allergens', permission: 'allergen:view' },
-      { title: 'Menús Tipo', href: '/admin/catalogs/menu-templates', permission: 'menu-template:view' },
       { title: 'Calendarios', href: '/admin/catalogs/calendars', permission: 'calendar:view' },
       { title: 'Zonas y Logística', href: '/admin/catalogs/zones', permission: 'zone:view' },
       { title: 'Motivos de Incidencia', href: '/admin/catalogs/incident-reasons', permission: 'incident-reason:view' },

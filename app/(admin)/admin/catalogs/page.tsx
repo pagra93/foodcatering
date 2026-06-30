@@ -3,7 +3,6 @@ import {
   AlertTriangle,
   CalendarDays,
   ChevronRight,
-  ChefHat,
   MapPin,
   Wheat,
 } from 'lucide-react'
@@ -41,15 +40,6 @@ export default async function AdminCatalogsPage() {
       count: `${reasonCount} activos`,
       description:
         'Catálogo global de motivos que empleados y caterings ven al reportar incidencias. Alimenta severidad SLA y auto-compensación.',
-    },
-    {
-      href: '/admin/catalogs/menu-templates',
-      icon: ChefHat,
-      title: 'Plantillas de menú',
-      count: 'Por catering',
-      description:
-        'Cada catering gestiona sus propias plantillas desde su portal. Admin solo consulta y audita.',
-      muted: true,
     },
     {
       href: '/admin/catalogs/zones',

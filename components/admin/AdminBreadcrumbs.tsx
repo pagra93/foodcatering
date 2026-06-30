@@ -27,7 +27,6 @@ const routeLabels: Record<string, string> = {
   permissions: 'Permisos',
   catalogs: 'Catálogos Globales',
   allergens: 'Alérgenos',
-  'menu-templates': 'Menús Tipo',
   calendars: 'Calendarios',
   zones: 'Zonas y Logística',
   'incident-reasons': 'Motivos de Incidencia',

@@ -76,7 +76,6 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
       ],
     },
     { resource: 'allergen', label: 'alérgenos', actions: CRUD('alérgenos') },
-    { resource: 'menu-template', label: 'plantillas de menú', actions: CRUD('plantillas de menú') },
     { resource: 'calendar', label: 'calendarios', actions: CRUD('calendarios') },
     { resource: 'zone', label: 'zonas', actions: CRUD('zonas') },
     { resource: 'incident-reason', label: 'motivos de incidencia', actions: CRUD('motivos de incidencia') },
