@@ -33,6 +33,7 @@ export default async function EmpleadoLayout({
           email: session.user.email || '',
           role: session.user.role || '',
         }}
+        permissions={session.user.permissions ?? []}
         branding={branding}
       />
       <main className="pb-20">{children}</main>

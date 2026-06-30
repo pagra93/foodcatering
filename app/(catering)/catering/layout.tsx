@@ -67,7 +67,12 @@ export default async function CateringInnerLayout({
         <link rel="icon" href={branding.faviconUrl} sizes="any" />
       )}
 
-      <CateringSidebar tenant={tenantData} user={userData} branding={branding} />
+      <CateringSidebar
+        tenant={tenantData}
+        user={userData}
+        permissions={session.user.permissions ?? []}
+        branding={branding}
+      />
 
       <div className="flex flex-1 flex-col overflow-hidden lg:ml-64">
         {session?.user?.impersonationToken && <ImpersonationBanner />}

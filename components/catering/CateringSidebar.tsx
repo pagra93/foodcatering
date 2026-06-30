@@ -18,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { permitted } from '@/lib/auth/section-permissions'
 
 type CateringSidebarProps = {
   tenant: {
@@ -33,6 +34,8 @@ type CateringSidebarProps = {
     email?: string | null
     role?: string | null
   }
+  /** Permisos de la sesión. Vacío (sesión antigua) → filtra por rol (legacy). */
+  permissions?: string[]
   branding?: {
     primaryColor: string
     primaryForeground: string
@@ -40,79 +43,108 @@ type CateringSidebarProps = {
   }
 }
 
+type CateringNavItem = {
+  name: string
+  href: string
+  icon: typeof LayoutDashboard
+  roles: string[]
+  permission?: string
+  /** Para items con subsecciones: visible si tiene ALGUNO de estos permisos. */
+  permissionAny?: string[]
+}
+
 // Navegación del portal del catering
-const navigation = [
+const navigation: CateringNavItem[] = [
   {
     name: 'Dashboard',
     href: '/catering/dashboard',
     icon: LayoutDashboard,
     roles: ['ADMIN_CATERING', 'CHEF', 'COCINERO', 'REPARTIDOR', 'FINANZAS_CATERING'],
+    permission: 'cat-dashboard:view',
   },
   {
     name: 'Platos',
     href: '/catering/platos',
     icon: UtensilsCrossed,
     roles: ['ADMIN_CATERING', 'CHEF'],
+    permission: 'dish:view',
   },
   {
     name: 'Menús Semanales',
     href: '/catering/menus',
     icon: Calendar,
     roles: ['ADMIN_CATERING', 'CHEF', 'COCINERO'],
+    permission: 'menu:view',
   },
   {
     name: 'Producción',
     href: '/catering/produccion',
     icon: ChefHat,
     roles: ['ADMIN_CATERING', 'CHEF', 'COCINERO'],
+    permission: 'production:view',
   },
   {
     name: 'Repartos',
     href: '/catering/rutas',
     icon: Truck,
     roles: ['ADMIN_CATERING', 'REPARTIDOR'],
+    permission: 'route:view',
   },
   {
     name: 'Empresas',
     href: '/catering/empresas',
     icon: Building2,
     roles: ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR', 'FINANZAS_CATERING'],
+    permission: 'client-company:view',
   },
   {
     name: 'Incidencias',
     href: '/catering/incidencias',
     icon: AlertCircle,
     roles: ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR', 'FINANZAS_CATERING'],
+    permission: 'cat-incident:view',
   },
   {
     name: 'Calidad',
     href: '/catering/calidad',
     icon: ShieldCheck,
     roles: ['ADMIN_CATERING', 'CHEF', 'FINANZAS_CATERING'],
+    permission: 'quality:view',
   },
   {
     name: 'Facturación',
     href: '/catering/facturacion',
     icon: Receipt,
     roles: ['ADMIN_CATERING', 'FINANZAS_CATERING'],
+    permission: 'cat-billing:view',
   },
   {
     name: 'Auditoría',
     href: '/catering/auditoria',
     icon: FileText,
     roles: ['ADMIN_CATERING', 'FINANZAS_CATERING'],
+    permission: 'cat-audit:view',
   },
   {
     name: 'Configuración',
     href: '/catering/configuracion',
     icon: Settings,
     roles: ['ADMIN_CATERING'],
+    permissionAny: [
+      'cat-config-branding:view',
+      'cat-config-holidays:view',
+      'cat-config-template:view',
+      'cat-config-zone:view',
+      'cat-config-user:view',
+      'cat-config-role:view',
+    ],
   },
 ]
 
 export function CateringSidebar({
   tenant,
   user,
+  permissions = [],
   branding,
 }: CateringSidebarProps) {
   const pathname = usePathname()
@@ -121,9 +153,17 @@ export function CateringSidebar({
     branding?.primaryColor ?? tenant.primaryColor ?? '#F59E0B'
   const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
 
-  const visibleNavigation = navigation.filter((item) =>
-    item.roles.includes(user.role || '')
-  )
+  // Con permisos → filtra por permiso; sin permisos (JWT antiguo) → por rol.
+  const visibleNavigation =
+    permissions.length > 0
+      ? navigation.filter((item) =>
+          item.permissionAny
+            ? item.permissionAny.some((p) => permitted(permissions, p))
+            : item.permission
+              ? permitted(permissions, item.permission)
+              : true
+        )
+      : navigation.filter((item) => item.roles.includes(user.role || ''))
 
   return (
     <div className="fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border lg:flex lg:flex-col hidden">

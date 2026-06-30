@@ -7,7 +7,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth/edge'
 import {
-  ADMIN_SECTION_RULES,
+  rulesForPath,
   requiredPermissionForPath,
   permitted,
 } from '@/lib/auth/section-permissions'
@@ -76,14 +76,21 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(new URL('/login', req.url))
     }
 
-    // Enforcement por sección en el portal admin: si la ruta exige un permiso
-    // `:view` que el rol no tiene, fuera. El super admin nunca se bloquea
-    // (aunque su JWT sea anterior a la resolución de permisos).
-    if (pathname.startsWith('/admin') && session.user.role !== 'SUPER_ADMIN') {
-      const required = requiredPermissionForPath(ADMIN_SECTION_RULES, pathname)
+    // Enforcement por sección/portal: si la ruta exige un permiso `:view` que el
+    // rol no tiene, fuera. Reglas:
+    //  - El super admin nunca se bloquea (cross-tenant total).
+    //  - Si la sesión aún no lleva permissions[] (JWT anterior a la migración),
+    //    NO se aplica enforcement (fallback): el límite del portal lo siguen
+    //    garantizando los gates por rol de cada layout. Al volver a iniciar
+    //    sesión, permissions[] se rellena y el enforcement por permiso manda.
+    const rules = rulesForPath(pathname)
+    if (rules && session.user.role !== 'SUPER_ADMIN') {
       const perms = session.user.permissions ?? []
-      if (required && !permitted(perms, required)) {
-        return NextResponse.redirect(new URL('/unauthorized', req.url))
+      if (perms.length > 0) {
+        const required = requiredPermissionForPath(rules, pathname)
+        if (required && !permitted(perms, required)) {
+          return NextResponse.redirect(new URL('/unauthorized', req.url))
+        }
       }
     }
 

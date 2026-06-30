@@ -73,6 +73,61 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin', permission: 'dashboard:view', exact: true },
 ]
 
+export const EMPRESA_SECTION_RULES: SectionRule[] = [
+  { prefix: '/empresa/configuracion/branding', permission: 'emp-config-branding:view' },
+  { prefix: '/empresa/configuracion/holidays', permission: 'emp-config-holidays:view' },
+  { prefix: '/empresa/configuracion/roles', permission: 'emp-config-role:view' },
+  { prefix: '/empresa/configuracion/usuarios', permission: 'emp-config-user:view' },
+  { prefix: '/empresa/configuracion', permission: 'emp-config:view' },
+  { prefix: '/empresa/empleados', permission: 'employee:view' },
+  { prefix: '/empresa/pedidos', permission: 'emp-order:view' },
+  { prefix: '/empresa/catering', permission: 'emp-catering:view' },
+  { prefix: '/empresa/facturacion', permission: 'emp-billing:view' },
+  { prefix: '/empresa/incidencias', permission: 'emp-incident:view' },
+  { prefix: '/empresa/auditoria', permission: 'emp-fiscal:view' },
+  { prefix: '/empresa/actividad', permission: 'emp-activity:view' },
+  { prefix: '/empresa/dashboard', permission: 'emp-dashboard:view' },
+]
+
+export const CATERING_SECTION_RULES: SectionRule[] = [
+  // Las subsecciones de configuración se reglan; la landing /catering/configuracion
+  // queda libre (solo enlaza a las subsecciones, que sí se controlan).
+  { prefix: '/catering/configuracion/branding', permission: 'cat-config-branding:view' },
+  { prefix: '/catering/configuracion/holidays', permission: 'cat-config-holidays:view' },
+  { prefix: '/catering/configuracion/menu-templates', permission: 'cat-config-template:view' },
+  { prefix: '/catering/configuracion/zones', permission: 'cat-config-zone:view' },
+  { prefix: '/catering/configuracion/usuarios', permission: 'cat-config-user:view' },
+  { prefix: '/catering/configuracion/roles', permission: 'cat-config-role:view' },
+  { prefix: '/catering/platos', permission: 'dish:view' },
+  { prefix: '/catering/menus', permission: 'menu:view' },
+  { prefix: '/catering/produccion', permission: 'production:view' },
+  { prefix: '/catering/rutas', permission: 'route:view' },
+  { prefix: '/catering/ruta', permission: 'route:view' },
+  { prefix: '/catering/empresas', permission: 'client-company:view' },
+  { prefix: '/catering/incidencias', permission: 'cat-incident:view' },
+  { prefix: '/catering/calidad', permission: 'quality:view' },
+  { prefix: '/catering/facturacion', permission: 'cat-billing:view' },
+  { prefix: '/catering/facturas', permission: 'invoice:view' },
+  { prefix: '/catering/auditoria', permission: 'cat-audit:view' },
+  { prefix: '/catering/dashboard', permission: 'cat-dashboard:view' },
+]
+
+export const EMPLEADO_SECTION_RULES: SectionRule[] = [
+  { prefix: '/empleado/menus', permission: 'menu-select:view' },
+  { prefix: '/empleado/perfil', permission: 'profile:view' },
+  { prefix: '/empleado/historial', permission: 'history:view' },
+  { prefix: '/empleado/incidencias', permission: 'emp-incident-own:view' },
+]
+
+/** Devuelve el set de reglas que aplica a una ruta (o null si ninguna). */
+export function rulesForPath(pathname: string): SectionRule[] | null {
+  if (pathname.startsWith('/admin')) return ADMIN_SECTION_RULES
+  if (pathname.startsWith('/empresa')) return EMPRESA_SECTION_RULES
+  if (pathname.startsWith('/catering')) return CATERING_SECTION_RULES
+  if (pathname.startsWith('/empleado')) return EMPLEADO_SECTION_RULES
+  return null
+}
+
 /** Permiso `:view` requerido para una ruta, o null si la ruta no está reglada. */
 export function requiredPermissionForPath(
   rules: SectionRule[],

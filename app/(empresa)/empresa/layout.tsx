@@ -21,7 +21,12 @@ export default async function EmpresaLayout({
       {branding.faviconUrl && (
         <link rel="icon" href={branding.faviconUrl} sizes="any" />
       )}
-      <EmpresaSidebar tenant={tenant} user={session.user} branding={branding} />
+      <EmpresaSidebar
+        tenant={tenant}
+        user={session.user}
+        permissions={session.user.permissions ?? []}
+        branding={branding}
+      />
 
       <div className="lg:pl-64">
         <EmpresaNavbar tenant={tenant} user={session.user} />

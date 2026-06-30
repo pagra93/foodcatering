@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { permitted } from '@/lib/auth/section-permissions'
 
 type EmpresaSidebarProps = {
   tenant: {
@@ -32,6 +33,8 @@ type EmpresaSidebarProps = {
     email?: string | null
     role?: string | null
   }
+  /** Permisos de la sesión. Vacío (sesión antigua) → se muestra todo. */
+  permissions?: string[]
   branding?: {
     primaryColor: string
     primaryForeground: string
@@ -44,55 +47,70 @@ const navigation = [
     name: 'Dashboard',
     href: '/empresa/dashboard',
     icon: LayoutDashboard,
+    permission: 'emp-dashboard:view',
   },
   {
     name: 'Configuración',
     href: '/empresa/configuracion',
     icon: Settings,
+    permission: 'emp-config:view',
   },
   {
     name: 'Empleados',
     href: '/empresa/empleados',
     icon: Users,
+    permission: 'employee:view',
   },
   {
     name: 'Pedidos',
     href: '/empresa/pedidos',
     icon: Utensils,
+    permission: 'emp-order:view',
   },
   {
     name: 'Catering',
     href: '/empresa/catering',
     icon: ChefHat,
+    permission: 'emp-catering:view',
   },
   {
     name: 'Facturación',
     href: '/empresa/facturacion',
     icon: Receipt,
+    permission: 'emp-billing:view',
   },
   {
     name: 'Incidencias',
     href: '/empresa/incidencias',
     icon: AlertCircle,
+    permission: 'emp-incident:view',
   },
   {
     name: 'Auditoría Fiscal',
     href: '/empresa/auditoria',
     icon: FileText,
+    permission: 'emp-fiscal:view',
   },
   {
     name: 'Actividad',
     href: '/empresa/actividad',
     icon: Activity,
+    permission: 'emp-activity:view',
   },
 ]
 
 export function EmpresaSidebar({
   tenant,
   user,
+  permissions = [],
   branding,
 }: EmpresaSidebarProps) {
   const pathname = usePathname()
+  // Con permisos → filtra por permiso; sin permisos (JWT antiguo) → todo.
+  const visibleNavigation =
+    permissions.length > 0
+      ? navigation.filter((item) => permitted(permissions, item.permission))
+      : navigation
   const effectiveLogo = branding?.logoUrl ?? tenant.logoUrl
   const effectivePrimary = branding?.primaryColor ?? tenant.primaryColor ?? '#3B82F6'
   const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
@@ -125,7 +143,7 @@ export function EmpresaSidebar({
 
       {/* Navegación */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-        {navigation.map((item) => {
+        {visibleNavigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
           const Icon = item.icon
 

@@ -27,6 +27,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { LogoutButton } from '@/components/LogoutButton'
+import { permitted } from '@/lib/auth/section-permissions'
 
 type EmpleadoNavbarProps = {
   user: {
@@ -34,6 +35,8 @@ type EmpleadoNavbarProps = {
     email: string
     role: string
   }
+  /** Permisos de la sesión. Vacío (sesión antigua) → se muestra todo. */
+  permissions?: string[]
   branding?: {
     primaryColor: string
     primaryForeground: string
@@ -48,29 +51,38 @@ const navigation = [
     href: '/empleado/menus',
     icon: Utensils,
     description: 'Selecciona tu comida',
+    permission: 'menu-select:view',
   },
   {
     name: 'Mi Perfil',
     href: '/empleado/perfil',
     icon: User,
     description: 'Alergias y preferencias',
+    permission: 'profile:view',
   },
   {
     name: 'Historial',
     href: '/empleado/historial',
     icon: History,
     description: 'Mis pedidos anteriores',
+    permission: 'history:view',
   },
   {
     name: 'Incidencias',
     href: '/empleado/incidencias',
     icon: AlertCircle,
     description: 'Reportar problemas',
+    permission: 'emp-incident-own:view',
   },
 ]
 
-export function EmpleadoNavbar({ user, branding }: EmpleadoNavbarProps) {
+export function EmpleadoNavbar({ user, permissions = [], branding }: EmpleadoNavbarProps) {
   const pathname = usePathname()
+  // Con permisos → filtra por permiso; sin permisos (JWT antiguo) → todo.
+  const visibleNavigation =
+    permissions.length > 0
+      ? navigation.filter((item) => permitted(permissions, item.permission))
+      : navigation
   const effectivePrimary = branding?.primaryColor ?? '#3B82F6'
   const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
   const effectiveLogo = branding?.logoUrl ?? null
@@ -106,7 +118,7 @@ export function EmpleadoNavbar({ user, branding }: EmpleadoNavbarProps) {
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center gap-1">
-              {navigation.map((item) => {
+              {visibleNavigation.map((item) => {
                 const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                 const Icon = item.icon
 
@@ -201,7 +213,7 @@ export function EmpleadoNavbar({ user, branding }: EmpleadoNavbarProps) {
       {/* Mobile Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden">
         <div className="grid grid-cols-4 gap-1 px-2 py-2">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
             const Icon = item.icon
 
