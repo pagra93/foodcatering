@@ -98,3 +98,29 @@ export async function updateAuditAction(
   revalidatePath('/admin/quality/audits')
   return { id: updated.id }
 }
+
+export async function deleteAuditAction(input: { auditId: string }) {
+  const actor = await requireSuperAdmin('audit:edit')
+
+  const current = await prisma.restaurantAudit.findUnique({
+    where: { id: input.auditId },
+  })
+  if (!current) throw new Error('Auditoría no encontrada')
+
+  await prisma.restaurantAudit.delete({ where: { id: input.auditId } })
+
+  await logAudit({
+    tenantId: current.tenantCatering,
+    actorId: actor.id,
+    action: 'DELETE',
+    entity: 'RestaurantAudit',
+    entityId: current.id,
+    diff: {
+      before: { score: current.score, type: current.auditType },
+      after: null,
+    },
+  })
+
+  revalidatePath('/admin/quality/audits')
+  return { ok: true }
+}

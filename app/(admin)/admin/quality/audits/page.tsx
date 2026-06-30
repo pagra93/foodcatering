@@ -156,6 +156,7 @@ export default async function AuditsPage({
               <th className="px-4 py-3 text-left">Fecha</th>
               <th className="px-4 py-3 text-left">Notas</th>
               <th className="px-4 py-3 text-right">Informe</th>
+              <th className="px-4 py-3 text-right">Detalle</th>
             </tr>
           </thead>
           <tbody>
@@ -209,12 +210,20 @@ export default async function AuditsPage({
                     </Badge>
                   )}
                 </td>
+                <td className="px-4 py-3 text-right">
+                  <Link
+                    href={`/admin/quality/audits/${a.id}`}
+                    className="text-xs font-medium text-primary hover:underline"
+                  >
+                    Ver detalle
+                  </Link>
+                </td>
               </tr>
             ))}
             {audits.length === 0 && (
               <tr>
                 <td
-                  colSpan={6}
+                  colSpan={7}
                   className="px-4 py-12 text-center text-sm text-gray-500"
                 >
                   No hay auditorías registradas todavía.
