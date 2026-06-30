@@ -215,6 +215,9 @@ memory/MEMORY.md       Observaciones entre sesiones
 - Un campo PII aparece en logs o en respuestas JSON sin cifrar.
 - Una mutación que debería ser Server Action está como API route + fetch del
   cliente.
+- Una **sección o acción nueva no pública** se controla con `if (role === 'X')`
+  en vez de con un permiso del catálogo RBAC (`permittedAction` / `recurso:view`).
+  Ver [`docs/general/desarrollo/RBAC-PERMISOS.md`](./docs/general/desarrollo/RBAC-PERMISOS.md).
 - La `DATABASE_URL` apunta a una BD con `prod` en el nombre y voy a ejecutar
   algo destructivo.
 
@@ -226,8 +229,15 @@ memory/MEMORY.md       Observaciones entre sesiones
    filtro tenant siempre.
 3. Page → Server Component por defecto; interactividad → sub-componente client.
 4. Mutación → Server Action en `components/<portal>/<feature>/actions.ts`.
-5. Tests → unit en `tests/unit/...`, E2E solo si el flujo cruza procesos.
-6. Artefactos de la feature → `docs/producto/features/<feature>/`.
+5. **Permisos (obligatorio):** toda sección/acción no pública se controla con el
+   RBAC, no con `if (role === 'X')`. Declara el permiso `recurso:accion` en
+   [`lib/auth/permission-catalog.ts`](./lib/auth/permission-catalog.ts), siémbralo
+   (`pnpm tsx prisma/seed-rbac.ts`), cablea la sección (sidebar + regla en
+   [`lib/auth/section-permissions.ts`](./lib/auth/section-permissions.ts)) y
+   protege la acción con `permittedAction(...)`. **Checklist completo:**
+   [`docs/general/desarrollo/RBAC-PERMISOS.md`](./docs/general/desarrollo/RBAC-PERMISOS.md).
+6. Tests → unit en `tests/unit/...`, E2E solo si el flujo cruza procesos.
+7. Artefactos de la feature → `docs/producto/features/<feature>/`.
 
 ## Core Principle
 
