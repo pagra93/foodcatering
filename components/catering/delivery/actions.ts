@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { ZodError } from 'zod'
 import { getRequiredSession } from '@/lib/auth/session'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   confirmDelivery,
   reportDeliveryIncident,
@@ -36,6 +37,14 @@ type ActionResult<T = undefined> =
   | { success: false; error: string }
 
 const DELIVERY_ADMIN_ROLES = new Set(['ADMIN_CATERING', 'CHEF'])
+
+// Roles legacy que pueden operar una ruta (admins + repartidor sobre la suya).
+// Fallback para sesiones anteriores a la migración RBAC (sin permissions[]).
+const ROUTE_OPERATOR_ROLES = [
+  'ADMIN_CATERING',
+  'CHEF',
+  'REPARTIDOR',
+] as const
 
 async function requireRouteAccess(routeId: string) {
   const session = await getRequiredSession()
@@ -78,6 +87,13 @@ export async function createRouteAction(
     if (!DELIVERY_ADMIN_ROLES.has(session.user.role)) {
       throw new Error('Solo ADMIN_CATERING o CHEF pueden crear rutas')
     }
+    if (
+      !permittedAction(session.user.permissions, session.user.role, 'route:create', [
+        ...DELIVERY_ADMIN_ROLES,
+      ])
+    ) {
+      throw new Error('No tienes permiso para crear rutas')
+    }
 
     const parsed = createRouteSchema.parse(input)
     const route = await createRoute(session.user.tenantId, parsed)
@@ -102,6 +118,13 @@ export async function startRouteAction(
 ): Promise<ActionResult> {
   try {
     const session = await requireRouteAccess(routeId)
+    if (
+      !permittedAction(session.user.permissions, session.user.role, 'route:start', [
+        ...ROUTE_OPERATOR_ROLES,
+      ])
+    ) {
+      throw new Error('No tienes permiso para iniciar la ruta')
+    }
     await startRoute(session.user.tenantId, routeId)
     revalidatePath(`/catering/ruta/${routeId}`)
     return { success: true }
@@ -122,6 +145,13 @@ export async function completeRouteAction(
 ): Promise<ActionResult> {
   try {
     const session = await requireRouteAccess(routeId)
+    if (
+      !permittedAction(session.user.permissions, session.user.role, 'route:complete', [
+        ...ROUTE_OPERATOR_ROLES,
+      ])
+    ) {
+      throw new Error('No tienes permiso para completar la ruta')
+    }
     await completeRoute(session.user.tenantId, routeId, notes)
     revalidatePath(`/catering/ruta/${routeId}`)
     return { success: true }
@@ -142,6 +172,16 @@ export async function confirmDeliveryAction(
 ): Promise<ActionResult> {
   try {
     const session = await requireRouteAccess(routeId)
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'route:confirm-delivery',
+        [...ROUTE_OPERATOR_ROLES]
+      )
+    ) {
+      throw new Error('No tienes permiso para confirmar la entrega')
+    }
     const parsed = confirmDeliverySchema.parse(input)
     await confirmDelivery(session.user.tenantId, parsed)
     revalidatePath(`/catering/ruta/${routeId}`)
@@ -166,6 +206,16 @@ export async function reportIncidentAction(
 ): Promise<ActionResult> {
   try {
     const session = await requireRouteAccess(routeId)
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'cat-incident:view',
+        [...ROUTE_OPERATOR_ROLES]
+      )
+    ) {
+      throw new Error('No tienes permiso para reportar incidencias')
+    }
     const parsed = reportIncidentSchema.parse(input)
     await reportDeliveryIncident(session.user.tenantId, parsed, session.user.id)
     revalidatePath(`/catering/ruta/${routeId}`)

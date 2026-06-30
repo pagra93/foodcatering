@@ -5,17 +5,18 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   upsertAllergenSchema,
   upsertIncidentReasonSchema,
   upsertOfficialHolidaySchema,
 } from '@/lib/validations/catalogs'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -25,7 +26,7 @@ async function requireSuperAdmin() {
 export async function upsertAllergenAction(
   input: Parameters<typeof upsertAllergenSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('allergen:create')
   const data = upsertAllergenSchema.parse(input)
 
   const { id, ...rest } = data
@@ -62,7 +63,7 @@ export async function upsertAllergenAction(
 }
 
 export async function toggleAllergenAction(input: { id: string; active: boolean }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('allergen:edit')
   const current = await prisma.allergen.findUnique({ where: { id: input.id } })
   if (!current) throw new Error('Alérgeno no encontrado')
 
@@ -88,7 +89,7 @@ export async function toggleAllergenAction(input: { id: string; active: boolean 
 export async function upsertIncidentReasonAction(
   input: Parameters<typeof upsertIncidentReasonSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('incident-reason:create')
   const data = upsertIncidentReasonSchema.parse(input)
   const { id, ...rest } = data
 
@@ -127,7 +128,7 @@ export async function toggleIncidentReasonAction(input: {
   id: string
   active: boolean
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('incident-reason:edit')
   const current = await prisma.incidentReason.findUnique({ where: { id: input.id } })
   if (!current) throw new Error('Motivo no encontrado')
 
@@ -153,7 +154,7 @@ export async function toggleIncidentReasonAction(input: {
 export async function upsertOfficialHolidayAction(
   input: Parameters<typeof upsertOfficialHolidaySchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('calendar:create')
   const data = upsertOfficialHolidaySchema.parse(input)
   const { id, ...rest } = data
 
@@ -195,7 +196,7 @@ export async function upsertOfficialHolidayAction(
 }
 
 export async function deleteOfficialHolidayAction(input: { id: string }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('calendar:delete')
   const current = await prisma.holiday.findUnique({ where: { id: input.id } })
   if (!current) throw new Error('Festivo no encontrado')
   if (current.scope === 'TENANT') {

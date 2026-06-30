@@ -5,6 +5,7 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   overrideTenantBrandingSchema,
   updateBrandingSchema,
@@ -18,9 +19,9 @@ async function requireActor() {
   return session.user
 }
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const actor = await requireActor()
-  if (actor.role !== 'SUPER_ADMIN') {
+  if (!permittedAction(actor.permissions, actor.role, permission, ['SUPER_ADMIN'])) {
     throw new Error('Acción reservada al super admin')
   }
   return actor
@@ -43,11 +44,16 @@ export async function updateOwnBrandingAction(input: UpdateBrandingInput) {
   })
   if (!tenant) throw new Error('Tenant no encontrado')
 
-  const allowed =
-    actor.role === 'SUPER_ADMIN' ||
-    (actor.role === 'ADMIN_EMPRESA' && tenant.type === 'EMPRESA') ||
-    (actor.role === 'ADMIN_CATERING' && tenant.type === 'CATERING')
-  if (!allowed) {
+  // Permiso de branding según el portal del tenant; roles legacy como fallback.
+  const brandingPerm =
+    tenant.type === 'CATERING'
+      ? 'cat-config-branding:edit'
+      : 'emp-config-branding:edit'
+  const legacyRoles =
+    tenant.type === 'CATERING'
+      ? ['SUPER_ADMIN', 'ADMIN_CATERING']
+      : ['SUPER_ADMIN', 'ADMIN_EMPRESA']
+  if (!permittedAction(actor.permissions, actor.role, brandingPerm, legacyRoles)) {
     throw new Error('No tienes permisos para editar el branding')
   }
 
@@ -91,7 +97,7 @@ export async function updateOwnBrandingAction(input: UpdateBrandingInput) {
 export async function overrideTenantBrandingAction(
   input: Parameters<typeof overrideTenantBrandingSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('template-branding:edit')
   const data = overrideTenantBrandingSchema.parse(input)
 
   const updated = await prisma.tenant.update({
@@ -133,7 +139,7 @@ export async function overrideTenantBrandingAction(
 export async function updateSystemSettingsAction(
   input: Parameters<typeof updateSystemSettingsSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('template-branding:edit')
   const data = updateSystemSettingsSchema.parse(input)
 
   const updated = await prisma.systemSettings.upsert({

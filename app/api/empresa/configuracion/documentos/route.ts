@@ -8,6 +8,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { permittedAction } from '@/lib/auth/permissions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // 2. Verificar rol
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH', 'FINANZAS']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'emp-config-document:upload', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

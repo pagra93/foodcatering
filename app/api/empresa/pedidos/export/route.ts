@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { getRequiredSession, getScopedTenantId, TenantMismatchError } from '@/lib/auth/session'
 import { exportOrdersCSV, type OrderFilters } from '@/lib/db/queries/empresa-pedidos'
+import { permittedAction } from '@/lib/auth/permissions'
 import { exportRateLimiter } from '@/lib/ratelimit'
 
 /**
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
     const session = await getRequiredSession()
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH', 'FINANZAS']
-    if (!allowedRoles.includes(session.user.role as string)) {
+    if (!permittedAction(session.user.permissions, session.user.role as string, 'emp-order:export', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

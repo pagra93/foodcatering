@@ -7,6 +7,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { getKitchenDisplay } from '@/lib/db/queries/catering-production'
 import { kitchenDisplaySchema } from '@/lib/validations/production'
 import { ZodError } from 'zod'
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
       'COCINERO',
     ]
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'production:mark-ready', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

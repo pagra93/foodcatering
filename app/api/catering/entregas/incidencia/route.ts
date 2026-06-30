@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { reportDeliveryIncident } from '@/lib/db/queries/catering-delivery'
 import { reportIncidentSchema } from '@/lib/validations/delivery'
 import { ZodError } from 'zod'
@@ -19,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'cat-incident:view', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

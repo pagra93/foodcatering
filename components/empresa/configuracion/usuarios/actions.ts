@@ -20,7 +20,10 @@ import type { UserRole } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import { EMPRESA_MANAGEMENT_ROLES } from '@/lib/db/queries/empresa-usuarios'
+
+const CONFIG_USER_ADMIN_ROLES = ['ADMIN_EMPRESA', 'SUPER_ADMIN'] as const
 
 async function requireEmpresaAdmin() {
   const session = (await auth()) as Session | null
@@ -48,6 +51,13 @@ export async function createEmpresaUserAction(
   input: z.infer<typeof userInputSchema>
 ) {
   const actor = await requireEmpresaAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'emp-config-user:create', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para crear usuarios')
+  }
   const data = userInputSchema.parse(input)
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
@@ -100,6 +110,13 @@ export async function updateEmpresaUserAction(
   input: z.infer<typeof updateSchema>
 ) {
   const actor = await requireEmpresaAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'emp-config-user:edit', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para editar usuarios')
+  }
   const data = updateSchema.parse(input)
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
@@ -144,6 +161,13 @@ export async function toggleEmpresaUserStatusAction(input: {
   userId: string
 }) {
   const actor = await requireEmpresaAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'emp-config-user:delete', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para desactivar usuarios')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({
@@ -181,6 +205,13 @@ export async function resetEmpresaUserPasswordAction(input: {
   userId: string
 }) {
   const actor = await requireEmpresaAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'emp-config-user:edit', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para restablecer contraseñas')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({
@@ -210,6 +241,13 @@ export async function resetEmpresaUserPasswordAction(input: {
 
 export async function deleteEmpresaUserAction(input: { userId: string }) {
   const actor = await requireEmpresaAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'emp-config-user:delete', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para eliminar usuarios')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({

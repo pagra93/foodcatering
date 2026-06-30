@@ -5,6 +5,7 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   applyPenaltySchema,
   createPenaltySchema,
@@ -15,11 +16,11 @@ import type {
   CreatePenaltyInput,
 } from '@/lib/validations/penalty'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Solo SUPER_ADMIN puede gestionar penalizaciones')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -34,7 +35,7 @@ async function requireCateringAdminOfTenant(tenantCatering: string) {
 }
 
 export async function createPenaltyAction(input: CreatePenaltyInput) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('penalty:create')
   const data = createPenaltySchema.parse(input)
 
   // Verificar que el tenantCatering existe y es CATERING.
@@ -83,7 +84,7 @@ export async function createPenaltyAction(input: CreatePenaltyInput) {
 }
 
 export async function applyPenaltyAction(input: { penaltyId: string }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('penalty:edit')
   const { penaltyId } = applyPenaltySchema.parse(input)
 
   const current = await prisma.penalty.findUnique({ where: { id: penaltyId } })
@@ -127,7 +128,7 @@ export async function waivePenaltyAction(input: {
   penaltyId: string
   reason: string
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('penalty:edit')
   const { penaltyId, reason } = waivePenaltySchema.parse(input)
 
   const current = await prisma.penalty.findUnique({ where: { id: penaltyId } })

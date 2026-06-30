@@ -23,12 +23,12 @@ import { logAudit } from '@/lib/auth/audit'
 // Server Actions no tienen acceso directo a Request; los audit logs se
 // generan sin IP/userAgent (los completan los endpoints API cuando los hay).
 const AUDIT_HEADERS: { ip?: string; userAgent?: string } = {}
-import { rolesByTenantType } from '@/lib/auth/permissions'
+import { permittedAction, rolesByTenantType } from '@/lib/auth/permissions'
 
-function requireActor(session: Session | null) {
+function requireActor(session: Session | null, permission: string) {
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -49,7 +49,7 @@ const createUserSchema = z.object({
 
 export async function createUserAction(input: z.infer<typeof createUserSchema>) {
   const session = (await auth()) as Session | null
-  const actor = requireActor(session)
+  const actor = requireActor(session, 'user:create')
 
   const data = createUserSchema.parse(input)
 
@@ -147,7 +147,7 @@ const updateUserSchema = z.object({
 
 export async function updateUserAction(input: z.infer<typeof updateUserSchema>) {
   const session = (await auth()) as Session | null
-  const actor = requireActor(session)
+  const actor = requireActor(session, 'user:edit')
 
   const data = updateUserSchema.parse(input)
 
@@ -222,7 +222,7 @@ export async function setUserStatusAction(input: {
   status: 'ACTIVE' | 'DISABLED' | 'PENDING'
 }) {
   const session = (await auth()) as Session | null
-  const actor = requireActor(session)
+  const actor = requireActor(session, 'user:edit-status')
 
   const current = await prisma.user.findUnique({
     where: { id: input.userId },
@@ -254,7 +254,7 @@ export async function setUserStatusAction(input: {
 
 export async function deleteUserAction(input: { userId: string }) {
   const session = (await auth()) as Session | null
-  const actor = requireActor(session)
+  const actor = requireActor(session, 'user:delete')
 
   const current = await prisma.user.findUnique({
     where: { id: input.userId },
@@ -289,7 +289,7 @@ export async function deleteUserAction(input: { userId: string }) {
 
 export async function resetPasswordAction(input: { userId: string }) {
   const session = (await auth()) as Session | null
-  const actor = requireActor(session)
+  const actor = requireActor(session, 'user:reset-password')
 
   const current = await prisma.user.findUnique({
     where: { id: input.userId },

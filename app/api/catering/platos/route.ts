@@ -6,6 +6,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { getDishes, createDish, dishNameExists } from '@/lib/db/queries/catering-dishes'
 import { createDishSchema, dishFiltersSchema } from '@/lib/validations/dish'
 import { ZodError } from 'zod'
@@ -31,7 +32,7 @@ export async function GET(request: NextRequest) {
       'FINANZAS_CATERING',
     ]
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'dish:view', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'dish:create', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

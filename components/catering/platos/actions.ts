@@ -12,6 +12,7 @@
 import { revalidatePath } from 'next/cache'
 import { ZodError } from 'zod'
 import { getRequiredSession } from '@/lib/auth/session'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   cloneDish,
   createDish,
@@ -56,6 +57,16 @@ export async function createDishAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const session = await requireCateringAdmin()
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'dish:create',
+        [...ADMIN_ROLES]
+      )
+    ) {
+      return { success: false, error: 'No tienes permiso para crear platos' }
+    }
     const parsed = createDishSchema.parse(input)
 
     const exists = await dishNameExists(session.user.tenantId, parsed.name)
@@ -86,6 +97,16 @@ export async function updateDishAction(
 ): Promise<ActionResult> {
   try {
     const session = await requireCateringAdmin()
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'dish:edit',
+        [...ADMIN_ROLES]
+      )
+    ) {
+      return { success: false, error: 'No tienes permiso para editar platos' }
+    }
     const parsed = updateDishSchema.parse(input)
 
     if (parsed.name) {
@@ -120,6 +141,16 @@ export async function updateDishAction(
 export async function deleteDishAction(dishId: string): Promise<ActionResult> {
   try {
     const session = await requireCateringAdmin()
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'dish:delete',
+        [...ADMIN_ROLES]
+      )
+    ) {
+      return { success: false, error: 'No tienes permiso para eliminar platos' }
+    }
     await deleteDish(dishId, session.user.tenantId)
     revalidatePath('/catering/platos')
     return { success: true }
@@ -140,6 +171,16 @@ export async function cloneDishAction(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     const session = await requireCateringAdmin()
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'dish:clone',
+        [...ADMIN_ROLES]
+      )
+    ) {
+      return { success: false, error: 'No tienes permiso para clonar platos' }
+    }
     const dish = await cloneDish(dishId, session.user.tenantId, newName)
     revalidatePath('/catering/platos')
     return { success: true, data: { id: dish.id } }
@@ -158,5 +199,26 @@ export async function toggleDishActiveAction(
   dishId: string,
   active: boolean
 ): Promise<ActionResult> {
+  try {
+    const session = await requireCateringAdmin()
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role,
+        'dish:toggle-active',
+        [...ADMIN_ROLES]
+      )
+    ) {
+      return {
+        success: false,
+        error: 'No tienes permiso para activar o desactivar platos',
+      }
+    }
+  } catch (error) {
+    if (error instanceof Error) {
+      return { success: false, error: error.message }
+    }
+    return { success: false, error: 'Error al cambiar el estado del plato' }
+  }
   return updateDishAction(dishId, { active })
 }

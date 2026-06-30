@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { markInvoiceAsPaid } from '@/lib/db/queries/catering-invoices'
 import { markInvoiceAsPaidSchema } from '@/lib/validations/invoice'
 import { ZodError } from 'zod'
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'invoice:pay', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

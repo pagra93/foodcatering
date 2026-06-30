@@ -6,6 +6,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { prisma } from '@/lib/db/prisma'
 import { getDailyMenu, updateDailyMenu } from '@/lib/db/queries/catering-menus'
 import { dailyMenuSchema, isAfterCutoff } from '@/lib/validations/menu'
@@ -41,7 +42,7 @@ export async function GET(
       'FINANZAS_CATERING',
     ]
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'menu:view', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -96,7 +97,7 @@ export async function POST(
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'menu:edit-day', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

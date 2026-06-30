@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import { ALL_RATE_LIMITERS } from '@/lib/ratelimit'
 
 export async function resetRateLimiterKeyAction(input: {
@@ -12,8 +13,8 @@ export async function resetRateLimiterKeyAction(input: {
 }) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, 'rate-limit:edit', ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
 
   const limiter = ALL_RATE_LIMITERS[input.limiter]

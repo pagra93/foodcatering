@@ -7,6 +7,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   getDishById,
   updateDish,
@@ -46,7 +47,7 @@ export async function GET(
       'FINANZAS_CATERING',
     ]
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'dish:view', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -98,7 +99,7 @@ export async function PATCH(
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'dish:edit', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -191,7 +192,7 @@ export async function DELETE(
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'dish:delete', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

@@ -5,22 +5,23 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   createDpaAgreementSchema,
   type CreateDpaInput,
 } from '@/lib/validations/compliance'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
 
 export async function createDpaAgreementAction(input: CreateDpaInput) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('dpa:create')
   const data = createDpaAgreementSchema.parse(input)
 
   const tenant = await prisma.tenant.findUnique({

@@ -6,14 +6,15 @@ import type { RetentionEntity } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import { updateRetentionPolicySchema } from '@/lib/validations/compliance'
 import { RETENTION_DEFAULTS } from '@/lib/db/queries/admin-retention'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -23,7 +24,7 @@ export async function upsertRetentionPolicyAction(input: {
   retentionDays: number
   deleteMode: 'SOFT' | 'HARD'
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('retention:edit')
   const data = updateRetentionPolicySchema.parse(input)
 
   const policy = await prisma.retentionPolicy.upsert({
@@ -64,7 +65,7 @@ export async function upsertRetentionPolicyAction(input: {
  * Inicializa las políticas con los defaults sugeridos si no existen.
  */
 export async function seedRetentionDefaultsAction() {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('retention:edit')
 
   const existing = await prisma.retentionPolicy.findMany({
     select: { entity: true },

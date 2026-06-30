@@ -5,10 +5,13 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   upsertMenuTemplateSchema,
   upsertDeliveryZoneSchema,
 } from '@/lib/validations/catalogs'
+
+const CATALOG_ADMIN_ROLES = ['ADMIN_CATERING', 'CHEF', 'SUPER_ADMIN'] as const
 
 async function requireCateringAdmin() {
   const session = (await auth()) as Session | null
@@ -40,6 +43,17 @@ export async function upsertMenuTemplateAction(
   const actor = await requireCateringAdmin()
   const data = upsertMenuTemplateSchema.parse(input)
   const tenantCatering = actor.tenantId
+
+  const templatePermission = data.id
+    ? 'cat-config-template:edit'
+    : 'cat-config-template:create'
+  if (
+    !permittedAction(actor.permissions, actor.role, templatePermission, [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para gestionar plantillas de menú')
+  }
 
   if (data.id) {
     const before = await prisma.menuTemplate.findUnique({
@@ -106,6 +120,14 @@ export async function toggleMenuTemplateAction(input: {
     throw new Error('Esta plantilla no pertenece a tu catering')
   }
 
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-template:edit', [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para gestionar plantillas de menú')
+  }
+
   await prisma.menuTemplate.update({
     where: { id: input.id },
     data: { active: input.active },
@@ -136,6 +158,14 @@ export async function deleteMenuTemplateAction(input: { id: string }) {
     throw new Error('Esta plantilla no pertenece a tu catering')
   }
 
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-template:delete', [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para eliminar plantillas de menú')
+  }
+
   await prisma.menuTemplate.delete({ where: { id: input.id } })
 
   await logAudit({
@@ -159,6 +189,17 @@ export async function upsertDeliveryZoneAction(
   const actor = await requireCateringAdmin()
   const data = upsertDeliveryZoneSchema.parse(input)
   const tenantCatering = actor.tenantId
+
+  const zonePermission = data.id
+    ? 'cat-config-zone:edit'
+    : 'cat-config-zone:create'
+  if (
+    !permittedAction(actor.permissions, actor.role, zonePermission, [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para gestionar zonas de reparto')
+  }
 
   if (data.id) {
     const before = await prisma.deliveryZone.findUnique({
@@ -228,6 +269,14 @@ export async function toggleDeliveryZoneAction(input: {
     throw new Error('Esta zona no pertenece a tu catering')
   }
 
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-zone:edit', [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para gestionar zonas de reparto')
+  }
+
   await prisma.deliveryZone.update({
     where: { id: input.id },
     data: { active: input.active },
@@ -256,6 +305,14 @@ export async function deleteDeliveryZoneAction(input: { id: string }) {
   if (!current) throw new Error('Zona no encontrada')
   if (current.tenantCatering !== tenantCatering) {
     throw new Error('Esta zona no pertenece a tu catering')
+  }
+
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-zone:delete', [
+      ...CATALOG_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para eliminar zonas de reparto')
   }
 
   await prisma.deliveryZone.delete({ where: { id: input.id } })

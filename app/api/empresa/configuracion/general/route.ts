@@ -5,6 +5,7 @@ import {
   TenantMismatchError,
 } from '@/lib/auth/session'
 import { updateCompanyGeneral } from '@/lib/db/queries/empresa-configuracion'
+import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
 
 const updateGeneralSchema = z.object({
@@ -48,7 +49,7 @@ export async function PATCH(request: NextRequest) {
     const session = await getRequiredSession()
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA']
-    if (!allowedRoles.includes(session.user.role as string)) {
+    if (!permittedAction(session.user.permissions, session.user.role as string, 'emp-config:edit', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

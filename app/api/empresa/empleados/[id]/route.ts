@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { permittedAction } from '@/lib/auth/permissions'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
 
@@ -35,7 +36,7 @@ export async function PUT(
 
     // Verificar rol
     const allowedRoles = ['RRHH', 'ADMIN_EMPRESA', 'ROOT']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'employee:edit', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 
@@ -139,12 +140,12 @@ export async function PATCH(
 
     // Verificar rol
     const allowedRoles = ['RRHH', 'ADMIN_EMPRESA', 'ROOT']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'employee:edit', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 
     const body = await req.json()
-    
+
     // Verificar que el empleado existe y pertenece al tenant
     const employee = await prisma.employee.findFirst({
       where: {

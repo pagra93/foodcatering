@@ -5,12 +5,19 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   toggleHolidayOverrideSchema,
   upsertTenantHolidaySchema,
 } from '@/lib/validations/catalogs'
 
 const TENANT_ADMIN_ROLES = ['ADMIN_EMPRESA', 'ADMIN_CATERING', 'SUPER_ADMIN']
+
+/** Permiso de festivos según el portal del tenant (config holidays). */
+function holidayPerm(tenantType: string | undefined, action: string): string {
+  const resource = tenantType === 'CATERING' ? 'cat-config-holidays' : 'emp-config-holidays'
+  return `${resource}:${action}`
+}
 
 async function requireTenantAdmin() {
   const session = (await auth()) as Session | null
@@ -23,6 +30,17 @@ async function requireTenantAdmin() {
   return { ...session.user, tenantId }
 }
 
+/** Verifica el permiso de festivos por acción (fallback a roles admin del tenant). */
+function assertHolidayPerm(
+  actor: { permissions?: string[]; role: string; tenantType?: string | null },
+  action: string
+) {
+  const perm = holidayPerm(actor.tenantType ?? undefined, action)
+  if (!permittedAction(actor.permissions, actor.role, perm, TENANT_ADMIN_ROLES)) {
+    throw new Error('No tienes permiso para gestionar festivos')
+  }
+}
+
 /**
  * Activa/desactiva un festivo oficial para este tenant.
  * Si disabled=true: el festivo NO se aplica a este tenant (caso 24/7).
@@ -32,6 +50,7 @@ export async function toggleHolidayOverrideAction(
   input: Parameters<typeof toggleHolidayOverrideSchema.parse>[0]
 ) {
   const actor = await requireTenantAdmin()
+  assertHolidayPerm(actor, 'edit')
   const data = toggleHolidayOverrideSchema.parse(input)
   const tenantId = actor.tenantId
 
@@ -95,6 +114,7 @@ export async function upsertTenantHolidayAction(
   input: Parameters<typeof upsertTenantHolidaySchema.parse>[0]
 ) {
   const actor = await requireTenantAdmin()
+  assertHolidayPerm(actor, 'edit')
   const data = upsertTenantHolidaySchema.parse(input)
   const tenantId = actor.tenantId
 
@@ -155,6 +175,7 @@ export async function upsertTenantHolidayAction(
 
 export async function deleteTenantHolidayAction(input: { id: string }) {
   const actor = await requireTenantAdmin()
+  assertHolidayPerm(actor, 'delete')
   const tenantId = actor.tenantId
 
   const current = await prisma.holiday.findUnique({ where: { id: input.id } })

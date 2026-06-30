@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { getRequiredSession, getScopedTenantId, TenantMismatchError } from '@/lib/auth/session'
 import { updateCompanyPolicy } from '@/lib/db/queries/empresa-configuracion'
+import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
 
 const updatePolicySchema = z.object({
@@ -24,7 +25,7 @@ export async function PATCH(request: NextRequest) {
     const session = await getRequiredSession()
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA']
-    if (!allowedRoles.includes(session.user.role as string)) {
+    if (!permittedAction(session.user.permissions, session.user.role as string, 'emp-config:edit-plan', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

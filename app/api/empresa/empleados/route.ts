@@ -5,6 +5,7 @@ import {
   TenantMismatchError,
 } from '@/lib/auth/session'
 import { createEmployee } from '@/lib/db/queries/empresa-empleados'
+import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
 
 const createEmployeeSchema = z.object({
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
     const session = await getRequiredSession()
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH']
-    if (!allowedRoles.includes(session.user.role as string)) {
+    if (!permittedAction(session.user.permissions, session.user.role as string, 'employee:create', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

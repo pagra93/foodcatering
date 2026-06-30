@@ -7,6 +7,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   getInvoiceById,
   updateInvoiceStatus,
@@ -74,7 +75,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'invoice:pay', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
@@ -142,7 +143,7 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'invoice:generate', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

@@ -194,6 +194,31 @@ export function permissionsInclude(
 }
 
 /**
+ * Autorización de una ACCIÓN con compatibilidad hacia atrás (Fase 2 RBAC).
+ *
+ * - Si la sesión lleva `permissions[]` (JWT posterior a la migración RBAC):
+ *   se exige `permission` (p.ej. `dish:create`).
+ * - Si NO los lleva (sesión anterior a la migración): se cae al check por rol
+ *   legacy (`legacyRoles`), de modo que nadie se queda fuera durante la
+ *   transición. Al volver a iniciar sesión, manda el permiso.
+ *
+ * El super admin siempre pasa (sus permisos resueltos son `['*']`; y si su JWT
+ * fuese antiguo, normalmente `SUPER_ADMIN` está en `legacyRoles` o el caller ya
+ * lo contempla aparte).
+ */
+export function permittedAction(
+  permissions: string[] | undefined,
+  role: string,
+  permission: string,
+  legacyRoles: readonly string[]
+): boolean {
+  if (permissions && permissions.length > 0) {
+    return permissionsInclude(permissions, permission)
+  }
+  return legacyRoles.includes(role)
+}
+
+/**
  * Verificar si un rol puede acceder a un tenant
  */
 export function canAccessTenant(

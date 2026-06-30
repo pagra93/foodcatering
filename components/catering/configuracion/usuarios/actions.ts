@@ -16,7 +16,10 @@ import type { UserRole } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import { CATERING_ROLES } from '@/lib/db/queries/catering-usuarios'
+
+const CONFIG_USER_ADMIN_ROLES = ['ADMIN_CATERING', 'SUPER_ADMIN'] as const
 
 async function requireCateringAdmin() {
   const session = (await auth()) as Session | null
@@ -52,6 +55,13 @@ export async function createCateringUserAction(
   input: z.infer<typeof userInputSchema>
 ) {
   const actor = await requireCateringAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-user:create', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para crear usuarios')
+  }
   const data = userInputSchema.parse(input)
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
@@ -102,6 +112,13 @@ export async function updateCateringUserAction(
   input: z.infer<typeof updateSchema>
 ) {
   const actor = await requireCateringAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-user:edit', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para editar usuarios')
+  }
   const data = updateSchema.parse(input)
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
@@ -144,6 +161,13 @@ export async function toggleCateringUserStatusAction(input: {
   userId: string
 }) {
   const actor = await requireCateringAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-user:delete', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para desactivar usuarios')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({
@@ -179,6 +203,13 @@ export async function resetCateringUserPasswordAction(input: {
   userId: string
 }) {
   const actor = await requireCateringAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-user:edit', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para restablecer contraseñas')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({
@@ -208,6 +239,13 @@ export async function resetCateringUserPasswordAction(input: {
 
 export async function deleteCateringUserAction(input: { userId: string }) {
   const actor = await requireCateringAdmin()
+  if (
+    !permittedAction(actor.permissions, actor.role, 'cat-config-user:delete', [
+      ...CONFIG_USER_ADMIN_ROLES,
+    ])
+  ) {
+    throw new Error('No tienes permiso para eliminar usuarios')
+  }
   if (!actor.tenantId) throw new Error('Tenant no resuelto')
 
   const current = await prisma.user.findFirst({

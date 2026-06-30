@@ -7,6 +7,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { publishWeeklyMenu } from '@/lib/db/queries/catering-menus'
 import { publishMenusSchema } from '@/lib/validations/menu'
 import { ZodError } from 'zod'
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'menu:publish', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

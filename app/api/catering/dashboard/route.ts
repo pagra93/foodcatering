@@ -7,6 +7,7 @@
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { getCateringDashboard } from '@/lib/db/queries/catering-dashboard'
 
 export async function GET() {
@@ -30,7 +31,7 @@ export async function GET() {
       'FINANZAS_CATERING',
     ]
 
-    if (!cateringRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'cat-dashboard:view', cateringRoles)) {
       return NextResponse.json(
         { error: 'Acceso denegado' },
         { status: 403 }

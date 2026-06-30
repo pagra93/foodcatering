@@ -6,6 +6,7 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   DEFAULT_DUE_DAYS,
   generateMonthSchema,
@@ -14,11 +15,11 @@ import {
   updateTaxRuleSchema,
 } from '@/lib/validations/billing'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -41,7 +42,7 @@ export async function generateMonthBillingAction(input: {
   period: string
   dryRun?: boolean
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('settlement:create')
   const { period, dryRun } = generateMonthSchema.parse(input)
 
   // ── Settlements (comisión catering → Plati) ────────────────────
@@ -250,7 +251,7 @@ export async function markSettlementPaidAction(input: {
   paymentRef?: string
   paymentMethod?: string
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('settlement:create')
   const data = markPaidSchema.parse(input)
 
   const current = await prisma.settlement.findUnique({ where: { id: data.id } })
@@ -290,7 +291,7 @@ export async function markSaasInvoicePaidAction(input: {
   paymentRef?: string
   paymentMethod?: string
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('settlement:create')
   const data = markPaidSchema.parse(input)
 
   const current = await prisma.saasInvoice.findUnique({ where: { id: data.id } })
@@ -327,7 +328,7 @@ export async function markSaasInvoicePaidAction(input: {
 export async function updateSaasPlanAction(
   input: Parameters<typeof updateSaasPlanSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('plan:edit')
   const data = updateSaasPlanSchema.parse(input)
 
   const updated = await prisma.saasPlan.upsert({
@@ -370,7 +371,7 @@ export async function updateSaasPlanAction(
 export async function upsertTaxRuleAction(
   input: Parameters<typeof updateTaxRuleSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('tax:edit')
   const data = updateTaxRuleSchema.parse(input)
 
   const rule = data.id

@@ -7,6 +7,7 @@ import type { GdprRequestType } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   createGdprRequestSchema,
   rejectGdprRequestSchema,
@@ -16,11 +17,11 @@ import {
 } from '@/lib/validations/compliance'
 import { buildUserDataDump } from '@/lib/db/queries/admin-gdpr'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -101,7 +102,7 @@ export async function resolveGdprRequestAction(input: {
   requestId: string
   confirmation?: string
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('gdpr:process')
   const data = resolveGdprRequestSchema.parse(input)
 
   const request = await prisma.gdprRequest.findUnique({
@@ -217,7 +218,7 @@ export async function rejectGdprRequestAction(input: {
   requestId: string
   reason: string
 }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('gdpr:process')
   const data = rejectGdprRequestSchema.parse(input)
 
   const request = await prisma.gdprRequest.findUnique({

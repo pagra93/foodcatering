@@ -6,6 +6,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
 
 const updateSiteSchema = z.object({
@@ -31,7 +32,7 @@ export async function PATCH(
 
     // 2. Verificar rol
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH']
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'emp-config-site:edit', allowedRoles)) {
       return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 

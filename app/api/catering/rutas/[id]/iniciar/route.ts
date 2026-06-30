@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { startRoute } from '@/lib/db/queries/catering-routes'
 
 type RouteContext = {
@@ -23,7 +24,7 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'route:start', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

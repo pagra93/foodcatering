@@ -5,16 +5,17 @@ import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
+import { permittedAction } from '@/lib/auth/permissions'
 import {
   cancelMaintenanceSchema,
   scheduleMaintenanceSchema,
 } from '@/lib/validations/maintenance'
 
-async function requireSuperAdmin() {
+async function requireSuperAdmin(permission: string) {
   const session = (await auth()) as Session | null
   if (!session?.user) throw new Error('Sesión requerida')
-  if (session.user.role !== 'SUPER_ADMIN') {
-    throw new Error('Acción reservada al super admin')
+  if (!permittedAction(session.user.permissions, session.user.role, permission, ['SUPER_ADMIN'])) {
+    throw new Error('No tienes permiso para esta acción')
   }
   return session.user
 }
@@ -22,7 +23,7 @@ async function requireSuperAdmin() {
 export async function scheduleMaintenanceAction(
   input: Parameters<typeof scheduleMaintenanceSchema.parse>[0]
 ) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('maintenance:run')
   const data = scheduleMaintenanceSchema.parse(input)
 
   const window = await prisma.maintenanceWindow.create({
@@ -57,7 +58,7 @@ export async function scheduleMaintenanceAction(
 }
 
 export async function cancelMaintenanceAction(input: { id: string }) {
-  const actor = await requireSuperAdmin()
+  const actor = await requireSuperAdmin('maintenance:run')
   const { id } = cancelMaintenanceSchema.parse(input)
 
   const current = await prisma.maintenanceWindow.findUnique({ where: { id } })

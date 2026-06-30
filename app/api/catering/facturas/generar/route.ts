@@ -8,6 +8,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { generateInvoice } from '@/lib/db/queries/catering-invoices'
 import { generateInvoiceSchema, canGenerateInvoiceForPeriod } from '@/lib/validations/invoice'
 import { ZodError } from 'zod'
@@ -23,7 +24,7 @@ export async function POST(request: NextRequest) {
     // Solo ADMIN_CATERING y FINANZAS_CATERING pueden generar facturas
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
-    if (!allowedRoles.includes(session.user.role)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'invoice:generate', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 
