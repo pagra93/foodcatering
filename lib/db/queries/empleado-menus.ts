@@ -256,7 +256,7 @@ export async function getDayMenuForEmployee(
     },
   })
 
-  // Obtener platos disponibles
+  // Obtener platos disponibles (con sus alérgenos de la relación DishAllergen)
   const dishSchedules = await prisma.dishSchedule.findMany({
     where: {
       tenantId: catering.tenantId,
@@ -267,32 +267,47 @@ export async function getDayMenuForEmployee(
       status: 'PUBLISHED',
     },
     include: {
-      dish: true,
+      dish: {
+        include: {
+          allergens: { include: { allergen: { select: { code: true, name: true } } } },
+        },
+      },
     },
   })
 
+  // Enriquece un plato: alérgenos {code,name}, flags de dieta y kcal.
+  const mapDish = (dish: (typeof dishSchedules)[number]['dish']) => {
+    const labels = (dish.labels as string[]) ?? []
+    const nutrition = (dish.nutrition as { kcal?: number }) ?? {}
+    return {
+      id: dish.id,
+      name: dish.name,
+      course: dish.course,
+      description: dish.description,
+      imageUrl: dish.imageUrl,
+      price: Number(dish.basePrice),
+      allergens: dish.allergens.map((a) => a.allergen), // {code, name}
+      isVegetarian: labels.includes('vegetariano'),
+      isVegan: labels.includes('vegano'),
+      calories: typeof nutrition.kcal === 'number' ? nutrition.kcal : null,
+    }
+  }
+
   const dishes = {
-    starters: dishSchedules
-      .filter((d) => d.dish.course === 'FIRST')
-      .map((d) => ({
-        ...d.dish,
-        price: Number(d.dish.basePrice),
-      })),
-    mains: dishSchedules
-      .filter((d) => d.dish.course === 'SECOND')
-      .map((d) => ({
-        ...d.dish,
-        price: Number(d.dish.basePrice),
-      })),
-    desserts: dishSchedules
-      .filter((d) => d.dish.course === 'DESSERT')
-      .map((d) => ({
-        ...d.dish,
-        price: Number(d.dish.basePrice),
-      })),
+    starters: dishSchedules.filter((d) => d.dish.course === 'FIRST').map((d) => mapDish(d.dish)),
+    mains: dishSchedules.filter((d) => d.dish.course === 'SECOND').map((d) => mapDish(d.dish)),
+    desserts: dishSchedules.filter((d) => d.dish.course === 'DESSERT').map((d) => mapDish(d.dish)),
   }
 
   const dietPrefs = parseDietPrefs(employee.dietPrefs)
+
+  // Resolver los códigos de alérgeno del empleado a {code, name} para mostrarlos.
+  const employeeAllergens = dietPrefs.allergies.length
+    ? await prisma.allergen.findMany({
+        where: { code: { in: dietPrefs.allergies } },
+        select: { code: true, name: true },
+      })
+    : []
 
   return {
     date,
@@ -308,7 +323,7 @@ export async function getDayMenuForEmployee(
       : null,
     dishes,
     employee: {
-      allergens: dietPrefs.allergies,
+      allergens: employeeAllergens,
       dietPrefs,
       blockAllergensEnabled: dietPrefs.blockAllergensEnabled,
     },

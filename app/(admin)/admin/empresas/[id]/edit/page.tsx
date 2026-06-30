@@ -54,11 +54,12 @@ async function updateCompanyAction(id: string, formData: FormData) {
 export default async function EditCompanyPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   await getRequiredSession()
+  const { id } = await params
 
-  const company = await getCompanyById(params.id)
+  const company = await getCompanyById(id)
 
   if (!company) {
     notFound()
@@ -92,7 +93,7 @@ export default async function EditCompanyPage({
       {/* Breadcrumb */}
       <div>
         <Link
-          href={`/admin/empresas/${params.id}`}
+          href={`/admin/empresas/${id}`}
           className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900"
         >
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -110,7 +111,7 @@ export default async function EditCompanyPage({
 
       {/* Formulario */}
       <CompanyForm
-        action={updateCompanyAction.bind(null, params.id)}
+        action={updateCompanyAction.bind(null, id)}
         initialData={serializedCompany}
       />
     </div>

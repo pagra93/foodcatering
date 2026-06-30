@@ -1,10 +1,22 @@
 /**
- * Sección de gráficas del dashboard
- * Por ahora con visualización simple, luego se puede integrar Recharts o Chart.js
+ * Sección de gráficas del dashboard — Recharts.
+ * Los datos provienen de queries reales (getDashboardCharts).
  */
 
 'use client'
 
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+} from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { formatPrice } from '@/lib/utils'
 
@@ -29,10 +41,56 @@ type ChartData = {
   }>
 }
 
+function monthLabel(ym: string) {
+  // ym = "YYYY-MM"
+  return new Date(ym + '-01').toLocaleDateString('es-ES', {
+    month: 'short',
+    year: '2-digit',
+  })
+}
+
+function EmptyState() {
+  return (
+    <div className="flex h-[220px] items-center justify-center">
+      <p className="text-sm text-gray-500">No hay datos disponibles</p>
+    </div>
+  )
+}
+
 export function ChartsSection({ data }: { data: ChartData }) {
-  // Calcular valores máximos para escalado visual
-  const maxOrders = Math.max(...data.ordersPerDay.map((d) => d.count), 1)
-  const maxRevenue = Math.max(...data.revenuePerMonth.map((d) => d.total), 1)
+  // Pedidos por día → serie con etiqueta corta dd/MM
+  const ordersData = data.ordersPerDay.map((d) => ({
+    label: new Date(d.date).toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+    }),
+    pedidos: d.count,
+  }))
+
+  // Crecimiento de empresas → merge new vs churn por mes
+  const growthByMonth = new Map<string, { nuevas: number; churn: number }>()
+  for (const m of data.companiesGrowth.new) {
+    growthByMonth.set(m.month, {
+      nuevas: m.count,
+      churn: growthByMonth.get(m.month)?.churn ?? 0,
+    })
+  }
+  for (const m of data.companiesGrowth.churned) {
+    growthByMonth.set(m.month, {
+      nuevas: growthByMonth.get(m.month)?.nuevas ?? 0,
+      churn: m.count,
+    })
+  }
+  const growthData = Array.from(growthByMonth.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .slice(-6)
+    .map(([month, v]) => ({ label: monthLabel(month), ...v }))
+
+  // Ingresos por mes
+  const revenueData = data.revenuePerMonth.map((m) => ({
+    label: monthLabel(m.month),
+    ingresos: m.total,
+  }))
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -44,38 +102,44 @@ export function ChartsSection({ data }: { data: ChartData }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="space-y-2">
-            {data.ordersPerDay.length === 0 ? (
-              <p className="text-center text-sm text-gray-500">
-                No hay datos disponibles
-              </p>
-            ) : (
-              <div className="flex items-end justify-between gap-1" style={{ height: '200px' }}>
-                {data.ordersPerDay.map((day, index) => {
-                  const height = (day.count / maxOrders) * 100
-                  return (
-                    <div key={index} className="flex flex-1 flex-col items-center justify-end">
-                      <div
-                        className="w-full rounded-t bg-primary transition-all hover:bg-primary"
-                        style={{ height: `${height}%`, minHeight: day.count > 0 ? '4px' : '0' }}
-                        title={`${day.date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}: ${day.count} pedidos`}
-                      />
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>
-                {data.ordersPerDay[0]?.date.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-              </span>
-              <span>Hoy</span>
-            </div>
-          </div>
+          {ordersData.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <AreaChart data={ordersData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="ordersFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  interval="preserveStartEnd"
+                  minTickGap={24}
+                />
+                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} allowDecimals={false} width={32} />
+                <Tooltip
+                  formatter={(v) => [`${Number(v)} pedidos`, 'Pedidos']}
+                  labelClassName="text-xs"
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pedidos"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#ordersFill)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
-      {/* Empresas nuevas vs churn */}
+      {/* Crecimiento de empresas (nuevas vs churn) */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100 pb-4">
           <CardTitle className="text-lg font-semibold text-gray-900">
@@ -83,49 +147,21 @@ export function ChartsSection({ data }: { data: ChartData }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="space-y-4">
-            {data.companiesGrowth.new.length === 0 ? (
-              <p className="text-center text-sm text-gray-500">
-                No hay datos disponibles
-              </p>
-            ) : (
-              <>
-                {data.companiesGrowth.new.slice(-6).map((month, _index) => {
-                  const churned = data.companiesGrowth.churned.find(
-                    (c) => c.month === month.month
-                  )
-                  const netGrowth = month.count - (churned?.count || 0)
-
-                  return (
-                    <div key={month.month} className="space-y-1">
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="font-medium text-gray-700">
-                          {new Date(month.month + '-01').toLocaleDateString('es-ES', { month: 'short', year: '2-digit' })}
-                        </span>
-                        <span className={netGrowth >= 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
-                          {netGrowth >= 0 ? '+' : ''}{netGrowth}
-                        </span>
-                      </div>
-                      <div className="flex gap-1">
-                        <div
-                          className="h-2 rounded bg-green-500"
-                          style={{ width: `${(month.count / (month.count + (churned?.count || 0))) * 100}%` }}
-                          title={`${month.count} nuevas`}
-                        />
-                        {churned && churned.count > 0 && (
-                          <div
-                            className="h-2 rounded bg-red-500"
-                            style={{ width: `${(churned.count / (month.count + churned.count)) * 100}%` }}
-                            title={`${churned.count} churn`}
-                          />
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </>
-            )}
-          </div>
+          {growthData.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={growthData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} allowDecimals={false} width={32} />
+                <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8 }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Bar dataKey="nuevas" name="Nuevas" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="churn" name="Churn" fill="#ef4444" radius={[3, 3, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
@@ -137,37 +173,28 @@ export function ChartsSection({ data }: { data: ChartData }) {
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
-          <div className="space-y-2">
-            {data.revenuePerMonth.length === 0 ? (
-              <p className="text-center text-sm text-gray-500">
-                No hay datos disponibles
-              </p>
-            ) : (
-              <div className="flex items-end justify-between gap-2" style={{ height: '200px' }}>
-                {data.revenuePerMonth.map((month, _index) => {
-                  const height = (month.total / maxRevenue) * 100
-                  return (
-                    <div key={month.month} className="flex flex-1 flex-col items-center justify-end gap-1">
-                      <span className="text-xs font-medium text-gray-600">
-                        {formatPrice(month.total)}
-                      </span>
-                      <div
-                        className="w-full rounded-t bg-green-500 transition-all hover:bg-green-600"
-                        style={{ height: `${height}%`, minHeight: month.total > 0 ? '8px' : '0' }}
-                        title={`${month.month}: ${formatPrice(month.total)}`}
-                      />
-                      <span className="text-xs text-gray-500">
-                        {new Date(month.month + '-01').toLocaleDateString('es-ES', { month: 'short' })}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+          {revenueData.length === 0 ? (
+            <EmptyState />
+          ) : (
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={revenueData} margin={{ top: 4, right: 8, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#9ca3af' }} />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#9ca3af' }}
+                  width={64}
+                  tickFormatter={(v: number) => formatPrice(v)}
+                />
+                <Tooltip
+                  formatter={(v) => [formatPrice(Number(v)), 'Ingresos']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+                <Bar dataKey="ingresos" name="Ingresos" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
     </div>
   )
 }
-

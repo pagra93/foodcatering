@@ -25,16 +25,22 @@ import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { PlatiSymbol } from '@/components/marketing/PlatiLogo'
 
+type SubNavItem = {
+  title: string
+  href: string
+  /** Permiso `recurso:view` requerido para ver este sub-item. */
+  permission: string
+}
+
 type NavItem = {
   title: string
   href: string
   icon: React.ComponentType<{ className?: string }>
   description: string
   badge?: number
-  subItems?: {
-    title: string
-    href: string
-  }[]
+  /** Permiso de la sección (para items sin subItems). */
+  permission?: string
+  subItems?: SubNavItem[]
 }
 
 const navItems: NavItem[] = [
@@ -43,18 +49,21 @@ const navItems: NavItem[] = [
     href: '/admin',
     icon: LayoutDashboard,
     description: 'Visión ejecutiva y operación en tiempo real',
+    permission: 'dashboard:view',
   },
   {
     title: 'Empresas',
     href: '/admin/empresas',
     icon: Building2,
     description: 'Gestión de empresas clientes',
+    permission: 'empresa:view',
   },
   {
     title: 'Caterings',
     href: '/admin/caterings',
     icon: ChefHat,
     description: 'Gestión de caterings proveedores',
+    permission: 'catering:view',
   },
   {
     title: 'Usuarios y Roles',
@@ -62,9 +71,8 @@ const navItems: NavItem[] = [
     icon: Users,
     description: 'RBAC y permisos',
     subItems: [
-      { title: 'Usuarios', href: '/admin/users' },
-      { title: 'Roles', href: '/admin/users/roles' },
-      { title: 'Permisos', href: '/admin/users/permissions' },
+      { title: 'Usuarios', href: '/admin/users', permission: 'user:view' },
+      { title: 'Roles', href: '/admin/users/roles', permission: 'role:view' },
     ],
   },
   {
@@ -73,11 +81,11 @@ const navItems: NavItem[] = [
     icon: BookOpen,
     description: 'Alérgenos, menús tipo, festivos, zonas',
     subItems: [
-      { title: 'Alérgenos', href: '/admin/catalogs/allergens' },
-      { title: 'Menús Tipo', href: '/admin/catalogs/menu-templates' },
-      { title: 'Calendarios', href: '/admin/catalogs/calendars' },
-      { title: 'Zonas y Logística', href: '/admin/catalogs/zones' },
-      { title: 'Motivos de Incidencia', href: '/admin/catalogs/incident-reasons' },
+      { title: 'Alérgenos', href: '/admin/catalogs/allergens', permission: 'allergen:view' },
+      { title: 'Menús Tipo', href: '/admin/catalogs/menu-templates', permission: 'menu-template:view' },
+      { title: 'Calendarios', href: '/admin/catalogs/calendars', permission: 'calendar:view' },
+      { title: 'Zonas y Logística', href: '/admin/catalogs/zones', permission: 'zone:view' },
+      { title: 'Motivos de Incidencia', href: '/admin/catalogs/incident-reasons', permission: 'incident-reason:view' },
     ],
   },
   {
@@ -87,10 +95,10 @@ const navItems: NavItem[] = [
     description: 'Auditorías, incidencias, rating',
     badge: 3, // Ejemplo: 3 incidencias críticas
     subItems: [
-      { title: 'Auditorías', href: '/admin/quality/audits' },
-      { title: 'Incidencias', href: '/admin/quality/incidents' },
-      { title: 'Rating y Reputación', href: '/admin/quality/ratings' },
-      { title: 'Penalizaciones', href: '/admin/quality/penalties' },
+      { title: 'Auditorías', href: '/admin/quality/audits', permission: 'audit:view' },
+      { title: 'Incidencias', href: '/admin/quality/incidents', permission: 'incident:view' },
+      { title: 'Rating y Reputación', href: '/admin/quality/ratings', permission: 'rating:view' },
+      { title: 'Penalizaciones', href: '/admin/quality/penalties', permission: 'penalty:view' },
     ],
   },
   {
@@ -99,11 +107,11 @@ const navItems: NavItem[] = [
     icon: CreditCard,
     description: 'Planes, comisiones, liquidaciones',
     subItems: [
-      { title: 'Planes SaaS', href: '/admin/billing/plans' },
-      { title: 'Liquidaciones', href: '/admin/billing/settlements' },
-      { title: 'Comisiones', href: '/admin/billing/commissions' },
-      { title: 'Métricas MRR/ARR', href: '/admin/billing/metrics' },
-      { title: 'Impuestos', href: '/admin/billing/taxes' },
+      { title: 'Planes SaaS', href: '/admin/billing/plans', permission: 'plan:view' },
+      { title: 'Liquidaciones', href: '/admin/billing/settlements', permission: 'settlement:view' },
+      { title: 'Comisiones', href: '/admin/billing/commissions', permission: 'commission:view' },
+      { title: 'Métricas MRR/ARR', href: '/admin/billing/metrics', permission: 'metric:view' },
+      { title: 'Impuestos', href: '/admin/billing/taxes', permission: 'tax:view' },
     ],
   },
   {
@@ -112,11 +120,11 @@ const navItems: NavItem[] = [
     icon: Plug,
     description: 'ERP, SSO, pagos, webhooks',
     subItems: [
-      { title: 'ERP y Contabilidad', href: '/admin/integrations/erp' },
-      { title: 'SSO', href: '/admin/integrations/sso' },
-      { title: 'Pagos', href: '/admin/integrations/payments' },
-      { title: 'Webhooks', href: '/admin/integrations/webhooks' },
-      { title: 'API Keys', href: '/admin/integrations/api-keys' },
+      { title: 'ERP y Contabilidad', href: '/admin/integrations/erp', permission: 'integration:view' },
+      { title: 'SSO', href: '/admin/integrations/sso', permission: 'integration:view' },
+      { title: 'Pagos', href: '/admin/integrations/payments', permission: 'integration:view' },
+      { title: 'Webhooks', href: '/admin/integrations/webhooks', permission: 'webhook:view' },
+      { title: 'API Keys', href: '/admin/integrations/api-keys', permission: 'api-key:view' },
     ],
   },
   {
@@ -125,11 +133,11 @@ const navItems: NavItem[] = [
     icon: FileText,
     description: 'Fiscal, RGPD, retención, auditoría',
     subItems: [
-      { title: 'Retención de Datos', href: '/admin/compliance/retention' },
-      { title: 'DPA', href: '/admin/compliance/dpa' },
-      { title: 'Auditoría Fiscal', href: '/admin/compliance/fiscal-audit' },
-      { title: 'Derechos RGPD', href: '/admin/compliance/gdpr' },
-      { title: 'Pentest / OWASP', href: '/admin/compliance/security' },
+      { title: 'Retención de Datos', href: '/admin/compliance/retention', permission: 'retention:view' },
+      { title: 'DPA', href: '/admin/compliance/dpa', permission: 'dpa:view' },
+      { title: 'Auditoría Fiscal', href: '/admin/compliance/fiscal-audit', permission: 'fiscal-audit:view' },
+      { title: 'Derechos RGPD', href: '/admin/compliance/gdpr', permission: 'gdpr:view' },
+      { title: 'Pentest / OWASP', href: '/admin/compliance/security', permission: 'security:view' },
     ],
   },
   {
@@ -138,9 +146,9 @@ const navItems: NavItem[] = [
     icon: Palette,
     description: 'E-mails, WhatsApp, temas, dominios',
     subItems: [
-      { title: 'Branding por Tenant', href: '/admin/templates/branding' },
-      { title: 'Plantillas de Comunicación', href: '/admin/templates/communication' },
-      { title: 'Avisos en-app', href: '/admin/templates/announcements' },
+      { title: 'Branding por Tenant', href: '/admin/templates/branding', permission: 'template-branding:view' },
+      { title: 'Plantillas de Comunicación', href: '/admin/templates/communication', permission: 'template-communication:view' },
+      { title: 'Avisos en-app', href: '/admin/templates/announcements', permission: 'announcement:view' },
     ],
   },
   {
@@ -149,18 +157,37 @@ const navItems: NavItem[] = [
     icon: Settings,
     description: 'Impersonación, backups, mantenimiento',
     subItems: [
-      { title: 'Impersonación', href: '/admin/operations/impersonation' },
-      { title: 'Backups', href: '/admin/operations/backups' },
-      { title: 'Migraciones', href: '/admin/operations/migrations' },
-      { title: 'Mantenimiento', href: '/admin/operations/maintenance' },
-      { title: 'Health Checks', href: '/admin/operations/health' },
-      { title: 'Rate Limiting', href: '/admin/operations/rate-limiting' },
+      { title: 'Impersonación', href: '/admin/operations/impersonation', permission: 'impersonate:view' },
+      { title: 'Backups', href: '/admin/operations/backups', permission: 'backup:view' },
+      { title: 'Migraciones', href: '/admin/operations/migrations', permission: 'migration:view' },
+      { title: 'Mantenimiento', href: '/admin/operations/maintenance', permission: 'maintenance:view' },
+      { title: 'Health Checks', href: '/admin/operations/health', permission: 'health:view' },
+      { title: 'Rate Limiting', href: '/admin/operations/rate-limiting', permission: 'rate-limit:view' },
     ],
   },
 ]
 
-export function AdminSidebar() {
+/** ¿El set de permisos del usuario cubre `perm`? Soporta `*` y `recurso:*`. */
+function can(permissions: string[], perm: string): boolean {
+  if (permissions.includes('*')) return true
+  if (permissions.includes(perm)) return true
+  const resource = perm.split(':')[0]
+  return permissions.includes(`${resource}:*`)
+}
+
+export function AdminSidebar({ permissions }: { permissions: string[] }) {
   const pathname = usePathname()
+
+  // Filtrar el menú según los permisos del usuario.
+  const visibleItems = navItems
+    .map((item) => {
+      if (item.subItems) {
+        const subItems = item.subItems.filter((s) => can(permissions, s.permission))
+        return subItems.length > 0 ? { ...item, subItems } : null
+      }
+      return !item.permission || can(permissions, item.permission) ? item : null
+    })
+    .filter((item): item is NavItem => item !== null)
   const [expandedItems, setExpandedItems] = useState<string[]>([])
 
   const toggleExpand = (title: string) => {
@@ -197,7 +224,7 @@ export function AdminSidebar() {
         className="scrollbar-thin h-[calc(100vh-4rem)] overflow-y-auto px-3 py-4"
       >
         <ul className="space-y-0.5">
-          {navItems.map((item) => {
+          {visibleItems.map((item) => {
             const Icon = item.icon
             const isExpanded = expandedItems.includes(item.title)
             const hasSubItems = item.subItems && item.subItems.length > 0

@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getAdminUsersKPIs, getAllUsers } from '@/lib/db/queries/admin-users'
 import { ROLE_DESCRIPTIONS, getRoleCategory } from '@/lib/auth/permissions'
+import { decryptNameSafe } from '@/lib/crypto/pii'
 
 type SP = {
   search?: string
@@ -187,7 +188,7 @@ export default async function AdminUsersPage({
                   className="border-b last:border-0 hover:bg-gray-50"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{u.nameEnc}</div>
+                    <div className="font-medium text-gray-900">{decryptNameSafe(u.nameEnc)}</div>
                     <div className="text-xs text-gray-500">{u.email}</div>
                   </td>
                   <td className="px-4 py-3">

@@ -355,9 +355,6 @@ async function CompanyDetailData({ id }: { id: string }) {
               <h3 className="text-lg font-semibold text-gray-900">
                 Usuarios del Sistema
               </h3>
-              <Button variant="outline" size="sm">
-                Invitar usuario
-              </Button>
             </div>
             <div className="space-y-3">
               {company.users.map((user) => (
@@ -397,14 +394,15 @@ async function CompanyDetailData({ id }: { id: string }) {
 export default async function CompanyDetailPage({
   params,
 }: {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }) {
   await getRequiredSession()
+  const { id } = await params
 
   return (
     <div className="space-y-6">
       <Suspense fallback={<PageSkeleton />}>
-        <CompanyDetailData id={params.id} />
+        <CompanyDetailData id={id} />
       </Suspense>
     </div>
   )

@@ -177,6 +177,23 @@ export function hasPermission(role: UserRole, permission: string): boolean {
 }
 
 /**
+ * Verificar si una LISTA de permisos (la de la sesión, DB-backed) cubre un
+ * permiso concreto. Soporta `'*'` (todo) y `'recurso:*'` (todas las acciones).
+ */
+export function permissionsInclude(
+  permissions: string[] | undefined,
+  permission: string
+): boolean {
+  if (!permissions || permissions.length === 0) return false
+  return permissions.some((p) => {
+    if (p === '*') return true
+    if (p === permission) return true
+    if (p.endsWith(':*')) return permission.startsWith(p.slice(0, -2))
+    return false
+  })
+}
+
+/**
  * Verificar si un rol puede acceder a un tenant
  */
 export function canAccessTenant(
@@ -534,7 +551,7 @@ export const ALL_PERMISSIONS: string[] = Array.from(
 
 /**
  * Estado de un permiso para un rol: directo, heredado por wildcard, o no tiene.
- * Lo consume la matriz visual en /admin/users/permissions.
+ * Helper del modelo estático legacy (la matriz visual se retiró).
  */
 export type PermissionState = 'direct' | 'wildcard' | 'none'
 

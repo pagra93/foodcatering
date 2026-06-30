@@ -433,11 +433,20 @@ export function CompanyForm({ action, initialData }: CompanyFormProps) {
 
       {/* ========== BOTONES ========== */}
       <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" disabled={isSubmitting}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={() => window.history.back()}
+        >
           Cancelar
         </Button>
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Guardando...' : 'Crear Empresa'}
+          {isSubmitting
+            ? 'Guardando...'
+            : initialData
+              ? 'Guardar cambios'
+              : 'Crear Empresa'}
         </Button>
       </div>
     </form>

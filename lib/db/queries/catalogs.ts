@@ -14,6 +14,15 @@ export async function getAllAllergens(includeInactive = false) {
   })
 }
 
+/** Alérgenos activos en forma ligera {id, code, name} para selectores. */
+export async function getActiveAllergenOptions() {
+  return prisma.allergen.findMany({
+    where: { active: true },
+    select: { id: true, code: true, name: true },
+    orderBy: { name: 'asc' },
+  })
+}
+
 // ─── Festivos ──────────────────────────────────────────────────────────
 
 export async function getOfficialHolidays(year?: number) {

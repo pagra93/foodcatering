@@ -11,6 +11,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
+import { getActiveAllergenOptions } from '@/lib/db/queries/catalogs'
 import { DishCreateForm } from '@/components/catering/platos/DishCreateForm'
 
 export default async function NuevoPlatoPage() {
@@ -19,6 +20,8 @@ export default async function NuevoPlatoPage() {
   if (session.user.tenantType !== 'CATERING') {
     redirect('/unauthorized')
   }
+
+  const availableAllergens = await getActiveAllergenOptions()
 
   return (
     <div className="space-y-6">
@@ -44,7 +47,7 @@ export default async function NuevoPlatoPage() {
       </div>
 
       {/* Formulario */}
-      <DishCreateForm />
+      <DishCreateForm availableAllergens={availableAllergens} />
     </div>
   )
 }

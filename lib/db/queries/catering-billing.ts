@@ -102,3 +102,28 @@ export async function getCateringBillingKPIs(tenantCatering: string) {
     commissionsYTD: Number(settlementsTotalYTD._sum.commissionAmount ?? 0),
   }
 }
+
+/**
+ * Lista de liquidaciones (Settlement) del catering, últimas 24 (2 años).
+ * El modelo existe; faltaba esta query (la pestaña de admin usaba mock).
+ */
+export async function getSettlementsByCatering(tenantCatering: string) {
+  const settlements = await prisma.settlement.findMany({
+    where: { tenantCatering },
+    orderBy: { period: 'desc' },
+    take: 24,
+  })
+
+  return settlements.map((s) => ({
+    id: s.id,
+    period: s.period,
+    grossAmount: Number(s.grossAmount),
+    commissionRate: Number(s.commissionRate),
+    commissionAmount: Number(s.commissionAmount),
+    penalties: Number(s.penalties),
+    netOwed: Number(s.netOwed),
+    status: s.status,
+    paidAt: s.paidAt,
+    dueBy: s.dueBy,
+  }))
+}

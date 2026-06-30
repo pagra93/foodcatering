@@ -1,6 +1,7 @@
 /**
- * Modal para subir documentos de catering
- * Incluye validación de fechas y tipo de documento
+ * Modal para añadir un documento del catering POR URL.
+ * No sube binarios (no hay storage configurado en el proyecto): el admin pega
+ * la URL de un documento alojado fuera y se persiste un RestaurantDocument real.
  */
 
 'use client'
@@ -9,7 +10,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Upload, X, FileText } from 'lucide-react'
+import { LinkIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -28,37 +29,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { addCateringDocument } from '@/components/admin/caterings/actions'
 
-const uploadDocumentSchema = z.object({
-  type: z.enum([
-    'SANITARY_REGISTRATION',
-    'LIABILITY_INSURANCE',
-    'FOOD_HANDLER_CERTIFICATE',
-    'APPCC_CERTIFICATE',
-    'OTHER',
-  ]),
-  file: z.instanceof(File).optional(),
+const schema = z.object({
+  type: z.enum(['REGISTRO_SANITARIO', 'RC', 'MANIPULADORES', 'OTROS']),
+  fileUrl: z.string().url('Introduce una URL válida'),
   issuedAt: z.string().min(1, 'La fecha de emisión es obligatoria'),
   expiresAt: z.string().min(1, 'La fecha de caducidad es obligatoria'),
 })
 
-type UploadDocumentFormData = z.infer<typeof uploadDocumentSchema>
+type FormData = z.infer<typeof schema>
 
-type UploadDocumentModalProps = {
+const TYPE_LABELS: Record<string, string> = {
+  REGISTRO_SANITARIO: 'Registro Sanitario',
+  RC: 'Seguro de Responsabilidad Civil',
+  MANIPULADORES: 'Certificado de Manipuladores',
+  OTROS: 'Otro documento',
+}
+
+type Props = {
   isOpen: boolean
   onClose: () => void
   cateringId: string
   onSuccess?: () => void
 }
 
-export function UploadDocumentModal({
-  isOpen,
-  onClose,
-  cateringId: _cateringId,
-  onSuccess,
-}: UploadDocumentModalProps) {
-  const [isUploading, setIsUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+export function UploadDocumentModal({ isOpen, onClose, cateringId, onSuccess }: Props) {
+  const [isSaving, setIsSaving] = useState(false)
+  const [serverError, setServerError] = useState<string | null>(null)
 
   const {
     register,
@@ -66,223 +64,111 @@ export function UploadDocumentModal({
     formState: { errors },
     reset,
     setValue,
-    watch,
-  } = useForm<UploadDocumentFormData>({
-    resolver: zodResolver(uploadDocumentSchema),
-  })
+  } = useForm<FormData>({ resolver: zodResolver(schema) })
 
-  const documentType = watch('type')
+  const onSubmit = async (data: FormData) => {
+    setIsSaving(true)
+    setServerError(null)
+    const fd = new window.FormData()
+    fd.set('type', data.type)
+    fd.set('fileUrl', data.fileUrl)
+    fd.set('issuedAt', data.issuedAt)
+    fd.set('expiresAt', data.expiresAt)
 
-  const onSubmit = async (data: UploadDocumentFormData) => {
-    setIsUploading(true)
-    try {
-      // TODO: Implementar la lógica de subida
-      console.log('Subiendo documento:', data, selectedFile)
-      
-      // Simulación de subida
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-      
-      // Resetear formulario
-      reset()
-      setSelectedFile(null)
-      
-      // Callback de éxito
-      if (onSuccess) {
-        onSuccess()
-      }
-      
-      // Cerrar modal
-      onClose()
-    } catch (error) {
-      console.error('Error subiendo documento:', error)
-      alert('Error al subir el documento')
-    } finally {
-      setIsUploading(false)
+    const result = await addCateringDocument(cateringId, fd)
+    setIsSaving(false)
+
+    if (result.error) {
+      setServerError(result.error)
+      return
     }
-  }
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setSelectedFile(file)
-      setValue('file', file)
-    }
-  }
-
-  const documentTypeLabels: Record<string, string> = {
-    SANITARY_REGISTRATION: 'Registro Sanitario',
-    LIABILITY_INSURANCE: 'Seguro de Responsabilidad Civil',
-    FOOD_HANDLER_CERTIFICATE: 'Certificado de Manipulador de Alimentos',
-    APPCC_CERTIFICATE: 'Certificado APPCC',
-    OTHER: 'Otro Documento',
+    reset()
+    onSuccess?.()
+    onClose()
   }
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Subir Documento</DialogTitle>
+          <DialogTitle>Añadir documento (por URL)</DialogTitle>
           <DialogDescription>
-            Sube un documento obligatorio para el catering. Asegúrate de que el
-            archivo sea legible y las fechas sean correctas.
+            Pega la URL de un documento ya alojado (PDF/imagen) y sus fechas. El
+            estado de validez se calcula automáticamente.
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Tipo de documento */}
           <div>
             <Label htmlFor="type">
-              Tipo de Documento <span className="text-red-500">*</span>
+              Tipo de documento <span className="text-red-500">*</span>
             </Label>
-            <Select
-              onValueChange={(value) =>
-                setValue(
-                  'type',
-                  value as UploadDocumentFormData['type']
-                )
-              }
-            >
+            <Select onValueChange={(v) => setValue('type', v as FormData['type'])}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecciona el tipo..." />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(documentTypeLabels).map(([value, label]) => (
+                {Object.entries(TYPE_LABELS).map(([value, label]) => (
                   <SelectItem key={value} value={value}>
                     {label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {errors.type && (
-              <p className="mt-1 text-xs text-red-600">{errors.type.message}</p>
+            {errors.type && <p className="mt-1 text-xs text-red-600">{errors.type.message}</p>}
+          </div>
+
+          <div>
+            <Label htmlFor="fileUrl">
+              URL del documento <span className="text-red-500">*</span>
+            </Label>
+            <div className="relative">
+              <LinkIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Input
+                id="fileUrl"
+                placeholder="https://…/documento.pdf"
+                className="pl-8"
+                {...register('fileUrl')}
+              />
+            </div>
+            {errors.fileUrl && (
+              <p className="mt-1 text-xs text-red-600">{errors.fileUrl.message}</p>
             )}
           </div>
 
-          {/* Archivo */}
-          <div>
-            <Label htmlFor="file">
-              Archivo (PDF, JPG, PNG) <span className="text-red-500">*</span>
-            </Label>
-            <div className="mt-2">
-              {!selectedFile ? (
-                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-6 transition-colors hover:border-primary hover:bg-primary/10">
-                  <Upload className="h-5 w-5 text-gray-400" />
-                  <span className="text-sm text-gray-600">
-                    Haz clic para seleccionar un archivo
-                  </span>
-                  <input
-                    type="file"
-                    className="hidden"
-                    accept=".pdf,.jpg,.jpeg,.png"
-                    onChange={handleFileChange}
-                  />
-                </label>
-              ) : (
-                <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
-                  <FileText className="h-8 w-8 text-primary" />
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900">
-                      {selectedFile.name}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSelectedFile(null)
-                      setValue('file', undefined)
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Fechas */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
               <Label htmlFor="issuedAt">
-                Fecha de Emisión <span className="text-red-500">*</span>
+                Fecha de emisión <span className="text-red-500">*</span>
               </Label>
-              <Input
-                type="date"
-                id="issuedAt"
-                {...register('issuedAt')}
-                className="mt-1"
-              />
+              <Input type="date" id="issuedAt" {...register('issuedAt')} />
               {errors.issuedAt && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.issuedAt.message}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{errors.issuedAt.message}</p>
               )}
             </div>
-
             <div>
               <Label htmlFor="expiresAt">
-                Fecha de Caducidad <span className="text-red-500">*</span>
+                Fecha de caducidad <span className="text-red-500">*</span>
               </Label>
-              <Input
-                type="date"
-                id="expiresAt"
-                {...register('expiresAt')}
-                className="mt-1"
-              />
+              <Input type="date" id="expiresAt" {...register('expiresAt')} />
               {errors.expiresAt && (
-                <p className="mt-1 text-xs text-red-600">
-                  {errors.expiresAt.message}
-                </p>
+                <p className="mt-1 text-xs text-red-600">{errors.expiresAt.message}</p>
               )}
             </div>
           </div>
 
-          {/* Info adicional según tipo */}
-          {documentType === 'SANITARY_REGISTRATION' && (
-            <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
-              <p className="text-xs text-primary">
-                <strong>ℹ️ Registro Sanitario:</strong> Documento obligatorio
-                emitido por la autoridad sanitaria. Debe estar vigente en todo
-                momento.
-              </p>
-            </div>
-          )}
-
-          {documentType === 'LIABILITY_INSURANCE' && (
-            <div className="rounded-lg bg-primary/10 border border-primary/30 p-3">
-              <p className="text-xs text-primary">
-                <strong>ℹ️ Seguro RC:</strong> Cobertura mínima recomendada de
-                300.000€. Verifica que incluya responsabilidad por
-                intoxicaciones alimentarias.
-              </p>
-            </div>
+          {serverError && (
+            <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {serverError}
+            </p>
           )}
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onClose}
-              disabled={isUploading}
-            >
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isUploading || !selectedFile}>
-              {isUploading ? (
-                <>
-                  <Upload className="mr-2 h-4 w-4 animate-pulse" />
-                  Subiendo...
-                </>
-              ) : (
-                <>
-                  <Upload className="mr-2 h-4 w-4" />
-                  Subir Documento
-                </>
-              )}
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? 'Guardando…' : 'Añadir documento'}
             </Button>
           </DialogFooter>
         </form>
@@ -290,4 +176,3 @@ export function UploadDocumentModal({
     </Dialog>
   )
 }
-

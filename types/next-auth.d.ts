@@ -18,6 +18,8 @@ declare module 'next-auth' {
       email: string
       name: string | null
       role: UserRole
+      roleId: string | null
+      permissions: string[]
       tenantId: string
       tenantType: TenantType
       mfaEnabled: boolean
@@ -33,6 +35,8 @@ declare module 'next-auth' {
     email: string
     name: string | null
     role: UserRole
+    roleId: string | null
+    permissions: string[]
     tenantId: string
     tenantType: TenantType
     mfaEnabled: boolean
@@ -49,10 +53,12 @@ declare module 'next-auth/jwt' {
     email: string
     name: string | null
     role: UserRole
+    roleId: string | null
+    permissions: string[]
     tenantId: string
     tenantType: TenantType
     mfaEnabled: boolean
-    
+
     // Impersonación (opcional)
     impersonationToken?: ImpersonationToken
   }

@@ -87,3 +87,24 @@ export function looksEncrypted(value: string | null | undefined): boolean {
   if (value.length < 40) return false
   return /^[A-Za-z0-9+/]+=*$/.test(value)
 }
+
+/**
+ * Descifra de forma segura un nombre PII para mostrarlo en UI.
+ *
+ * Tolera el periodo de migración: si el valor está en texto plano (legado, aún
+ * sin cifrar) lo devuelve tal cual; si parece cifrado intenta descifrarlo y, si
+ * falla (clave ausente/incorrecta), devuelve un placeholder en vez de reventar.
+ * Pensado para render server-side de listados/detalles del panel admin.
+ */
+export function decryptNameSafe(
+  value: string | null | undefined,
+  fallback = 'Sin nombre'
+): string {
+  if (!value) return fallback
+  if (!looksEncrypted(value)) return value // texto plano legado
+  try {
+    return decryptPII(value)
+  } catch {
+    return fallback
+  }
+}

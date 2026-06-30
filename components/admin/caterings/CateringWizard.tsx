@@ -17,7 +17,6 @@ import {
   CheckCircle2,
   ChevronRight,
   ChevronLeft,
-  Save,
   Eye,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -36,7 +35,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
 
 // Tipos
-type CateringFormData = {
+export type CateringFormData = {
   // Paso 1: Datos Generales
   name: string
   displayName: string
@@ -107,8 +106,14 @@ const DIAS_SEMANA = [
   { value: 'sunday', label: 'Domingo' },
 ]
 
-export function CateringWizard() {
+type CateringWizardProps = {
+  onSubmit: (data: CateringFormData) => Promise<{ error?: string } | void>
+}
+
+export function CateringWizard({ onSubmit }: CateringWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
   const [formData, setFormData] = useState<CateringFormData>({
     name: '',
     displayName: '',
@@ -167,15 +172,22 @@ export function CateringWizard() {
     }
   }
 
-  const handleSubmit = () => {
-    console.log('Creando catering:', formData)
-    // TODO: Llamar a la API para crear el catering
-    alert('Catering creado con éxito (mock)')
-  }
-
-  const saveDraft = () => {
-    console.log('Guardando borrador:', formData)
-    alert('Borrador guardado (mock)')
+  const handleSubmit = async () => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      const result = await onSubmit(formData)
+      if (result && 'error' in result && result.error) {
+        setSubmitError(result.error)
+        setIsSubmitting(false)
+      }
+      // En éxito, la server action redirige; no hace falta hacer nada más.
+    } catch (e) {
+      setSubmitError(
+        e instanceof Error ? e.message : 'No se pudo crear el catering. Revisa los datos.'
+      )
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -1012,11 +1024,17 @@ export function CateringWizard() {
         </CardContent>
       </Card>
 
+      {submitError && (
+        <p className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {submitError}
+        </p>
+      )}
+
       {/* Navigation Buttons */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           {currentStep > 1 && (
-            <Button variant="outline" onClick={prevStep}>
+            <Button variant="outline" onClick={prevStep} disabled={isSubmitting}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Anterior
             </Button>
@@ -1024,20 +1042,19 @@ export function CateringWizard() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={saveDraft}>
-            <Save className="mr-2 h-4 w-4" />
-            Guardar Borrador
-          </Button>
-
           {currentStep < 7 ? (
             <Button onClick={nextStep}>
               Siguiente
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleSubmit} className="bg-green-600 hover:bg-green-700">
+            <Button
+              onClick={handleSubmit}
+              disabled={isSubmitting}
+              className="bg-green-600 hover:bg-green-700"
+            >
               <CheckCircle2 className="mr-2 h-4 w-4" />
-              Crear Catering
+              {isSubmitting ? 'Creando…' : 'Crear Catering'}
             </Button>
           )}
         </div>

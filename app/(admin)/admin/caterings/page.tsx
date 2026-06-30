@@ -7,7 +7,8 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, AlertCircle, FileText } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
-import { getCaterings } from '@/lib/db/queries/caterings'
+import { getCaterings, getCateringsGlobalKPIs } from '@/lib/db/queries/caterings'
+import { getCateringQualityMetrics } from '@/lib/db/queries/catering-metrics'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CateringsGlobalKPIs } from '@/components/admin/caterings/CateringsGlobalKPIs'
@@ -34,68 +35,70 @@ function TableSkeleton() {
   )
 }
 
-// Componente que carga los KPIs
+// Componente que carga los KPIs (reales)
 async function CateringsKPIsData() {
-  // TODO: Query real de KPIs globales
-  const mockKPIs = {
-    totalCaterings: 5,
-    activeCaterings: 3,
-    suspendedCaterings: 1,
-    underReviewCaterings: 1,
-    todayOrders: 450,
-    confirmedOrders: 420,
-    deliveredOrders: 385,
-    incidentsOrders: 15,
-    avgPunctuality: 94,
-    openIncidents: 8,
-    expiringDocs: 2,
-    avgRating: 4.6,
-  }
-
-  return <CateringsGlobalKPIs kpis={mockKPIs} />
+  const kpis = await getCateringsGlobalKPIs()
+  return <CateringsGlobalKPIs kpis={kpis} />
 }
 
 // Componente que carga la tabla
-async function CateringsTableData() {
+async function CateringsTableData({ filter }: { filter?: string }) {
   // Obtener caterings reales de la BD
   const { caterings } = await getCaterings({
     page: 1,
     pageSize: 100, // Traer todos para la tabla (sin paginación por ahora)
   })
 
-  // Mapear a formato esperado por el componente
-  const cateringsFormatted = caterings.map((catering) => {
-    const restaurant = catering.restaurants[0]
-    
-    // Mapear DocumentStatus (OK/WARNING/BLOCKED) al formato esperado por la UI
-    const mapDocStatus = (status: string): 'OK' | 'EXPIRING' | 'EXPIRED' => {
-      if (status === 'OK') return 'OK'
-      if (status === 'WARNING') return 'EXPIRING'
-      if (status === 'BLOCKED') return 'EXPIRED'
-      return 'OK'
-    }
-    
-    return {
-      id: catering.id,
-      name: catering.subdomain,
-      displayName: catering.name,
-      status: catering.status as 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW',
-      zones: restaurant?.zones as Array<{ name: string }> || [],
-      dailyCapacity: restaurant?.dailyCapacity || 0,
-      punctuality: restaurant?.punctualityRate ? Number(restaurant.punctualityRate) : null,
-      incidentRate: restaurant?.incidentRate ? Number(restaurant.incidentRate) : null,
-      avgRating: restaurant?.averageRating ? Number(restaurant.averageRating) : null,
-      documentsStatus: restaurant?.documentsStatus ? mapDocStatus(restaurant.documentsStatus) : 'OK',
-      lastInvoiceDate: null, // TODO: implementar cuando tengamos facturas
-      commission: restaurant?.commission ? Number(restaurant.commission) : 0,
-    }
-  })
+  // Mapear DocumentStatus (OK/WARNING/BLOCKED) al formato esperado por la UI
+  const mapDocStatus = (status: string): 'OK' | 'EXPIRING' | 'EXPIRED' => {
+    if (status === 'OK') return 'OK'
+    if (status === 'WARNING') return 'EXPIRING'
+    if (status === 'BLOCKED') return 'EXPIRED'
+    return 'OK'
+  }
 
-  return <CateringsTable caterings={cateringsFormatted} />
+  // Mapear a formato esperado por el componente. Puntualidad/incidencias/rating
+  // EN VIVO (mismo helper que el detalle) para que cuadren entre pantallas.
+  const cateringsFormatted = await Promise.all(
+    caterings.map(async (catering) => {
+      const restaurant = catering.restaurants[0]
+      const quality = await getCateringQualityMetrics(catering.id)
+
+      return {
+        id: catering.id,
+        name: catering.subdomain,
+        displayName: catering.name,
+        status: catering.status as 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW',
+        zones: (restaurant?.zones as Array<{ name: string }>) || [],
+        dailyCapacity: restaurant?.dailyCapacity || 0,
+        punctuality: quality.punctualityRate,
+        incidentRate: quality.incidentRate,
+        avgRating: quality.averageRating,
+        documentsStatus: restaurant?.documentsStatus ? mapDocStatus(restaurant.documentsStatus) : 'OK',
+        lastInvoiceDate: null,
+        commission: restaurant?.commission ? Number(restaurant.commission) : 0,
+      }
+    })
+  )
+
+  // Filtros rápidos desde los botones de cabecera
+  let rows = cateringsFormatted
+  if (filter === 'expiring') {
+    rows = rows.filter((c) => c.documentsStatus !== 'OK')
+  } else if (filter === 'incidents') {
+    rows = rows.filter((c) => c.incidentRate > 5)
+  }
+
+  return <CateringsTable caterings={rows} />
 }
 
-export default async function CateringsPage() {
+export default async function CateringsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filter?: string }>
+}) {
   await getRequiredSession()
+  const { filter } = await searchParams
 
   return (
     <div className="space-y-6">
@@ -134,9 +137,24 @@ export default async function CateringsPage() {
         <CateringsKPIsData />
       </Suspense>
 
+      {/* Filtro activo */}
+      {filter && (
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <span>
+            Filtrando por{' '}
+            <span className="font-medium">
+              {filter === 'expiring' ? 'documentos por caducar' : 'incidencias críticas'}
+            </span>
+          </span>
+          <Link href="/admin/caterings" className="text-primary hover:underline">
+            Quitar filtro
+          </Link>
+        </div>
+      )}
+
       {/* Tabla de caterings */}
-      <Suspense fallback={<TableSkeleton />}>
-        <CateringsTableData />
+      <Suspense key={filter ?? 'all'} fallback={<TableSkeleton />}>
+        <CateringsTableData filter={filter} />
       </Suspense>
     </div>
   )

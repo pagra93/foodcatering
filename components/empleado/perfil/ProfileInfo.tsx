@@ -51,9 +51,11 @@ type ProfileInfoProps = {
       city: string | null
     } | null
   }
+  /** Catálogo de alérgenos activos (tabla Allergen) para el selector. */
+  availableAllergens: { code: string; name: string }[]
 }
 
-export function ProfileInfo({ data }: ProfileInfoProps) {
+export function ProfileInfo({ data, availableAllergens }: ProfileInfoProps) {
   const { employee, company, site } = data
 
   return (
@@ -240,6 +242,7 @@ export function ProfileInfo({ data }: ProfileInfoProps) {
       {/* Selector de Alergias */}
       <AllergenSelector
         employeeId={employee.id}
+        availableAllergens={availableAllergens}
         initialAllergens={employee.allergens}
         initialBlockEnabled={employee.blockAllergensEnabled}
       />

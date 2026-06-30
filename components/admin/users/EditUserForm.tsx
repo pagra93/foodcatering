@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import type { UserRole, TenantType } from '@prisma/client'
 import { AlertTriangle } from 'lucide-react'
@@ -9,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ROLE_DESCRIPTIONS, rolesByTenantType } from '@/lib/auth/permissions'
 import { updateUserAction } from './actions'
 
 type Props = {
@@ -19,12 +19,15 @@ type Props = {
     nameEnc: string
     phoneEnc: string | null
     role: UserRole
+    roleId: string | null
   }
   tenant: { name: string; type: TenantType }
+  /** Roles del RBAC (sistema + custom) válidos para la categoría del tenant. */
+  roles: { id: string; name: string; isSystem: boolean }[]
   currentUserId: string
 }
 
-export function EditUserForm({ user, tenant, currentUserId }: Props) {
+export function EditUserForm({ user, tenant, roles, currentUserId }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -32,21 +35,19 @@ export function EditUserForm({ user, tenant, currentUserId }: Props) {
   const [email, setEmail] = useState(user.email)
   const [name, setName] = useState(user.nameEnc)
   const [phone, setPhone] = useState(user.phoneEnc ?? '')
-  const [role, setRole] = useState<UserRole>(user.role)
+  const [roleId, setRoleId] = useState<string>(user.roleId ?? roles[0]?.id ?? '')
 
-  const availableRoles = rolesByTenantType(tenant.type)
   const isSelf = currentUserId === user.id
-  const isRoleChanging = role !== user.role
-  const isDowngradingOwnSuperAdmin =
-    isSelf && user.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN'
+  const isRoleChanging = roleId !== user.roleId
+  const currentIsSuperAdmin = user.role === 'SUPER_ADMIN'
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
 
-    if (isDowngradingOwnSuperAdmin) {
+    if (isSelf && currentIsSuperAdmin && isRoleChanging) {
       const confirmed = confirm(
-        '¡Atención! Vas a quitarte el rol SUPER_ADMIN a ti mismo. Perderás acceso al portal de administración. ¿Continuar?'
+        '¡Atención! Vas a cambiar tu propio rol de SUPER_ADMIN. Podrías perder acceso al portal de administración. ¿Continuar?'
       )
       if (!confirmed) return
     }
@@ -58,7 +59,7 @@ export function EditUserForm({ user, tenant, currentUserId }: Props) {
           email,
           name,
           phone: phone || undefined,
-          role,
+          roleId,
         })
         toast.success('Usuario actualizado')
         router.push(`/admin/users/${user.id}`)
@@ -119,29 +120,45 @@ export function EditUserForm({ user, tenant, currentUserId }: Props) {
 
         <div>
           <Label htmlFor="role">Rol</Label>
-          <select
-            id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-            className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
-            required
-          >
-            {availableRoles.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
+          {roles.length === 0 ? (
+            <p className="mt-1 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+              No hay roles configurados para este tipo de tenant ({tenant.type}).
+              Crea uno en{' '}
+              <Link href="/admin/users/roles" className="underline">
+                Roles y permisos
+              </Link>
+              .
+            </p>
+          ) : (
+            <select
+              id="role"
+              aria-label="Rol del usuario"
+              value={roleId}
+              onChange={(e) => setRoleId(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              required
+            >
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                  {r.isSystem ? ' (sistema)' : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <p className="mt-1 text-xs text-gray-500">
-            {ROLE_DESCRIPTIONS[role]}
+            El rol define los permisos y las secciones visibles. Gestiónalos en{' '}
+            <Link href="/admin/users/roles" className="underline">
+              Roles y permisos
+            </Link>
+            .
           </p>
           {isRoleChanging && (
             <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
               <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
               <div>
-                Cambio de rol: <strong>{user.role}</strong> →{' '}
-                <strong>{role}</strong>. El usuario podrá ver/hacer cosas
-                distintas desde el próximo login.
+                Vas a cambiar el rol de este usuario. Verá secciones y permisos
+                distintos desde el próximo login.
               </div>
             </div>
           )}

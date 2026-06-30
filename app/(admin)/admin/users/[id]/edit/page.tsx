@@ -2,9 +2,11 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import type { Session } from 'next-auth'
+import type { RoleCategory } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { decryptNameSafe } from '@/lib/crypto/pii'
 import { EditUserForm } from '@/components/admin/users/EditUserForm'
 
 export default async function EditUserPage({
@@ -26,6 +28,13 @@ export default async function EditUserPage({
 
   if (!user) notFound()
 
+  // Roles del RBAC válidos para la categoría del tenant (sistema + custom).
+  const roles = await prisma.role.findMany({
+    where: { category: user.tenant.type as unknown as RoleCategory },
+    select: { id: true, name: true, isSystem: true },
+    orderBy: [{ isSystem: 'desc' }, { name: 'asc' }],
+  })
+
   const currentUserId = session?.user?.id ?? ''
 
   return (
@@ -42,7 +51,7 @@ export default async function EditUserPage({
       <div>
         <h1 className="text-2xl font-bold">Editar Usuario</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {user.nameEnc} · {user.email}
+          {decryptNameSafe(user.nameEnc, user.email)} · {user.email}
         </p>
       </div>
 
@@ -50,11 +59,13 @@ export default async function EditUserPage({
         user={{
           id: user.id,
           email: user.email,
-          nameEnc: user.nameEnc,
+          nameEnc: decryptNameSafe(user.nameEnc, ''),
           phoneEnc: user.phoneEnc,
           role: user.role,
+          roleId: user.roleId,
         }}
         tenant={user.tenant}
+        roles={roles}
         currentUserId={currentUserId}
       />
     </div>

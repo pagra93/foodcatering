@@ -38,20 +38,8 @@ const createUserSchema = z.object({
   email: z.string().email('Email inválido'),
   name: z.string().min(2, 'Nombre demasiado corto'),
   phone: z.string().optional(),
-  role: z.enum([
-    'SUPER_ADMIN',
-    'AUDITOR',
-    'ADMIN_EMPRESA',
-    'RRHH',
-    'FINANZAS',
-    'MANAGER_SEDE',
-    'EMPLEADO',
-    'ADMIN_CATERING',
-    'CHEF',
-    'COCINERO',
-    'REPARTIDOR',
-    'FINANZAS_CATERING',
-  ]),
+  // Asignación por rol del RBAC dinámico (sistema o custom).
+  roleId: z.string().uuid(),
   password: z
     .string()
     .min(8, 'Mínimo 8 caracteres')
@@ -72,12 +60,18 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>) 
   })
   if (!tenant) throw new Error('Tenant no encontrado')
 
-  const allowed = rolesByTenantType(tenant.type)
-  if (!allowed.includes(data.role)) {
+  // Resolver el rol del RBAC dinámico y validar su categoría contra el tenant.
+  const dynRole = await prisma.role.findUnique({
+    where: { id: data.roleId },
+    select: { id: true, baseRole: true, category: true },
+  })
+  if (!dynRole) throw new Error('Rol no encontrado')
+  if (String(dynRole.category) !== String(tenant.type)) {
     throw new Error(
-      `El rol ${data.role} no es válido en un tenant de tipo ${tenant.type}. Permitidos: ${allowed.join(', ')}`
+      `El rol elegido no es válido en un tenant de tipo ${tenant.type}.`
     )
   }
+  if (!dynRole.baseRole) throw new Error('El rol no tiene rol base configurado')
 
   // Email único por tenant.
   const existing = await prisma.user.findFirst({
@@ -95,7 +89,8 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>) 
       email: data.email,
       nameEnc: data.name, // cifrado en futuro (lib/crypto/pii.ts)
       phoneEnc: data.phone || null,
-      role: data.role,
+      role: dynRole.baseRole,
+      roleId: dynRole.id,
       passwordHash,
       status: 'ACTIVE',
     },
@@ -146,6 +141,8 @@ const updateUserSchema = z.object({
       'FINANZAS_CATERING',
     ])
     .optional(),
+  // Asignación por rol del RBAC dinámico (sistema o custom).
+  roleId: z.string().uuid().optional(),
 })
 
 export async function updateUserAction(input: z.infer<typeof updateUserSchema>) {
@@ -160,7 +157,22 @@ export async function updateUserAction(input: z.infer<typeof updateUserSchema>) 
   })
   if (!current) throw new Error('Usuario no encontrado')
 
-  if (data.role) {
+  // Resolver el rol a asignar: por roleId (RBAC dinámico) o por enum (legacy).
+  let roleEnumToSet = data.role
+  let roleIdToSet: string | undefined
+  if (data.roleId) {
+    const dynRole = await prisma.role.findUnique({
+      where: { id: data.roleId },
+      select: { id: true, baseRole: true, category: true },
+    })
+    if (!dynRole) throw new Error('Rol no encontrado')
+    if (String(dynRole.category) !== String(current.tenant.type)) {
+      throw new Error('El rol no corresponde al tipo de tenant del usuario')
+    }
+    if (!dynRole.baseRole) throw new Error('El rol no tiene rol base configurado')
+    roleEnumToSet = dynRole.baseRole
+    roleIdToSet = dynRole.id
+  } else if (data.role) {
     const allowed = rolesByTenantType(current.tenant.type)
     if (!allowed.includes(data.role)) {
       throw new Error(
@@ -175,7 +187,8 @@ export async function updateUserAction(input: z.infer<typeof updateUserSchema>) 
       ...(data.email && { email: data.email }),
       ...(data.name && { nameEnc: data.name }),
       ...(data.phone !== undefined && { phoneEnc: data.phone || null }),
-      ...(data.role && { role: data.role }),
+      ...(roleEnumToSet && { role: roleEnumToSet }),
+      ...(roleIdToSet && { roleId: roleIdToSet }),
     },
   })
 

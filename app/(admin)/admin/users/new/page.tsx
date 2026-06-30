@@ -5,11 +5,23 @@ import { prisma } from '@/lib/db/prisma'
 import { NewUserForm } from '@/components/admin/users/NewUserForm'
 
 export default async function NewUserPage() {
-  const tenants = await prisma.tenant.findMany({
-    where: { deletedAt: null, status: 'ACTIVE' },
-    select: { id: true, name: true, subdomain: true, type: true },
-    orderBy: [{ type: 'asc' }, { name: 'asc' }],
-  })
+  const [tenants, roles] = await Promise.all([
+    prisma.tenant.findMany({
+      where: { deletedAt: null, status: 'ACTIVE' },
+      select: { id: true, name: true, subdomain: true, type: true },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+    }),
+    prisma.role.findMany({
+      select: {
+        id: true,
+        name: true,
+        isSystem: true,
+        category: true,
+        description: true,
+      },
+      orderBy: [{ category: 'asc' }, { isSystem: 'desc' }, { name: 'asc' }],
+    }),
+  ])
 
   return (
     <div className="space-y-6">
@@ -31,7 +43,10 @@ export default async function NewUserPage() {
         </p>
       </div>
 
-      <NewUserForm tenants={tenants} />
+      <NewUserForm
+        tenants={tenants}
+        roles={roles.map((r) => ({ ...r, category: String(r.category) }))}
+      />
     </div>
   )
 }

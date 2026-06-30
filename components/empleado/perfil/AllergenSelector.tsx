@@ -20,35 +20,24 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-// Lista completa de alérgenos según normativa EU
-const ALLERGEN_LIST = [
-  { id: 'gluten', name: 'Gluten', description: 'Trigo, centeno, cebada, avena' },
-  { id: 'crustaceos', name: 'Crustáceos', description: 'Gambas, cangrejos, langostas' },
-  { id: 'huevos', name: 'Huevos', description: 'Huevos y productos derivados' },
-  { id: 'pescado', name: 'Pescado', description: 'Pescados y derivados' },
-  { id: 'cacahuetes', name: 'Cacahuetes', description: 'Cacahuetes y productos derivados' },
-  { id: 'soja', name: 'Soja', description: 'Soja y productos derivados' },
-  { id: 'lacteos', name: 'Lácteos', description: 'Leche y derivados (lactosa)' },
-  { id: 'frutos_secos', name: 'Frutos secos', description: 'Almendras, avellanas, nueces, etc.' },
-  { id: 'apio', name: 'Apio', description: 'Apio y derivados' },
-  { id: 'mostaza', name: 'Mostaza', description: 'Mostaza y derivados' },
-  { id: 'sesamo', name: 'Sésamo', description: 'Semillas de sésamo y derivados' },
-  { id: 'sulfitos', name: 'Sulfitos', description: 'Conservantes SO2 >10mg/kg' },
-  { id: 'altramuces', name: 'Altramuces', description: 'Altramuces y derivados' },
-  { id: 'moluscos', name: 'Moluscos', description: 'Mejillones, almejas, calamares' },
-]
+/** Alérgeno del catálogo global (tabla Allergen). El empleado guarda `code`. */
+type AllergenOption = { code: string; name: string }
 
 type AllergenSelectorProps = {
   employeeId: string
+  /** Catálogo de alérgenos activos (gestionado por el admin). */
+  availableAllergens: AllergenOption[]
   initialAllergens: string[]
   initialBlockEnabled: boolean
 }
 
 export function AllergenSelector({
   employeeId,
+  availableAllergens,
   initialAllergens,
   initialBlockEnabled,
 }: AllergenSelectorProps) {
+  const allergenList = availableAllergens
   const [selectedAllergens, setSelectedAllergens] = useState<string[]>(initialAllergens)
   const [blockEnabled, setBlockEnabled] = useState(initialBlockEnabled)
   const [isEditing, setIsEditing] = useState(false)
@@ -118,11 +107,11 @@ export function AllergenSelector({
       {/* Alergias actuales (vista) */}
       {!isEditing && selectedAllergens.length > 0 && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {selectedAllergens.map((allergenId) => {
-            const allergen = ALLERGEN_LIST.find((a) => a.id === allergenId)
+          {selectedAllergens.map((code) => {
+            const allergen = allergenList.find((a) => a.code === code)
             return allergen ? (
               <Badge
-                key={allergenId}
+                key={code}
                 variant="destructive"
                 className="text-sm py-1 px-3"
               >
@@ -161,41 +150,44 @@ export function AllergenSelector({
       {isEditing && (
         <div className="space-y-6">
           {/* Lista de alérgenos */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {ALLERGEN_LIST.map((allergen) => {
-              const isSelected = selectedAllergens.includes(allergen.id)
+          {allergenList.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              No hay alérgenos en el catálogo todavía.
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {allergenList.map((allergen) => {
+                const isSelected = selectedAllergens.includes(allergen.code)
 
-              return (
-                <div
-                  key={allergen.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
-                    isSelected
-                      ? 'border-red-500 bg-red-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                  onClick={() => handleToggleAllergen(allergen.id)}
-                >
-                  <Checkbox
-                    id={allergen.id}
-                    checked={isSelected}
-                    onCheckedChange={() => handleToggleAllergen(allergen.id)}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={allergen.id}
-                      className="text-sm font-medium cursor-pointer"
-                    >
-                      {allergen.name}
-                    </Label>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {allergen.description}
-                    </p>
+                return (
+                  <div
+                    key={allergen.code}
+                    className={`flex items-start gap-3 p-3 rounded-lg border-2 transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-red-500 bg-red-50'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                    onClick={() => handleToggleAllergen(allergen.code)}
+                  >
+                    <Checkbox
+                      id={`allergen-${allergen.code}`}
+                      checked={isSelected}
+                      onCheckedChange={() => handleToggleAllergen(allergen.code)}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={`allergen-${allergen.code}`}
+                        className="text-sm font-medium cursor-pointer"
+                      >
+                        {allergen.name}
+                      </Label>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
 
           {/* Toggle de bloqueo */}
           {selectedAllergens.length > 0 && (

@@ -56,14 +56,17 @@ export async function POST(req: NextRequest) {
       select: { dietPrefs: true },
     })
 
-    const currentDietPrefs = (currentEmployee?.dietPrefs as any) || {}
+    const currentDietPrefs = (currentEmployee?.dietPrefs as Record<string, unknown>) || {}
+    // Limpiar la clave legacy buggy si existiera.
+    delete currentDietPrefs['allergens']
 
     await prisma.employee.update({
       where: { id: validated.employeeId },
       data: {
         dietPrefs: {
           ...currentDietPrefs,
-          allergens: validated.allergens,
+          // Se guardan CÓDIGOS de alérgeno (catálogo Allergen.code).
+          allergies: validated.allergens,
           blockAllergensEnabled: validated.blockEnabled,
         },
       },

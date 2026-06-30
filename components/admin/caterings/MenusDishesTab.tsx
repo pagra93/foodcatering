@@ -8,11 +8,8 @@
 import { useState } from 'react'
 import {
   UtensilsCrossed,
-  Plus,
   Search,
   Filter,
-  Edit,
-  Eye,
   Power,
   PowerOff,
   Calendar,
@@ -27,7 +24,6 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -73,72 +69,8 @@ const DISH_LABELS: Record<string, { icon: any; color: string; label: string }> =
   spicy: { icon: AlertCircle, color: 'bg-red-100 text-red-800 border-red-300', label: 'Picante' },
 }
 
-// Datos mock para platos (si no hay datos reales)
-const getMockDishes = (): Dish[] => [
-  {
-    id: '1',
-    name: 'Ensalada César',
-    course: 'STARTER',
-    labels: ['vegetarian', 'contains_eggs'],
-    nutrition: { calories: 250, protein: 12, carbs: 15, fat: 18 },
-    basePrice: 5.5,
-    active: true,
-    scheduledDays: 5,
-  },
-  {
-    id: '2',
-    name: 'Pasta Carbonara',
-    course: 'MAIN',
-    labels: ['contains_eggs'],
-    nutrition: { calories: 450, protein: 22, carbs: 55, fat: 18 },
-    basePrice: 7.5,
-    active: true,
-    scheduledDays: 3,
-  },
-  {
-    id: '3',
-    name: 'Pollo al Curry',
-    course: 'MAIN',
-    labels: ['gluten_free', 'spicy'],
-    nutrition: { calories: 380, protein: 35, carbs: 25, fat: 15 },
-    basePrice: 8.0,
-    active: true,
-    scheduledDays: 4,
-  },
-  {
-    id: '4',
-    name: 'Salmón a la Plancha',
-    course: 'MAIN',
-    labels: ['contains_fish', 'gluten_free'],
-    nutrition: { calories: 320, protein: 30, carbs: 5, fat: 20 },
-    basePrice: 9.5,
-    active: true,
-    scheduledDays: 2,
-  },
-  {
-    id: '5',
-    name: 'Tarta de Manzana',
-    course: 'DESSERT',
-    labels: ['vegetarian', 'contains_eggs'],
-    nutrition: { calories: 280, protein: 4, carbs: 42, fat: 12 },
-    basePrice: 3.5,
-    active: true,
-    scheduledDays: 7,
-  },
-  {
-    id: '6',
-    name: 'Gazpacho Andaluz',
-    course: 'STARTER',
-    labels: ['vegan', 'gluten_free'],
-    nutrition: { calories: 120, protein: 3, carbs: 18, fat: 5 },
-    basePrice: 4.0,
-    active: false,
-    scheduledDays: 0,
-  },
-]
-
 export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: MenusDishesTabProps) {
-  const dishes = propDishes.length > 0 ? propDishes : getMockDishes()
+  const dishes = propDishes
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterCourse, setFilterCourse] = useState<string>('all')
@@ -178,13 +110,9 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
         <div>
           <h2 className="text-lg font-semibold text-gray-900">Menús & Platos</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Gestión del catálogo de platos y programación semanal
+            Catálogo de platos y programación semanal del catering (solo lectura).
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Plato
-        </Button>
       </div>
 
       {/* Resumen */}
@@ -305,14 +233,13 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                 <TableHead>Precio Base</TableHead>
                 <TableHead>Programado</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredDishes.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={7}
                     className="h-24 text-center text-gray-500"
                   >
                     <UtensilsCrossed className="mx-auto h-8 w-8 text-gray-400 mb-2" />
@@ -399,27 +326,6 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
                         </Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className={dish.active ? 'text-red-600' : 'text-green-600'}
-                        >
-                          {dish.active ? (
-                            <PowerOff className="h-4 w-4" />
-                          ) : (
-                            <Power className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -436,10 +342,6 @@ export function MenusDishesTab({ dishes: propDishes, cateringId: _cateringId }: 
               <Calendar className="h-5 w-5 text-orange-600" />
               Programación Semanal
             </CardTitle>
-            <Button variant="outline" size="sm">
-              <Edit className="mr-2 h-4 w-4" />
-              Editar Programación
-            </Button>
           </div>
         </CardHeader>
         <CardContent className="pt-6">

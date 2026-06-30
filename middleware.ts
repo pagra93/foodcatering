@@ -6,6 +6,11 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { auth } from '@/lib/auth/edge'
+import {
+  ADMIN_SECTION_RULES,
+  requiredPermissionForPath,
+  permitted,
+} from '@/lib/auth/section-permissions'
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -69,6 +74,17 @@ export async function middleware(req: NextRequest) {
     
     if (!session?.user) {
       return NextResponse.redirect(new URL('/login', req.url))
+    }
+
+    // Enforcement por sección en el portal admin: si la ruta exige un permiso
+    // `:view` que el rol no tiene, fuera. El super admin nunca se bloquea
+    // (aunque su JWT sea anterior a la resolución de permisos).
+    if (pathname.startsWith('/admin') && session.user.role !== 'SUPER_ADMIN') {
+      const required = requiredPermissionForPath(ADMIN_SECTION_RULES, pathname)
+      const perms = session.user.permissions ?? []
+      if (required && !permitted(perms, required)) {
+        return NextResponse.redirect(new URL('/unauthorized', req.url))
+      }
     }
 
     // Inyectar tenant ID en headers desde la sesión

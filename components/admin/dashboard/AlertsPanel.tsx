@@ -108,7 +108,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
                 {alerts.expiringDocuments.slice(0, 3).map((doc) => (
                   <li key={doc.id} className="text-sm">
                     <Link
-                      href={`/admin/tenants/${doc.restaurantId}`}
+                      href={`/admin/caterings/${doc.restaurantId}`}
                       className="hover:underline"
                     >
                       <strong>{doc.restaurantName}</strong> - {doc.documentType}
@@ -143,7 +143,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
                 {alerts.inactiveCaterings.slice(0, 3).map((catering) => (
                   <li key={catering.id} className="text-sm">
                     <Link
-                      href={`/admin/tenants/${catering.id}`}
+                      href={`/admin/caterings/${catering.id}`}
                       className="hover:underline"
                     >
                       <strong>{catering.name}</strong>
@@ -170,7 +170,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
                 {alerts.inactiveCompanies.slice(0, 3).map((company) => (
                   <li key={company.id} className="text-sm">
                     <Link
-                      href={`/admin/tenants/${company.id}`}
+                      href={`/admin/empresas/${company.id}`}
                       className="hover:underline"
                     >
                       {company.name}
@@ -194,7 +194,7 @@ export function AlertsPanel({ alerts }: AlertsPanelProps) {
                 {alerts.cancellationSpikes.map((spike) => (
                   <li key={spike.tenantId} className="text-sm">
                     <Link
-                      href={`/admin/tenants/${spike.tenantId}`}
+                      href={`/admin/empresas/${spike.tenantId}`}
                       className="hover:underline"
                     >
                       <strong>{spike.tenantName}</strong> - {spike.cancelled}/

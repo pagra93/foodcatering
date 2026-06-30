@@ -13,6 +13,7 @@ import { ChevronLeft } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getDishById } from '@/lib/db/queries/catering-dishes'
+import { getActiveAllergenOptions } from '@/lib/db/queries/catalogs'
 import { DishEditForm } from '@/components/catering/platos/DishEditForm'
 
 type PageProps = {
@@ -27,7 +28,10 @@ export default async function EditarPlatoPage({ params }: PageProps) {
   }
 
   const { id } = await params
-  const dish = await getDishById(id, session.user.tenantId)
+  const [dish, availableAllergens] = await Promise.all([
+    getDishById(id, session.user.tenantId),
+    getActiveAllergenOptions(),
+  ])
 
   if (!dish) {
     notFound()
@@ -73,11 +77,13 @@ export default async function EditarPlatoPage({ params }: PageProps) {
 
       {/* Formulario */}
       <DishEditForm
+        availableAllergens={availableAllergens}
         dish={{
           id: dish.id,
           name: dish.name,
           course: dish.course,
           labels: dish.labels,
+          allergenIds: dish.allergenIds,
           nutrition: dish.nutrition,
           basePrice: dish.basePrice,
           active: dish.active,

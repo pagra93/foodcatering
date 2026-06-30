@@ -36,6 +36,9 @@ export const edgeAuthConfig = {
         session.user.role = t.role
         session.user.tenantId = t.tenantId
         session.user.tenantType = t.tenantType
+        // Permisos resueltos en el login (config.ts). El middleware los usa
+        // para el enforcement por sección sin pegarse contra Prisma.
+        session.user.permissions = t.permissions ?? []
       }
       return session
     },

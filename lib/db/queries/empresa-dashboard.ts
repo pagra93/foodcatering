@@ -4,7 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { subDays, startOfMonth, startOfWeek, format } from 'date-fns'
+import { subDays, startOfMonth, startOfWeek, startOfDay, endOfDay, format } from 'date-fns'
 import { es } from 'date-fns/locale'
 
 export async function getCompanyDashboardData(tenantId: string) {
@@ -69,11 +69,14 @@ export async function getCompanyDashboardData(tenantId: string) {
       distinct: ['employeeId'],
     }).then((orders) => orders.length),
     
-    // Pedidos hoy
+    // Pedidos hoy (rango del día completo, no timestamp exacto)
     prisma.order.count({
       where: {
         tenantEmpresa: tenantId,
-        serviceDate: today,
+        serviceDate: {
+          gte: startOfDay(today),
+          lte: endOfDay(today),
+        },
         deletedAt: null,
       },
     }),

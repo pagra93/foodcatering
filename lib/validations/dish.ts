@@ -7,24 +7,15 @@
 import { z } from 'zod'
 
 /**
- * Lista de alérgenos permitidos según normativa española
+ * Alérgeno del catálogo global (tabla `Allergen`). El selector de platos los
+ * carga de la BD; un plato referencia alérgenos por su `id` (relación
+ * `DishAllergen`), no por strings hardcodeados.
  */
-export const ALLERGENS = [
-  'gluten',
-  'crustaceos',
-  'huevos',
-  'pescado',
-  'cacahuetes',
-  'soja',
-  'lactosa',
-  'frutos_secos',
-  'apio',
-  'mostaza',
-  'sesamo',
-  'sulfitos',
-  'altramuces',
-  'moluscos',
-] as const
+export type AllergenOption = {
+  id: string
+  code: string
+  name: string
+}
 
 /**
  * Lista de etiquetas nutricionales permitidas
@@ -85,8 +76,9 @@ export const createDishSchema = z.object({
     .max(1000, 'Los ingredientes no pueden superar 1000 caracteres')
     .trim(),
 
+  // IDs de alérgenos del catálogo global (tabla Allergen).
   allergens: z
-    .array(z.enum(ALLERGENS))
+    .array(z.string().uuid())
     .default([])
     .refine((allergens) => new Set(allergens).size === allergens.length, {
       message: 'No puede haber alérgenos duplicados',
@@ -133,7 +125,7 @@ export const dishFiltersSchema = z.object({
   search: z.string().optional(),
   course: z.enum(DISH_COURSES).optional(),
   active: z.enum(['true', 'false', 'all']).default('all'),
-  allergens: z.array(z.enum(ALLERGENS)).optional(),
+  allergens: z.array(z.string().uuid()).optional(),
   tags: z.array(z.enum(NUTRITION_TAGS)).optional(),
   page: z.number().min(1).default(1),
   pageSize: z.number().min(1).max(100).default(20),
@@ -160,59 +152,23 @@ export type CreateDishInput = z.infer<typeof createDishSchema>
 export type UpdateDishInput = z.infer<typeof updateDishSchema>
 export type DishFilters = z.infer<typeof dishFiltersSchema>
 export type CloneDishInput = z.infer<typeof cloneDishSchema>
-export type Allergen = (typeof ALLERGENS)[number]
 export type NutritionTag = (typeof NUTRITION_TAGS)[number]
 export type DishCourse = (typeof DISH_COURSES)[number]
 export type Nutrition = z.infer<typeof nutritionSchema>
 
 /**
- * Función helper para validar y formatear labels
+ * `Dish.labels` ahora solo guarda etiquetas nutricionales (los alérgenos viven
+ * en la relación `DishAllergen`). Este helper extrae los tags conocidos.
  */
-export function formatDishLabels(
-  allergens: Allergen[],
-  tags: NutritionTag[]
-): string[] {
-  return [...allergens, ...tags]
-}
-
-/**
- * Función helper para parsear labels
- */
-export function parseDishLabels(labels: string[]): {
-  allergens: Allergen[]
-  tags: NutritionTag[]
-} {
-  const allergens = labels.filter((label) =>
-    ALLERGENS.includes(label as Allergen)
-  ) as Allergen[]
-
-  const tags = labels.filter((label) =>
+export function parseDishTags(labels: string[]): NutritionTag[] {
+  return labels.filter((label) =>
     NUTRITION_TAGS.includes(label as NutritionTag)
   ) as NutritionTag[]
-
-  return { allergens, tags }
 }
 
 /**
  * Traducciones para la UI
  */
-export const ALLERGEN_LABELS: Record<Allergen, string> = {
-  gluten: 'Gluten',
-  crustaceos: 'Crustáceos',
-  huevos: 'Huevos',
-  pescado: 'Pescado',
-  cacahuetes: 'Cacahuetes',
-  soja: 'Soja',
-  lactosa: 'Lactosa',
-  frutos_secos: 'Frutos Secos',
-  apio: 'Apio',
-  mostaza: 'Mostaza',
-  sesamo: 'Sésamo',
-  sulfitos: 'Sulfitos',
-  altramuces: 'Altramuces',
-  moluscos: 'Moluscos',
-}
-
 export const NUTRITION_TAG_LABELS: Record<NutritionTag, string> = {
   vegetariano: 'Vegetariano',
   vegano: 'Vegano',

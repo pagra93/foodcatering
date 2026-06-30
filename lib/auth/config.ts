@@ -11,6 +11,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db'
 import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
+import { resolveUserPermissions } from './resolve-permissions'
 
 /**
  * Schema de validación para login
@@ -93,7 +94,10 @@ export const authConfig = {
           // Normalizar role y tenantType a mayúsculas (BD guarda en minúscula, enum es mayúscula)
           const normalizedRole = user.role.toUpperCase() as UserRole
           const normalizedTenantType = user.tenant.type.toUpperCase() as TenantType
-          
+
+          // Permisos efectivos (RBAC dinámico) para la sesión.
+          const permissions = await resolveUserPermissions(user.roleId, normalizedRole)
+
           return {
             id: user.id,
             email: user.email,
@@ -103,6 +107,8 @@ export const authConfig = {
             tenantType: normalizedTenantType,
             mfaEnabled: user.mfaEnabled,
             status: user.status,
+            roleId: user.roleId,
+            permissions,
           }
         } catch (error) {
           console.error('Error en authorize:', error)
@@ -127,6 +133,8 @@ export const authConfig = {
         token.tenantId = user.tenantId
         token.tenantType = user.tenantType
         token.mfaEnabled = user.mfaEnabled
+        token.roleId = user.roleId
+        token.permissions = user.permissions
       }
 
       // Update session (cuando se llama a update())
@@ -145,13 +153,15 @@ export const authConfig = {
           // Cargar datos completos del usuario impersonado
           const targetUser = await prisma.user.findUnique({
             where: { id: session.impersonationToken.targetUserId },
-            select: { nameEnc: true, email: true, tenant: { select: { type: true } } },
+            select: { nameEnc: true, email: true, roleId: true, tenant: { select: { type: true } } },
           })
-          
+
           if (targetUser) {
             token.name = targetUser.nameEnc
             token.email = targetUser.email
             token.tenantType = targetUser.tenant.type
+            token.roleId = targetUser.roleId
+            token.permissions = await resolveUserPermissions(targetUser.roleId, token.role)
           }
         } else if (token.impersonationToken) {
           // Si se removió el token de impersonación, restaurar usuario original
@@ -164,11 +174,12 @@ export const authConfig = {
               nameEnc: true,
               email: true,
               role: true,
+              roleId: true,
               tenantId: true,
               tenant: { select: { type: true } },
             },
           })
-          
+
           if (originalUser) {
             token.id = impToken.originalUserId
             token.name = originalUser.nameEnc
@@ -176,6 +187,11 @@ export const authConfig = {
             token.role = originalUser.role
             token.tenantId = originalUser.tenantId
             token.tenantType = originalUser.tenant.type
+            token.roleId = originalUser.roleId
+            token.permissions = await resolveUserPermissions(
+              originalUser.roleId,
+              originalUser.role
+            )
           }
           
           // Remover token de impersonación
@@ -198,7 +214,9 @@ export const authConfig = {
         session.user.tenantId = token.tenantId
         session.user.tenantType = token.tenantType
         session.user.mfaEnabled = token.mfaEnabled
-        
+        session.user.roleId = token.roleId
+        session.user.permissions = token.permissions
+
         // Incluir token de impersonación si existe
         if (token.impersonationToken) {
           ;(session.user as any).impersonationToken = token.impersonationToken

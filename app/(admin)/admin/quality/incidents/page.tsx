@@ -179,7 +179,14 @@ export default async function GlobalIncidentsPage({
               <tr key={i.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{i.empresaName}</td>
                 <td className="px-4 py-3">{i.cateringName}</td>
-                <td className="px-4 py-3 font-mono text-xs">{i.type}</td>
+                <td className="px-4 py-3 font-mono text-xs">
+                  <Link
+                    href={`/admin/quality/incidents/${i.id}`}
+                    className="text-primary hover:underline"
+                  >
+                    {i.type}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">
                   <span
                     className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${SEVERITY_META[i.severity].color}`}

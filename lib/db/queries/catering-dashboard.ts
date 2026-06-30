@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { subDays, startOfDay } from 'date-fns'
+import { getCateringQualityMetrics } from '@/lib/db/queries/catering-metrics'
 
 export async function getCateringDashboard(tenantId: string) {
   const today = startOfDay(new Date())
@@ -285,6 +286,9 @@ export async function getCateringDashboard(tenantId: string) {
   // RETORNO
   // ============================================================================
 
+  // Rating EN VIVO (no el stored stale de Restaurant), igual que el admin.
+  const liveQuality = await getCateringQualityMetrics(tenantId)
+
   return {
     kpis: {
       production: {
@@ -302,9 +306,7 @@ export async function getCateringDashboard(tenantId: string) {
       quality: {
         punctualityRate,
         incidentRate,
-        averageRating: restaurant?.averageRating
-          ? Number(restaurant.averageRating)
-          : null,
+        averageRating: liveQuality.averageRating,
       },
       incidents: {
         open: incidentsOpen,

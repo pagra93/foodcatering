@@ -140,15 +140,21 @@ export async function AdminNavbar() {
                 <span>Configuración</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="text-destructive"
-                onClick={async () => {
-                  'use server'
-                  await signOut()
-                }}
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Cerrar Sesión</span>
+              <DropdownMenuItem asChild className="text-destructive">
+                <form
+                  action={async () => {
+                    'use server'
+                    await signOut()
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="flex w-full items-center"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Cerrar Sesión</span>
+                  </button>
+                </form>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

@@ -5,8 +5,10 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { setCateringStatus } from '@/components/admin/caterings/actions'
 import {
   Building2,
   MapPin,
@@ -73,6 +75,15 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
   const [filterStatus, setFilterStatus] = useState<string>('all')
   const [filterDocs, setFilterDocs] = useState<string>('all')
   const [filterSLA, setFilterSLA] = useState<string>('all')
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  const toggleStatus = (id: string, current: string) => {
+    startTransition(async () => {
+      await setCateringStatus(id, current === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')
+      router.refresh()
+    })
+  }
 
   // Filtrar caterings
   const filteredCaterings = caterings.filter((catering) => {
@@ -358,18 +369,31 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
                             Editar
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <UserCog className="mr-2 h-4 w-4" />
-                          Impersonar
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/admin/operations/impersonation"
+                            className="flex items-center gap-2"
+                          >
+                            <UserCog className="h-4 w-4" />
+                            Impersonar
+                          </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {catering.status === 'ACTIVE' ? (
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            disabled={isPending}
+                            onClick={() => toggleStatus(catering.id, catering.status)}
+                          >
                             <Power className="mr-2 h-4 w-4" />
                             Suspender
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem className="text-green-600">
+                          <DropdownMenuItem
+                            className="text-green-600"
+                            disabled={isPending}
+                            onClick={() => toggleStatus(catering.id, catering.status)}
+                          >
                             <Power className="mr-2 h-4 w-4" />
                             Activar
                           </DropdownMenuItem>

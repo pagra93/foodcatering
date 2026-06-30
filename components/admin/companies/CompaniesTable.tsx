@@ -35,11 +35,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { 
-  Search, 
-  MoreVertical, 
-  Eye, 
-  Edit, 
-  UserPlus, 
+  Search,
+  MoreVertical,
+  Eye,
+  Edit,
   AlertTriangle,
   CheckCircle2,
 } from 'lucide-react'
@@ -341,10 +340,6 @@ export function CompaniesTable({ companies }: Props) {
                             <Edit className="mr-2 h-4 w-4" />
                             Editar
                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <UserPlus className="mr-2 h-4 w-4" />
-                          Invitar empleados
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>

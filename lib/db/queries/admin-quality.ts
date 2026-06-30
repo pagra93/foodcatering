@@ -9,6 +9,7 @@ import type {
   IncidentStatus,
   Prisma,
 } from '@prisma/client'
+import type { IncidentResolution } from '@/lib/incidents/constants'
 
 // ─── Dashboard KPIs ─────────────────────────────────────────────────────
 
@@ -128,6 +129,78 @@ export async function getGlobalIncidents(filters: IncidentFilters = {}) {
     total,
     page,
     pageSize,
+  }
+}
+
+/**
+ * Detalle completo de una incidencia (vista global SUPER_ADMIN, cross-tenant).
+ * Resuelve nombres de empresa/catering, el pedido asociado y los usuarios
+ * implicados (apertura / reporte / asignación). Devuelve null si no existe.
+ */
+export async function getGlobalIncidentById(id: string) {
+  const incident = await prisma.incident.findUnique({
+    where: { id },
+    include: {
+      order: {
+        select: {
+          id: true,
+          employeeId: true,
+          serviceDate: true,
+          status: true,
+          menuType: true,
+          price: true,
+        },
+      },
+    },
+  })
+
+  if (!incident) return null
+
+  // Resolución (JSON) parseada a forma tipada.
+  const resolution = (incident.resolution ?? null) as IncidentResolution | null
+
+  // Nombres de tenants implicados.
+  const tenants = await prisma.tenant.findMany({
+    where: { id: { in: [incident.tenantEmpresa, incident.tenantCatering] } },
+    select: { id: true, name: true, type: true },
+  })
+  const nameById = new Map(tenants.map((t) => [t.id, t.name]))
+
+  // Usuarios implicados (email en claro; el nombre va cifrado y no se muestra aquí).
+  const userIds = [
+    incident.openedBy,
+    incident.reportedBy,
+    incident.assignedTo,
+    resolution?.resolvedBy,
+  ].filter((v): v is string => Boolean(v))
+
+  const users = userIds.length
+    ? await prisma.user.findMany({
+        where: { id: { in: userIds } },
+        select: { id: true, email: true },
+      })
+    : []
+  const emailById = new Map(users.map((u) => [u.id, u.email]))
+
+  return {
+    ...incident,
+    resolution,
+    empresaName: nameById.get(incident.tenantEmpresa) ?? incident.tenantEmpresa,
+    cateringName:
+      nameById.get(incident.tenantCatering) ?? incident.tenantCatering,
+    openedByEmail: emailById.get(incident.openedBy) ?? null,
+    reportedByEmail: incident.reportedBy
+      ? emailById.get(incident.reportedBy) ?? null
+      : null,
+    assignedToEmail: incident.assignedTo
+      ? emailById.get(incident.assignedTo) ?? null
+      : null,
+    resolvedByEmail: resolution?.resolvedBy
+      ? emailById.get(resolution.resolvedBy) ?? null
+      : null,
+    daysOpen: Math.floor(
+      (Date.now() - incident.createdAt.getTime()) / (1000 * 60 * 60 * 24)
+    ),
   }
 }
 

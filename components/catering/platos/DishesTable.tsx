@@ -31,7 +31,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { MoreHorizontal, Edit, Copy, Trash2, Eye, Power, PowerOff } from 'lucide-react'
-import { DISH_COURSE_LABELS, parseDishLabels, ALLERGEN_LABELS } from '@/lib/validations/dish'
+import { DISH_COURSE_LABELS } from '@/lib/validations/dish'
 import { toast } from 'sonner'
 
 type Dish = {
@@ -40,6 +40,7 @@ type Dish = {
   course: string
   ingredients?: string
   labels: string[]
+  allergens: { id: string; code: string; name: string }[]
   basePrice: number
   active: boolean
   createdAt: Date
@@ -139,7 +140,7 @@ export function DishesTable({
           </TableHeader>
           <TableBody>
             {dishes.map((dish) => {
-              const { allergens } = parseDishLabels(dish.labels)
+              const allergens = dish.allergens
               const isLoading = loading === dish.id
 
               return (
@@ -162,11 +163,11 @@ export function DishesTable({
                       <div className="flex flex-wrap gap-1">
                         {allergens.slice(0, 3).map((allergen) => (
                           <Badge
-                            key={allergen}
+                            key={allergen.id}
                             variant="secondary"
                             className="text-xs"
                           >
-                            {ALLERGEN_LABELS[allergen]}
+                            {allergen.name}
                           </Badge>
                         ))}
                         {allergens.length > 3 && (

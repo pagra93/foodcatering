@@ -4,7 +4,9 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { subDays, startOfMonth } from 'date-fns'
+import { subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns'
+import { decryptNameSafe } from '@/lib/crypto/pii'
+import { getCompanyAdoption } from '@/lib/db/queries/company-metrics'
 
 // ============================================================================
 // KPIs GLOBALES DE EMPRESAS
@@ -78,20 +80,23 @@ export async function getCompaniesGlobalKPIs() {
       },
     }),
 
-    // Empleados que han pedido en los últimos 30 días (únicos)
+    // Empleados que han pedido este mes (únicos) — definición canónica de adopción
     prisma.order.findMany({
       where: {
-        serviceDate: { gte: thirtyDaysAgo },
+        serviceDate: { gte: startOfCurrentMonth },
         deletedAt: null,
       },
       select: { employeeId: true },
       distinct: ['employeeId'],
     }).then((orders) => orders.length),
 
-    // Pedidos de hoy
+    // Pedidos de hoy (rango del día completo, no timestamp exacto)
     prisma.order.count({
       where: {
-        serviceDate: today,
+        serviceDate: {
+          gte: startOfDay(today),
+          lte: endOfDay(today),
+        },
         deletedAt: null,
       },
     }),
@@ -274,8 +279,8 @@ export async function getCompanies({
       const company = tenant.companies[0]
       if (!company) return null
 
-      // KPIs de pedidos e incidencias
-      const [ordersLast30Days, activeEmployees, incidents] = await Promise.all([
+      // KPIs de pedidos, incidencias y adopción (definición canónica única)
+      const [ordersLast30Days, incidents, adoption] = await Promise.all([
         prisma.order.count({
           where: {
             tenantEmpresa: tenant.id,
@@ -283,31 +288,18 @@ export async function getCompanies({
             deletedAt: null,
           },
         }),
-        prisma.order.findMany({
-          where: {
-            tenantEmpresa: tenant.id,
-            serviceDate: { gte: thirtyDaysAgo },
-            deletedAt: null,
-          },
-          select: { employeeId: true },
-          distinct: ['employeeId'],
-        }).then((orders) => orders.length),
         prisma.incident.count({
           where: {
             tenantEmpresa: tenant.id,
             status: { in: ['OPEN', 'IN_PROGRESS'] },
           },
         }),
+        getCompanyAdoption(tenant.id),
       ])
 
-      const totalEmployees = company.sites.reduce(
-        (sum, site) => sum + site._count.employees,
-        0
-      )
-
-      const adoptionRate = totalEmployees > 0 
-        ? Math.round((activeEmployees / totalEmployees) * 100) 
-        : 0
+      const totalEmployees = adoption.totalEmployees
+      const activeEmployees = adoption.activeEmployees
+      const adoptionRate = adoption.adoptionRate
 
       const hasDeductibilityIssue = company.policy && Number(company.policy.limitPerDay) > 11.00
 
@@ -449,8 +441,6 @@ export async function getCompanyByIdComplete(tenantId: string) {
     orders90Days,
     ordersThisMonth,
     ordersDelivered30Days,
-    activeEmployees30Days,
-    activeEmployees90Days,
     incidents30Days,
     incidentsOpen,
     recentOrders,
@@ -490,26 +480,6 @@ export async function getCompanyByIdComplete(tenantId: string) {
         deletedAt: null,
       },
     }),
-    // Empleados activos 30 días
-    prisma.order.findMany({
-      where: {
-        tenantEmpresa: tenantId,
-        serviceDate: { gte: thirtyDaysAgo },
-        deletedAt: null,
-      },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
-    // Empleados activos 90 días
-    prisma.order.findMany({
-      where: {
-        tenantEmpresa: tenantId,
-        serviceDate: { gte: ninetyDaysAgo },
-        deletedAt: null,
-      },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
     // Incidencias últimos 30 días
     prisma.incident.findMany({
       where: {
@@ -577,21 +547,23 @@ export async function getCompanyByIdComplete(tenantId: string) {
     }).then((result) => result._sum.price || 0),
   ])
 
-  // Calcular métricas
-  const totalEmployees = company.sites.reduce(
-    (sum, site) => sum + site._count.employees,
-    0
-  )
+  // Adopción/empleados: definición canónica única (mes natural + todos ACTIVE).
+  // Igual en detalle, lista y portal → mismo número en todas las pantallas.
+  const adoption = await getCompanyAdoption(tenantId)
+  const totalEmployees = adoption.totalEmployees
+  const activeEmployeesThisMonth = adoption.activeEmployees
+  const adoptionRate = adoption.adoptionRate
 
-  const adoptionRate30Days = totalEmployees > 0 
-    ? Math.round((activeEmployees30Days / totalEmployees) * 100) 
-    : 0
+  // Mapa empleadoId → nombre descifrado (reusa los empleados ya cargados por sede)
+  // para resolver el nombre en "Pedidos recientes" sin query extra.
+  const employeeNameById = new Map<string, string>()
+  for (const site of company.sites) {
+    for (const emp of site.employees) {
+      employeeNameById.set(emp.id, decryptNameSafe(emp.user.nameEnc))
+    }
+  }
 
-  const adoptionRate90Days = totalEmployees > 0 
-    ? Math.round((activeEmployees90Days / totalEmployees) * 100) 
-    : 0
-
-  const incidentRate = orders30Days > 0 
+  const incidentRate = orders30Days > 0
     ? ((incidents30Days.length / orders30Days) * 100).toFixed(2)
     : '0.00'
 
@@ -638,7 +610,7 @@ export async function getCompanyByIdComplete(tenantId: string) {
 
   // Detectar alertas
   const hasDeductibilityIssue = company.policy && Number(company.policy.limitPerDay) > 11.00
-  const hasLowAdoption = adoptionRate30Days < 50
+  const hasLowAdoption = adoptionRate < 50
   const hasHighIncidents = incidentsOpen > 5
   const hasNoOrders = orders30Days === 0
 
@@ -713,7 +685,7 @@ export async function getCompanyByIdComplete(tenantId: string) {
         user: {
           id: emp.user.id,
           email: emp.user.email,
-          name: emp.user.nameEnc,
+          name: decryptNameSafe(emp.user.nameEnc),
           status: emp.user.status,
         },
       })),
@@ -726,7 +698,7 @@ export async function getCompanyByIdComplete(tenantId: string) {
     users: tenant.users.map((user) => ({
       id: user.id,
       email: user.email,
-      name: user.nameEnc,
+      name: decryptNameSafe(user.nameEnc),
       role: user.role,
       mfaEnabled: user.mfaEnabled,
       status: user.status,
@@ -743,13 +715,11 @@ export async function getCompanyByIdComplete(tenantId: string) {
       deliverySuccessRate, // %
       avgOrdersPerDay: Math.round(orders30Days / 30),
       
-      // Empleados
+      // Empleados (definición canónica: mes natural + todos ACTIVE)
       totalEmployees,
-      activeEmployees30Days,
-      activeEmployees90Days,
-      adoptionRate30Days, // %
-      adoptionRate90Days, // %
-      
+      activeEmployeesThisMonth,
+      adoptionRate, // %
+
       // Incidencias
       incidentsOpen,
       incidents30Days: incidents30Days.length,
@@ -765,10 +735,11 @@ export async function getCompanyByIdComplete(tenantId: string) {
     // Incidencias recientes
     recentIncidents: incidents30Days,
 
-    // Pedidos recientes
+    // Pedidos recientes (con nombre del empleado resuelto desde los ya cargados)
     recentOrders: recentOrders.map((order) => ({
       id: order.id,
-      employeeId: order.employeeId, // Solo ID por ahora (Order no tiene relación con Employee en schema)
+      employeeId: order.employeeId,
+      employeeName: employeeNameById.get(order.employeeId) ?? null,
       serviceDate: order.serviceDate,
       status: order.status,
       menuType: order.menuType,

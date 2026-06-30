@@ -10,9 +10,7 @@ import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
   Users,
-  Plus,
   Search,
-  Edit,
   Shield,
   Key,
   Clock,
@@ -21,11 +19,8 @@ import {
   UserCog,
   Mail,
   AlertCircle,
-  Lock,
-  Unlock,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
@@ -89,72 +84,8 @@ const CATERING_ROLES: Record<string, { label: string; description: string; color
   },
 }
 
-// Datos mock para usuarios
-const getMockUsers = (): User[] => [
-  {
-    id: '1',
-    name: 'Carlos Martínez',
-    email: 'carlos@catering.com',
-    role: 'ADMIN',
-    mfaEnabled: true,
-    status: 'ACTIVE',
-    lastLoginAt: new Date(Date.now() - 2 * 60 * 60000), // 2 hours ago
-    createdAt: new Date('2024-01-15'),
-  },
-  {
-    id: '2',
-    name: 'Ana García',
-    email: 'ana@catering.com',
-    role: 'CHEF',
-    mfaEnabled: true,
-    status: 'ACTIVE',
-    lastLoginAt: new Date(Date.now() - 5 * 60 * 60000), // 5 hours ago
-    createdAt: new Date('2024-02-20'),
-  },
-  {
-    id: '3',
-    name: 'Pedro López',
-    email: 'pedro@catering.com',
-    role: 'KITCHEN',
-    mfaEnabled: false,
-    status: 'ACTIVE',
-    lastLoginAt: new Date(Date.now() - 24 * 60 * 60000), // 1 day ago
-    createdAt: new Date('2024-03-10'),
-  },
-  {
-    id: '4',
-    name: 'María Ruiz',
-    email: 'maria@catering.com',
-    role: 'DELIVERY',
-    mfaEnabled: false,
-    status: 'ACTIVE',
-    lastLoginAt: new Date(Date.now() - 3 * 60 * 60000), // 3 hours ago
-    createdAt: new Date('2024-04-05'),
-  },
-  {
-    id: '5',
-    name: 'Juan Fernández',
-    email: 'juan@catering.com',
-    role: 'FINANCE',
-    mfaEnabled: true,
-    status: 'ACTIVE',
-    lastLoginAt: new Date(Date.now() - 10 * 60 * 60000), // 10 hours ago
-    createdAt: new Date('2024-01-20'),
-  },
-  {
-    id: '6',
-    name: 'Laura Sánchez',
-    email: 'laura@catering.com',
-    role: 'KITCHEN',
-    mfaEnabled: false,
-    status: 'INACTIVE',
-    lastLoginAt: new Date(Date.now() - 30 * 24 * 60 * 60000), // 30 days ago
-    createdAt: new Date('2023-11-15'),
-  },
-]
-
 export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId }: UsersPermissionsTabProps) {
-  const users = propUsers.length > 0 ? propUsers : getMockUsers()
+  const users = propUsers
   
   const [searchTerm, setSearchTerm] = useState('')
   const [filterRole, setFilterRole] = useState<string>('all')
@@ -194,13 +125,9 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
             Usuarios & Permisos
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Gestión de usuarios del catering, roles y seguridad
+            Usuarios del catering, roles y seguridad (solo lectura).
           </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Nuevo Usuario
-        </Button>
       </div>
 
       {/* KPIs */}
@@ -348,14 +275,13 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
                 <TableHead>MFA</TableHead>
                 <TableHead>Último Acceso</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={6}
+                    colSpan={5}
                     className="h-24 text-center text-gray-500"
                   >
                     <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
@@ -421,35 +347,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
                           Inactivo
                         </Badge>
                       )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" title="Editar usuario">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title="Impersonar usuario"
-                        >
-                          <UserCog className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          title={
-                            user.status === 'ACTIVE'
-                              ? 'Desactivar'
-                              : 'Activar'
-                          }
-                        >
-                          {user.status === 'ACTIVE' ? (
-                            <Lock className="h-4 w-4 text-red-600" />
-                          ) : (
-                            <Unlock className="h-4 w-4 text-green-600" />
-                          )}
-                        </Button>
-                      </div>
                     </TableCell>
                   </TableRow>
                 ))

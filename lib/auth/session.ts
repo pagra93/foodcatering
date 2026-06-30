@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation'
 import type { UserRole } from '@prisma/client'
 import {
   canAccessTenant,
-  hasPermission,
+  permissionsInclude,
   getDashboardPath,
 } from './permissions'
 
@@ -46,7 +46,7 @@ export async function requireRole(allowedRoles: UserRole[]) {
 export async function requirePermission(permission: string) {
   const session = await getRequiredSession()
 
-  if (!hasPermission(session.user.role, permission)) {
+  if (!permissionsInclude(session.user.permissions, permission)) {
     redirect('/unauthorized')
   }
 

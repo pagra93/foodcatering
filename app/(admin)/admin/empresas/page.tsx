@@ -77,7 +77,7 @@ export default async function EmpresasPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" asChild>
-            <Link href="/admin/empresas/reportes">
+            <Link href="/admin/compliance/fiscal-audit">
               <FileText className="mr-2 h-4 w-4" />
               Reportes
             </Link>

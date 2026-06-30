@@ -9,6 +9,18 @@ import Link from 'next/link'
 import { ArrowLeft, Edit } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCateringById } from '@/lib/db/queries/caterings'
+import { getGlobalIncidents } from '@/lib/db/queries/admin-quality'
+import { getActivityLog } from '@/lib/db/queries/empresa-actividad'
+import {
+  getCateringBillingKPIs,
+  getCateringInvoicesEmitidas,
+  getSettlementsByCatering,
+} from '@/lib/db/queries/catering-billing'
+import { getCateringDailyOperations } from '@/lib/db/queries/catering-operations'
+import { getAuditsForCatering } from '@/lib/db/queries/admin-audits'
+import { getPenaltiesForCatering } from '@/lib/db/queries/admin-penalties'
+import { decryptNameSafe } from '@/lib/crypto/pii'
+import { startOfWeek } from 'date-fns'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -123,11 +135,64 @@ async function CateringHeader({ id }: { id: string }) {
 
 // Contenido principal
 async function CateringContent({ id }: { id: string }) {
-  const catering = await getCateringById(id)
+  const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const [
+    catering,
+    incidentsData,
+    activityData,
+    billingKpis,
+    invoicesRaw,
+    settlements,
+    dailyOps,
+    audits,
+    penalties,
+  ] = await Promise.all([
+    getCateringById(id),
+    getGlobalIncidents({ tenantCatering: id, pageSize: 100 }),
+    getActivityLog(id, { limit: 50 }),
+    getCateringBillingKPIs(id),
+    getCateringInvoicesEmitidas(id),
+    getSettlementsByCatering(id),
+    getCateringDailyOperations(id, weekStart),
+    getAuditsForCatering(id),
+    getPenaltiesForCatering(id),
+  ])
 
   if (!catering) {
     notFound()
   }
+
+  // Alérgenos calculados desde el catálogo real de platos
+  const dishes = catering.dishes
+  const totalDishes = dishes.length
+  const labeledDishes = dishes.filter((d) => (d.labels as string[]).length > 0).length
+  const allergens = {
+    totalDishes,
+    labeledDishes,
+    pctLabeled: totalDishes > 0 ? Math.round((labeledDishes / totalDishes) * 100) : 0,
+    distinctLabels: new Set(dishes.flatMap((d) => d.labels as string[])).size,
+  }
+
+  const invoiceRows = invoicesRaw.map((i) => ({
+    id: i.id,
+    number: i.number,
+    period: i.period,
+    empresa: i.empresa?.name ?? '—',
+    total: Number(i.total),
+    status: i.status,
+    issueDate: i.issueDate,
+    paidAt: i.paidAt,
+  }))
+
+  const activityRows = activityData.logs.map((l) => ({
+    id: l.id,
+    timestamp: l.timestamp,
+    user: l.user ? decryptNameSafe(l.user.nameEnc) || l.user.email : l.actorId,
+    action: l.action,
+    entity: l.entity,
+    entityId: l.entityId,
+    ip: l.ip,
+  }))
 
   return (
     <>
@@ -148,7 +213,7 @@ async function CateringContent({ id }: { id: string }) {
           <TabsTrigger value="menus">Menús & Platos</TabsTrigger>
           <TabsTrigger value="facturacion">Facturación</TabsTrigger>
           <TabsTrigger value="incidencias">
-            Incidencias ({catering.kpis.incidentsCount})
+            Incidencias ({incidentsData.total})
           </TabsTrigger>
           <TabsTrigger value="usuarios">
             Usuarios ({catering.users.length})
@@ -248,6 +313,9 @@ async function CateringContent({ id }: { id: string }) {
         <TabsContent value="calidad">
           <QualityComplianceTab
             documents={catering.documents}
+            audits={audits}
+            penalties={penalties}
+            allergens={allergens}
             cateringId={catering.id}
           />
         </TabsContent>
@@ -255,8 +323,9 @@ async function CateringContent({ id }: { id: string }) {
         {/* Tab Operación Diaria */}
         <TabsContent value="operacion">
           <DailyOperationsTab
-            restaurant={catering.restaurant}
-            cateringId={catering.id}
+            days={dailyOps}
+            cutoffTime={catering.restaurant.cutoffTime}
+            deliveryWindow={catering.restaurant.deliveryWindow}
           />
         </TabsContent>
 
@@ -271,14 +340,15 @@ async function CateringContent({ id }: { id: string }) {
         {/* Tab Facturación & Pagos */}
         <TabsContent value="facturacion">
           <BillingPaymentsTab
-            restaurant={catering.restaurant}
-            cateringId={catering.id}
+            kpis={billingKpis}
+            invoices={invoiceRows}
+            settlements={settlements}
           />
         </TabsContent>
 
         {/* Tab Incidencias */}
         <TabsContent value="incidencias">
-          <IncidentsTab cateringId={catering.id} />
+          <IncidentsTab incidents={incidentsData.incidents} />
         </TabsContent>
 
         {/* Tab Usuarios & Permisos */}
@@ -291,7 +361,7 @@ async function CateringContent({ id }: { id: string }) {
 
         {/* Tab Registro de Actividad */}
         <TabsContent value="actividad">
-          <ActivityLogTab cateringId={catering.id} />
+          <ActivityLogTab logs={activityRows} />
         </TabsContent>
       </Tabs>
     </>

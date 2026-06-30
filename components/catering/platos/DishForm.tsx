@@ -26,22 +26,25 @@ import {
   type CreateDishInput,
   type UpdateDishInput,
   type DishCourse,
-  type Allergen,
+  type AllergenOption,
   type NutritionTag,
   type Nutrition,
-  parseDishLabels,
+  parseDishTags,
 } from '@/lib/validations/dish'
 import { toast } from 'sonner'
 import { Loader2, Save, X } from 'lucide-react'
 
 type DishFormProps = {
   mode: 'create' | 'edit'
+  /** Catálogo de alérgenos activos para el selector. */
+  availableAllergens: AllergenOption[]
   initialData?: {
     id: string
     name: string
     course: string
     ingredients?: string
     labels: string[]
+    allergenIds: string[]
     nutrition: object
     basePrice: number
     active: boolean
@@ -52,6 +55,7 @@ type DishFormProps = {
 
 export function DishForm({
   mode,
+  availableAllergens,
   initialData,
   onSubmit,
   onCancel,
@@ -59,18 +63,14 @@ export function DishForm({
   const router = useRouter()
   const [loading, setLoading] = useState(false)
 
-  // Parsear labels iniciales si están disponibles
-  const initialLabels = initialData
-    ? parseDishLabels(initialData.labels)
-    : { allergens: [], tags: [] }
+  // Tags nutricionales iniciales (los alérgenos vienen ya como IDs)
+  const initialTags = initialData ? parseDishTags(initialData.labels) : []
 
   // Estado local para campos complejos
-  const [selectedAllergens, setSelectedAllergens] = useState<Allergen[]>(
-    initialLabels.allergens
+  const [selectedAllergens, setSelectedAllergens] = useState<string[]>(
+    initialData?.allergenIds ?? []
   )
-  const [selectedTags, setSelectedTags] = useState<NutritionTag[]>(
-    initialLabels.tags
-  )
+  const [selectedTags, setSelectedTags] = useState<NutritionTag[]>(initialTags)
   const [nutrition, setNutrition] = useState<Nutrition>(
     (initialData?.nutrition as Nutrition) || {}
   )
@@ -91,8 +91,8 @@ export function DishForm({
           ingredients: initialData.ingredients,
           basePrice: initialData.basePrice,
           active: initialData.active,
-          allergens: initialLabels.allergens,
-          tags: initialLabels.tags,
+          allergens: initialData.allergenIds,
+          tags: initialTags,
           nutrition: initialData.nutrition as Nutrition,
         }
       : {
@@ -272,6 +272,7 @@ export function DishForm({
 
       {/* Alérgenos y Etiquetas */}
       <AllergenTagSelector
+        availableAllergens={availableAllergens}
         selectedAllergens={selectedAllergens}
         selectedTags={selectedTags}
         onAllergensChange={setSelectedAllergens}

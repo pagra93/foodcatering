@@ -18,6 +18,7 @@ import {
   PERMISSIONS,
 } from '@/lib/auth/permissions'
 import { UserDetailActions } from '@/components/admin/users/UserDetailActions'
+import { decryptNameSafe } from '@/lib/crypto/pii'
 
 const STATUS_VARIANT = {
   ACTIVE: 'default',
@@ -57,6 +58,15 @@ export default async function UserDetailPage({
   const category = getRoleCategory(user.role)
   const permissions = PERMISSIONS[user.role] ?? []
 
+  // Ruta canónica de la ficha del tenant según su tipo (el árbol /admin/tenants
+  // está deprecado). ROOT = equipo Plati, sin ficha.
+  const tenantHref =
+    user.tenant.type === 'EMPRESA'
+      ? `/admin/empresas/${user.tenant.id}`
+      : user.tenant.type === 'CATERING'
+        ? `/admin/caterings/${user.tenant.id}`
+        : null
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -70,7 +80,7 @@ export default async function UserDetailPage({
 
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{user.nameEnc}</h1>
+          <h1 className="text-2xl font-bold">{decryptNameSafe(user.nameEnc)}</h1>
           <p className="mt-1 text-sm text-gray-500">{user.email}</p>
           <div className="mt-2 flex flex-wrap gap-2">
             <Badge variant={STATUS_VARIANT[user.status]}>
@@ -105,7 +115,7 @@ export default async function UserDetailPage({
                 <p className="text-xs uppercase text-gray-500">Teléfono</p>
                 <p className="mt-1 flex items-center gap-2">
                   <Phone className="h-4 w-4 text-gray-400" />
-                  {user.phoneEnc}
+                  {decryptNameSafe(user.phoneEnc, '—')}
                 </p>
               </div>
             )}
@@ -177,12 +187,6 @@ export default async function UserDetailPage({
                 ))}
               </div>
             </div>
-            <Link
-              href="/admin/users/permissions"
-              className="inline-block text-xs text-primary hover:underline"
-            >
-              Ver matriz completa de permisos →
-            </Link>
           </div>
         </Card>
 
@@ -207,9 +211,17 @@ export default async function UserDetailPage({
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/admin/tenants/${user.tenant.id}`}>Ver tenant</Link>
-            </Button>
+            {tenantHref ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href={tenantHref}>
+                  Ver {user.tenant.type === 'EMPRESA' ? 'empresa' : 'catering'}
+                </Link>
+              </Button>
+            ) : (
+              <span className="text-xs text-gray-400">
+                Tenant interno (equipo Plati) — sin ficha de cliente
+              </span>
+            )}
           </div>
         </Card>
       </div>

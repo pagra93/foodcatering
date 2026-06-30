@@ -7,6 +7,11 @@ import { PrismaClient } from '@prisma/client'
 import type { OrderStatus } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
 import { subDays, startOfDay } from 'date-fns'
+import {
+  CANONICAL_ALLERGENS,
+  splitEtiquetas,
+  normalizeAllergyCodes,
+} from './seed-allergens'
 
 const { hash } = bcryptjs
 
@@ -291,9 +296,9 @@ async function main() {
       siteId: site.id,
           department: emp.departamento,
       dietPrefs: {
-            restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
+            restrictions: emp.alergias.includes('gluten') ? ['sin_gluten'] : [],
         preferences: [],
-            allergies: emp.alergias,
+            allergies: normalizeAllergyCodes(emp.alergias),
             calorieTarget: 2000,
       },
       status: 'ACTIVE',
@@ -477,15 +482,30 @@ async function main() {
     { nombre: 'Helado', curso: 'DESSERT', precio: 1.2, etiquetas: ['vegetarian'], kcal: 150 },
   ]
 
+  // Catálogo de alérgenos (los 14 oficiales, code = slug español).
+  for (const a of CANONICAL_ALLERGENS) {
+    await prisma.allergen.upsert({
+      where: { code: a.code },
+      update: { name: a.name, category: a.category, active: true },
+      create: a,
+    })
+  }
+
   const platosCreados = []
   for (const p of platos) {
+    const { labels, allergenCodes } = splitEtiquetas(p.etiquetas)
     const dish = await prisma.dish.create({
       data: {
         tenantId: cateringTenant.id,
         restaurantId: restaurant.id,
         name: p.nombre,
         course: p.curso as any,
-        labels: p.etiquetas,
+        labels,
+        allergens: {
+          create: allergenCodes.map((code) => ({
+            allergen: { connect: { code } },
+          })),
+        },
         nutrition: {
           kcal: p.kcal,
           protein: 20,

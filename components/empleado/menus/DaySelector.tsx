@@ -34,7 +34,7 @@ type DishLike = {
   description: string | null
   imageUrl?: string | null
   price: number
-  allergens?: string[]
+  allergens?: { code: string; name: string }[]
   isVegetarian?: boolean
   isVegan?: boolean
   calories?: number | null
@@ -57,7 +57,7 @@ type DaySelectorProps = {
       desserts: DishLike[]
     }
     employee: {
-      allergens: string[]
+      allergens: { code: string; name: string }[]
       dietPrefs: DietPrefs
       blockAllergensEnabled: boolean
     }
@@ -153,11 +153,11 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
     onSelect: () => void,
     _isRequired: boolean = false
   ) => {
-    // Detectar alérgenos del empleado en el plato
-    const dishAllergens = dish.allergens || []
-    const matchingAllergens = data.employee.allergens.filter((a) =>
-      dishAllergens.includes(a)
-    )
+    // Detectar alérgenos del empleado en el plato (match por código, muestra nombre)
+    const empCodes = new Set(data.employee.allergens.map((a) => a.code))
+    const matchingAllergens = (dish.allergens || [])
+      .filter((a) => empCodes.has(a.code))
+      .map((a) => a.name)
     const hasAllergen = matchingAllergens.length > 0
 
     // Determinar si está bloqueado
@@ -276,11 +276,11 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
           <AlertDescription className={data.employee.blockAllergensEnabled ? 'text-red-800' : 'text-yellow-800'}>
             {data.employee.blockAllergensEnabled ? (
               <>
-                <strong>Protección activa:</strong> Los platos que contengan tus alérgenos ({data.employee.allergens.join(', ')}) están <strong>bloqueados</strong> y no podrás seleccionarlos.
+                <strong>Protección activa:</strong> Los platos que contengan tus alérgenos ({data.employee.allergens.map((a) => a.name).join(', ')}) están <strong>bloqueados</strong> y no podrás seleccionarlos.
               </>
             ) : (
               <>
-                <strong>Advertencia:</strong> Tienes alérgenos configurados ({data.employee.allergens.join(', ')}). Los platos que los contengan mostrarán una advertencia pero podrás seleccionarlos. Activa el bloqueo en tu perfil para mayor seguridad.
+                <strong>Advertencia:</strong> Tienes alérgenos configurados ({data.employee.allergens.map((a) => a.name).join(', ')}). Los platos que los contengan mostrarán una advertencia pero podrás seleccionarlos. Activa el bloqueo en tu perfil para mayor seguridad.
               </>
             )}
           </AlertDescription>

@@ -36,10 +36,8 @@ type Props = {
     deliverySuccessRate: number
     avgOrdersPerDay: number
     totalEmployees: number
-    activeEmployees30Days: number
-    activeEmployees90Days: number
-    adoptionRate30Days: number
-    adoptionRate90Days: number
+    activeEmployeesThisMonth: number
+    adoptionRate: number
     incidentsOpen: number
     incidents30Days: number
     incidentRate: number
@@ -76,7 +74,7 @@ export function CompanyOverviewTab({
     return { variant: 'destructive' as const, icon: TrendingDown, label: 'Baja' }
   }
 
-  const adoptionBadge = getAdoptionBadge(kpis.adoptionRate30Days)
+  const adoptionBadge = getAdoptionBadge(kpis.adoptionRate)
   const AdoptionIcon = adoptionBadge.icon
 
   // Helper: badge de incidencias
@@ -187,15 +185,15 @@ export function CompanyOverviewTab({
             <span className="text-sm font-medium text-gray-600">Empleados</span>
           </div>
           <div className="text-2xl font-bold text-gray-900 mb-1">
-            {kpis.activeEmployees30Days}
+            {kpis.activeEmployeesThisMonth}
           </div>
           <p className="text-xs text-gray-500">
-            de {kpis.totalEmployees} activos últimos 30d
+            de {kpis.totalEmployees} activos este mes
           </p>
           <div className="mt-2 flex items-center gap-2">
             <Badge variant={adoptionBadge.variant} className="text-xs flex items-center gap-1">
               <AdoptionIcon className="h-3 w-3" />
-              {kpis.adoptionRate30Days}% {adoptionBadge.label}
+              {kpis.adoptionRate}% {adoptionBadge.label}
             </Badge>
           </div>
         </Card>
@@ -330,7 +328,7 @@ export function CompanyOverviewTab({
                 <div key={order.id} className="flex items-center justify-between border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                   <div className="flex-1">
                     <p className="text-sm font-medium text-gray-900">
-                      Empleado #{order.employeeId.slice(-8)}
+                      {order.employeeName ?? `Empleado #${order.employeeId.slice(-8)}`}
                     </p>
                     <p className="text-xs text-gray-500">
                       {format(new Date(order.serviceDate), "d 'de' MMMM", { locale: es })}

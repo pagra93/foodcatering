@@ -15,16 +15,21 @@ export async function getDashboardKPIs() {
   const startOfToday = startOfDay(today)
   const endOfToday = endOfDay(today)
   const startOfThisMonth = startOfMonth(today)
-  const last7Days = subDays(today, 7)
+  // Periodo "YYYY-MM" para cruzar con Settlement.period
+  const currentPeriod = `${today.getFullYear()}-${String(
+    today.getMonth() + 1
+  ).padStart(2, '0')}`
 
   // Ejecutar todas las queries en paralelo para mejor performance
   const [
     // Tenants
     totalTenants,
     activeTenants,
-    companiesCount,
-    cateringsCount,
-    
+    totalCompanies,
+    activeCompanies,
+    totalCaterings,
+    activeCaterings,
+
     // Pedidos de hoy
     todayOrders,
     todayDelivered,
@@ -34,15 +39,11 @@ export async function getDashboardKPIs() {
     // Incidencias
     openIncidents,
     criticalIncidents,
-    avgResolutionTime,
-    
+
     // Facturación del mes
     monthRevenue,
     monthCommissions,
-    
-    // Puntualidad (últimos 7 días)
-    deliveryEvents,
-    
+
     // Adopción
     activeEmployees,
     totalEmployees,
@@ -64,19 +65,37 @@ export async function getDashboardKPIs() {
       },
     }),
     
-    // Empresas
+    // Empresas (total, todas las no borradas)
     prisma.tenant.count({
       where: {
         deletedAt: null,
         type: 'EMPRESA',
       },
     }),
-    
-    // Caterings
+
+    // Empresas activas
+    prisma.tenant.count({
+      where: {
+        deletedAt: null,
+        type: 'EMPRESA',
+        status: 'ACTIVE',
+      },
+    }),
+
+    // Caterings (total, todos los no borrados)
     prisma.tenant.count({
       where: {
         deletedAt: null,
         type: 'CATERING',
+      },
+    }),
+
+    // Caterings activos
+    prisma.tenant.count({
+      where: {
+        deletedAt: null,
+        type: 'CATERING',
+        status: 'ACTIVE',
       },
     }),
     
@@ -136,7 +155,7 @@ export async function getDashboardKPIs() {
       },
     }),
     
-    // Incidencias críticas (severidad alta)
+    // Incidencias críticas (severidad alta = máximo del enum LOW/MEDIUM/HIGH)
     prisma.incident.count({
       where: {
         severity: 'HIGH',
@@ -145,23 +164,7 @@ export async function getDashboardKPIs() {
         },
       },
     }),
-    
-    // Tiempo medio de resolución (últimas 30 incidencias resueltas)
-    prisma.incident.findMany({
-      where: {
-        status: 'RESOLVED',
-        resolvedAt: { not: null },
-      },
-      select: {
-        createdAt: true,
-        resolvedAt: true,
-      },
-      orderBy: {
-        resolvedAt: 'desc',
-      },
-      take: 30,
-    }),
-    
+
     // Facturación del mes actual
     prisma.invoice.aggregate({
       where: {
@@ -176,38 +179,18 @@ export async function getDashboardKPIs() {
         total: true,
       },
     }),
-    
-    // Comisiones del mes
-    prisma.order.aggregate({
+
+    // Comisiones del mes — fuente real: liquidaciones (Settlement) del periodo.
+    // commissionAmount ya aplica la commissionRate por catering (no estimación fija).
+    prisma.settlement.aggregate({
       where: {
-        serviceDate: {
-          gte: startOfThisMonth,
-        },
-        status: 'DELIVERED',
+        period: currentPeriod,
       },
       _sum: {
-        price: true,
+        commissionAmount: true,
       },
     }),
-    
-    // Eventos de entrega (últimos 7 días para calcular puntualidad)
-    prisma.deliveryEvent.findMany({
-      where: {
-        timestamp: {
-          gte: last7Days,
-        },
-        event: 'DELIVERED',
-      },
-      select: {
-        timestamp: true,
-        order: {
-          select: {
-            serviceDate: true,
-          },
-        },
-      },
-    }),
-    
+
     // Empleados activos (que han pedido al menos 2 días en las últimas 2 semanas)
     prisma.$queryRaw<{ count: bigint }[]>`
       SELECT COUNT(DISTINCT employee_id) as count
@@ -226,54 +209,22 @@ export async function getDashboardKPIs() {
     }),
   ])
 
-  // Calcular tiempo medio de resolución
-  const resolutionTimes = avgResolutionTime
-    .filter((inc) => inc.resolvedAt)
-    .map((inc) => {
-      const diff = inc.resolvedAt!.getTime() - inc.createdAt.getTime()
-      return diff / (1000 * 60 * 60) // Convertir a horas
-    })
-  
-  const avgResolutionHours = resolutionTimes.length > 0
-    ? resolutionTimes.reduce((a, b) => a + b, 0) / resolutionTimes.length
-    : 0
-
-  // Calcular % de puntualidad (entregas dentro de ventana 12:00-13:30)
-  const onTimeDeliveries = deliveryEvents.filter((event) => {
-    const deliveryTime = event.timestamp
-    const hour = deliveryTime.getHours()
-    const minute = deliveryTime.getMinutes()
-    
-    // Ventana: 12:00 - 13:30
-    const isOnTime = 
-      (hour === 12) || 
-      (hour === 13 && minute <= 30)
-    
-    return isOnTime
-  }).length
-
-  const punctualityPercentage = deliveryEvents.length > 0
-    ? (onTimeDeliveries / deliveryEvents.length) * 100
-    : 0
-
   // Calcular % de adopción
   const activeEmployeesCount = Number(activeEmployees[0]?.count || 0)
   const adoptionPercentage = totalEmployees > 0
     ? (activeEmployeesCount / totalEmployees) * 100
     : 0
 
-  // Calcular comisión estimada (10% del volumen)
-  const commissionRate = 0.10
-  const estimatedCommission = (Number(monthCommissions._sum.price || 0)) * commissionRate
-
   return {
     tenants: {
       total: totalTenants,
       active: activeTenants,
-      companies: companiesCount,
-      caterings: cateringsCount,
-      inactivePercentage: totalTenants > 0 
-        ? ((totalTenants - activeTenants) / totalTenants) * 100 
+      companies: totalCompanies,
+      activeCompanies,
+      caterings: totalCaterings,
+      activeCaterings,
+      inactivePercentage: totalTenants > 0
+        ? ((totalTenants - activeTenants) / totalTenants) * 100
         : 0,
     },
     orders: {
@@ -287,14 +238,10 @@ export async function getDashboardKPIs() {
     incidents: {
       open: openIncidents,
       critical: criticalIncidents,
-      avgResolutionTimeHours: Math.round(avgResolutionHours * 10) / 10,
     },
     revenue: {
       monthTotal: Number(monthRevenue._sum.total || 0),
-      monthCommissions: estimatedCommission,
-    },
-    quality: {
-      punctualityPercentage: Math.round(punctualityPercentage * 10) / 10,
+      monthCommissions: Number(monthCommissions._sum.commissionAmount || 0),
     },
     adoption: {
       activeEmployees: activeEmployeesCount,

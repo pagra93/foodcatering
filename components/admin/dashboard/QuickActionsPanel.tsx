@@ -43,7 +43,7 @@ export function QuickActionsPanel() {
           <Button asChild variant="outline" className="justify-start border-gray-200 hover:bg-gray-50 hover:border-gray-300">
             <Link href="/admin/compliance/fiscal-audit">
               <FileText className="mr-2 h-4 w-4 text-orange-600" />
-              Descargar Informes
+              Auditoría Fiscal
             </Link>
           </Button>
         </div>

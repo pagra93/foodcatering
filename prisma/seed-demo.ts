@@ -18,6 +18,11 @@ import { PrismaClient } from '@prisma/client'
 import type { OrderStatus } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
 import { subDays, startOfDay, startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
+import {
+  CANONICAL_ALLERGENS,
+  splitEtiquetas,
+  normalizeAllergyCodes,
+} from './seed-allergens'
 
 const { hash } = bcryptjs
 const prisma = new PrismaClient()
@@ -83,26 +88,10 @@ async function main() {
     })
   }
 
-  const allergens = [
-    { code: 'GLUTEN', name: 'Gluten', category: 'CEREALS_WITH_GLUTEN' as const },
-    { code: 'CRUSTACEOS', name: 'Crustáceos', category: 'CRUSTACEANS' as const },
-    { code: 'HUEVO', name: 'Huevo', category: 'EGGS' as const },
-    { code: 'PESCADO', name: 'Pescado', category: 'FISH' as const },
-    { code: 'CACAHUETE', name: 'Cacahuetes', category: 'PEANUTS' as const },
-    { code: 'SOJA', name: 'Soja', category: 'SOYBEANS' as const },
-    { code: 'LACTEOS', name: 'Lácteos', category: 'MILK' as const },
-    { code: 'FRUTOS_SECOS', name: 'Frutos secos', category: 'TREE_NUTS' as const },
-    { code: 'APIO', name: 'Apio', category: 'CELERY' as const },
-    { code: 'MOSTAZA', name: 'Mostaza', category: 'MUSTARD' as const },
-    { code: 'SESAMO', name: 'Sésamo', category: 'SESAME' as const },
-    { code: 'SULFITOS', name: 'Sulfitos', category: 'SULPHITES' as const },
-    { code: 'ALTRAMUCES', name: 'Altramuces', category: 'LUPIN' as const },
-    { code: 'MOLUSCOS', name: 'Moluscos', category: 'MOLLUSCS' as const },
-  ]
-  for (const a of allergens) {
+  for (const a of CANONICAL_ALLERGENS) {
     await prisma.allergen.upsert({
       where: { code: a.code },
-      update: {},
+      update: { name: a.name, category: a.category, active: true },
       create: a,
     })
   }
@@ -338,9 +327,9 @@ async function main() {
           siteId: site.id,
           department: emp.departamento,
           dietPrefs: {
-            restrictions: emp.alergias.includes('gluten') ? ['gluten_free'] : [],
+            restrictions: emp.alergias.includes('gluten') ? ['sin_gluten'] : [],
             preferences: [],
-            allergies: emp.alergias,
+            allergies: normalizeAllergyCodes(emp.alergias),
             calorieTarget: 2000,
           },
           status: 'ACTIVE',
@@ -493,6 +482,7 @@ async function main() {
       where: { tenantId: cateringTenant.id, restaurantId: restaurant.id, name: p.nombre },
     })
     if (!dish) {
+      const { labels, allergenCodes } = splitEtiquetas(p.etiquetas)
       dish = await prisma.dish.create({
         data: {
           tenantId: cateringTenant.id,
@@ -500,7 +490,12 @@ async function main() {
           name: p.nombre,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           course: p.curso as any,
-          labels: p.etiquetas,
+          labels,
+          allergens: {
+            create: allergenCodes.map((code) => ({
+              allergen: { connect: { code } },
+            })),
+          },
           nutrition: { kcal: p.kcal, protein: 20, carbs: 30, fat: 10 },
           basePrice: p.precio,
           active: true,

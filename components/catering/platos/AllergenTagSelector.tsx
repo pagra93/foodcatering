@@ -5,30 +5,33 @@ import { Label } from '@/components/ui/label'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import {
-  ALLERGEN_LABELS,
   NUTRITION_TAG_LABELS,
-  type Allergen,
+  type AllergenOption,
   type NutritionTag,
 } from '@/lib/validations/dish'
 
 type AllergenTagSelectorProps = {
-  selectedAllergens: Allergen[]
+  /** Catálogo de alérgenos activos (tabla Allergen, gestionada por el admin). */
+  availableAllergens: AllergenOption[]
+  /** IDs de alérgenos seleccionados. */
+  selectedAllergens: string[]
   selectedTags: NutritionTag[]
-  onAllergensChange: (allergens: Allergen[]) => void
+  onAllergensChange: (allergens: string[]) => void
   onTagsChange: (tags: NutritionTag[]) => void
 }
 
 export function AllergenTagSelector({
+  availableAllergens,
   selectedAllergens,
   selectedTags,
   onAllergensChange,
   onTagsChange,
 }: AllergenTagSelectorProps) {
-  const handleAllergenToggle = (allergen: Allergen) => {
-    if (selectedAllergens.includes(allergen)) {
-      onAllergensChange(selectedAllergens.filter((a) => a !== allergen))
+  const handleAllergenToggle = (allergenId: string) => {
+    if (selectedAllergens.includes(allergenId)) {
+      onAllergensChange(selectedAllergens.filter((a) => a !== allergenId))
     } else {
-      onAllergensChange([...selectedAllergens, allergen])
+      onAllergensChange([...selectedAllergens, allergenId])
     }
   }
 
@@ -54,27 +57,33 @@ export function AllergenTagSelector({
             </Badge>
           )}
         </div>
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-          {(Object.entries(ALLERGEN_LABELS) as [Allergen, string][]).map(
-            ([allergen, label]) => (
-              <div key={allergen} className="flex items-center space-x-2">
+        {availableAllergens.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            No hay alérgenos en el catálogo. Pide al administrador que los dé de
+            alta en Catálogos → Alérgenos.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {availableAllergens.map((allergen) => (
+              <div key={allergen.id} className="flex items-center space-x-2">
                 <Checkbox
-                  id={`allergen-${allergen}`}
-                  checked={selectedAllergens.includes(allergen)}
-                  onCheckedChange={() => handleAllergenToggle(allergen)}
+                  id={`allergen-${allergen.id}`}
+                  checked={selectedAllergens.includes(allergen.id)}
+                  onCheckedChange={() => handleAllergenToggle(allergen.id)}
                 />
                 <Label
-                  htmlFor={`allergen-${allergen}`}
+                  htmlFor={`allergen-${allergen.id}`}
                   className="cursor-pointer"
                 >
-                  {label}
+                  {allergen.name}
                 </Label>
               </div>
-            )
-          )}
-        </div>
+            ))}
+          </div>
+        )}
         <p className="text-xs text-gray-500 mt-4">
-          Selecciona todos los alérgenos presentes en el plato según la normativa española
+          Selecciona todos los alérgenos presentes en el plato. El catálogo lo
+          gestiona el administrador.
         </p>
       </Card>
 

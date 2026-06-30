@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { getEmployeeProfile, getEmployeeMonthlyHistory } from '@/lib/db/queries/empleado-perfil'
+import { getActiveAllergenOptions } from '@/lib/db/queries/catalogs'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ProfileInfo } from '@/components/empleado/perfil/ProfileInfo'
 import { ProfileStats } from '@/components/empleado/perfil/ProfileStats'
@@ -53,7 +54,7 @@ async function ProfileData() {
     )
   }
 
-  const [profile, monthlyHistory, gdprRequests] = await Promise.all([
+  const [profile, monthlyHistory, gdprRequests, availableAllergens] = await Promise.all([
     getEmployeeProfile(employee.id),
     getEmployeeMonthlyHistory(employee.id, 6),
     prisma.gdprRequest.findMany({
@@ -68,6 +69,7 @@ async function ProfileData() {
         resolvedAt: true,
       },
     }),
+    getActiveAllergenOptions(),
   ])
 
   return (
@@ -90,7 +92,7 @@ async function ProfileData() {
         </TabsList>
 
         <TabsContent value="info" className="space-y-4">
-          <ProfileInfo data={profile} />
+          <ProfileInfo data={profile} availableAllergens={availableAllergens} />
         </TabsContent>
 
         <TabsContent value="stats" className="space-y-4">

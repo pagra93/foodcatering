@@ -95,3 +95,23 @@ export async function getPenaltiesKPIs() {
     totalPendingAmount: totalPendingAmount._sum.amount ?? 0,
   }
 }
+
+/**
+ * Penalizaciones de un catering concreto (lista plana, amount numérico).
+ * Usada por el detalle de catering del admin (pestaña Calidad).
+ */
+export async function getPenaltiesForCatering(tenantCatering: string) {
+  const penalties = await prisma.penalty.findMany({
+    where: { tenantCatering },
+    orderBy: { appliedAt: 'desc' },
+    take: 50,
+  })
+  return penalties.map((p) => ({
+    id: p.id,
+    type: p.type,
+    reason: p.reason,
+    amount: Number(p.amount),
+    status: p.status,
+    appliedAt: p.appliedAt,
+  }))
+}

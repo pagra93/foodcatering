@@ -1,6 +1,7 @@
 /**
- * Tab de Calidad & Cumplimiento para Caterings
- * Incluye: Documentos, Auditorías, Sanciones/Bonificaciones, Políticas
+ * Tab de Calidad & Cumplimiento del catering (datos reales).
+ * Documentos, Auditorías (RestaurantAudit), Sanciones (Penalty) y alérgenos
+ * calculados desde los platos. Sin datos inventados.
  */
 
 'use client'
@@ -14,13 +15,10 @@ import {
   AlertTriangle,
   XCircle,
   Upload,
-  Download,
-  Eye,
-  Calendar,
   Shield,
-  Award,
   Ban,
   Info,
+  ExternalLink,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,9 +31,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatPrice } from '@/lib/utils'
 import { UploadDocumentModal } from './UploadDocumentModal'
 
-type Document = {
+type Doc = {
   id: string
   type: string
   fileUrl: string
@@ -45,390 +44,336 @@ type Document = {
   verifiedBy: string | null
   verifiedAt: Date | null
 }
+type Audit = {
+  id: string
+  auditType: string
+  score: number
+  auditedAt: Date
+  reportUrl: string | null
+  notes: string | null
+}
+type Penalty = {
+  id: string
+  type: string
+  reason: string
+  amount: number
+  status: string
+  appliedAt: Date
+}
+type Allergens = {
+  totalDishes: number
+  labeledDishes: number
+  pctLabeled: number
+  distinctLabels: number
+}
 
-type QualityComplianceTabProps = {
-  documents: Document[]
+type Props = {
+  documents: Doc[]
+  audits: Audit[]
+  penalties: Penalty[]
+  allergens: Allergens
   cateringId: string
 }
 
-// Helper para obtener el nombre del documento en español
-function getDocumentTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
-    SANITARY_REGISTRATION: 'Registro Sanitario',
-    LIABILITY_INSURANCE: 'Seguro RC',
-    FOOD_HANDLER_CERTIFICATE: 'Certificado Manipulador',
-    APPCC_CERTIFICATE: 'Certificado APPCC',
-    OTHER: 'Otro Documento',
-  }
-  return labels[type] || type
+// Enums reales de Prisma
+const DOC_TYPE: Record<string, string> = {
+  REGISTRO_SANITARIO: 'Registro Sanitario',
+  RC: 'Seguro RC',
+  MANIPULADORES: 'Cert. Manipuladores',
+  OTROS: 'Otro',
+}
+const DOC_STATUS: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'secondary' }> = {
+  VALID: { label: 'Válido', variant: 'success' },
+  EXPIRING: { label: 'Próximo a caducar', variant: 'warning' },
+  EXPIRED: { label: 'Caducado', variant: 'destructive' },
+}
+const AUDIT_TYPE: Record<string, string> = {
+  SANITARIA: 'Sanitaria',
+  OPERATIVA: 'Operativa',
+  SATISFACCION: 'Satisfacción',
+}
+const PENALTY_TYPE: Record<string, string> = {
+  SLA_BREACH: 'Incumplimiento SLA',
+  DOC_EXPIRED: 'Documento caducado',
+  INCIDENT_THRESHOLD: 'Exceso de incidencias',
+  MANUAL: 'Manual',
+}
+const PENALTY_STATUS: Record<string, { label: string; variant: 'secondary' | 'destructive' | 'success' | 'outline' }> = {
+  PENDING: { label: 'Pendiente', variant: 'secondary' },
+  APPLIED: { label: 'Aplicada', variant: 'destructive' },
+  DISPUTED: { label: 'En disputa', variant: 'outline' },
+  WAIVED: { label: 'Anulada', variant: 'success' },
 }
 
-// Helper para obtener el color del badge según el estado
-function getDocumentStatusColor(
-  status: string
-): 'success' | 'warning' | 'destructive' | 'secondary' {
-  switch (status) {
-    case 'VALID':
-      return 'success'
-    case 'EXPIRING_SOON':
-      return 'warning'
-    case 'EXPIRED':
-      return 'destructive'
-    default:
-      return 'secondary'
-  }
-}
+export function QualityComplianceTab({ documents, audits, penalties, allergens, cateringId }: Props) {
+  const [isUploadOpen, setIsUploadOpen] = useState(false)
 
-// Helper para obtener el icono según el estado
-function getDocumentStatusIcon(status: string) {
-  switch (status) {
-    case 'VALID':
-      return <CheckCircle className="h-4 w-4 text-green-600" />
-    case 'EXPIRING_SOON':
-      return <AlertTriangle className="h-4 w-4 text-yellow-600" />
-    case 'EXPIRED':
-      return <XCircle className="h-4 w-4 text-red-600" />
-    default:
-      return <Info className="h-4 w-4 text-gray-400" />
-  }
-}
-
-// Helper para obtener el label del estado
-function getDocumentStatusLabel(status: string): string {
-  const labels: Record<string, string> = {
-    VALID: 'Válido',
-    EXPIRING_SOON: 'Próximo a caducar',
-    EXPIRED: 'Caducado',
-  }
-  return labels[status] || status
-}
-
-export function QualityComplianceTab({
-  documents,
-  cateringId,
-}: QualityComplianceTabProps) {
-  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
-
-  // Agrupar documentos por tipo
-  const documentsByType: Record<string, Document[]> = {}
-  documents.forEach((doc) => {
-    const bucket = documentsByType[doc.type] ?? []
-    bucket.push(doc)
-    documentsByType[doc.type] = bucket
-  })
-
-  // Contar documentos por estado
-  const validDocs = documents.filter((d) => d.status === 'VALID').length
-  const expiringSoonDocs = documents.filter((d) => d.status === 'EXPIRING_SOON')
-    .length
-  const expiredDocs = documents.filter((d) => d.status === 'EXPIRED').length
+  const valid = documents.filter((d) => d.status === 'VALID').length
+  const expiring = documents.filter((d) => d.status === 'EXPIRING').length
+  const expired = documents.filter((d) => d.status === 'EXPIRED').length
 
   return (
     <div className="space-y-6">
-      {/* Header con resumen */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">
-            Calidad & Cumplimiento
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">Calidad & Cumplimiento</h2>
           <p className="mt-1 text-sm text-gray-500">
-            Documentación obligatoria, auditorías y cumplimiento de SLAs
+            Documentación, auditorías, sanciones y alérgenos del catering.
           </p>
         </div>
-        <Button onClick={() => setIsUploadModalOpen(true)}>
+        <Button onClick={() => setIsUploadOpen(true)}>
           <Upload className="mr-2 h-4 w-4" />
-          Subir Documento
+          Añadir documento
         </Button>
       </div>
 
-      {/* Modal de subida */}
       <UploadDocumentModal
-        isOpen={isUploadModalOpen}
-        onClose={() => setIsUploadModalOpen(false)}
+        isOpen={isUploadOpen}
+        onClose={() => setIsUploadOpen(false)}
         cateringId={cateringId}
-        onSuccess={() => {
-          // TODO: Refrescar la lista de documentos
-          console.log('Documento subido exitosamente')
-        }}
       />
 
-      {/* Resumen de documentos */}
+      {/* Resumen documentos */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">
-                  Total Documentos
-                </p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {documents.length}
-                </p>
-              </div>
-              <FileText className="h-8 w-8 text-gray-400" />
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Total documentos</p>
+              <p className="text-2xl font-bold">{documents.length}</p>
             </div>
-          </CardContent>
+            <FileText className="h-7 w-7 text-gray-400" />
+          </div>
         </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Válidos</p>
-                <p className="text-2xl font-bold text-green-600">{validDocs}</p>
-              </div>
-              <CheckCircle className="h-8 w-8 text-green-400" />
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Válidos</p>
+              <p className="text-2xl font-bold text-green-600">{valid}</p>
             </div>
-          </CardContent>
+            <CheckCircle className="h-7 w-7 text-green-400" />
+          </div>
         </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Por Caducar</p>
-                <p className="text-2xl font-bold text-yellow-600">
-                  {expiringSoonDocs}
-                </p>
-              </div>
-              <AlertTriangle className="h-8 w-8 text-yellow-400" />
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Por caducar</p>
+              <p className="text-2xl font-bold text-yellow-600">{expiring}</p>
             </div>
-          </CardContent>
+            <AlertTriangle className="h-7 w-7 text-yellow-400" />
+          </div>
         </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Caducados</p>
-                <p className="text-2xl font-bold text-red-600">{expiredDocs}</p>
-              </div>
-              <XCircle className="h-8 w-8 text-red-400" />
+        <Card className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">Caducados</p>
+              <p className="text-2xl font-bold text-red-600">{expired}</p>
             </div>
-          </CardContent>
+            <XCircle className="h-7 w-7 text-red-400" />
+          </div>
         </Card>
       </div>
 
-      {/* Tabla de documentos */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-base font-semibold text-gray-900">
-            Documentos Obligatorios
-          </CardTitle>
+      {/* Documentos */}
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b">
+          <CardTitle className="text-base">Documentos obligatorios</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Tipo de Documento</TableHead>
-                <TableHead>Fecha Emisión</TableHead>
-                <TableHead>Fecha Caducidad</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Emisión</TableHead>
+                <TableHead>Caducidad</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Verificado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="text-right">Documento</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {documents.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-24 text-center text-gray-500"
-                  >
-                    <FileText className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm">No hay documentos subidos</p>
-                    <p className="text-xs text-gray-400 mt-1">
-                      Sube los documentos obligatorios para activar el catering
-                    </p>
+                  <TableCell colSpan={6} className="h-20 text-center text-sm text-gray-500">
+                    No hay documentos. Añádelos para activar el catering.
                   </TableCell>
                 </TableRow>
               ) : (
-                documents.map((doc) => (
-                  <TableRow key={doc.id} className="hover:bg-gray-50">
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getDocumentStatusIcon(doc.status)}
-                        <span className="font-medium text-gray-900">
-                          {getDocumentTypeLabel(doc.type)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">
-                        {format(new Date(doc.issuedAt), 'dd/MM/yyyy', {
-                          locale: es,
-                        })}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-sm text-gray-600">
-                        {format(new Date(doc.expiresAt), 'dd/MM/yyyy', {
-                          locale: es,
-                        })}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getDocumentStatusColor(doc.status)}>
-                        {getDocumentStatusLabel(doc.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {doc.verifiedBy && doc.verifiedAt ? (
-                        <div className="text-sm">
-                          <p className="text-gray-900">✓ Verificado</p>
-                          <p className="text-xs text-gray-500">
-                            {format(new Date(doc.verifiedAt), 'dd/MM/yyyy')}
-                          </p>
-                        </div>
-                      ) : (
-                        <Badge variant="outline" className="text-xs">
-                          Sin verificar
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                documents.map((doc) => {
+                  const st = DOC_STATUS[doc.status] ?? { label: doc.status, variant: 'secondary' as const }
+                  return (
+                    <TableRow key={doc.id} className="hover:bg-gray-50">
+                      <TableCell className="font-medium">{DOC_TYPE[doc.type] ?? doc.type}</TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {format(new Date(doc.issuedAt), 'dd/MM/yyyy', { locale: es })}
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {format(new Date(doc.expiresAt), 'dd/MM/yyyy', { locale: es })}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={st.variant}>{st.label}</Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {doc.verifiedAt
+                          ? `✓ ${format(new Date(doc.verifiedAt), 'dd/MM/yyyy')}`
+                          : 'Sin verificar'}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {doc.fileUrl ? (
+                          <a
+                            href={doc.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                          >
+                            <ExternalLink className="h-4 w-4" /> Ver
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  )
+                })
               )}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
 
-      {/* Auditorías */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Shield className="h-5 w-5 text-primary" />
-              Auditorías
-            </CardTitle>
-            <Button variant="outline" size="sm">
-              <Calendar className="mr-2 h-4 w-4" />
-              Planificar Auditoría
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-gray-500">
-            <Shield className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-            <p className="text-sm font-medium">No hay auditorías registradas</p>
-            <p className="text-xs text-gray-400 mt-1">
-              Las auditorías internas y externas aparecerán aquí
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Sanciones y Bonificaciones */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Sanciones */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Ban className="h-5 w-5 text-red-600" />
-              Sanciones por SLA
+      {/* Auditorías + Sanciones */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Shield className="h-5 w-5 text-primary" /> Auditorías
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center py-8 text-gray-500">
-              <Ban className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p className="text-sm font-medium">Sin sanciones registradas</p>
-              <p className="text-xs text-gray-400 mt-1">
-                Histórico de penalizaciones por incumplimiento
-              </p>
-            </div>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Puntuación</TableHead>
+                  <TableHead>Fecha</TableHead>
+                  <TableHead className="text-right">Informe</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {audits.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-20 text-center text-sm text-gray-500">
+                      Sin auditorías registradas.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  audits.map((a) => (
+                    <TableRow key={a.id} className="hover:bg-gray-50">
+                      <TableCell>{AUDIT_TYPE[a.auditType] ?? a.auditType}</TableCell>
+                      <TableCell className="text-right">
+                        <span
+                          className={`font-semibold ${a.score >= 80 ? 'text-emerald-600' : a.score >= 60 ? 'text-amber-600' : 'text-red-600'}`}
+                        >
+                          {a.score}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {format(new Date(a.auditedAt), 'dd MMM yyyy', { locale: es })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {a.reportUrl ? (
+                          <a href={a.reportUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                            Ver
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
 
-        {/* Bonificaciones */}
-        <Card className="border-0 shadow-sm">
-          <CardHeader className="border-b border-gray-100">
-            <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Award className="h-5 w-5 text-green-600" />
-              Bonificaciones
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Ban className="h-5 w-5 text-red-600" /> Sanciones por SLA
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6">
-            <div className="text-center py-8 text-gray-500">
-              <Award className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              <p className="text-sm font-medium">
-                Sin bonificaciones registradas
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Incentivos por cumplimiento excepcional
-              </p>
-            </div>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead className="text-right">Importe</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead>Fecha</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {penalties.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-20 text-center text-sm text-gray-500">
+                      Sin sanciones registradas.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  penalties.map((p) => {
+                    const st = PENALTY_STATUS[p.status] ?? { label: p.status, variant: 'secondary' as const }
+                    return (
+                      <TableRow key={p.id} className="hover:bg-gray-50" title={p.reason}>
+                        <TableCell>{PENALTY_TYPE[p.type] ?? p.type}</TableCell>
+                        <TableCell className="text-right font-medium">{formatPrice(p.amount)}</TableCell>
+                        <TableCell>
+                          <Badge variant={st.variant}>{st.label}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-gray-600">
+                          {format(new Date(p.appliedAt), 'dd MMM yyyy', { locale: es })}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
           </CardContent>
         </Card>
       </div>
 
-      {/* Políticas de Alérgenos */}
-      <Card className="border-0 shadow-sm">
-        <CardHeader className="border-b border-gray-100">
-          <CardTitle className="text-base font-semibold text-gray-900">
-            Política de Alérgenos y Etiquetado
-          </CardTitle>
+      {/* Alérgenos (calculado desde los platos) */}
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle className="text-base">Alérgenos y etiquetado</CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="space-y-4">
-            <div className="flex items-start gap-4 p-4 bg-primary/10 rounded-lg border border-primary/30">
-              <Info className="h-5 w-5 text-primary mt-0.5" />
-              <div className="flex-1">
-                <h4 className="text-sm font-semibold text-primary">
-                  Cumplimiento de Normativa
-                </h4>
-                <p className="mt-1 text-sm text-primary">
-                  El catering debe declarar todos los alérgenos presentes en sus
-                  platos según la normativa europea (Reglamento UE 1169/2011).
-                </p>
-                <ul className="mt-2 space-y-1 text-xs text-primary">
-                  <li>
-                    ✓ Declaración obligatoria de 14 alérgenos principales
-                  </li>
-                  <li>
-                    ✓ Etiquetado claro y visible en todos los menús
-                  </li>
-                  <li>
-                    ✓ Notificación inmediata de cambios en ingredientes
-                  </li>
-                </ul>
-              </div>
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4">
+            <Info className="mt-0.5 h-5 w-5 text-primary" />
+            <p className="text-sm text-primary">
+              Normativa UE 1169/2011: el catering debe declarar los 14 alérgenos principales y
+              etiquetar todos sus platos. Las cifras se calculan sobre el catálogo real de platos.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-medium text-gray-500">Etiquetas distintas en uso</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{allergens.distinctLabels}</p>
             </div>
-
-            <div className="grid gap-3 md:grid-cols-3">
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-xs font-medium text-gray-500">
-                  Etiquetas Activas
-                </p>
-                <p className="mt-1 text-2xl font-bold text-gray-900">14</p>
-                <p className="text-xs text-gray-500">alérgenos declarados</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-xs font-medium text-gray-500">
-                  Adhesión a Política
-                </p>
-                <p className="mt-1 text-2xl font-bold text-green-600">100%</p>
-                <p className="text-xs text-gray-500">platos etiquetados</p>
-              </div>
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-xs font-medium text-gray-500">
-                  Última Actualización
-                </p>
-                <p className="mt-1 text-sm font-semibold text-gray-900">
-                  15/11/2025
-                </p>
-                <p className="text-xs text-gray-500">hace 1 día</p>
-              </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-medium text-gray-500">Platos etiquetados</p>
+              <p
+                className={`mt-1 text-2xl font-bold ${allergens.pctLabeled >= 90 ? 'text-green-600' : 'text-amber-600'}`}
+              >
+                {allergens.pctLabeled}%
+              </p>
+              <p className="text-xs text-gray-500">
+                {allergens.labeledDishes}/{allergens.totalDishes} platos
+              </p>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-medium text-gray-500">Platos en catálogo</p>
+              <p className="mt-1 text-2xl font-bold text-gray-900">{allergens.totalDishes}</p>
             </div>
           </div>
         </CardContent>
@@ -436,4 +381,3 @@ export function QualityComplianceTab({
     </div>
   )
 }
-

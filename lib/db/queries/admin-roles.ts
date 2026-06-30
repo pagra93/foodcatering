@@ -1,5 +1,5 @@
 /**
- * Queries para /admin/users/roles y /admin/users/permissions.
+ * Queries para /admin/users/roles.
  *
  * Los roles son hardcoded (lib/auth/permissions.ts). Estas queries sólo
  * agregan datos de uso: cuántos usuarios tienen cada rol, última actividad,
@@ -74,6 +74,98 @@ export async function getRoleUsageStats(): Promise<RoleUsageStat[]> {
     permissionsCount: (PERMISSIONS[role] ?? []).length,
     usersCount: countByRole.get(role) ?? 0,
     lastActivityAt: lastActivityByRole.get(role) ?? null,
+  }))
+}
+
+// ─── RBAC DINÁMICO (tablas Role/Permission) ─────────────────────────────────
+
+/** Lista de roles (sistema + custom) con nº de permisos y de usuarios. */
+export async function getRolesWithCounts() {
+  const [roles, userCounts] = await Promise.all([
+    prisma.role.findMany({
+      orderBy: [{ isSystem: 'desc' }, { category: 'asc' }, { name: 'asc' }],
+      select: {
+        id: true,
+        key: true,
+        name: true,
+        description: true,
+        category: true,
+        baseRole: true,
+        isSystem: true,
+        _count: { select: { permissions: true } },
+      },
+    }),
+    prisma.user.groupBy({
+      by: ['roleId'],
+      where: { deletedAt: null, roleId: { not: null } },
+      _count: { _all: true },
+    }),
+  ])
+
+  const usersByRole = new Map(userCounts.map((u) => [u.roleId, u._count._all]))
+  return roles.map((r) => ({
+    id: r.id,
+    key: r.key,
+    name: r.name,
+    description: r.description,
+    category: r.category,
+    baseRole: r.baseRole,
+    isSystem: r.isSystem,
+    permissionsCount: r._count.permissions,
+    usersCount: usersByRole.get(r.id) ?? 0,
+  }))
+}
+
+/** Detalle de un rol + las claves de permiso que tiene asignadas. */
+export async function getRoleDetail(roleId: string) {
+  const role = await prisma.role.findUnique({
+    where: { id: roleId },
+    select: {
+      id: true,
+      key: true,
+      name: true,
+      description: true,
+      category: true,
+      baseRole: true,
+      isSystem: true,
+      permissions: { select: { permission: { select: { key: true } } } },
+    },
+  })
+  if (!role) return null
+  return {
+    id: role.id,
+    key: role.key,
+    name: role.name,
+    description: role.description,
+    category: role.category,
+    baseRole: role.baseRole,
+    isSystem: role.isSystem,
+    permissionKeys: role.permissions.map((p) => p.permission.key),
+  }
+}
+
+/** Catálogo de permisos agrupado por portal → recurso, para el selector. */
+export async function getPermissionCatalogGrouped() {
+  const perms = await prisma.permission.findMany({
+    orderBy: [{ portal: 'asc' }, { resource: 'asc' }, { action: 'asc' }],
+    select: { id: true, key: true, resource: true, action: true, portal: true, description: true },
+  })
+
+  const byPortal = new Map<string, Map<string, typeof perms>>()
+  for (const p of perms) {
+    const portal = byPortal.get(p.portal) ?? new Map()
+    const bucket = portal.get(p.resource) ?? []
+    bucket.push(p)
+    portal.set(p.resource, bucket)
+    byPortal.set(p.portal, portal)
+  }
+
+  return Array.from(byPortal.entries()).map(([portal, resources]) => ({
+    portal,
+    resources: Array.from(resources.entries()).map(([resource, permissions]) => ({
+      resource,
+      permissions,
+    })),
   }))
 }
 

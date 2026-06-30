@@ -4,7 +4,65 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { subDays } from 'date-fns'
+import { subDays, addDays, startOfDay, endOfDay } from 'date-fns'
+import { getCateringQualityMetrics } from '@/lib/db/queries/catering-metrics'
+
+/**
+ * KPIs globales reales para la cabecera de la lista de Caterings.
+ * Sustituye el mock hardcodeado. Mismo espíritu que getCompaniesGlobalKPIs.
+ */
+export async function getCateringsGlobalKPIs() {
+  const today = new Date()
+  const startToday = startOfDay(today)
+  const endToday = endOfDay(today)
+  const thirtyDaysAgo = subDays(today, 30)
+  const in30Days = addDays(today, 30)
+
+  const [
+    totalCaterings,
+    activeCaterings,
+    suspendedCaterings,
+    todayOrders,
+    confirmedOrders,
+    deliveredOrders,
+    incidentsToday,
+    openIncidents,
+    expiringDocs,
+    delivered30,
+    total30,
+    underReviewCaterings,
+    ratingAgg,
+  ] = await Promise.all([
+    prisma.tenant.count({ where: { type: 'CATERING', deletedAt: null } }),
+    prisma.tenant.count({ where: { type: 'CATERING', deletedAt: null, status: 'ACTIVE' } }),
+    prisma.tenant.count({ where: { type: 'CATERING', deletedAt: null, status: 'SUSPENDED' } }),
+    prisma.order.count({ where: { serviceDate: { gte: startToday, lte: endToday }, deletedAt: null } }),
+    prisma.order.count({ where: { serviceDate: { gte: startToday, lte: endToday }, status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] }, deletedAt: null } }),
+    prisma.order.count({ where: { serviceDate: { gte: startToday, lte: endToday }, status: 'DELIVERED', deletedAt: null } }),
+    prisma.incident.count({ where: { createdAt: { gte: startToday, lte: endToday } } }),
+    prisma.incident.count({ where: { status: { in: ['OPEN', 'IN_PROGRESS'] } } }),
+    prisma.restaurantDocument.count({ where: { expiresAt: { gte: today, lte: in30Days } } }),
+    prisma.order.count({ where: { serviceDate: { gte: thirtyDaysAgo }, status: 'DELIVERED', deletedAt: null } }),
+    prisma.order.count({ where: { serviceDate: { gte: thirtyDaysAgo }, deletedAt: null } }),
+    prisma.restaurant.count({ where: { operationalStatus: 'UNDER_REVIEW' } }),
+    prisma.orderRating.aggregate({ _avg: { rating: true } }),
+  ])
+
+  return {
+    totalCaterings,
+    activeCaterings,
+    suspendedCaterings,
+    underReviewCaterings,
+    todayOrders,
+    confirmedOrders,
+    deliveredOrders,
+    incidentsOrders: incidentsToday,
+    avgPunctuality: total30 > 0 ? Math.round((delivered30 / total30) * 100) : 100,
+    openIncidents,
+    expiringDocs,
+    avgRating: ratingAgg._avg.rating ? Math.round(ratingAgg._avg.rating * 10) / 10 : 0,
+  }
+}
 
 /**
  * Obtener información completa de un catering
@@ -63,7 +121,7 @@ export async function getCateringById(tenantId: string) {
   // KPIs: Obtener métricas de los últimos 30 y 90 días
   const thirtyDaysAgo = subDays(new Date(), 30)
   const ninetyDaysAgo = subDays(new Date(), 90)
-  const [ordersLast30Days, ordersLast90Days, deliveredOrders, incidents, recentOrders] = await Promise.all([
+  const [ordersLast30Days, ordersLast90Days, incidents, recentOrders] = await Promise.all([
     // Total de pedidos en los últimos 30 días
     prisma.order.count({
       where: {
@@ -78,16 +136,6 @@ export async function getCateringById(tenantId: string) {
       where: {
         tenantCatering: tenantId,
         serviceDate: { gte: ninetyDaysAgo },
-        deletedAt: null,
-      },
-    }),
-
-    // Pedidos entregados
-    prisma.order.count({
-      where: {
-        tenantCatering: tenantId,
-        serviceDate: { gte: thirtyDaysAgo },
-        status: 'DELIVERED',
         deletedAt: null,
       },
     }),
@@ -129,16 +177,14 @@ export async function getCateringById(tenantId: string) {
     }),
   ])
 
-  // Calcular tasa de puntualidad
-  const punctualityRate = ordersLast30Days > 0 
-    ? Math.round((deliveredOrders / ordersLast30Days) * 100) 
-    : 100
+  // Métricas de calidad EN VIVO (fuente única, idéntica a la lista del admin).
+  const quality = await getCateringQualityMetrics(tenantId)
+  const punctualityRate = quality.punctualityRate
+  const incidentRate = quality.incidentRate
 
-  // Calcular tasa de incidencias
-  const incidentRate = ordersLast30Days > 0 
-    ? parseFloat(((incidents.length / ordersLast30Days) * 100).toFixed(2))
-    : 0
-    
+  // Demanda media diaria vs capacidad (para alerta de capacidad)
+  const avgDailyDemand = ordersLast30Days / 30
+
   // Cancelaciones post-cutoff (placeholder)
   const postCutoffCancellations = 0
 
@@ -189,9 +235,10 @@ export async function getCateringById(tenantId: string) {
       commission: Number(restaurant.commission),
       minimumBilling: Number(restaurant.minimumBilling),
       paymentCycle: restaurant.paymentCycle,
-      punctualityRate: restaurant.punctualityRate ? Number(restaurant.punctualityRate) : null,
-      incidentRate: restaurant.incidentRate ? Number(restaurant.incidentRate) : null,
-      averageRating: restaurant.averageRating ? Number(restaurant.averageRating) : null,
+      // En vivo (no los stored stale de Restaurant)
+      punctualityRate: quality.punctualityRate,
+      incidentRate: quality.incidentRate,
+      averageRating: quality.averageRating,
       documentsStatus: restaurant.documentsStatus,
       operationalStatus: restaurant.operationalStatus,
       suspendedAt: restaurant.suspendedAt,
@@ -239,7 +286,8 @@ export async function getCateringById(tenantId: string) {
       ordersLast90Days,
       punctualityRate,
       incidentRate,
-      averageRating: restaurant.averageRating ? Number(restaurant.averageRating) : null,
+      averageRating: quality.averageRating,
+      ratingCount: quality.ratingCount,
       incidentsCount: incidents.length,
       postCutoffCancellations,
     },
@@ -261,7 +309,9 @@ export async function getCateringById(tenantId: string) {
         })),
       lowPunctuality: punctualityRate < 90,
       highIncidentRate: incidentRate > 5,
-      capacityNearLimit: false, // TODO: calcular basado en demanda vs capacidad
+      capacityNearLimit:
+        restaurant.dailyCapacity > 0 &&
+        avgDailyDemand >= restaurant.dailyCapacity * 0.9,
     },
 
     // Actividad reciente

@@ -86,7 +86,9 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                     <TableRow key={tenant.id} className="border-gray-100 hover:bg-gray-50">
                       <TableCell>
                         <Link
-                          href={`/admin/tenants/${tenant.id}`}
+                          href={`/admin/${
+                            tenant.type === 'EMPRESA' ? 'empresas' : 'caterings'
+                          }/${tenant.id}`}
                           className="font-medium text-gray-900 hover:text-primary hover:underline"
                         >
                           {tenant.name}
@@ -159,9 +161,9 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                       <TableCell>
                         <Badge
                           variant={
-                            incident.severity === 'CRITICAL'
+                            incident.severity === 'HIGH'
                               ? 'destructive'
-                              : incident.severity === 'HIGH'
+                              : incident.severity === 'MEDIUM'
                               ? 'warning'
                               : 'secondary'
                           }

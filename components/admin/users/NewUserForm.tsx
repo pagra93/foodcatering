@@ -3,14 +3,13 @@
 import { useState, useTransition, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import type { UserRole, TenantType } from '@prisma/client'
+import type { TenantType } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle } from 'lucide-react'
-import { ROLE_DESCRIPTIONS, rolesByTenantType } from '@/lib/auth/permissions'
 import { createUserAction } from './actions'
 
 type TenantOption = {
@@ -20,7 +19,22 @@ type TenantOption = {
   type: TenantType
 }
 
-export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
+/** Rol del RBAC; `category` casa con TenantType (ROOT/EMPRESA/CATERING). */
+type RoleOption = {
+  id: string
+  name: string
+  isSystem: boolean
+  category: string
+  description: string | null
+}
+
+export function NewUserForm({
+  tenants,
+  roles,
+}: {
+  tenants: TenantOption[]
+  roles: RoleOption[]
+}) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
@@ -31,7 +45,7 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
-  const [role, setRole] = useState<UserRole | ''>('')
+  const [roleId, setRoleId] = useState<string>('')
   const [password, setPassword] = useState('')
 
   const selectedTenant = useMemo(
@@ -39,17 +53,22 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
     [tenantId, tenants]
   )
 
-  const availableRoles = useMemo<UserRole[]>(() => {
+  const availableRoles = useMemo<RoleOption[]>(() => {
     if (!selectedTenant) return []
-    return rolesByTenantType(selectedTenant.type)
-  }, [selectedTenant])
+    return roles.filter((r) => r.category === selectedTenant.type)
+  }, [selectedTenant, roles])
+
+  const selectedRole = useMemo(
+    () => availableRoles.find((r) => r.id === roleId),
+    [availableRoles, roleId]
+  )
 
   // Resetear rol cuando cambia el tenant si el rol actual no aplica.
   useEffect(() => {
-    if (role && !availableRoles.includes(role as UserRole)) {
-      setRole('')
+    if (roleId && !availableRoles.some((r) => r.id === roleId)) {
+      setRoleId('')
     }
-  }, [availableRoles, role])
+  }, [availableRoles, roleId])
 
   const isCrossTenantWarning =
     selectedTenant && selectedTenant.type !== 'ROOT'
@@ -70,7 +89,7 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!role) {
+    if (!roleId) {
       setError('Selecciona un rol')
       return
     }
@@ -81,7 +100,7 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
           email,
           name,
           phone: phone || undefined,
-          role: role as UserRole,
+          roleId,
           password,
         })
         toast.success(`Usuario creado: ${result.email}`)
@@ -193,21 +212,23 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
           <Label htmlFor="role">Rol</Label>
           <select
             id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
+            aria-label="Rol del usuario"
+            value={roleId}
+            onChange={(e) => setRoleId(e.target.value)}
             className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
             required
           >
             <option value="">— Selecciona un rol —</option>
             {availableRoles.map((r) => (
-              <option key={r} value={r}>
-                {r}
+              <option key={r.id} value={r.id}>
+                {r.name}
+                {r.isSystem ? ' (sistema)' : ''}
               </option>
             ))}
           </select>
-          {role && (
+          {selectedRole?.description && (
             <p className="mt-1 text-xs text-gray-500">
-              {ROLE_DESCRIPTIONS[role as UserRole]}
+              {selectedRole.description}
             </p>
           )}
         </div>
@@ -234,13 +255,13 @@ export function NewUserForm({ tenants }: { tenants: TenantOption[] }) {
           </p>
         </div>
 
-        {role && (
+        {selectedRole && (
           <div className="rounded-md bg-gray-50 p-3 text-xs text-gray-600">
             <Badge variant="outline" className="mr-2">
               Resumen
             </Badge>
             Se creará <strong>{email || '<email>'}</strong> como{' '}
-            <strong>{role}</strong> en tenant{' '}
+            <strong>{selectedRole.name}</strong> en tenant{' '}
             <strong>{selectedTenant?.name}</strong>.
           </div>
         )}

@@ -56,15 +56,16 @@ async function DashboardKPIs() {
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
       <KPICard
         title="Empresas Activas"
-        value={kpis.tenants.active}
-        subtitle={`${kpis.tenants.total} totales`}
+        value={kpis.tenants.activeCompanies}
+        subtitle={`${kpis.tenants.companies} totales`}
         icon={Building2}
         variant="default"
       />
 
       <KPICard
         title="Caterings Activos"
-        value={kpis.tenants.caterings}
+        value={kpis.tenants.activeCaterings}
+        subtitle={`${kpis.tenants.caterings} totales`}
         icon={ChefHat}
         variant="info"
       />

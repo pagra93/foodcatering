@@ -11,12 +11,17 @@
 import { useRouter } from 'next/navigation'
 import { DishForm } from '@/components/catering/platos/DishForm'
 import type {
+  AllergenOption,
   CreateDishInput,
   UpdateDishInput,
 } from '@/lib/validations/dish'
 import { createDishAction } from './actions'
 
-export function DishCreateForm() {
+export function DishCreateForm({
+  availableAllergens,
+}: {
+  availableAllergens: AllergenOption[]
+}) {
   const router = useRouter()
 
   const handleSubmit = async (data: CreateDishInput | UpdateDishInput) => {
@@ -31,6 +36,11 @@ export function DishCreateForm() {
   }
 
   return (
-    <DishForm mode="create" onSubmit={handleSubmit} onCancel={handleCancel} />
+    <DishForm
+      mode="create"
+      availableAllergens={availableAllergens}
+      onSubmit={handleSubmit}
+      onCancel={handleCancel}
+    />
   )
 }

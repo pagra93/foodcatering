@@ -5,6 +5,7 @@
 
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
+import { getRoleCategory } from '@/lib/auth/permissions'
 
 // Portal multi-tenant con datos por sesión: nunca se prerenderiza en build.
 export const dynamic = 'force-dynamic'
@@ -21,10 +22,19 @@ export default async function AdminLayout({
 }) {
   const session = await getRequiredSession()
 
-  // Verificar que sea super admin
-  if (session.user.role !== 'SUPER_ADMIN') {
+  // El portal admin es para el equipo Plati (categoría ROOT: super admin,
+  // auditor y roles ROOT personalizados). Lo que ve/usa cada rol dentro se
+  // controla por permisos (sidebar filtrado + requirePermission por sección).
+  if (getRoleCategory(session.user.role) !== 'ROOT') {
     redirect('/unauthorized')
   }
+
+  // El super admin siempre ve todo el menú, aunque su JWT sea anterior a la
+  // resolución de permisos (se actualiza del todo al volver a iniciar sesión).
+  const permissions =
+    session.user.role === 'SUPER_ADMIN'
+      ? ['*']
+      : session.user.permissions ?? []
 
   return (
     <>
@@ -33,7 +43,7 @@ export default async function AdminLayout({
         <ImpersonationBanner />
 
         {/* Sidebar */}
-        <AdminSidebar />
+        <AdminSidebar permissions={permissions} />
 
         {/* Navbar */}
         <AdminNavbar />

@@ -3,7 +3,7 @@
 > **Leer esto primero cuando vuelvas al proyecto tras una pausa.** Es el
 > documento vivo del estado y decisiones. Lo demás son referencias.
 
-Last updated: 2026-04-18
+Last updated: 2026-06-29
 
 ## What This Project Does
 
@@ -117,6 +117,36 @@ Artefactos en `docs/producto/features/<feature>/`.
   para API routes.
 - **Tests**: unit en `tests/unit/`, E2E en `tests/e2e/`.
 
+## Auditoría de lanzamiento del Panel Súper Admin (en curso · jun 2026)
+
+Revisión sección por sección de `/admin` para verificar que los datos son **reales** (no
+mock/stale), los botones llevan a algo que **existe y hace lo que dice**, y las métricas son
+**consistentes entre pantallas**. Backlog y trazabilidad: **EPIC-003** en
+[`../producto/features/admin-launch-audit/`](../producto/features/admin-launch-audit/_dossier.md).
+
+**Hecho (11/24):** Dashboard general · módulo **Empresas** · módulo **Caterings** (este último
+estaba mayormente mock: 4 pestañas reconstruidas con datos reales, formularios que ahora guardan,
+métricas en vivo). Pendiente: Usuarios, Catálogos, Calidad, **Facturación**, Integraciones,
+**Compliance**, Plantillas, Operación, Tenants + transversales.
+
+### Patrones/utilidades a REUTILIZAR en cada módulo
+- **Métricas canónicas por entidad** (misma definición en todas las pantallas):
+  `lib/db/queries/company-metrics.ts` (`getCompanyAdoption`) y `catering-metrics.ts`
+  (`getCateringQualityMetrics`). Convención: denominador = empleados `ACTIVE`; periodo = **mes natural**.
+- **Incidencias**: constantes únicas en `lib/incidents/constants.ts`; listados con
+  `getGlobalIncidents({ tenantEmpresa | tenantCatering })`; detalle en `/admin/quality/incidents/[id]`.
+- **PII**: `decryptNameSafe` en `lib/crypto/pii.ts` para render de nombres.
+- **Formularios admin**: server action + Zod (`lib/validations/*`), patrón `CompanyForm`/`CateringEditForm`.
+- **Gráficas**: Recharts (`components/admin/dashboard/ChartsSection.tsx`).
+
+### Familias de bugs a cazar (checklist por módulo)
+1. Fecha "hoy" con `serviceDate: today` (timestamp exacto) → usar rango `startOfDay/endOfDay`.
+2. KPI cableado a la query equivocada (trazar card→variable→query→fuente canónica).
+3. Columnas **stored stale** (solo seed, nunca recalculadas) mostradas como dato real.
+4. Ramas de enum fantasma (`CRITICAL`, `CLOSED` no existen en sus enums).
+5. Enlaces a rutas inexistentes (404) y botones sin handler (muertos).
+6. Datos mock/`Math.random` embebidos en componentes.
+
 ## Known Issues & Tech Debt
 
 | Issue | Priority | Notes |
@@ -133,6 +163,14 @@ Artefactos en `docs/producto/features/<feature>/`.
 | Componentes KPI/Activity/Alerts duplicados en los 4 portales | Baja | Consolidar en `components/shared/` cuando se toquen |
 | `any` residuales (ahora `warn`) | Baja | Reducir progresivamente a <10 en lib+app |
 | Scheduler cron (cutoff 11:00, consolidación 11:05, snapshot 23:59, facturas 01:00 día 1) | Alta (cuando haya tráfico real) | Modelos y queries listos, falta scheduler (Vercel Cron, BullMQ, etc.) |
+
+## Cambios recientes (2026-06-30, EPIC-003)
+
+### RBAC dinámico DB-backed
+Roles y permisos pasaron de estáticos en código a **tablas** `Role` / `Permission` / `RolePermission` + `User.roleId`. Catálogo de **219 permisos** (`recurso:accion`) que mapea los 4 portales en `lib/auth/permission-catalog.ts`. La sesión lleva `permissions[]` resuelto en login (`super_admin` = `['*']`). UI editable en `/admin/users/roles` (crear rol + marcar permisos). **Enforcement por sección** solo en el portal admin: sidebar filtrado + gate en `middleware.ts` (`lib/auth/section-permissions.ts`). Pendiente: portales empresa/catering/empleado y migrar los ~90 checks `role === …` por acción (Fase 2). Detalle: memoria `rbac-dynamic`.
+
+### Alérgenos relacionales
+Tabla join **`DishAllergen`** (los alérgenos salen de `Dish.labels`, que ahora solo guarda tags nutricionales). Catálogo `allergens` normalizado a **14 canónicos** (code = slug español). El catering selecciona del catálogo de BD; el empleado (perfil + bloqueo en menú) también — toda la cadena estaba rota y se arregló. Seeds canónicos vía `prisma/seed-allergens.ts`. Detalle: memoria `allergens-system` y `docs/producto/features/admin-launch-audit/catalogos-alergenos.md`.
 
 ## Key Pointers (para nuevas sesiones)
 

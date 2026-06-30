@@ -7,7 +7,16 @@
 import { prisma } from '@/lib/db/prisma'
 import { type Prisma } from '@prisma/client'
 import type { DishFilters, CreateDishInput, UpdateDishInput } from '@/lib/validations/dish'
-import { formatDishLabels } from '@/lib/validations/dish'
+
+/** Relación de alérgenos a incluir y su serialización a {id, code, name}. */
+const allergenInclude = {
+  allergens: { include: { allergen: { select: { id: true, code: true, name: true } } } },
+} satisfies Prisma.DishInclude
+
+type DishWithAllergens = { allergens: { allergen: { id: string; code: string; name: string } }[] }
+function serializeAllergens(dish: DishWithAllergens) {
+  return dish.allergens.map((a) => a.allergen)
+}
 
 /**
  * Obtener lista de platos con filtros
@@ -46,17 +55,16 @@ export async function getDishes(tenantId: string, filters: DishFilters) {
     where.active = active === 'true'
   }
 
-  // Filtro por alérgenos (platos que contengan alguno de los alérgenos seleccionados)
+  // Filtro por alérgenos (platos que referencien alguno de los IDs dados)
   if (allergens && allergens.length > 0) {
-    where.labels = {
-      hasSome: allergens,
+    where.allergens = {
+      some: { allergenId: { in: allergens } },
     }
   }
 
-  // Filtro por tags nutricionales
+  // Filtro por tags nutricionales (siguen en labels)
   if (tags && tags.length > 0) {
     where.labels = {
-      ...where.labels,
       hasSome: tags,
     }
   }
@@ -73,6 +81,7 @@ export async function getDishes(tenantId: string, filters: DishFilters) {
     prisma.dish.findMany({
       where,
       include: {
+        ...allergenInclude,
         schedules: {
           where: {
             date: {
@@ -104,6 +113,7 @@ export async function getDishes(tenantId: string, filters: DishFilters) {
     name: dish.name,
     course: dish.course,
     labels: dish.labels as string[],
+    allergens: serializeAllergens(dish),
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),
     active: dish.active,
@@ -135,6 +145,7 @@ export async function getDishById(dishId: string, tenantId: string) {
       deletedAt: null,
     },
     include: {
+      ...allergenInclude,
       restaurant: {
         select: {
           id: true,
@@ -162,12 +173,16 @@ export async function getDishById(dishId: string, tenantId: string) {
     return null
   }
 
+  const allergens = serializeAllergens(dish)
+
   // Serializar
   return {
     id: dish.id,
     name: dish.name,
     course: dish.course,
     labels: dish.labels as string[],
+    allergens,
+    allergenIds: allergens.map((a) => a.id),
     nutrition: dish.nutrition as object,
     basePrice: Number(dish.basePrice),
     active: dish.active,
@@ -192,10 +207,11 @@ export async function createDish(tenantId: string, data: CreateDishInput) {
     throw new Error('Restaurant not found for this tenant')
   }
 
-  // Formatear labels (combinar alérgenos y tags)
-  const labels = formatDishLabels(data.allergens || [], data.tags || [])
+  // labels solo guarda etiquetas nutricionales; los alérgenos van a DishAllergen.
+  const labels = data.tags ?? []
+  const allergenIds = data.allergens ?? []
 
-  // Crear el plato
+  // Crear el plato + sus alérgenos (relación)
   const dish = await prisma.dish.create({
     data: {
       tenantId,
@@ -209,6 +225,9 @@ export async function createDish(tenantId: string, data: CreateDishInput) {
       nutrition: (data.nutrition ?? {}) as Prisma.InputJsonValue,
       basePrice: data.basePrice,
       active: data.active,
+      ...(allergenIds.length > 0 && {
+        allergens: { create: allergenIds.map((allergenId) => ({ allergenId })) },
+      }),
     },
   })
 
@@ -258,16 +277,17 @@ export async function updateDish(
   if (data.ingredients !== undefined) updateData.ingredients = data.ingredients
   if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl || null
 
-  // Si se actualizan alérgenos o tags, reconstruir labels
-  if (data.allergens !== undefined || data.tags !== undefined) {
-    const currentLabels = existingDish.labels as string[]
-    const { parseDishLabels } = await import('@/lib/validations/dish')
-    const { allergens: currentAllergens, tags: currentTags } = parseDishLabels(currentLabels)
+  // Tags nutricionales → labels (los alérgenos ya no van aquí)
+  if (data.tags !== undefined) {
+    updateData.labels = data.tags
+  }
 
-    const newAllergens = data.allergens ?? currentAllergens
-    const newTags = data.tags ?? currentTags
-
-    updateData.labels = formatDishLabels(newAllergens, newTags)
+  // Alérgenos → reemplazar la relación DishAllergen completa
+  if (data.allergens !== undefined) {
+    updateData.allergens = {
+      deleteMany: {},
+      create: data.allergens.map((allergenId) => ({ allergenId })),
+    }
   }
 
   // Actualizar
@@ -347,13 +367,14 @@ export async function cloneDish(
   tenantId: string,
   newName?: string
 ) {
-  // Obtener el plato original
+  // Obtener el plato original + sus alérgenos
   const originalDish = await prisma.dish.findFirst({
     where: {
       id: dishId,
       tenantId,
       deletedAt: null,
     },
+    include: { allergens: { select: { allergenId: true } } },
   })
 
   if (!originalDish) {
@@ -363,7 +384,7 @@ export async function cloneDish(
   // Crear el nombre del clon
   const clonedName = newName || `${originalDish.name} (Copia)`
 
-  // Crear el clon
+  // Crear el clon (copiando la relación de alérgenos)
   const clonedDish = await prisma.dish.create({
     data: {
       tenantId: originalDish.tenantId,
@@ -377,6 +398,11 @@ export async function cloneDish(
       nutrition: (originalDish.nutrition ?? {}) as Prisma.InputJsonValue,
       basePrice: originalDish.basePrice,
       active: originalDish.active,
+      ...(originalDish.allergens.length > 0 && {
+        allergens: {
+          create: originalDish.allergens.map((a) => ({ allergenId: a.allergenId })),
+        },
+      }),
     },
   })
 
