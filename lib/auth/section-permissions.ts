@@ -22,14 +22,13 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/empresas', permission: 'empresa:view' },
   { prefix: '/admin/caterings', permission: 'catering:view' },
 
-  // Catálogos globales
+  // Catálogos (alérgenos y festivos)
   { prefix: '/admin/catalogs/allergens', permission: 'allergen:view' },
   { prefix: '/admin/catalogs/calendars', permission: 'calendar:view' },
-  { prefix: '/admin/catalogs/zones', permission: 'zone:view' },
-  { prefix: '/admin/catalogs/incident-reasons', permission: 'incident-reason:view' },
 
   // Calidad y SLAs
   { prefix: '/admin/quality/audits', permission: 'audit:view' },
+  { prefix: '/admin/quality/incident-reasons', permission: 'incident-reason:view' },
   { prefix: '/admin/quality/incidents', permission: 'incident:view' },
   { prefix: '/admin/quality/ratings', permission: 'rating:view' },
   { prefix: '/admin/quality/penalties', permission: 'penalty:view' },

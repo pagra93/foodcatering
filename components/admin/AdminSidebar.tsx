@@ -76,15 +76,13 @@ const navItems: NavItem[] = [
     ],
   },
   {
-    title: 'Catálogos Globales',
+    title: 'Alérgenos y Festivos',
     href: '/admin/catalogs',
     icon: BookOpen,
-    description: 'Alérgenos, festivos, zonas',
+    description: 'Catálogos normativos: alérgenos UE y calendario de festivos',
     subItems: [
       { title: 'Alérgenos', href: '/admin/catalogs/allergens', permission: 'allergen:view' },
       { title: 'Calendarios', href: '/admin/catalogs/calendars', permission: 'calendar:view' },
-      { title: 'Zonas y Logística', href: '/admin/catalogs/zones', permission: 'zone:view' },
-      { title: 'Motivos de Incidencia', href: '/admin/catalogs/incident-reasons', permission: 'incident-reason:view' },
     ],
   },
   {
@@ -96,6 +94,7 @@ const navItems: NavItem[] = [
     subItems: [
       { title: 'Auditorías', href: '/admin/quality/audits', permission: 'audit:view' },
       { title: 'Incidencias', href: '/admin/quality/incidents', permission: 'incident:view' },
+      { title: 'Motivos de Incidencia', href: '/admin/quality/incident-reasons', permission: 'incident-reason:view' },
       { title: 'Rating y Reputación', href: '/admin/quality/ratings', permission: 'rating:view' },
       { title: 'Penalizaciones', href: '/admin/quality/penalties', permission: 'penalty:view' },
     ],
