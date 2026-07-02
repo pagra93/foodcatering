@@ -53,6 +53,14 @@ type Comment = {
   rating: number
   comment: string | null
   createdAt: Date
+  dishName?: string
+}
+
+type CompanyScore = {
+  tenantId: string
+  name: string
+  average: number
+  count: number
 }
 
 type PenaltyRow = {
@@ -88,6 +96,7 @@ type Props = {
   topDishes: DishRating[]
   bottomDishes: DishRating[]
   comments: Comment[]
+  byCompany: CompanyScore[]
   audits: RestaurantAudit[]
   penalties: PenaltyRow[]
   slas: SlaRow[]
@@ -191,11 +200,13 @@ function RatingsTab({
   topDishes,
   bottomDishes,
   comments,
+  byCompany,
 }: {
   stats: RatingStats
   topDishes: DishRating[]
   bottomDishes: DishRating[]
   comments: Comment[]
+  byCompany: CompanyScore[]
 }) {
   const weekTrend =
     stats.avgThisWeek !== null && stats.avgPrevWeek !== null
@@ -204,12 +215,12 @@ function RatingsTab({
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-4">
           <p className="text-sm text-gray-500">Rating medio</p>
           <p className="mt-1 text-2xl font-bold">{starsInline(stats.averageRating)}</p>
           <p className="mt-1 text-xs text-gray-500">
-            {stats.total} valoraciones totales
+            {stats.total} valoraciones de platos
           </p>
         </Card>
         <Card className="p-4">
@@ -231,23 +242,6 @@ function RatingsTab({
               {weekTrend >= 0 ? '↑' : '↓'} {Math.abs(weekTrend).toFixed(1)} vs semana pasada
             </p>
           )}
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Por dimensión</p>
-          <div className="mt-2 space-y-1 text-xs">
-            <div className="flex justify-between">
-              <span>Sabor</span>
-              <span className="font-medium">{starsInline(stats.averageTaste)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Porción</span>
-              <span className="font-medium">{starsInline(stats.averagePortion)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Presentación</span>
-              <span className="font-medium">{starsInline(stats.averagePresentation)}</span>
-            </div>
-          </div>
         </Card>
       </div>
 
@@ -271,7 +265,7 @@ function RatingsTab({
             ))}
             {topDishes.length === 0 && (
               <li className="py-4 text-center text-xs text-gray-500">
-                Mínimo 3 valoraciones por plato.
+                Aún no hay platos valorados.
               </li>
             )}
           </ol>
@@ -302,6 +296,35 @@ function RatingsTab({
         </Card>
       </div>
 
+      {/* Cómo te valora cada empresa cliente */}
+      <Card className="p-5">
+        <h3 className="mb-3 text-base font-semibold">
+          Valoración por empresa cliente
+        </h3>
+        <p className="mb-3 text-xs text-gray-500">
+          Nota media que dan los empleados de cada empresa a tus platos. Detecta
+          en qué cliente flojea el servicio.
+        </p>
+        <ol className="space-y-2 text-sm">
+          {byCompany.map((c) => (
+            <li key={c.tenantId} className="flex items-center justify-between">
+              <span className="truncate">{c.name}</span>
+              <span className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">
+                  ({c.count} valoraciones)
+                </span>
+                <span className="font-medium">{c.average} ⭐</span>
+              </span>
+            </li>
+          ))}
+          {byCompany.length === 0 && (
+            <li className="py-4 text-center text-xs text-gray-500">
+              Aún no hay valoraciones de ninguna empresa.
+            </li>
+          )}
+        </ol>
+      </Card>
+
       <Card className="p-5">
         <div className="mb-3 flex items-center gap-2">
           <MessageSquare className="h-4 w-4 text-primary" />
@@ -316,6 +339,14 @@ function RatingsTab({
               <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
                 <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
                 <span>{c.rating} / 5</span>
+                {c.dishName && (
+                  <>
+                    <span>·</span>
+                    <span className="font-medium text-gray-600">
+                      {c.dishName}
+                    </span>
+                  </>
+                )}
                 <span>·</span>
                 <span>
                   {formatDistanceToNow(c.createdAt, {

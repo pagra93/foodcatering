@@ -13,6 +13,7 @@ import {
   getOwnPenaltiesKPIs,
   getSlaByClient,
 } from '@/lib/db/queries/catering-calidad'
+import { getCateringReputationByCompany } from '@/lib/db/queries/ratings'
 import { CalidadTabs } from '@/components/catering/calidad/CalidadTabs'
 
 export default async function CateringCalidadPage() {
@@ -24,6 +25,7 @@ export default async function CateringCalidadPage() {
     stats,
     dishRatings,
     comments,
+    byCompany,
     audits,
     penalties,
     penaltiesKpis,
@@ -32,6 +34,7 @@ export default async function CateringCalidadPage() {
     getCateringOwnRatingStats(tenantId),
     getCateringDishRatings(tenantId, 10),
     getCateringRecentComments(tenantId, 20),
+    getCateringReputationByCompany(tenantId),
     getAuditsForCatering(tenantId),
     getOwnPenalties(tenantId),
     getOwnPenaltiesKPIs(tenantId),
@@ -89,6 +92,7 @@ export default async function CateringCalidadPage() {
         topDishes={dishRatings.top}
         bottomDishes={dishRatings.bottom}
         comments={comments}
+        byCompany={byCompany}
         audits={audits}
         penalties={penalties.map((p) => ({
           id: p.id,
