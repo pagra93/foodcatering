@@ -136,6 +136,11 @@ export async function getOwnPenalties(tenantCatering: string) {
   })
 }
 
+/** Una penalización del propio catering (scoped por tenant). */
+export async function getOwnPenaltyById(id: string, tenantCatering: string) {
+  return prisma.penalty.findFirst({ where: { id, tenantCatering } })
+}
+
 export async function getOwnPenaltiesKPIs(tenantCatering: string) {
   const [pending, applied, disputed, waived, pendingSum] = await Promise.all([
     prisma.penalty.count({ where: { tenantCatering, status: 'PENDING' } }),

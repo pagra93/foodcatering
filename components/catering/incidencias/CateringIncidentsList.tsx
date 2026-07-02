@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -147,9 +148,9 @@ export function CateringIncidentsList({ incidents }: CateringIncidentsListProps)
                     </div>
                   )}
 
-                  {/* Botón de responder */}
-                  {isOpen && (
-                    <div className="mt-4">
+                  {/* Acciones */}
+                  <div className="mt-4 flex items-center gap-3">
+                    {isOpen && (
                       <Button
                         onClick={() => setSelectedIncident(incident)}
                         size="sm"
@@ -158,8 +159,14 @@ export function CateringIncidentsList({ incidents }: CateringIncidentsListProps)
                         <MessageCircle className="h-4 w-4 mr-2" />
                         Responder Incidencia
                       </Button>
-                    </div>
-                  )}
+                    )}
+                    <Link
+                      href={`/catering/incidencias/${incident.id}`}
+                      className="text-sm font-medium text-primary hover:underline"
+                    >
+                      Ver seguimiento →
+                    </Link>
+                  </div>
                 </div>
 
                 {/* Fecha de creación */}

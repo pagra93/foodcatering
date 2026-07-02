@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { format, formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
@@ -480,12 +481,20 @@ function PenaltiesTab({ penalties }: { penalties: PenaltyRow[] }) {
                   {format(p.appliedAt, 'dd MMM yyyy', { locale: es })}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  {canDispute && <DisputePenaltyButton penaltyId={p.id} />}
-                  {p.status === 'APPLIED' && !canDispute && (
-                    <span className="text-xs text-gray-400">
-                      Plazo disputa expirado
-                    </span>
-                  )}
+                  <div className="flex items-center justify-end gap-3">
+                    {canDispute && <DisputePenaltyButton penaltyId={p.id} />}
+                    {p.status === 'APPLIED' && !canDispute && (
+                      <span className="text-xs text-gray-400">
+                        Plazo disputa expirado
+                      </span>
+                    )}
+                    <Link
+                      href={`/catering/calidad/penalizaciones/${p.id}`}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Ver / responder →
+                    </Link>
+                  </div>
                 </td>
               </tr>
             )

@@ -2,6 +2,8 @@ import { notFound, redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/auth/get-tenant'
 import { prisma } from '@/lib/db/prisma'
+import { getThreadMessages } from '@/lib/db/queries/activity'
+import { ActivityThread } from '@/components/shared/activity/ActivityThread'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -53,6 +55,8 @@ export default async function IncidentDetailPage({ params }: Props) {
   if (!incident) {
     notFound()
   }
+
+  const thread = await getThreadMessages('INCIDENT', params.id, false)
 
   // Mapeo de tipos
   const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
@@ -168,6 +172,13 @@ export default async function IncidentDetailPage({ params }: Props) {
             </CardContent>
           </Card>
         )}
+
+        <ActivityThread
+          entity="INCIDENT"
+          entityId={incident.id}
+          messages={thread}
+          canPostInternal={false}
+        />
       </div>
     </div>
   )
