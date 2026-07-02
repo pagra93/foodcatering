@@ -7,7 +7,9 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { getWeekMenusForEmployee } from '@/lib/db/queries/empleado-menus'
+import { getEmployeePendingRatings } from '@/lib/db/queries/ratings'
 import { WeekView } from '@/components/empleado/menus/WeekView'
+import { PendingRatingPrompt } from '@/components/empleado/rating/PendingRatingPrompt'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
 import { Suspense } from 'react'
@@ -49,7 +51,10 @@ async function MenusData() {
     )
   }
 
-  const weekMenus = await getWeekMenusForEmployee(employee.id)
+  const [weekMenus, pendingRatings] = await Promise.all([
+    getWeekMenusForEmployee(employee.id),
+    getEmployeePendingRatings(employee.id, 10),
+  ])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -62,6 +67,13 @@ async function MenusData() {
           Selecciona tus comidas de la semana
         </p>
       </div>
+
+      {/* Aviso proactivo: valora la comida de ayer */}
+      {pendingRatings.length > 0 && (
+        <div className="mb-6">
+          <PendingRatingPrompt pending={pendingRatings} />
+        </div>
+      )}
 
       {/* Week View */}
       <WeekView data={weekMenus} />

@@ -69,6 +69,7 @@ export async function getOrderHistory({
         price: true,
         selection: true,
         createdAt: true,
+        dishRatings: { select: { rating: true } },
       },
       orderBy: {
         serviceDate: 'desc',
@@ -81,10 +82,22 @@ export async function getOrderHistory({
   ])
 
   return {
-    orders: orders.map((order) => ({
-      ...order,
-      price: Number(order.price),
-    })),
+    orders: orders.map((order) => {
+      const { dishRatings, ...rest } = order
+      const ratedCount = dishRatings.length
+      const avgRating =
+        ratedCount > 0
+          ? Math.round(
+              (dishRatings.reduce((s, r) => s + r.rating, 0) / ratedCount) * 10
+            ) / 10
+          : null
+      return {
+        ...rest,
+        price: Number(order.price),
+        ratedCount,
+        avgRating,
+      }
+    }),
     pagination: {
       page,
       limit,

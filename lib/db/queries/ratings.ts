@@ -13,6 +13,9 @@
 import { prisma } from '@/lib/db/prisma'
 import type { Prisma, DishCourse } from '@prisma/client'
 import { subDays, startOfDay } from 'date-fns'
+import { dishesFromSelection } from '@/lib/ratings/selection'
+
+export { dishesFromSelection } from '@/lib/ratings/selection'
 
 // ── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -359,25 +362,4 @@ export async function getEmployeePendingRatings(
     serviceDate: o.serviceDate,
     dishes: dishesFromSelection(o.selection),
   }))
-}
-
-type SelectionCourse = { dishId?: string; name?: string } | null | undefined
-type OrderSelection = { first?: SelectionCourse; second?: SelectionCourse; dessert?: SelectionCourse }
-
-/** Extrae los platos (con curso) de `Order.selection`. */
-export function dishesFromSelection(
-  selection: Prisma.JsonValue
-): { dishId: string; name: string; course: DishCourse }[] {
-  const sel = (selection ?? {}) as OrderSelection
-  const out: { dishId: string; name: string; course: DishCourse }[] = []
-  const map: [keyof OrderSelection, DishCourse][] = [
-    ['first', 'FIRST'],
-    ['second', 'SECOND'],
-    ['dessert', 'DESSERT'],
-  ]
-  for (const [key, course] of map) {
-    const c = sel[key]
-    if (c?.dishId) out.push({ dishId: c.dishId, name: c.name ?? 'Plato', course })
-  }
-  return out
 }

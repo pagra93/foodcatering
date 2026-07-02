@@ -218,6 +218,7 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
     },
     { resource: 'history', label: 'el historial', actions: [VIEW('el historial'), { action: 'export', desc: 'Exportar historial' }] },
     { resource: 'emp-incident-own', label: 'incidencias propias', actions: [VIEW('incidencias propias'), { action: 'create', desc: 'Reportar incidencia' }] },
+    { resource: 'emp-rating-own', label: 'valoraciones propias', actions: [VIEW('valoraciones propias'), { action: 'create', desc: 'Valorar platos' }] },
   ],
 }
 

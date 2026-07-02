@@ -5,6 +5,7 @@
 
 'use client'
 
+import { useState } from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -26,24 +27,59 @@ import {
   Clock,
   XCircle,
   AlertCircle,
+  Star,
 } from 'lucide-react'
+import { dishesFromSelection } from '@/lib/ratings/selection'
+import { RateMealDialog } from '@/components/empleado/rating/RateMealDialog'
+
+type HistorialOrder = {
+  id: string
+  serviceDate: Date
+  menuType: string
+  status: string
+  price: number
+  selection: any
+  createdAt: Date
+  ratedCount: number
+  avgRating: number | null
+}
 
 type HistorialTableProps = {
-  orders: Array<{
-    id: string
-    serviceDate: Date
-    menuType: string
-    status: string
-    price: number
-    selection: any
-    createdAt: Date
-  }>
+  orders: HistorialOrder[]
   pagination: {
     page: number
     limit: number
     total: number
     totalPages: number
   }
+}
+
+function RatingCell({
+  order,
+  onRate,
+}: {
+  order: HistorialOrder
+  onRate: (o: HistorialOrder) => void
+}) {
+  if (order.status !== 'DELIVERED') {
+    return <span className="text-xs text-gray-400">—</span>
+  }
+  if (order.ratedCount > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-amber-500">
+        <Star className="h-3.5 w-3.5 fill-amber-400" />
+        <span className="text-xs font-medium text-gray-700">
+          {order.avgRating}
+        </span>
+      </span>
+    )
+  }
+  return (
+    <Button variant="outline" size="sm" onClick={() => onRate(order)}>
+      <Star className="mr-1 h-3.5 w-3.5" />
+      Valorar
+    </Button>
+  )
 }
 
 const STATUS_CONFIG: Record<
@@ -85,6 +121,7 @@ const STATUS_CONFIG: Record<
 export function HistorialTable({ orders, pagination }: HistorialTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const [rating, setRating] = useState<HistorialOrder | null>(null)
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -118,6 +155,7 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
               <TableHead>Fecha</TableHead>
               <TableHead>Tipo</TableHead>
               <TableHead>Estado</TableHead>
+              <TableHead>Valoración</TableHead>
               <TableHead className="text-right">Importe</TableHead>
             </TableRow>
           </TableHeader>
@@ -153,6 +191,9 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
                       <StatusIcon className="mr-1 h-3 w-3" />
                       {statusConfig?.label}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <RatingCell order={order} onRate={setRating} />
                   </TableCell>
                   <TableCell className="text-right">
                     <span className="font-semibold text-gray-900">
@@ -200,6 +241,10 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
                   {order.price.toFixed(2)}€
                 </span>
               </div>
+
+              <div className="mt-3 flex items-center justify-end">
+                <RatingCell order={order} onRate={setRating} />
+              </div>
             </Card>
           )
         })}
@@ -240,6 +285,16 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
             </div>
           </div>
         </Card>
+      )}
+
+      {rating && (
+        <RateMealDialog
+          open={!!rating}
+          onOpenChange={(o) => !o && setRating(null)}
+          orderId={rating.id}
+          serviceDate={rating.serviceDate}
+          dishes={dishesFromSelection(rating.selection)}
+        />
       )}
     </div>
   )
