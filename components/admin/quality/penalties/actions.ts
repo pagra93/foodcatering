@@ -12,6 +12,7 @@ import {
   createPenaltySchema,
   disputePenaltySchema,
   waivePenaltySchema,
+  DISPUTE_WINDOW_DAYS,
 } from '@/lib/validations/penalty'
 import type {
   CreatePenaltyInput,
@@ -202,13 +203,13 @@ export async function disputePenaltyAction(input: {
     throw new Error('Solo puedes disputar penalizaciones en estado APPLIED')
   }
 
-  const DISPUTE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+  const DISPUTE_WINDOW_MS = DISPUTE_WINDOW_DAYS * 24 * 60 * 60 * 1000
   if (
     current.settledAt &&
     Date.now() - current.settledAt.getTime() > DISPUTE_WINDOW_MS
   ) {
     throw new Error(
-      'El plazo de 7 días para disputar ya ha expirado'
+      `El plazo de ${DISPUTE_WINDOW_DAYS} días para disputar ya ha expirado`
     )
   }
 

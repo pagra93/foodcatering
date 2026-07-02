@@ -19,6 +19,7 @@ import type {
   RestaurantAudit,
   AssignmentType,
 } from '@prisma/client'
+import { DISPUTE_WINDOW_DAYS } from '@/lib/validations/penalty'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DisputePenaltyButton } from './DisputePenaltyButton'
@@ -425,7 +426,6 @@ function AuditsTab({ audits }: { audits: RestaurantAudit[] }) {
 
 // ─── Tab: Penalizaciones ────────────────────────────────────────────────
 
-const DISPUTE_WINDOW_DAYS = 7
 
 function PenaltiesTab({ penalties }: { penalties: PenaltyRow[] }) {
   return (

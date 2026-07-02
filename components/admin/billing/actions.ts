@@ -80,11 +80,14 @@ export async function generateMonthBillingAction(input: {
 
     const commissionAmount = Math.round(gross * commissionRate * 100) / 100
 
+    // Se descuentan las penalizaciones que se APLICARON (settledAt) durante el
+    // mes liquidado — no las creadas (appliedAt). Así una penalización creada un
+    // mes y aplicada al siguiente se descuenta en el mes correcto, sin perderse.
     const penaltiesAgg = await prisma.penalty.aggregate({
       where: {
         tenantCatering: c.id,
         status: 'APPLIED',
-        appliedAt: {
+        settledAt: {
           gte: new Date(`${period}-01T00:00:00.000Z`),
           lt: firstDayOfNextMonth(period),
         },

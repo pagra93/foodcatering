@@ -3,13 +3,22 @@ import { ArrowLeft } from 'lucide-react'
 import type { PenaltyStatus, PenaltyType } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { format } from 'date-fns'
+import { es } from 'date-fns/locale'
 import { prisma } from '@/lib/db/prisma'
 import {
   getPenalties,
   getPenaltiesKPIs,
 } from '@/lib/db/queries/admin-penalties'
+import { incidentTypeLabel } from '@/lib/incidents/constants'
 import { PenaltiesTable } from '@/components/admin/quality/penalties/PenaltiesTable'
 import { NewPenaltyForm } from '@/components/admin/quality/penalties/NewPenaltyForm'
+
+const AUDIT_TYPE_LABEL: Record<string, string> = {
+  SANITARIA: 'Sanitaria',
+  OPERATIVA: 'Operativa',
+  SATISFACCION: 'Satisfacción',
+}
 
 type SP = {
   status?: string
@@ -25,20 +34,43 @@ export default async function PenaltiesPage({
   const params = await searchParams
   const pageNum = Number(params.page ?? '1')
 
-  const [{ penalties, total, pageSize }, kpis, caterings] = await Promise.all([
-    getPenalties({
-      status: (params.status as PenaltyStatus) || undefined,
-      type: (params.type as PenaltyType) || undefined,
-      page: pageNum,
-      pageSize: 25,
-    }),
-    getPenaltiesKPIs(),
-    prisma.tenant.findMany({
-      where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
-      select: { id: true, name: true, subdomain: true },
-      orderBy: { name: 'asc' },
-    }),
-  ])
+  const [{ penalties, total, pageSize }, kpis, caterings, recentIncidents, recentAudits] =
+    await Promise.all([
+      getPenalties({
+        status: (params.status as PenaltyStatus) || undefined,
+        type: (params.type as PenaltyType) || undefined,
+        page: pageNum,
+        pageSize: 25,
+      }),
+      getPenaltiesKPIs(),
+      prisma.tenant.findMany({
+        where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
+        select: { id: true, name: true, subdomain: true },
+        orderBy: { name: 'asc' },
+      }),
+      // Origen opcional al crear una penalización (últimas incidencias/auditorías).
+      prisma.incident.findMany({
+        select: { id: true, type: true, tenantCatering: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+        take: 200,
+      }),
+      prisma.restaurantAudit.findMany({
+        select: { id: true, auditType: true, tenantCatering: true, auditedAt: true },
+        orderBy: { auditedAt: 'desc' },
+        take: 200,
+      }),
+    ])
+
+  const incidentOptions = recentIncidents.map((i) => ({
+    id: i.id,
+    tenantCatering: i.tenantCatering,
+    label: `${incidentTypeLabel(i.type)} · ${format(i.createdAt, 'd MMM yyyy', { locale: es })}`,
+  }))
+  const auditOptions = recentAudits.map((a) => ({
+    id: a.id,
+    tenantCatering: a.tenantCatering,
+    label: `${AUDIT_TYPE_LABEL[a.auditType] ?? a.auditType} · ${format(a.auditedAt, 'd MMM yyyy', { locale: es })}`,
+  }))
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -136,7 +168,11 @@ export default async function PenaltiesPage({
         </form>
       </Card>
 
-      <NewPenaltyForm caterings={caterings} />
+      <NewPenaltyForm
+        caterings={caterings}
+        incidents={incidentOptions}
+        audits={auditOptions}
+      />
 
       <PenaltiesTable
         rows={penalties.map((p) => ({

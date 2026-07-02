@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getOwnPenaltyById } from '@/lib/db/queries/catering-calidad'
 import { getThreadMessages } from '@/lib/db/queries/activity'
+import { DISPUTE_WINDOW_DAYS } from '@/lib/validations/penalty'
 import { ActivityThread } from '@/components/shared/activity/ActivityThread'
 import { DisputePenaltyButton } from '@/components/catering/calidad/DisputePenaltyButton'
 
@@ -29,8 +30,6 @@ const TYPE_LABEL: Record<PenaltyType, string> = {
   INCIDENT_THRESHOLD: 'Umbral de incidencias',
   MANUAL: 'Manual',
 }
-
-const DISPUTE_WINDOW_DAYS = 7
 
 export default async function CateringPenaltyDetailPage({
   params,

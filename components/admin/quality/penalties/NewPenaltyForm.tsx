@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { DISPUTE_WINDOW_DAYS } from '@/lib/validations/penalty'
 import { createPenaltyAction } from './actions'
 
 type CateringOption = { id: string; name: string; subdomain: string }
+type OriginOption = { id: string; label: string; tenantCatering: string }
 
 const TYPE_OPTIONS: { value: PenaltyType; label: string }[] = [
   { value: 'MANUAL', label: 'Manual (caso puntual)' },
@@ -19,7 +21,15 @@ const TYPE_OPTIONS: { value: PenaltyType; label: string }[] = [
   { value: 'INCIDENT_THRESHOLD', label: 'Umbral de incidencias superado' },
 ]
 
-export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
+export function NewPenaltyForm({
+  caterings,
+  incidents = [],
+  audits = [],
+}: {
+  caterings: CateringOption[]
+  incidents?: OriginOption[]
+  audits?: OriginOption[]
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -29,6 +39,18 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
   const [reason, setReason] = useState('')
   const [amount, setAmount] = useState('')
   const [notes, setNotes] = useState('')
+  const [linkedIncidentId, setLinkedIncidentId] = useState('')
+  const [linkedAuditId, setLinkedAuditId] = useState('')
+
+  // Origen filtrado por el catering seleccionado.
+  const catIncidents = incidents.filter((i) => i.tenantCatering === tenantCatering)
+  const catAudits = audits.filter((a) => a.tenantCatering === tenantCatering)
+
+  const changeCatering = (id: string) => {
+    setTenantCatering(id)
+    setLinkedIncidentId('')
+    setLinkedAuditId('')
+  }
 
   const reset = () => {
     setTenantCatering(caterings[0]?.id ?? '')
@@ -36,6 +58,8 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
     setReason('')
     setAmount('')
     setNotes('')
+    setLinkedIncidentId('')
+    setLinkedAuditId('')
     setOpen(false)
   }
 
@@ -54,6 +78,8 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
           reason,
           amount: n,
           notes: notes || undefined,
+          linkedIncidentId: linkedIncidentId || undefined,
+          linkedAuditId: linkedAuditId || undefined,
         })
         toast.success('Penalización creada en estado PENDING')
         reset()
@@ -83,7 +109,7 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
             <select
               id="tenantCatering"
               value={tenantCatering}
-              onChange={(e) => setTenantCatering(e.target.value)}
+              onChange={(e) => changeCatering(e.target.value)}
               className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
               required
             >
@@ -132,6 +158,44 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
               placeholder="Ej: 15 entregas fuera de ventana en abril 2026"
             />
           </div>
+          {/* Origen (opcional): vincula la penalización a una incidencia o auditoría del catering */}
+          <div>
+            <Label htmlFor="linkedIncident">Incidencia de origen (opcional)</Label>
+            <select
+              id="linkedIncident"
+              aria-label="Incidencia de origen"
+              value={linkedIncidentId}
+              onChange={(e) => setLinkedIncidentId(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              disabled={catIncidents.length === 0}
+            >
+              <option value="">— ninguna —</option>
+              {catIncidents.map((i) => (
+                <option key={i.id} value={i.id}>
+                  {i.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="linkedAudit">Auditoría de origen (opcional)</Label>
+            <select
+              id="linkedAudit"
+              aria-label="Auditoría de origen"
+              value={linkedAuditId}
+              onChange={(e) => setLinkedAuditId(e.target.value)}
+              className="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              disabled={catAudits.length === 0}
+            >
+              <option value="">— ninguna —</option>
+              {catAudits.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div className="md:col-span-2">
             <Label htmlFor="notes">Notas internas (solo Plati)</Label>
             <textarea
@@ -145,8 +209,8 @@ export function NewPenaltyForm({ caterings }: { caterings: CateringOption[] }) {
         </div>
 
         <p className="text-xs text-gray-500">
-          Queda en estado <strong>PENDING</strong>. Revisa y pulsa "Aplicar"
-          cuando estés listo. El catering tendrá 7 días para disputarla.
+          Queda en estado <strong>PENDING</strong>. Revisa y pulsa &quot;Aplicar&quot;
+          cuando estés listo. El catering tendrá {DISPUTE_WINDOW_DAYS} días para disputarla.
         </p>
 
         <div className="flex justify-end gap-2 border-t pt-3">
