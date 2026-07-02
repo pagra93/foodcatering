@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getGlobalIncidentById } from '@/lib/db/queries/admin-quality'
+import { getThreadMessages } from '@/lib/db/queries/activity'
+import { ActivityThread } from '@/components/shared/activity/ActivityThread'
 import { formatPrice } from '@/lib/utils'
 import {
   SEVERITY_META,
@@ -44,6 +46,7 @@ export default async function IncidentDetailPage({
   const typeDesc = incidentTypeDescription(incident.type)
   const resolution = incident.resolution
   const isClosed = incident.status === 'RESOLVED' || incident.status === 'COMPENSATED'
+  const messages = await getThreadMessages('INCIDENT', id, true)
 
   return (
     <div className="space-y-6">
@@ -234,6 +237,8 @@ export default async function IncidentDetailPage({
           )}
         </Card>
       </div>
+
+      <ActivityThread entity="INCIDENT" entityId={incident.id} messages={messages} canPostInternal />
     </div>
   )
 }

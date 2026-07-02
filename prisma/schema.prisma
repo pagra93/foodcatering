@@ -1389,6 +1389,32 @@ model Notification {
   @@map("notifications")
 }
 
+/// Entidad a la que se ancla un hilo de seguimiento (`ActivityMessage`).
+enum ActivityEntity {
+  PENALTY  @map("penalty")
+  INCIDENT @map("incident")
+
+  @@map("activity_entity")
+}
+
+/// Mensaje de un hilo de seguimiento (conversación admin↔catering↔empresa).
+/// Polimórfico: se ancla a una penalización o a una incidencia por (entity, entityId).
+/// `isInternal` = nota visible solo para el equipo Plati (ROOT).
+model ActivityMessage {
+  id           String         @id @default(uuid())
+  entity       ActivityEntity
+  entityId     String         @map("entity_id")
+  authorId     String         @map("author_id")
+  authorTenant String         @map("author_tenant")
+  authorRole   UserRole       @map("author_role")
+  body         String
+  isInternal   Boolean        @default(false) @map("is_internal")
+  createdAt    DateTime       @default(now()) @map("created_at")
+
+  @@index([entity, entityId, createdAt])
+  @@map("activity_messages")
+}
+
 // ============================================================================
 // CONFIGURACIÓN DE EMPRESA
 // ============================================================================

@@ -9,7 +9,9 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getPenaltyById } from '@/lib/db/queries/admin-penalties'
+import { getThreadMessages } from '@/lib/db/queries/activity'
 import { PenaltyDetailActions } from '@/components/admin/quality/penalties/PenaltyDetailActions'
+import { ActivityThread } from '@/components/shared/activity/ActivityThread'
 
 const STATUS_META: Record<
   PenaltyStatus,
@@ -41,6 +43,7 @@ export default async function PenaltyDetailPage({
   if (!penalty) notFound()
 
   const amount = Number(penalty.amount)
+  const messages = await getThreadMessages('PENALTY', id, true)
 
   // Timeline del ciclo de vida, derivado de los campos existentes.
   const timeline: TimelineEntry[] = [
@@ -195,6 +198,13 @@ export default async function PenaltyDetailPage({
           cateringName={penalty.catering?.name ?? 'este catering'}
         />
       </Card>
+
+      <ActivityThread
+        entity="PENALTY"
+        entityId={penalty.id}
+        messages={messages}
+        canPostInternal
+      />
     </div>
   )
 }
