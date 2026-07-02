@@ -255,6 +255,168 @@ export function getGlobalReputation() {
   return summaryFor({})
 }
 
+export type CateringReputationRow = {
+  tenantId: string
+  name: string
+  average: number
+  count: number
+  distribution: Record<1 | 2 | 3 | 4 | 5, number>
+  avg30d: number | null
+  count30d: number
+  trendDelta: number | null
+  /** Desglose por empresa cliente (cómo puntúa cada una a este catering). */
+  companies: EntityScore[]
+  /** Platos de ESTE catering (los platos son por catering, no globales). */
+  topDishes: DishScore[]
+  bottomDishes: DishScore[]
+}
+
+/**
+ * Vista de superadmin: una fila rica por catering (para tabla comparable +
+ * buscable + ordenable), con drill-down por empresa y por plato. Los platos van
+ * anidados dentro de su catering porque cada catering tiene los suyos.
+ */
+export async function getReputationOverview(): Promise<{
+  global: ReputationSummary
+  caterings: CateringReputationRow[]
+}> {
+  const from30 = startOfDay(subDays(new Date(), 30))
+  const from62 = startOfDay(subDays(new Date(), 62))
+
+  const [global, base, dist, byCompany, byDish, base30, trendRows] =
+    await Promise.all([
+      summaryFor({}),
+      prisma.dishRating.groupBy({
+        by: ['tenantCatering'],
+        _avg: { rating: true },
+        _count: true,
+      }),
+      prisma.dishRating.groupBy({
+        by: ['tenantCatering', 'rating'],
+        _count: true,
+      }),
+      prisma.dishRating.groupBy({
+        by: ['tenantCatering', 'tenantEmpresa'],
+        _avg: { rating: true },
+        _count: true,
+      }),
+      prisma.dishRating.groupBy({
+        by: ['tenantCatering', 'dishId', 'course'],
+        _avg: { rating: true },
+        _count: true,
+      }),
+      prisma.dishRating.groupBy({
+        by: ['tenantCatering'],
+        _avg: { rating: true },
+        _count: true,
+        where: { serviceDate: { gte: from30 } },
+      }),
+      prisma.dishRating.findMany({
+        where: { serviceDate: { gte: from62 } },
+        select: { tenantCatering: true, serviceDate: true, rating: true },
+      }),
+    ])
+
+  // Nombres de tenants (caterings + empresas) y platos, en lote.
+  const names = await tenantNames([
+    ...base.map((b) => b.tenantCatering),
+    ...byCompany.map((c) => c.tenantEmpresa),
+  ])
+  const dishRows = await prisma.dish.findMany({
+    where: { id: { in: [...new Set(byDish.map((d) => d.dishId))] } },
+    select: { id: true, name: true },
+  })
+  const dishName = new Map(dishRows.map((d) => [d.id, d.name]))
+
+  // Distribución por catering.
+  const distByCat = new Map<string, Record<1 | 2 | 3 | 4 | 5, number>>()
+  for (const row of dist) {
+    const d = distByCat.get(row.tenantCatering) ?? emptyDistribution()
+    const star = row.rating as 1 | 2 | 3 | 4 | 5
+    if (star >= 1 && star <= 5) d[star] = row._count
+    distByCat.set(row.tenantCatering, d)
+  }
+
+  // Empresas por catering.
+  const companiesByCat = new Map<string, EntityScore[]>()
+  for (const c of byCompany) {
+    const list = companiesByCat.get(c.tenantCatering) ?? []
+    list.push({
+      tenantId: c.tenantEmpresa,
+      name: names.get(c.tenantEmpresa) ?? c.tenantEmpresa,
+      average: round1(c._avg.rating ?? 0),
+      count: c._count,
+    })
+    companiesByCat.set(c.tenantCatering, list)
+  }
+
+  // Platos por catering.
+  const dishesByCat = new Map<string, DishScore[]>()
+  for (const d of byDish) {
+    const list = dishesByCat.get(d.tenantCatering) ?? []
+    list.push({
+      dishId: d.dishId,
+      name: dishName.get(d.dishId) ?? 'Plato eliminado',
+      course: d.course,
+      average: round1(d._avg.rating ?? 0),
+      count: d._count,
+    })
+    dishesByCat.set(d.tenantCatering, list)
+  }
+
+  // 30 días por catering.
+  const base30ByCat = new Map(base30.map((b) => [b.tenantCatering, b]))
+
+  // Tendencia: bucket por catering→mes, delta últimos 2 meses con datos.
+  const monthByCat = new Map<string, Map<string, { sum: number; count: number }>>()
+  for (const r of trendRows) {
+    const month = r.serviceDate.toISOString().slice(0, 7)
+    const m = monthByCat.get(r.tenantCatering) ?? new Map()
+    const b = m.get(month) ?? { sum: 0, count: 0 }
+    b.sum += r.rating
+    b.count += 1
+    m.set(month, b)
+    monthByCat.set(r.tenantCatering, m)
+  }
+
+  const caterings: CateringReputationRow[] = base
+    .map((b) => {
+      const cat = b.tenantCatering
+      const companies = (companiesByCat.get(cat) ?? []).sort(
+        (a, z) => z.average - a.average
+      )
+      const dishes = dishesByCat.get(cat) ?? []
+      const b30 = base30ByCat.get(cat)
+
+      const months = [...(monthByCat.get(cat)?.entries() ?? [])].sort(
+        ([a], [z]) => a.localeCompare(z)
+      )
+      const last = months[months.length - 1]
+      const prev = months[months.length - 2]
+      const trendDelta =
+        last && prev
+          ? round1(last[1].sum / last[1].count - prev[1].sum / prev[1].count)
+          : null
+
+      return {
+        tenantId: cat,
+        name: names.get(cat) ?? cat,
+        average: round1(b._avg.rating ?? 0),
+        count: b._count,
+        distribution: distByCat.get(cat) ?? emptyDistribution(),
+        avg30d: b30?._avg.rating != null ? round1(b30._avg.rating) : null,
+        count30d: b30?._count ?? 0,
+        trendDelta,
+        companies,
+        topDishes: [...dishes].sort((a, z) => z.average - a.average).slice(0, 5),
+        bottomDishes: [...dishes].sort((a, z) => a.average - z.average).slice(0, 5),
+      }
+    })
+    .sort((a, z) => z.average - a.average)
+
+  return { global, caterings }
+}
+
 export async function getReputationByCatering(limit = 50): Promise<EntityScore[]> {
   const grouped = await prisma.dishRating.groupBy({
     by: ['tenantCatering'],
