@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-06-28T07:45:00Z
+> Last updated: 2026-07-02T18:00:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings hechos
+- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** hechos
 - **Sprint**: —
-- **Stories**: 11 hechas / 24 totales · `████░░░░░░ 46%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings)
+- **Stories**: 15 hechas / 26 totales · `██████░░░░ 58%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-06-29 · `claude-code` (módulo Caterings reconstruido: datos reales + formularios + consistencia)
+- **Última actividad**: 2026-07-02 · `claude-code` (Incidencias: rediseño cross-portal en 4 fases — catálogo + nombre legible + notificaciones/hilo + detalle empleado)
 <!-- /AUTO:status -->
 
 ---
@@ -83,9 +83,9 @@ Hallazgos confirmados:
 |----|--------|-------|--------|
 | HU-024 | Empresas (auditado + arreglado: enlaces, fechas, PII, consistencia, detalle incidencia 360) | medium | ✅ hecho |
 | HU-025 | Caterings (reconstruido: datos reales, formularios, consistencia, botones/filtros) | medium | ✅ hecho |
-| HU-026 | Auditar Usuarios y Roles | medium | sin_priorizar |
-| HU-027 | Auditar Catálogos (2 placeholder) | medium | sin_priorizar |
-| HU-028 | Auditar Calidad y SLAs | medium | sin_priorizar |
+| HU-026 | Auditar Usuarios y Roles (+ RBAC dinámico DB-backed) | medium | ✅ avanzado |
+| HU-027 | Auditar Catálogos (+ alérgenos relacionales) | medium | ✅ avanzado |
+| HU-028 | Auditar Calidad y SLAs (incidents→HU-039, penalties→HU-040, audits ✅; falta ratings) | medium | 🟡 parcial |
 | HU-029 | Auditar Facturación | high | sin_priorizar |
 | HU-030 | Auditar Integraciones | medium | sin_priorizar |
 | HU-031 | Auditar Compliance | high | sin_priorizar |
@@ -102,9 +102,16 @@ Hallazgos confirmados:
 | HU-037 | Barrido global de enlaces rotos en /admin | medium | sin_priorizar |
 | HU-038 | Barrido global de KPIs mal cableadas | medium | sin_priorizar |
 
-**Dependencias**: HU-023 → [HU-015, HU-016, HU-017, HU-018, HU-019] · HU-034 → [HU-020]
+**Bloque D — Módulos que pasaron de auditoría a rediseño propio** (cross-portal, no solo /admin)
 
-— Añadido por: registro de backlog · 2026-06-28
+| ID | Título | Crit. | Status |
+|----|--------|-------|--------|
+| HU-039 | Rediseño del módulo de Incidencias (cross-portal, 4 fases) | high | ✅ hecho |
+| HU-040 | Penalizaciones: detalle + hilo + notificaciones + liquidación | high | ✅ hecho |
+
+**Dependencias**: HU-023 → [HU-015, HU-016, HU-017, HU-018, HU-019] · HU-034 → [HU-020] · HU-039 → [HU-018, HU-040 (comparte infra de hilo+notif)]
+
+— Añadido por: registro de backlog · 2026-06-28 · ampliado 2026-07-02 (HU-039/HU-040)
 <!-- /AUTO:define -->
 
 ---
@@ -138,11 +145,32 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 3. *Consistencia* — `getCateringQualityMetrics` (puntualidad/incidencias/rating en vivo) en detalle+lista+portal.
 4. *Botones/filtros* — filtros de lista funcionales, dropdown real (suspender/activar), botones muertos fuera.
 
+**HU-040 Penalizaciones (2026-07-01):** sanción de Plati al catering.
+- *Detalle admin* (`f6f50c9`) `quality/penalties/[id]` + `PenaltyDetailActions` (aplicar/disputar/resolver).
+- *Hilo + notificaciones* (`499fc4c`) — modelos `ActivityMessage`/`Notification`, `lib/notifications.ts`
+  (`getEntityParties`/`notifyEntityParties`/`canAccessEntity`), `ActivityThread`. **Infra reutilizable.**
+- *Campana in-app* (`46d590f`) `NotificationBell` en navbars admin/catering/empresa.
+- *Cierre* (`75c57e6`) plazo de disputa centralizado, timing de liquidación, origen registrado.
+- Doc: [`penalizaciones.md`](./penalizaciones.md).
+
+**HU-039 Incidencias — rediseño cross-portal (2026-07-02):** triángulo empleado↔catering↔empresa↔Plati, 4 fases.
+1. *Modelo+taxonomía* (`e777cc7`) — `Incident.reasonId` (FK al catálogo `IncidentReason`, antes **huérfano**) + `subject`;
+   `type` queda legacy; helpers `incidentDisplayName`/`incidentSummary`. Migración aditiva.
+2. *Creación conectada* (`9357c81`) — empleado/empresa eligen **motivo del catálogo**, severidad pre-rellenada;
+   **+API `POST /api/empresa/incidencias` que faltaba** (creación de empresa estaba rota).
+3. *Sección propia + listados legibles* (`ce541e3`) — "Incidencias" sale de Calidad a sección propia en el sidebar;
+   los 4 portales muestran **nombre legible** en vez del `type` crudo.
+4. *Feedback* (`a483e24`) — `lib/incidents/notify.ts` (notifica crear/resolver + traza en el hilo), detalle de
+   incidencia del **empleado** con `ActivityThread`.
+- Doc: [`incidencias.md`](./incidencias.md). Tech-debt: constantes aún triplicadas en los 3 `*-incidencias.ts`.
+
 ### 🧰 Patrones y utilidades reutilizables (apoyarse en esto)
 - **Métricas canónicas por entidad** (una sola definición, reusada en todas las pantallas):
   [`getCompanyAdoption`](../../../../lib/db/queries/company-metrics.ts) ·
   [`getCateringQualityMetrics`](../../../../lib/db/queries/catering-metrics.ts). **Patrón a replicar** en cada módulo nuevo.
-- **Constantes de incidencias** (fuente única tipos/severidad/estado): [`lib/incidents/constants.ts`](../../../../lib/incidents/constants.ts).
+- **Constantes de incidencias** (nombre/severidad/estado + `incidentDisplayName`/`incidentSummary`): [`lib/incidents/constants.ts`](../../../../lib/incidents/constants.ts).
+- **Hilo de seguimiento + notificaciones** (compartido penalizaciones↔incidencias): [`lib/notifications.ts`](../../../../lib/notifications.ts) (`notifyEntityParties`, `getEntityParties`, `canAccessEntity`) · [`components/shared/activity/ActivityThread.tsx`](../../../../components/shared/activity/ActivityThread.tsx) · [`components/shared/NotificationBell.tsx`](../../../../components/shared/NotificationBell.tsx). **Patrón a replicar** para cualquier entidad con partes que se comunican.
+- **Feedback de una entidad** (avisar + timeline al crear/cambiar estado): [`lib/incidents/notify.ts`](../../../../lib/incidents/notify.ts) como plantilla.
 - **PII**: [`decryptNameSafe`](../../../../lib/crypto/pii.ts) para mostrar nombres (descifra en prod, tolera texto plano en dev).
 - **Reuse de listados**: incidencias por entidad → `getGlobalIncidents({ tenantEmpresa | tenantCatering })`.
 - **Gráficas**: Recharts (instalado) — patrón en `components/admin/dashboard/ChartsSection.tsx`.
@@ -176,6 +204,9 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 - 2026-06-28 — Pablo — **Empresas/incidencias**: página propia en la ficha; detalle de incidencia **solo lectura** (auditoría); botones "Invitar" **retirados**.
 - 2026-06-28 — Pablo — **Métricas canónicas**: denominador = **todos los empleados ACTIVE**; periodo = **mes natural**. Columnas stored muertas **deprecadas** (no migrar).
 - 2026-06-29 — Pablo — **Caterings**: construir las fuentes de datos reales (no ocultar). Documentos **por URL** (sin storage de binarios). Sub-funciones sin modelo (histórico comisiones, coste/operador rutas) **simplificadas/retiradas**.
+- 2026-07-02 — Pablo — **Incidencias · taxonomía**: conectar las incidencias al **catálogo `IncidentReason`** que gestiona el admin (los motivos se usan de verdad; se acaba con el catálogo huérfano).
+- 2026-07-02 — Pablo — **Incidencias · identidad**: **resumen automático + `subject` opcional** (nombre legible que cubre incidencias antiguas por fallback al tipo).
+- 2026-07-02 — Pablo — **Incidencias · navegación**: **sección propia "Incidencias"** en el sidebar admin, fuera de "Calidad y SLAs".
 <!-- /AUTO:decisions -->
 
 ---
@@ -187,6 +218,9 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 - Plan/auditoría: `~/.claude/plans/necesito-que-nos-centremos-cozy-blossom.md`
 - Código auditado: `app/(admin)/admin/page.tsx`, `lib/db/queries/admin-dashboard.ts`, `components/admin/dashboard/`
 - Informes por módulo (Bloque B): se generarán en esta misma carpeta como `<modulo>.md`
+- [`incidencias.md`](./incidencias.md) — rediseño completo del módulo de Incidencias (HU-039)
+- [`penalizaciones.md`](./penalizaciones.md) — detalle + hilo + notificaciones + liquidación (HU-040)
+- [`empresas.md`](./empresas.md) · [`caterings.md`](./caterings.md) · [`catalogos-alergenos.md`](./catalogos-alergenos.md)
 <!-- /AUTO:artifacts -->
 
 ---

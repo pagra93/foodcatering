@@ -15,5 +15,23 @@ Append-only. Cada /review deja una entrada aqui.
 
 ## Reviews
 
-(Sin reviews todavia.)
+## 2026-07-02 — HU-039 Rediseño del módulo de Incidencias (cross-portal)
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores (solo warnings preexistentes) en las 4 fases. Migración aditiva aplicada a `comidas_dev`; `prisma migrate status` sin drift. No se añadieron tests unitarios/E2E nuevos (feature mayormente UI + queries; verificación por type-check estricto + revisión de flujo).
+**Code review**: cambios alineados con las reglas del repo — Server Actions para mutaciones, filtro por tenant en las queries de cada portal, sin `as any`/`@ts-ignore`, RBAC respetado (`permittedAction('emp-incident:create')` en la API nueva de empresa). El catálogo `IncidentReason` deja de estar huérfano. Notificaciones cableadas de forma **no bloqueante** (try/catch) para no romper el flujo de creación/resolución si falla el aviso.
+**Audit**: cumple CLAUDE.md (schema como fuente de verdad, taxonomía por FK; nada de stubs silenciosos). Sección nueva cableada al RBAC (sidebar + `section-permissions` + permiso `incident:view`/`incident-reason:view`).
+**Evaluator score**: 8.5/10 — Correctness alta (type-check + flujo), Completeness alta (4 portales + admin), Consistency buena (helpers unificados de nombre), −puntos por **constantes aún triplicadas** en los 3 `*-incidencias.ts` (tech-debt consciente) y falta de tests automatizados.
+**Action items**:
+- [ ] Unificar `INCIDENT_TYPES/SEVERITY_MAP/INCIDENT_STATUS_MAP` en `lib/incidents/constants.ts` (eliminar la triplicación).
+- [ ] Refactor `params` async en `app/(empresa)/empresa/incidencias/[id]/page.tsx` (patrón legacy).
+- [ ] Tests: crear incidencia con motivo del catálogo → nombre legible en los 4 listados; notificación al resolver.
+- Doc: `docs/producto/features/admin-launch-audit/incidencias.md`.
+
+## 2026-07-01 — HU-040 Penalizaciones (detalle + hilo + notificaciones + liquidación)
+**Tests**: `pnpm type-check` + `pnpm lint` limpios en todos los commits. Migración aditiva (ActivityMessage + Notification) aplicada a `comidas_dev`. Sin tests automatizados nuevos.
+**Code review**: infraestructura de hilo + notificaciones bien encapsulada en `lib/notifications.ts` + `components/shared/activity/` y **reutilizada** después por Incidencias (buena señal de diseño). Control de acceso al hilo por `canAccessEntity` (partes de la entidad); notas internas restringidas a Plati (ROOT). Server actions para aplicar/disputar/resolver.
+**Audit**: cumple reglas — mutaciones como Server Actions, filtrado por tenant/partes, sin secretos en cliente. Plazo de disputa centralizado (fin del hardcode duplicado).
+**Evaluator score**: 8/10 — buena reutilización y cobertura del flujo; −puntos por falta de tests y por depender de liquidación en diferido (mes en curso puede mostrar 0).
+**Action items**:
+- [ ] Tests del flujo aplicar→disputar→resolver y del contador de la campana.
+- Doc: `docs/producto/features/admin-launch-audit/penalizaciones.md`.
 

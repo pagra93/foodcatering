@@ -164,13 +164,24 @@ métricas en vivo). Pendiente: Usuarios, Catálogos, Calidad, **Facturación**, 
 | `any` residuales (ahora `warn`) | Baja | Reducir progresivamente a <10 en lib+app |
 | Scheduler cron (cutoff 11:00, consolidación 11:05, snapshot 23:59, facturas 01:00 día 1) | Alta (cuando haya tráfico real) | Modelos y queries listos, falta scheduler (Vercel Cron, BullMQ, etc.) |
 
-## Cambios recientes (2026-06-30, EPIC-003)
+## Cambios recientes (2026-06-30 → 2026-07-02, EPIC-003)
 
 ### RBAC dinámico DB-backed
 Roles y permisos pasaron de estáticos en código a **tablas** `Role` / `Permission` / `RolePermission` + `User.roleId`. Catálogo de **211 permisos** (`recurso:accion`) que mapea los 4 portales en `lib/auth/permission-catalog.ts`. La sesión lleva `permissions[]` resuelto en login (`super_admin` = `['*']`). UI editable en `/admin/users/roles` (crear rol + marcar permisos). **Enforcement por sección en los 4 portales** (admin/empresa/catering/empleado): sidebars filtrados por permiso + gate en `middleware.ts` con reglas por portal (`lib/auth/section-permissions.ts`). Sesiones sin `permissions[]` (JWT previo a la migración) hacen *fallback* al límite por rol del layout — no se bloquea a nadie; al re-loguear manda el permiso. **Enforcement por acción (Fase 2, hecho):** los guards de las server actions y API routes usan `permittedAction(permissions, role, 'recurso:accion', legacyRoles)` (en `lib/auth/permissions.ts`) — exige el permiso si la sesión lo lleva, si no cae al check por rol legacy. ~78 guards migrados en server actions + API routes (catering/empresa/empleado/admin). Los guards por *propiedad* (tenant/empleado dueño) se dejaron como están. Detalle: memoria `rbac-dynamic`.
 
 ### Alérgenos relacionales
 Tabla join **`DishAllergen`** (los alérgenos salen de `Dish.labels`, que ahora solo guarda tags nutricionales). Catálogo `allergens` normalizado a **14 canónicos** (code = slug español). El catering selecciona del catálogo de BD; el empleado (perfil + bloqueo en menú) también — toda la cadena estaba rota y se arregló. Seeds canónicos vía `prisma/seed-allergens.ts`. Detalle: memoria `allergens-system` y `docs/producto/features/admin-launch-audit/catalogos-alergenos.md`.
+
+### Penalizaciones — detalle + hilo + notificaciones (HU-040, 2026-07-01)
+Sanción de **Plati → catering** por incumplir SLAs. Se añadió el **detalle admin** (`quality/penalties/[id]` + acciones aplicar/disputar/resolver) y, sobre todo, la **infraestructura compartida de comunicación**: modelos `ActivityMessage` (hilo) y `Notification` (campana); `lib/notifications.ts` (`getEntityParties` / `notifyEntityParties` / `canAccessEntity`); `components/shared/activity/ActivityThread` + `NotificationBell` en los navbars. Plazo de disputa centralizado, timing de liquidación correcto, origen registrado. **Esta infra la reutiliza Incidencias.** Detalle: `docs/producto/features/admin-launch-audit/penalizaciones.md`.
+
+### Incidencias — rediseño cross-portal (HU-039, 2026-07-02)
+Una incidencia es un **triángulo** sobre un pedido: **empleado** reporta → **catering** resuelve → **empresa** supervisa → **Plati** ve global y penaliza. Rediseño en 4 fases:
+1. **Modelo/taxonomía**: `Incident.reasonId` (FK al catálogo `IncidentReason`, que estaba **huérfano**) + `subject`; `type` queda como legacy/fallback. Helpers `incidentDisplayName`/`incidentSummary` en `lib/incidents/constants.ts` (**asunto > motivo > tipo**).
+2. **Creación conectada**: empleado/empresa eligen el **motivo del catálogo** (severidad pre-rellenada). Se creó la **API `POST /api/empresa/incidencias`** que faltaba (la creación de empresa estaba rota).
+3. **Sección propia + listados legibles**: "Incidencias" sale de "Calidad y SLAs" a **sección propia** en el sidebar admin; los 4 portales muestran **nombre legible** en vez del `type` crudo.
+4. **Feedback**: `lib/incidents/notify.ts` (avisa al crear/resolver + deja **traza en el hilo**, reutiliza la infra de penalizaciones) + **detalle de incidencia del empleado** con `ActivityThread`.
+Tech-debt: las constantes `INCIDENT_TYPES/SEVERITY_MAP/STATUS_MAP` siguen triplicadas en los 3 `*-incidencias.ts`. Detalle: memoria `thread-notifications` y `docs/producto/features/admin-launch-audit/incidencias.md`.
 
 ## Key Pointers (para nuevas sesiones)
 

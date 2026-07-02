@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "area": "producto",
-  "last_indexed_at": "2026-06-29T15:30:00Z",
+  "last_indexed_at": "2026-07-02T18:00:00Z",
   "tasks": [
     {
       "id": "HU-001",
@@ -610,11 +610,12 @@
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Auditar datos y enlaces; informe en docs/producto/features/admin-launch-audit/quality.md.",
+      "next_action": "Parcial: incidents→HU-039 (rediseño), penalties→HU-040 (detalle+hilo), audits→8232b49 (detalle). Falta auditar ratings.",
       "created_at": "2026-06-28T07:00:00Z",
-      "last_activity": "2026-06-28T07:00:00Z",
-      "activity_count": 1,
-      "notes": "Incluye audits, incidents, ratings, penalties. Cruza con HU-018 (detalle incidencia)."
+      "last_activity": "2026-07-02T18:00:00Z",
+      "activity_count": 2,
+      "notes": "Incluye audits, incidents, ratings, penalties. incidents y penalties YA hechos como features propias (HU-039 Incidencias, HU-040 Penalizaciones); audits tiene detalle (8232b49). Pendiente real: auditar Rating y Reputación (/admin/quality/ratings).",
+      "updated_at": "2026-07-02T18:00:00Z"
     },
     {
       "id": "HU-029",
@@ -827,6 +828,53 @@
       "last_activity": "2026-06-28T07:00:00Z",
       "activity_count": 1,
       "notes": "Patrón confirmado en dashboard general (empresas/caterings)."
+    },
+    {
+      "id": "HU-039",
+      "title": "Rediseño del módulo de Incidencias (cross-portal)",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "high",
+      "origin": "conversacion",
+      "agent_suggested": "age-spe-tech-architect",
+      "depends_on": [
+        "HU-018",
+        "HU-040"
+      ],
+      "parent_epic": "EPIC-003",
+      "feature": "admin-launch-audit",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho (4 fases). Tech-debt abierto: unificar las constantes INCIDENT_TYPES/SEVERITY_MAP/STATUS_MAP aún triplicadas en los 3 *-incidencias.ts.",
+      "created_at": "2026-07-02T09:00:00Z",
+      "last_activity": "2026-07-02T18:00:00Z",
+      "activity_count": 4,
+      "notes": "Rediseño completo del triángulo empleado↔catering↔empresa↔Plati. F1 (e777cc7): Incident.reasonId (FK IncidentReason, antes huérfano) + subject + helpers incidentDisplayName/incidentSummary; migración aditiva 20260702160000. F2 (9357c81): creación conectada al catálogo de motivos (empleado+empresa), severidad pre-rellenada, +API POST /api/empresa/incidencias que FALTABA (creación empresa estaba rota). F3 (ce541e3): sección propia 'Incidencias' en admin (git mv fuera de Calidad, +Motivos como subitem, section-permissions+breadcrumbs), listados con nombre legible en los 4 portales (antes type crudo). F4 (a483e24): lib/incidents/notify.ts (notifyIncidentCreated/StatusChange reusa notifyEntityParties+ActivityMessage), cableado en las 5 mutaciones, detalle de incidencia del empleado con ActivityThread. type-check+lint limpios por fase. Doc: docs/producto/features/admin-launch-audit/incidencias.md.",
+      "updated_at": "2026-07-02T18:00:00Z"
+    },
+    {
+      "id": "HU-040",
+      "title": "Penalizaciones: detalle + hilo de seguimiento + notificaciones + liquidación",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "high",
+      "origin": "conversacion",
+      "agent_suggested": "age-spe-tech-architect",
+      "depends_on": [],
+      "parent_epic": "EPIC-003",
+      "feature": "admin-launch-audit",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho. Infra de hilo+notificaciones reutilizada luego por Incidencias F4 (HU-039).",
+      "created_at": "2026-07-01T09:00:00Z",
+      "last_activity": "2026-07-01T18:00:00Z",
+      "activity_count": 4,
+      "notes": "Sanción de Plati al catering. f6f50c9: página de detalle admin quality/penalties/[id] + PenaltyDetailActions (aplicar/disputar/resolver). 499fc4c: hilo compartido ActivityMessage + base de notificaciones (lib/notifications.ts getEntityParties/notifyEntityParties/canAccessEntity, lib/db/queries/activity.ts, ActivityThread) — reusable con incidencias. 46d590f (Fase D): NotificationBell + campana en navbars admin/catering/empresa, aviso al aplicar. 75c57e6: plazo de disputa centralizado, timing de liquidación correcto, origen de la penalización registrado. type-check+lint limpios. Doc: docs/producto/features/admin-launch-audit/penalizaciones.md.",
+      "updated_at": "2026-07-01T18:00:00Z"
     }
   ],
   "epics": [
@@ -915,23 +963,27 @@
         "HU-035",
         "HU-036",
         "HU-037",
-        "HU-038"
+        "HU-038",
+        "HU-039",
+        "HU-040"
       ],
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Dashboard + Empresas + Caterings hechos (11/24). Siguiente: HU-029 Facturación y HU-031 Compliance (críticos para lanzar).",
+      "next_action": "Dashboard + Empresas + Caterings hechos + Usuarios/RBAC + Catálogos/Alérgenos + Incidencias (HU-039) + Penalizaciones (HU-040). Siguiente: HU-029 Facturación y HU-031 Compliance (críticos para lanzar).",
       "prd_path": null,
       "dossier_path": "docs/producto/features/admin-launch-audit/_dossier.md",
       "artifacts": [
         "docs/producto/features/admin-launch-audit/_dossier.md",
-        "docs/producto/features/admin-launch-audit/_events.jsonl"
+        "docs/producto/features/admin-launch-audit/_events.jsonl",
+        "docs/producto/features/admin-launch-audit/incidencias.md",
+        "docs/producto/features/admin-launch-audit/penalizaciones.md"
       ],
       "created_at": "2026-06-28T07:00:00Z",
-      "last_activity": "2026-06-29T15:30:00Z",
+      "last_activity": "2026-07-02T18:00:00Z",
       "activity_count": 1,
-      "notes": "Revisión completa del panel /admin para lanzamiento: datos cableados correctos, botones que cumplen su etiqueta, sin secciones a medias. Plan: ~/.claude/plans/necesito-que-nos-centremos-cozy-blossom.md. Bloque A=arreglos dashboard, B=auditoría 11 módulos, C=transversal.",
-      "updated_at": "2026-06-29T15:30:00Z"
+      "notes": "Revisión completa del panel /admin para lanzamiento: datos cableados correctos, botones que cumplen su etiqueta, sin secciones a medias. Plan: ~/.claude/plans/necesito-que-nos-centremos-cozy-blossom.md. Bloque A=arreglos dashboard, B=auditoría 11 módulos, C=transversal. Incidencias y Penalizaciones se llevaron a rediseño completo (no solo auditoría): HU-039/HU-040.",
+      "updated_at": "2026-07-02T18:00:00Z"
     }
   ],
   "drift_warnings": [
