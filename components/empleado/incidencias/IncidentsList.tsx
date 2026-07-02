@@ -5,12 +5,15 @@ import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empleado-incidencias'
+import { incidentDisplayName } from '@/lib/incidents/constants'
 import { FileText } from 'lucide-react'
 import type { Prisma } from '@prisma/client'
 
 type Incident = {
   id: string
   type: string
+  subject?: string | null
+  reasonName?: string | null
   typeLabel: string
   typeIcon: string
   severity: string
@@ -67,8 +70,16 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">{incident.typeIcon}</span>
                   <div>
-                    <h3 className="font-semibold text-lg">{incident.typeLabel}</h3>
+                    <h3 className="font-semibold text-lg">
+                      {incidentDisplayName({
+                        subject: incident.subject,
+                        reasonName: incident.reasonName,
+                        type: incident.type,
+                      })}
+                    </h3>
                     <p className="text-sm text-gray-500">
+                      {incident.typeLabel}
+                      {' · '}
                       {serviceDate
                         ? `Pedido del ${format(new Date(serviceDate), "d 'de' MMMM", { locale: es })}`
                         : 'Sin pedido asociado'}

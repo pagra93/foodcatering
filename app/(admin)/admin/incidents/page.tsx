@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import type { IncidentSeverity, IncidentStatus } from '@prisma/client'
@@ -10,6 +9,7 @@ import {
   getGlobalIncidents,
   getGlobalIncidentsKPIs,
 } from '@/lib/db/queries/admin-quality'
+import { incidentDisplayName, incidentTypeLabel } from '@/lib/incidents/constants'
 
 const SEVERITY_META: Record<
   IncidentSeverity,
@@ -63,15 +63,6 @@ export default async function GlobalIncidentsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/quality">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Calidad
-          </Link>
-        </Button>
-      </div>
-
       <div>
         <h1 className="text-2xl font-bold">Incidencias — vista global</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
@@ -120,7 +111,7 @@ export default async function GlobalIncidentsPage({
               name="search"
               type="search"
               defaultValue={params.search ?? ''}
-              placeholder="Tipo o descripción"
+              placeholder="Nombre, motivo o descripción"
               className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
             />
           </div>
@@ -167,7 +158,7 @@ export default async function GlobalIncidentsPage({
             <tr>
               <th className="px-4 py-3 text-left">Empresa</th>
               <th className="px-4 py-3 text-left">Catering</th>
-              <th className="px-4 py-3 text-left">Tipo</th>
+              <th className="px-4 py-3 text-left">Incidencia</th>
               <th className="px-4 py-3 text-left">Severidad</th>
               <th className="px-4 py-3 text-left">Estado</th>
               <th className="px-4 py-3 text-right">Días abierta</th>
@@ -179,13 +170,30 @@ export default async function GlobalIncidentsPage({
               <tr key={i.id} className="border-b last:border-0 hover:bg-gray-50">
                 <td className="px-4 py-3 font-medium">{i.empresaName}</td>
                 <td className="px-4 py-3">{i.cateringName}</td>
-                <td className="px-4 py-3 font-mono text-xs">
-                  <Link
-                    href={`/admin/quality/incidents/${i.id}`}
-                    className="text-primary hover:underline"
-                  >
-                    {i.type}
-                  </Link>
+                <td className="px-4 py-3">
+                  {(() => {
+                    const name = incidentDisplayName({
+                      subject: i.subject,
+                      reasonName: i.reasonName,
+                      type: i.type,
+                    })
+                    const typeLabel = incidentTypeLabel(i.type)
+                    return (
+                      <div className="max-w-xs">
+                        <Link
+                          href={`/admin/incidents/${i.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          {name}
+                        </Link>
+                        {name !== typeLabel && (
+                          <p className="mt-0.5 text-xs text-gray-400">
+                            {typeLabel}
+                          </p>
+                        )}
+                      </div>
+                    )
+                  })()}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -241,7 +249,7 @@ export default async function GlobalIncidentsPage({
               <Button variant="outline" size="sm" asChild>
                 <Link
                   href={{
-                    pathname: '/admin/quality/incidents',
+                    pathname: '/admin/incidents',
                     query: { ...params, page: String(pageNum - 1) },
                   }}
                 >
@@ -253,7 +261,7 @@ export default async function GlobalIncidentsPage({
               <Button variant="outline" size="sm" asChild>
                 <Link
                   href={{
-                    pathname: '/admin/quality/incidents',
+                    pathname: '/admin/incidents',
                     query: { ...params, page: String(pageNum + 1) },
                   }}
                 >

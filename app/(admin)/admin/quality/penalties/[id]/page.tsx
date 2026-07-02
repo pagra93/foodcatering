@@ -125,7 +125,7 @@ export default async function PenaltyDetailPage({
           <p className="text-xs uppercase text-gray-500">Origen</p>
           {penalty.linkedIncidentId ? (
             <Link
-              href={`/admin/quality/incidents/${penalty.linkedIncidentId}`}
+              href={`/admin/incidents/${penalty.linkedIncidentId}`}
               className="mt-1 inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
             >
               <FileWarning className="h-4 w-4" />

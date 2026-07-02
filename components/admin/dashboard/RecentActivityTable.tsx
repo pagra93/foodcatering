@@ -149,7 +149,7 @@ export function RecentActivityTable({ activity }: RecentActivityProps) {
                     <TableRow key={incident.id} className="border-gray-100 hover:bg-gray-50">
                       <TableCell className="max-w-xs truncate">
                         <Link
-                          href={`/admin/quality/incidents/${incident.id}`}
+                          href={`/admin/incidents/${incident.id}`}
                           className="text-gray-900 hover:text-primary hover:underline"
                         >
                           {incident.type}

@@ -157,6 +157,7 @@ export async function getIncidents(tenantId: string, filters: IncidentFilters = 
       select: {
         id: true,
         type: true,
+        subject: true,
         severity: true,
         status: true,
         openedBy: true,
@@ -165,6 +166,7 @@ export async function getIncidents(tenantId: string, filters: IncidentFilters = 
         createdAt: true,
         updatedAt: true,
         resolvedAt: true,
+        reason: { select: { name: true } },
         order: {
           select: {
             id: true,
@@ -198,6 +200,7 @@ export async function getIncidents(tenantId: string, filters: IncidentFilters = 
 
     return {
       ...inc,
+      reasonName: inc.reason?.name ?? null,
       resolutionTime,
       compensation,
     }

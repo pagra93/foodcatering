@@ -26,10 +26,12 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/catalogs/allergens', permission: 'allergen:view' },
   { prefix: '/admin/catalogs/calendars', permission: 'calendar:view' },
 
+  // Incidencias (sección propia; reasons antes que el prefijo genérico)
+  { prefix: '/admin/incidents/reasons', permission: 'incident-reason:view' },
+  { prefix: '/admin/incidents', permission: 'incident:view' },
+
   // Calidad y SLAs
   { prefix: '/admin/quality/audits', permission: 'audit:view' },
-  { prefix: '/admin/quality/incident-reasons', permission: 'incident-reason:view' },
-  { prefix: '/admin/quality/incidents', permission: 'incident:view' },
   { prefix: '/admin/quality/ratings', permission: 'rating:view' },
   { prefix: '/admin/quality/penalties', permission: 'penalty:view' },
 

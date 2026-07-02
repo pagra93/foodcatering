@@ -170,6 +170,7 @@ export async function getCateringIncidents(
     select: {
       id: true,
       type: true,
+      subject: true,
       severity: true,
       status: true,
       openedBy: true,
@@ -179,6 +180,7 @@ export async function getCateringIncidents(
       updatedAt: true,
       resolvedAt: true,
       tenantEmpresa: true,
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -246,6 +248,7 @@ export async function getCateringIncidents(
 
   return incidents.map((incident) => ({
     ...incident,
+    reasonName: incident.reason?.name ?? null,
     companyName: companyMap[incident.tenantEmpresa] || 'Empresa desconocida',
     employeeName:
       incident.order?.employeeId
@@ -276,6 +279,7 @@ export async function getIncidentDetail(incidentId: string, tenantId: string) {
       tenantCatering: tenantId,
     },
     include: {
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -325,6 +329,7 @@ export async function getIncidentDetail(incidentId: string, tenantId: string) {
 
   return {
     ...incident,
+    reasonName: incident.reason?.name ?? null,
     companyName: company?.name || 'Empresa desconocida',
     employeeName: employeeInfo?.name || 'Empleado desconocido',
     employeeEmail: employeeInfo?.email || null,

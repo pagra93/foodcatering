@@ -88,7 +88,7 @@ function actionUrlFor(
     return portal === 'admin' ? `/admin/quality/penalties/${entityId}` : '/catering/calidad'
   }
   // INCIDENT
-  if (portal === 'admin') return `/admin/quality/incidents/${entityId}`
+  if (portal === 'admin') return `/admin/incidents/${entityId}`
   if (portal === 'empresa') return `/empresa/incidencias/${entityId}`
   return '/catering/incidencias'
 }

@@ -13,6 +13,7 @@ import { formatPrice } from '@/lib/utils'
 import {
   SEVERITY_META,
   STATUS_META,
+  incidentDisplayName,
   incidentTypeLabel,
   incidentTypeDescription,
   resolutionTypeLabel,
@@ -43,6 +44,12 @@ export default async function IncidentDetailPage({
 
   const severity = SEVERITY_META[incident.severity]
   const status = STATUS_META[incident.status]
+  const displayName = incidentDisplayName({
+    subject: incident.subject,
+    reasonName: incident.reasonName,
+    type: incident.type,
+  })
+  const typeLabel = incidentTypeLabel(incident.type)
   const typeDesc = incidentTypeDescription(incident.type)
   const resolution = incident.resolution
   const isClosed = incident.status === 'RESOLVED' || incident.status === 'COMPENSATED'
@@ -52,7 +59,7 @@ export default async function IncidentDetailPage({
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/quality/incidents">
+          <Link href="/admin/incidents">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Volver a Incidencias
           </Link>
@@ -63,7 +70,7 @@ export default async function IncidentDetailPage({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold">{incidentTypeLabel(incident.type)}</h1>
+            <h1 className="text-2xl font-bold">{displayName}</h1>
             <span
               className={`inline-flex rounded-full border px-2 py-0.5 text-xs font-medium ${severity.className}`}
             >
@@ -71,6 +78,11 @@ export default async function IncidentDetailPage({
             </span>
             <Badge variant={status.variant}>{status.label}</Badge>
           </div>
+          {displayName !== typeLabel && (
+            <p className="mt-1 text-sm font-medium text-gray-600">
+              Motivo: {typeLabel}
+            </p>
+          )}
           {typeDesc && <p className="mt-1 text-sm text-gray-500">{typeDesc}</p>}
           <p className="mt-1 font-mono text-xs text-gray-400">{incident.id}</p>
         </div>

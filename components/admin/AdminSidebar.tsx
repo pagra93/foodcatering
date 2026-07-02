@@ -14,6 +14,7 @@ import {
   Users,
   BookOpen,
   ShieldCheck,
+  AlertCircle,
   CreditCard,
   Plug,
   FileText,
@@ -86,15 +87,22 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    title: 'Incidencias',
+    href: '/admin/incidents',
+    icon: AlertCircle,
+    description: 'Reportes empleado↔catering↔empresa y sus motivos',
+    subItems: [
+      { title: 'Incidencias', href: '/admin/incidents', permission: 'incident:view' },
+      { title: 'Motivos de Incidencia', href: '/admin/incidents/reasons', permission: 'incident-reason:view' },
+    ],
+  },
+  {
     title: 'Calidad y SLAs',
     href: '/admin/quality',
     icon: ShieldCheck,
-    description: 'Auditorías, incidencias, rating',
-    badge: 3, // Ejemplo: 3 incidencias críticas
+    description: 'Auditorías, rating y penalizaciones',
     subItems: [
       { title: 'Auditorías', href: '/admin/quality/audits', permission: 'audit:view' },
-      { title: 'Incidencias', href: '/admin/quality/incidents', permission: 'incident:view' },
-      { title: 'Motivos de Incidencia', href: '/admin/quality/incident-reasons', permission: 'incident-reason:view' },
       { title: 'Rating y Reputación', href: '/admin/quality/ratings', permission: 'rating:view' },
       { title: 'Penalizaciones', href: '/admin/quality/penalties', permission: 'penalty:view' },
     ],

@@ -87,6 +87,7 @@ export async function getEmployeeIncidents(employeeId: string) {
     select: {
       id: true,
       type: true,
+      subject: true,
       severity: true,
       status: true,
       openedBy: true,
@@ -94,6 +95,7 @@ export async function getEmployeeIncidents(employeeId: string) {
       createdAt: true,
       updatedAt: true,
       resolvedAt: true,
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -110,6 +112,7 @@ export async function getEmployeeIncidents(employeeId: string) {
 
   return incidents.map((incident) => ({
     ...incident,
+    reasonName: incident.reason?.name ?? null,
     typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
     severityLabel: SEVERITY_MAP[incident.severity]?.label || incident.severity,

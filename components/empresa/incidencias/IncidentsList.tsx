@@ -31,11 +31,14 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empresa-incidencias'
+import { incidentDisplayName } from '@/lib/incidents/constants'
 
 type IncidentsListProps = {
   incidents: Array<{
     id: string
     type: string
+    subject?: string | null
+    reasonName?: string | null
     severity: string
     status: string
     openedBy: string
@@ -66,10 +69,16 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
 
   // Aplicar filtros (client-side para demo, idealmente server-side)
   const filteredIncidents = incidents.filter((incident) => {
+    const displayName = incidentDisplayName({
+      subject: incident.subject,
+      reasonName: incident.reasonName,
+      type: incident.type,
+    })
     const matchesSearch =
       searchTerm === '' ||
       incident.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      incident.type.toLowerCase().includes(searchTerm.toLowerCase())
+      incident.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      displayName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesType = filterType === 'all' || incident.type === filterType
     const matchesSeverity = filterSeverity === 'all' || incident.severity === filterSeverity
     const matchesStatus = filterStatus === 'all' || incident.status === filterStatus
@@ -141,8 +150,8 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Tipo</TableHead>
-              <TableHead>Descripción</TableHead>
+              <TableHead>Incidencia</TableHead>
+              <TableHead>Detalle</TableHead>
               <TableHead>Empleado</TableHead>
               <TableHead>Severidad</TableHead>
               <TableHead>Estado</TableHead>
@@ -154,9 +163,24 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
             {filteredIncidents.map((incident) => (
               <TableRow key={incident.id}>
                 <TableCell>
-                  <Badge className={INCIDENT_TYPES[incident.type]?.color}>
-                    {INCIDENT_TYPES[incident.type]?.label || incident.type}
-                  </Badge>
+                  <Link
+                    href={`/empresa/incidencias/${incident.id}`}
+                    className="font-medium text-primary hover:underline"
+                  >
+                    {incidentDisplayName({
+                      subject: incident.subject,
+                      reasonName: incident.reasonName,
+                      type: incident.type,
+                    })}
+                  </Link>
+                  <div className="mt-1">
+                    <Badge
+                      variant="outline"
+                      className={INCIDENT_TYPES[incident.type]?.color}
+                    >
+                      {INCIDENT_TYPES[incident.type]?.label || incident.type}
+                    </Badge>
+                  </div>
                 </TableCell>
                 <TableCell>
                   <div className="max-w-xs truncate">

@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import {
-  AlertTriangle,
   ChevronRight,
   FileText,
   Gavel,
@@ -40,19 +39,7 @@ export default async function QualityDashboardPage() {
       </div>
 
       {/* KPIs principales */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Incidencias abiertas</p>
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-          </div>
-          <p className="mt-1 text-2xl font-bold">{quality.openIncidents}</p>
-          <div className="mt-1 flex gap-2 text-xs text-gray-500">
-            <span>Alta: {quality.incidentsBySeverity.HIGH}</span>·
-            <span>Media: {quality.incidentsBySeverity.MEDIUM}</span>·
-            <span>Baja: {quality.incidentsBySeverity.LOW}</span>
-          </div>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-3">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Rating medio (30d)</p>
@@ -87,12 +74,6 @@ export default async function QualityDashboardPage() {
 
       {/* Sub-módulos */}
       <div className="grid gap-3 md:grid-cols-2">
-        <SubModule
-          href="/admin/quality/incidents"
-          title="Incidencias"
-          description="Lista global de todas las incidencias con filtros por severidad, estado y tenant. Escala casos al equipo Plati."
-          badge={`${quality.openIncidents} abiertas`}
-        />
         <SubModule
           href="/admin/quality/audits"
           title="Auditorías"

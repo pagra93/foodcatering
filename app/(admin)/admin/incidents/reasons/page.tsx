@@ -14,9 +14,9 @@ export default async function AdminIncidentReasonsPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/quality">
+          <Link href="/admin/incidents">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Calidad y SLAs
+            Volver a Incidencias
           </Link>
         </Button>
       </div>

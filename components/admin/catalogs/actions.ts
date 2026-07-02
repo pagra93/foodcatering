@@ -120,7 +120,7 @@ export async function upsertIncidentReasonAction(
     })
   }
 
-  revalidatePath('/admin/quality/incident-reasons')
+  revalidatePath('/admin/incidents/reasons')
   return { ok: true }
 }
 
@@ -145,7 +145,7 @@ export async function toggleIncidentReasonAction(input: {
     diff: { before: { active: current.active }, after: { active: input.active } },
   })
 
-  revalidatePath('/admin/quality/incident-reasons')
+  revalidatePath('/admin/incidents/reasons')
   return { ok: true }
 }
 

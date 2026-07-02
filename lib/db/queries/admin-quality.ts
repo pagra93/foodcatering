@@ -90,7 +90,9 @@ export async function getGlobalIncidents(filters: IncidentFilters = {}) {
     ...(filters.search && {
       OR: [
         { type: { contains: filters.search, mode: 'insensitive' } },
+        { subject: { contains: filters.search, mode: 'insensitive' } },
         { description: { contains: filters.search, mode: 'insensitive' } },
+        { reason: { name: { contains: filters.search, mode: 'insensitive' } } },
       ],
     }),
   }
@@ -101,6 +103,7 @@ export async function getGlobalIncidents(filters: IncidentFilters = {}) {
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: { reason: { select: { name: true } } },
     }),
     prisma.incident.count({ where }),
   ])
@@ -120,6 +123,7 @@ export async function getGlobalIncidents(filters: IncidentFilters = {}) {
   return {
     incidents: incidents.map((i) => ({
       ...i,
+      reasonName: i.reason?.name ?? null,
       empresaName: nameById.get(i.tenantEmpresa) ?? i.tenantEmpresa,
       cateringName: nameById.get(i.tenantCatering) ?? i.tenantCatering,
       daysOpen: Math.floor(
@@ -141,6 +145,7 @@ export async function getGlobalIncidentById(id: string) {
   const incident = await prisma.incident.findUnique({
     where: { id },
     include: {
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -185,6 +190,7 @@ export async function getGlobalIncidentById(id: string) {
   return {
     ...incident,
     resolution,
+    reasonName: incident.reason?.name ?? null,
     empresaName: nameById.get(incident.tenantEmpresa) ?? incident.tenantEmpresa,
     cateringName:
       nameById.get(incident.tenantCatering) ?? incident.tenantCatering,
