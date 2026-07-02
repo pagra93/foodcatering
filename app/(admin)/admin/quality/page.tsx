@@ -1,61 +1,38 @@
 import Link from 'next/link'
-import {
-  ChevronRight,
-  FileText,
-  Gavel,
-  Star,
-  TrendingDown,
-} from 'lucide-react'
+import { ChevronRight, FileText, Gavel } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import {
-  getQualityDashboardKPIs,
-  getRatingsByCatering,
-} from '@/lib/db/queries/admin-quality'
-import {
-  getAuditsKPIs,
-} from '@/lib/db/queries/admin-audits'
+import { getAuditsKPIs } from '@/lib/db/queries/admin-audits'
 import { getPenaltiesKPIs } from '@/lib/db/queries/admin-penalties'
 
 export default async function QualityDashboardPage() {
-  const [quality, audits, penalties, ratings] = await Promise.all([
-    getQualityDashboardKPIs(),
+  const [audits, penalties] = await Promise.all([
     getAuditsKPIs(),
     getPenaltiesKPIs(),
-    getRatingsByCatering(20),
   ])
-
-  const bottom5 = [...ratings].sort((a, b) => a.avgRating - b.avgRating).slice(0, 5)
-  const top5 = ratings.slice(0, 5)
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">Calidad y SLAs</h1>
         <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Vista global del estado de calidad del servicio a lo largo de toda
-          la plataforma. Detecta caterings con problemas antes de que escalen.
+          Auditorías externas y penalizaciones aplicadas a los caterings. Las
+          valoraciones de los empleados viven en la sección{' '}
+          <Link href="/admin/reputation" className="text-primary hover:underline">
+            Reputación
+          </Link>
+          .
         </p>
       </div>
 
       {/* KPIs principales */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Rating medio (30d)</p>
-            <Star className="h-4 w-4 text-amber-500" />
-          </div>
-          <p className="mt-1 text-2xl font-bold">
-            {quality.avgRating30d ?? '—'}
-          </p>
-          <p className="mt-1 text-xs text-gray-500">sobre 5 estrellas</p>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">Auditorías (30d)</p>
             <FileText className="h-4 w-4 text-primary" />
           </div>
-          <p className="mt-1 text-2xl font-bold">{quality.pendingAudits}</p>
+          <p className="mt-1 text-2xl font-bold">{audits.total}</p>
           <p className="mt-1 text-xs text-gray-500">
             {audits.stale} caterings sin auditoría reciente
           </p>
@@ -81,16 +58,6 @@ export default async function QualityDashboardPage() {
           badge={`${audits.total} totales`}
         />
         <SubModule
-          href="/admin/quality/ratings"
-          title="Rating y Reputación"
-          description="Rankings, tendencias, comentarios recientes. Ratings agregados por catering y por plato."
-          badge={
-            quality.avgRating30d
-              ? `${quality.avgRating30d} ⭐ media`
-              : 'sin datos'
-          }
-        />
-        <SubModule
           href="/admin/quality/penalties"
           title="Penalizaciones"
           description="Sanciones económicas. Aplica, perdona, revisa disputas de caterings."
@@ -101,51 +68,6 @@ export default async function QualityDashboardPage() {
           }
         />
       </div>
-
-      {/* Top / Bottom caterings */}
-      {ratings.length > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Card className="p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <Star className="h-5 w-5 text-emerald-600" />
-              <h3 className="text-base font-semibold">Top 5 caterings</h3>
-            </div>
-            <ul className="space-y-2 text-sm">
-              {top5.map((r, i) => (
-                <li
-                  key={r.tenantCatering}
-                  className="flex items-center justify-between"
-                >
-                  <span>
-                    <span className="mr-2 text-xs text-gray-500">#{i + 1}</span>
-                    {r.cateringName}
-                  </span>
-                  <Badge variant="outline">{r.avgRating} ⭐</Badge>
-                </li>
-              ))}
-            </ul>
-          </Card>
-          <Card className="p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <TrendingDown className="h-5 w-5 text-red-600" />
-              <h3 className="text-base font-semibold">
-                Bottom 5 caterings — posible atención
-              </h3>
-            </div>
-            <ul className="space-y-2 text-sm">
-              {bottom5.map((r) => (
-                <li
-                  key={r.tenantCatering}
-                  className="flex items-center justify-between"
-                >
-                  <span>{r.cateringName}</span>
-                  <Badge variant="destructive">{r.avgRating} ⭐</Badge>
-                </li>
-              ))}
-            </ul>
-          </Card>
-        </div>
-      )}
     </div>
   )
 }

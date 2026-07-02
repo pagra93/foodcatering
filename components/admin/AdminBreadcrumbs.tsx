@@ -29,6 +29,7 @@ const routeLabels: Record<string, string> = {
   allergens: 'Alérgenos',
   calendars: 'Calendarios',
   quality: 'Calidad y SLAs',
+  reputation: 'Reputación',
   audits: 'Auditorías',
   incidents: 'Incidencias',
   reasons: 'Motivos de Incidencia',

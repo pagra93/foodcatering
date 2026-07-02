@@ -30,9 +30,11 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/incidents/reasons', permission: 'incident-reason:view' },
   { prefix: '/admin/incidents', permission: 'incident:view' },
 
+  // Reputación (sección propia)
+  { prefix: '/admin/reputation', permission: 'rating:view' },
+
   // Calidad y SLAs
   { prefix: '/admin/quality/audits', permission: 'audit:view' },
-  { prefix: '/admin/quality/ratings', permission: 'rating:view' },
   { prefix: '/admin/quality/penalties', permission: 'penalty:view' },
 
   // Facturación y planes
