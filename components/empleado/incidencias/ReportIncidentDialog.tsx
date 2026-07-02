@@ -19,9 +19,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Input } from '@/components/ui/input'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { INCIDENT_TYPES } from '@/lib/db/queries/empleado-incidencias'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
 import type { Prisma } from '@prisma/client'
@@ -34,28 +34,46 @@ type Order = {
   status: string
 }
 
+type ReasonOption = {
+  id: string
+  name: string
+  defaultSeverity: 'LOW' | 'MEDIUM' | 'HIGH'
+  requiresCompensation: boolean
+}
+
 type ReportIncidentDialogProps = {
   isOpen: boolean
   onClose: () => void
   orders: Order[]
+  reasons: ReasonOption[]
 }
 
 export function ReportIncidentDialog({
   isOpen,
   onClose,
   orders,
+  reasons,
 }: ReportIncidentDialogProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedOrderId, setSelectedOrderId] = useState<string>('')
-  const [selectedType, setSelectedType] = useState<string>('')
+  const [selectedReasonId, setSelectedReasonId] = useState<string>('')
+  const [subject, setSubject] = useState<string>('')
   const [selectedSeverity, setSelectedSeverity] = useState<string>('MEDIUM')
+
+  const selectedReason = reasons.find((r) => r.id === selectedReasonId)
+
+  const changeReason = (id: string) => {
+    setSelectedReasonId(id)
+    const r = reasons.find((x) => x.id === id)
+    if (r) setSelectedSeverity(r.defaultSeverity)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedOrderId || !selectedType) {
-      toast.error('Por favor completa todos los campos')
+    if (!selectedOrderId || !selectedReasonId) {
+      toast.error('Selecciona el pedido y el motivo')
       return
     }
 
@@ -69,8 +87,9 @@ export function ReportIncidentDialog({
         },
         body: JSON.stringify({
           orderId: selectedOrderId,
-          type: selectedType,
+          reasonId: selectedReasonId,
           severity: selectedSeverity,
+          subject: subject.trim() || undefined,
         }),
       })
 
@@ -84,7 +103,8 @@ export function ReportIncidentDialog({
 
       // Reset form
       setSelectedOrderId('')
-      setSelectedType('')
+      setSelectedReasonId('')
+      setSubject('')
       setSelectedSeverity('MEDIUM')
 
       onClose()
@@ -169,27 +189,38 @@ export function ReportIncidentDialog({
             </div>
           )}
 
-          {/* Tipo de Incidencia */}
-          <div className="space-y-3">
-            <Label>¿Cuál es el problema?</Label>
-            <RadioGroup value={selectedType} onValueChange={setSelectedType}>
-              <div className="space-y-3">
-                {Object.entries(INCIDENT_TYPES).map(([key, value]) => (
-                  <div key={key} className="flex items-start space-x-3">
-                    <RadioGroupItem value={key} id={key} className="mt-1" />
-                    <Label htmlFor={key} className="cursor-pointer flex-1">
-                      <div className="flex items-start gap-2">
-                        <span className="text-xl">{value.icon}</span>
-                        <div>
-                          <p className="font-medium">{value.label}</p>
-                          <p className="text-sm text-gray-500">{value.description}</p>
-                        </div>
-                      </div>
-                    </Label>
-                  </div>
+          {/* Motivo (del catálogo) */}
+          <div className="space-y-2">
+            <Label htmlFor="reason">¿Cuál es el problema?</Label>
+            <Select value={selectedReasonId} onValueChange={changeReason}>
+              <SelectTrigger id="reason">
+                <SelectValue placeholder="Elige un motivo..." />
+              </SelectTrigger>
+              <SelectContent>
+                {reasons.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.name}
+                  </SelectItem>
                 ))}
-              </div>
-            </RadioGroup>
+              </SelectContent>
+            </Select>
+            {selectedReason?.requiresCompensation && (
+              <p className="text-xs text-amber-700">
+                Este motivo suele conllevar compensación.
+              </p>
+            )}
+          </div>
+
+          {/* Asunto opcional */}
+          <div className="space-y-2">
+            <Label htmlFor="subject">Asunto (opcional)</Label>
+            <Input
+              id="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              maxLength={120}
+              placeholder="Título corto, ej: Pizza llegó fría y tarde"
+            />
           </div>
 
           {/* Severidad */}
@@ -225,7 +256,7 @@ export function ReportIncidentDialog({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isLoading || !selectedOrderId || !selectedType}>
+            <Button type="submit" disabled={isLoading || !selectedOrderId || !selectedReasonId}>
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />

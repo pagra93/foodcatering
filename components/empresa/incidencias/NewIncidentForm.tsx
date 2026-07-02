@@ -10,11 +10,25 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
 
-export function NewIncidentForm() {
+type ReasonOption = {
+  id: string
+  name: string
+  defaultSeverity: 'LOW' | 'MEDIUM' | 'HIGH'
+  requiresCompensation: boolean
+}
+
+export function NewIncidentForm({ reasons }: { reasons: ReasonOption[] }) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [incidentType, setIncidentType] = useState('')
+  const [reasonId, setReasonId] = useState('')
   const [severity, setSeverity] = useState('MEDIUM')
+
+  const selectedReason = reasons.find((r) => r.id === reasonId)
+  const changeReason = (id: string) => {
+    setReasonId(id)
+    const r = reasons.find((x) => x.id === id)
+    if (r) setSeverity(r.defaultSeverity)
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -24,8 +38,9 @@ export function NewIncidentForm() {
       const formData = new FormData(e.currentTarget)
       const data = {
         orderId: formData.get('orderId'),
-        type: incidentType,
+        reasonId,
         severity: severity,
+        subject: (formData.get('subject') as string) || undefined,
         description: formData.get('description'),
       }
 
@@ -67,23 +82,37 @@ export function NewIncidentForm() {
           </p>
         </div>
 
-        {/* Tipo */}
+        {/* Motivo (del catálogo) */}
         <div>
-          <Label htmlFor="type">Tipo de Incidencia *</Label>
-          <Select value={incidentType} onValueChange={setIncidentType} required>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecciona un tipo" />
+          <Label htmlFor="reason">Motivo de la incidencia *</Label>
+          <Select value={reasonId} onValueChange={changeReason} required>
+            <SelectTrigger id="reason">
+              <SelectValue placeholder="Selecciona un motivo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="DELAYED_DELIVERY">Entrega Retrasada</SelectItem>
-              <SelectItem value="MISSING_ITEM">Falta Artículo</SelectItem>
-              <SelectItem value="WRONG_ORDER">Pedido Incorrecto</SelectItem>
-              <SelectItem value="QUALITY_ISSUE">Problema de Calidad</SelectItem>
-              <SelectItem value="ALLERGEN_ISSUE">Problema de Alérgenos</SelectItem>
-              <SelectItem value="DAMAGED_PACKAGING">Envase Dañado</SelectItem>
-              <SelectItem value="OTHER">Otro</SelectItem>
+              {reasons.map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
+          {selectedReason?.requiresCompensation && (
+            <p className="text-xs text-amber-700 mt-1">
+              Este motivo suele conllevar compensación al empleado.
+            </p>
+          )}
+        </div>
+
+        {/* Asunto */}
+        <div>
+          <Label htmlFor="subject">Asunto (opcional)</Label>
+          <Input
+            id="subject"
+            name="subject"
+            maxLength={120}
+            placeholder="Título corto de la incidencia"
+          />
         </div>
 
         {/* Severidad */}

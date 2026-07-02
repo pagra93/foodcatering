@@ -16,9 +16,17 @@ type Order = {
 
 type ReportIncidentButtonProps = {
   orders: Order[]
+  reasons: ReasonOption[]
 }
 
-export function ReportIncidentButton({ orders }: ReportIncidentButtonProps) {
+type ReasonOption = {
+  id: string
+  name: string
+  defaultSeverity: 'LOW' | 'MEDIUM' | 'HIGH'
+  requiresCompensation: boolean
+}
+
+export function ReportIncidentButton({ orders, reasons }: ReportIncidentButtonProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   if (orders.length === 0) {
@@ -41,6 +49,7 @@ export function ReportIncidentButton({ orders }: ReportIncidentButtonProps) {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         orders={orders}
+        reasons={reasons}
       />
     </>
   )

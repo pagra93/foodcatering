@@ -271,8 +271,11 @@ export async function getIncidentById(tenantId: string, incidentId: string) {
 
 export type CreateIncidentInput = {
   orderId: string
-  type: string
-  severity: string
+  reasonId?: string
+  type?: string
+  severity?: string
+  subject?: string
+  description?: string
   openedBy: string
 }
 
@@ -292,13 +295,30 @@ export async function createIncident(
     throw new Error('Pedido no encontrado')
   }
 
+  // Motivo del catálogo (preferido): fija type (código) y severidad por defecto.
+  let type = data.type
+  let severity = data.severity
+  if (data.reasonId) {
+    const reason = await prisma.incidentReason.findUnique({
+      where: { id: data.reasonId },
+      select: { code: true, defaultSeverity: true },
+    })
+    if (!reason) throw new Error('Motivo no encontrado')
+    type = reason.code
+    severity = severity ?? reason.defaultSeverity
+  }
+  if (!type) throw new Error('Falta el motivo de la incidencia')
+
   const incident = await prisma.incident.create({
     data: {
       orderId: data.orderId,
       tenantEmpresa: tenantId,
       tenantCatering: order.tenantCatering,
-      type: data.type,
-      severity: data.severity as IncidentSeverity,
+      type,
+      reasonId: data.reasonId ?? null,
+      subject: data.subject?.trim() || null,
+      description: data.description?.trim() || null,
+      severity: (severity ?? 'MEDIUM') as IncidentSeverity,
       status: 'OPEN',
       openedBy: data.openedBy,
     },

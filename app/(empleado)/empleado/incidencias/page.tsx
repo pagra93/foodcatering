@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getEmployeeIncidents, getEmployeeIncidentStats } from '@/lib/db/queries/empleado-incidencias'
+import { getIncidentReasons } from '@/lib/db/queries/catalogs'
 import { IncidentsList } from '@/components/empleado/incidencias/IncidentsList'
 import { IncidentsStats } from '@/components/empleado/incidencias/IncidentsStats'
 import { ReportIncidentButton } from '@/components/empleado/incidencias/ReportIncidentButton'
@@ -34,11 +35,18 @@ export default async function IncidenciasEmpleadoPage() {
     )
   }
 
-  // Obtener incidencias y estadísticas
-  const [incidents, stats] = await Promise.all([
+  // Obtener incidencias, estadísticas y catálogo de motivos
+  const [incidents, stats, reasons] = await Promise.all([
     getEmployeeIncidents(employee.id),
     getEmployeeIncidentStats(employee.id),
+    getIncidentReasons(employee.tenantId),
   ])
+  const reasonOptions = reasons.map((r) => ({
+    id: r.id,
+    name: r.name,
+    defaultSeverity: r.defaultSeverity,
+    requiresCompensation: r.requiresCompensation,
+  }))
 
   // Obtener pedidos recientes para poder reportar incidencias
   const recentOrders = await prisma.order.findMany({
@@ -74,7 +82,7 @@ export default async function IncidenciasEmpleadoPage() {
             Consulta el estado de tus reportes y notifica cualquier problema
           </p>
         </div>
-        <ReportIncidentButton orders={recentOrders} />
+        <ReportIncidentButton orders={recentOrders} reasons={reasonOptions} />
       </div>
 
       {/* Stats */}

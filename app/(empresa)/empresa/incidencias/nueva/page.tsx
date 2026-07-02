@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { getIncidentReasons } from '@/lib/db/queries/catalogs'
 import { NewIncidentForm } from '@/components/empresa/incidencias/NewIncidentForm'
 
 // ============================================================================
@@ -22,6 +23,13 @@ export default async function NuevaIncidenciaPage() {
     redirect('/unauthorized')
   }
 
+  const reasons = (await getIncidentReasons(tenant.id)).map((r) => ({
+    id: r.id,
+    name: r.name,
+    defaultSeverity: r.defaultSeverity,
+    requiresCompensation: r.requiresCompensation,
+  }))
+
   return (
     <div className="container py-8">
       <div className="mb-6">
@@ -36,7 +44,7 @@ export default async function NuevaIncidenciaPage() {
       <div className="max-w-2xl">
         <h1 className="text-2xl font-bold mb-6">Nueva Incidencia</h1>
         <Card className="p-6">
-          <NewIncidentForm />
+          <NewIncidentForm reasons={reasons} />
         </Card>
       </div>
     </div>

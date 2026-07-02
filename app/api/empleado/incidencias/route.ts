@@ -7,19 +7,18 @@ import { z } from 'zod'
 // POST /api/empleado/incidencias - Crear nueva incidencia
 // ============================================================================
 
-const createIncidentSchema = z.object({
-  orderId: z.string().uuid(),
-  type: z.enum([
-    'DELAYED_DELIVERY',
-    'MISSING_ITEM',
-    'WRONG_ORDER',
-    'QUALITY_ISSUE',
-    'ALLERGEN_ISSUE',
-    'DAMAGED_PACKAGING',
-    'OTHER',
-  ]),
-  severity: z.enum(['LOW', 'MEDIUM', 'HIGH']),
-})
+const createIncidentSchema = z
+  .object({
+    orderId: z.string().uuid(),
+    // Motivo del catálogo (preferido) o tipo legacy.
+    reasonId: z.string().uuid().optional(),
+    type: z.string().optional(),
+    severity: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+    subject: z.string().max(120).optional(),
+  })
+  .refine((d) => d.reasonId || d.type, {
+    message: 'Indica el motivo de la incidencia',
+  })
 
 export async function POST(request: NextRequest) {
   try {
