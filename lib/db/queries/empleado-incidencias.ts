@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { notifyIncidentCreated } from '@/lib/incidents/notify'
+import { incidentTypeLabel } from '@/lib/incidents/constants'
 
 // ============================================================================
 // MAPEO DE TIPOS Y ESTADOS
@@ -114,7 +115,7 @@ export async function getEmployeeIncidents(employeeId: string) {
   return incidents.map((incident) => ({
     ...incident,
     reasonName: incident.reason?.name ?? null,
-    typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
+    typeLabel: incidentTypeLabel(incident.type),
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
     severityLabel: SEVERITY_MAP[incident.severity]?.label || incident.severity,
     statusLabel: INCIDENT_STATUS_MAP[incident.status]?.label || incident.status,
@@ -157,7 +158,7 @@ export async function getIncidentDetail(incidentId: string, employeeId: string) 
   return {
     ...incident,
     reasonName: incident.reason?.name ?? null,
-    typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
+    typeLabel: incidentTypeLabel(incident.type),
     typeDescription: INCIDENT_TYPES[incident.type]?.description || '',
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
     severityLabel: SEVERITY_MAP[incident.severity]?.label || incident.severity,

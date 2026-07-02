@@ -163,6 +163,7 @@ export default async function GlobalIncidentsPage({
               <th className="px-4 py-3 text-left">Estado</th>
               <th className="px-4 py-3 text-right">Días abierta</th>
               <th className="px-4 py-3 text-left">Reportada</th>
+              <th className="px-4 py-3 text-right">Acción</th>
             </tr>
           </thead>
           <tbody>
@@ -223,12 +224,17 @@ export default async function GlobalIncidentsPage({
                 <td className="px-4 py-3 text-xs text-gray-500">
                   {format(i.createdAt, 'dd MMM yyyy HH:mm', { locale: es })}
                 </td>
+                <td className="px-4 py-3 text-right">
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/admin/incidents/${i.id}`}>Ver detalle</Link>
+                  </Button>
+                </td>
               </tr>
             ))}
             {incidents.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-4 py-12 text-center text-sm text-gray-500"
                 >
                   No hay incidencias que coincidan con los filtros.

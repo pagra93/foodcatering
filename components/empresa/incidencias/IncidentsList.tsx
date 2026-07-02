@@ -31,7 +31,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empresa-incidencias'
-import { incidentDisplayName } from '@/lib/incidents/constants'
+import { incidentDisplayName, incidentTypeLabel } from '@/lib/incidents/constants'
 
 type IncidentsListProps = {
   incidents: Array<{
@@ -178,7 +178,7 @@ export function IncidentsList({ incidents, pagination }: IncidentsListProps) {
                       variant="outline"
                       className={INCIDENT_TYPES[incident.type]?.color}
                     >
-                      {INCIDENT_TYPES[incident.type]?.label || incident.type}
+                      {incidentTypeLabel(incident.type)}
                     </Badge>
                   </div>
                 </TableCell>

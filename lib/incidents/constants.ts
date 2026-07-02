@@ -9,8 +9,15 @@
 import type { IncidentSeverity, IncidentStatus } from '@prisma/client'
 
 // ── Tipos de incidencia (catálogo del campo `type`, que es String) ──────────
+// El `type` es un String histórico con variaciones (mayúsculas/minúsculas y
+// sinónimos: DELAYED_DELIVERY vs LATE_DELIVERY). Se normaliza a UPPER y se
+// incluyen los alias reales presentes en datos para que SIEMPRE haya etiqueta.
 export const INCIDENT_TYPES = {
   DELAYED_DELIVERY: {
+    label: 'Entrega tardía',
+    description: 'El pedido llegó más tarde de lo esperado.',
+  },
+  LATE_DELIVERY: {
     label: 'Entrega tardía',
     description: 'El pedido llegó más tarde de lo esperado.',
   },
@@ -22,9 +29,21 @@ export const INCIDENT_TYPES = {
     label: 'Pedido incorrecto',
     description: 'Se entregó un pedido distinto al solicitado.',
   },
+  WRONG_DISH: {
+    label: 'Plato incorrecto',
+    description: 'Se entregó un plato distinto al solicitado.',
+  },
   QUALITY_ISSUE: {
     label: 'Problema de calidad',
     description: 'La comida no cumplió los estándares de calidad.',
+  },
+  TEMPERATURE: {
+    label: 'Temperatura incorrecta',
+    description: 'La comida llegó a una temperatura inadecuada.',
+  },
+  COLD_FOOD: {
+    label: 'Comida fría',
+    description: 'La comida llegó fría.',
   },
   ALLERGEN_ISSUE: {
     label: 'Problema con alérgenos',
@@ -40,12 +59,20 @@ export const INCIDENT_TYPES = {
   },
 } as const
 
+/** Normaliza el `type` a la clave del catálogo (tolera minúsculas y espacios). */
+function normalizeIncidentType(type: string): keyof typeof INCIDENT_TYPES | null {
+  const key = type.trim().toUpperCase().replace(/[\s-]+/g, '_')
+  return key in INCIDENT_TYPES ? (key as keyof typeof INCIDENT_TYPES) : null
+}
+
 export function incidentTypeLabel(type: string): string {
-  return INCIDENT_TYPES[type as keyof typeof INCIDENT_TYPES]?.label ?? type
+  const key = normalizeIncidentType(type)
+  return key ? INCIDENT_TYPES[key].label : type
 }
 
 export function incidentTypeDescription(type: string): string | null {
-  return INCIDENT_TYPES[type as keyof typeof INCIDENT_TYPES]?.description ?? null
+  const key = normalizeIncidentType(type)
+  return key ? INCIDENT_TYPES[key].description : null
 }
 
 /**

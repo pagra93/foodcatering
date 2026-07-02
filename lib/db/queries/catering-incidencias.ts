@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { notifyIncidentStatusChange } from '@/lib/incidents/notify'
+import { incidentTypeLabel } from '@/lib/incidents/constants'
 
 // ============================================================================
 // MAPEO DE TIPOS Y ESTADOS
@@ -259,7 +260,7 @@ export async function getCateringIncidents(
       incident.order?.employeeId
         ? employeeMap[incident.order.employeeId]?.email || null
         : null,
-    typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
+    typeLabel: incidentTypeLabel(incident.type),
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
     severityLabel: SEVERITY_MAP[incident.severity]?.label || incident.severity,
     statusLabel: INCIDENT_STATUS_MAP[incident.status]?.label || incident.status,
@@ -334,7 +335,7 @@ export async function getIncidentDetail(incidentId: string, tenantId: string) {
     companyName: company?.name || 'Empresa desconocida',
     employeeName: employeeInfo?.name || 'Empleado desconocido',
     employeeEmail: employeeInfo?.email || null,
-    typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
+    typeLabel: incidentTypeLabel(incident.type),
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
     severityLabel: SEVERITY_MAP[incident.severity]?.label || incident.severity,
     statusLabel: INCIDENT_STATUS_MAP[incident.status]?.label || incident.status,
