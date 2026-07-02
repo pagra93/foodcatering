@@ -38,8 +38,9 @@ export async function getCateringQualityMetrics(
     prisma.incident.count({
       where: { tenantCatering: tenantId, createdAt: { gte: thirtyDaysAgo } },
     }),
-    prisma.orderRating.aggregate({
-      where: { order: { tenantCatering: tenantId } },
+    // Reputación desde DishRating (valoración por plato, fuente única).
+    prisma.dishRating.aggregate({
+      where: { tenantCatering: tenantId },
       _avg: { rating: true },
       _count: true,
     }),

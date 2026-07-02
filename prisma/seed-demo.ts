@@ -513,6 +513,7 @@ async function main() {
   console.log('🧹 Limpiando historial operativo anterior del tenant demo...')
 
   await prisma.incident.deleteMany({ where: { tenantEmpresa: empresaTenant.id } })
+  await prisma.dishRating.deleteMany({ where: { tenantEmpresa: empresaTenant.id } })
   await prisma.orderRating.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
   await prisma.deliveryProof.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
   await prisma.deliveryEvent.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
@@ -603,7 +604,7 @@ async function main() {
           },
         })
 
-        // 60% dejan rating
+        // 60% dejan rating: por pedido (legacy) + por plato (nuevo)
         if (Math.random() < 0.6) {
           const rating = 3 + Math.floor(Math.random() * 3)
           await prisma.orderRating.create({
@@ -616,6 +617,36 @@ async function main() {
               presentationRating: rating,
               comment: rating >= 4 ? 'Rico y a tiempo' : 'Correcto',
             },
+          })
+
+          // Valoración por plato (fuente de la reputación). Variamos ±1 por plato
+          // para que los leaderboards tengan señal.
+          const clamp = (n: number) => Math.max(1, Math.min(5, n))
+          const perDish: {
+            dishId: string
+            course: 'FIRST' | 'SECOND' | 'DESSERT'
+            comment: string | null
+          }[] = [
+            { dishId: first.id, course: 'FIRST', comment: null },
+            {
+              dishId: second.id,
+              course: 'SECOND',
+              comment: rating >= 4 ? 'Rico y a tiempo' : 'Correcto',
+            },
+            { dishId: dessert.id, course: 'DESSERT', comment: null },
+          ]
+          await prisma.dishRating.createMany({
+            data: perDish.map((d) => ({
+              orderId: order.id,
+              dishId: d.dishId,
+              course: d.course,
+              employeeId: emp.id,
+              tenantCatering: cateringTenant.id,
+              tenantEmpresa: empresaTenant.id,
+              serviceDate: fecha,
+              rating: clamp(rating + (Math.floor(Math.random() * 3) - 1)),
+              comment: d.comment,
+            })),
           })
         }
       }

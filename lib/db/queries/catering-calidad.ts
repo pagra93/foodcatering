@@ -7,6 +7,11 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import type { DishScore } from '@/lib/db/queries/ratings'
+import {
+  getCateringDishLeaderboard,
+  getCateringComments,
+} from '@/lib/db/queries/ratings'
 
 export async function getCateringOwnRatingStats(tenantCatering: string) {
   const thirtyDaysAgo = new Date()
@@ -14,24 +19,17 @@ export async function getCateringOwnRatingStats(tenantCatering: string) {
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-  const all = await prisma.orderRating.findMany({
-    where: { order: { tenantCatering } },
-    select: {
-      rating: true,
-      tasteRating: true,
-      portionRating: true,
-      presentationRating: true,
-      createdAt: true,
-    },
+  // Reputación por plato (DishRating). Las dimensiones sabor/porción/presentación
+  // del antiguo OrderRating ya no existen a nivel de plato → null.
+  const all = await prisma.dishRating.findMany({
+    where: { tenantCatering },
+    select: { rating: true, createdAt: true },
   })
 
   const total = all.length
-  const avg = (
-    values: Array<number | null>
-  ): number | null => {
-    const filtered = values.filter((v): v is number => v !== null)
-    if (filtered.length === 0) return null
-    return Math.round((filtered.reduce((s, v) => s + v, 0) / filtered.length) * 10) / 10
+  const avg = (values: number[]): number | null => {
+    if (values.length === 0) return null
+    return Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10
   }
 
   const recent = all.filter((r) => r.createdAt >= thirtyDaysAgo)
@@ -45,9 +43,9 @@ export async function getCateringOwnRatingStats(tenantCatering: string) {
   return {
     total,
     averageRating: avg(all.map((r) => r.rating)),
-    averageTaste: avg(all.map((r) => r.tasteRating)),
-    averagePortion: avg(all.map((r) => r.portionRating)),
-    averagePresentation: avg(all.map((r) => r.presentationRating)),
+    averageTaste: null,
+    averagePortion: null,
+    averagePresentation: null,
     ratings30d: recent.length,
     avg30d: avg(recent.map((r) => r.rating)),
     avgThisWeek: avg(weekly.map((r) => r.rating)),
@@ -56,73 +54,33 @@ export async function getCateringOwnRatingStats(tenantCatering: string) {
 }
 
 /**
- * Ratings agregados por plato del catering.
+ * Ratings agregados por plato del catering (fuente: DishRating, vía capa canónica).
+ * Mantiene la forma { top, bottom } con { dishId, name, course, avgRating, ratings }.
  */
 export async function getCateringDishRatings(tenantCatering: string, limit = 10) {
-  const ratings = await prisma.orderRating.findMany({
-    where: { order: { tenantCatering } },
-    include: {
-      order: { select: { selection: true } },
-    },
+  const { top, bottom } = await getCateringDishLeaderboard(tenantCatering, limit)
+  const shape = (d: DishScore) => ({
+    dishId: d.dishId,
+    name: d.name,
+    course: d.course,
+    avgRating: d.average,
+    ratings: d.count,
   })
-
-  // Los pedidos guardan dish_ids en selection.dish_ids (JSON).
-  const perDish = new Map<string, { sum: number; count: number }>()
-  for (const r of ratings) {
-    const sel = (r.order.selection as { dish_ids?: string[] } | null) ?? {}
-    const ids = Array.isArray(sel.dish_ids) ? sel.dish_ids : []
-    for (const id of ids) {
-      const entry = perDish.get(id) ?? { sum: 0, count: 0 }
-      entry.sum += r.rating
-      entry.count += 1
-      perDish.set(id, entry)
-    }
-  }
-
-  const dishIds = [...perDish.keys()]
-  if (dishIds.length === 0) return { top: [], bottom: [] }
-
-  const dishes = await prisma.dish.findMany({
-    where: { id: { in: dishIds } },
-    select: { id: true, name: true, course: true },
-  })
-  const dishById = new Map(dishes.map((d) => [d.id, d]))
-
-  const rows = dishIds
-    .map((id) => {
-      const e = perDish.get(id)!
-      const d = dishById.get(id)
-      return {
-        dishId: id,
-        name: d?.name ?? id,
-        course: d?.course ?? 'FIRST',
-        avgRating: Math.round((e.sum / e.count) * 10) / 10,
-        ratings: e.count,
-      }
-    })
-    .filter((r) => r.ratings >= 3) // mínimo 3 valoraciones para aparecer
-
-  return {
-    top: [...rows].sort((a, b) => b.avgRating - a.avgRating).slice(0, limit),
-    bottom: [...rows].sort((a, b) => a.avgRating - b.avgRating).slice(0, limit),
-  }
+  return { top: top.map(shape), bottom: bottom.map(shape) }
 }
 
 export async function getCateringRecentComments(
   tenantCatering: string,
   limit = 20
 ) {
-  return prisma.orderRating.findMany({
-    where: { order: { tenantCatering }, comment: { not: null } },
-    orderBy: { createdAt: 'desc' },
-    take: limit,
-    select: {
-      id: true,
-      rating: true,
-      comment: true,
-      createdAt: true,
-    },
-  })
+  const comments = await getCateringComments(tenantCatering, limit)
+  return comments.map((c) => ({
+    id: c.id,
+    rating: c.rating,
+    comment: c.comment,
+    createdAt: c.createdAt,
+    dishName: c.dishName,
+  }))
 }
 
 /**

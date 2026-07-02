@@ -385,9 +385,10 @@ model Employee {
   deletedAt DateTime? @map("deleted_at")
 
   // Relaciones
-  user    User          @relation(fields: [userId], references: [id])
-  site    CompanySite   @relation(fields: [siteId], references: [id])
-  ratings OrderRating[] // Valoraciones de pedidos
+  user        User          @relation(fields: [userId], references: [id])
+  site        CompanySite   @relation(fields: [siteId], references: [id])
+  ratings     OrderRating[] // Valoraciones de pedidos (legacy, por pedido)
+  dishRatings DishRating[]  // Valoraciones por plato (nuevo)
 
   @@index([tenantId, status])
   @@index([userId])
@@ -622,6 +623,7 @@ model Dish {
   restaurant Restaurant     @relation(fields: [restaurantId], references: [id])
   schedules  DishSchedule[]
   allergens  DishAllergen[]
+  ratings    DishRating[]
 
   @@index([tenantId, course, active])
   @@index([restaurantId])
@@ -779,7 +781,8 @@ model Order {
   deliveryEvents DeliveryEvent[]
   incidents      Incident[]
   deliveryProof  DeliveryProof? // Justificante de entrega
-  rating         OrderRating? // Valoración del empleado
+  rating         OrderRating? // Valoración del empleado (legacy, por pedido)
+  dishRatings    DishRating[] // Valoraciones por plato del pedido
 
   @@unique([tenantEmpresa, employeeId, serviceDate])
   @@index([tenantCatering, serviceDate])
@@ -1490,6 +1493,43 @@ model OrderRating {
   @@index([employeeId])
   @@index([rating])
   @@map("order_ratings")
+}
+
+/// Valoración POR PLATO que deja el empleado tras recibir su pedido (1–5).
+/// Fuente de verdad de la reputación (sustituye la agregación por pedido de
+/// OrderRating). Los campos tenantCatering/tenantEmpresa/serviceDate se
+/// denormalizan desde el pedido para agregar rápido por catering, empresa,
+/// relación catering×empresa y ventana temporal.
+model DishRating {
+  id         String     @id @default(uuid())
+  orderId    String     @map("order_id")
+  dishId     String     @map("dish_id")
+  course     DishCourse
+  employeeId String     @map("employee_id")
+
+  // Denormalizado para agregación (todas las lecturas filtran por esto).
+  tenantCatering String   @map("tenant_catering")
+  tenantEmpresa  String   @map("tenant_empresa")
+  serviceDate    DateTime @map("service_date") @db.Date
+
+  rating  Int // 1-5
+  comment String? // comentario del día (opcional)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  dish     Dish     @relation(fields: [dishId], references: [id])
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, dishId]) // idempotente: un plato del pedido = una valoración
+  @@index([tenantCatering, serviceDate])
+  @@index([tenantEmpresa, serviceDate])
+  @@index([tenantCatering, tenantEmpresa])
+  @@index([dishId])
+  @@index([rating])
+  @@map("dish_ratings")
 }
 
 // ============================================================================
