@@ -6,6 +6,10 @@
 import { prisma } from '@/lib/db/prisma'
 import { startOfMonth } from 'date-fns'
 import type { IncidentSeverity } from '@prisma/client'
+import {
+  notifyIncidentCreated,
+  notifyIncidentStatusChange,
+} from '@/lib/incidents/notify'
 
 // ♻️ REUTILIZAR mapeo de tipos (mismo que en admin)
 export const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
@@ -327,6 +331,13 @@ export async function createIncident(
     },
   })
 
+  // Feedback: avisa al catering + Plati (excluye a la empresa que reporta).
+  try {
+    await notifyIncidentCreated(incident.id, tenantId)
+  } catch (err) {
+    console.error('[incident] notifyIncidentCreated fallo', err)
+  }
+
   return incident
 }
 
@@ -365,15 +376,29 @@ export async function resolveIncident(
     resolvedAt: new Date().toISOString(),
   }
 
+  const nextStatus = data.compensationAmount ? 'COMPENSATED' : 'RESOLVED'
   const updated = await prisma.incident.update({
     where: { id: incidentId },
     data: {
-      status: data.compensationAmount ? 'COMPENSATED' : 'RESOLVED',
+      status: nextStatus,
       resolution,
       resolvedAt: new Date(),
       assignedTo: userId,
     },
   })
+
+  // Feedback: traza en el hilo + notificación a catering/Plati (no bloqueante).
+  try {
+    await notifyIncidentStatusChange({
+      incidentId,
+      actorUserId: userId,
+      actorTenantId: tenantId,
+      status: nextStatus,
+      note: data.resolutionDetails,
+    })
+  } catch (err) {
+    console.error('[incident] notifyIncidentStatusChange fallo', err)
+  }
 
   return updated
 }

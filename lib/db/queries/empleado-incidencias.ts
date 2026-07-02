@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import { notifyIncidentCreated } from '@/lib/incidents/notify'
 
 // ============================================================================
 // MAPEO DE TIPOS Y ESTADOS
@@ -136,6 +137,7 @@ export async function getIncidentDetail(incidentId: string, employeeId: string) 
       },
     },
     include: {
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -154,6 +156,7 @@ export async function getIncidentDetail(incidentId: string, employeeId: string) 
 
   return {
     ...incident,
+    reasonName: incident.reason?.name ?? null,
     typeLabel: INCIDENT_TYPES[incident.type]?.label || incident.type,
     typeDescription: INCIDENT_TYPES[incident.type]?.description || '',
     typeIcon: INCIDENT_TYPES[incident.type]?.icon || '❓',
@@ -221,6 +224,13 @@ export async function createIncident(
       openedBy: userId,
     },
   })
+
+  // Feedback: avisa al catering + Plati (excluye a la empresa que reporta).
+  try {
+    await notifyIncidentCreated(incident.id, order.tenantEmpresa)
+  } catch (err) {
+    console.error('[incident] notifyIncidentCreated fallo', err)
+  }
 
   return incident
 }

@@ -11,6 +11,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+import { incidentDisplayName } from '@/lib/incidents/constants'
 
 // ============================================================================
 // Página de Detalle de Incidencia (Empresa)
@@ -40,6 +41,7 @@ export default async function IncidentDetailPage({ params }: Props) {
       tenantEmpresa: tenant.id,
     },
     include: {
+      reason: { select: { name: true } },
       order: {
         select: {
           id: true,
@@ -55,6 +57,12 @@ export default async function IncidentDetailPage({ params }: Props) {
   if (!incident) {
     notFound()
   }
+
+  const displayName = incidentDisplayName({
+    subject: incident.subject,
+    reasonName: incident.reason?.name ?? null,
+    type: incident.type,
+  })
 
   const thread = await getThreadMessages('INCIDENT', params.id, false)
 
@@ -101,9 +109,10 @@ export default async function IncidentDetailPage({ params }: Props) {
           <CardHeader>
             <div className="flex items-start justify-between">
               <div>
-                <CardTitle className="text-2xl">Incidencia #{incident.id.slice(-8)}</CardTitle>
+                <CardTitle className="text-2xl">{displayName}</CardTitle>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Creada el {format(new Date(incident.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
+                  #{incident.id.slice(-8)} · Creada el{' '}
+                  {format(new Date(incident.createdAt), 'dd/MM/yyyy HH:mm', { locale: es })}
                 </p>
               </div>
               <Badge variant={STATUS_MAP[incident.status]?.badgeVariant || 'default'}>

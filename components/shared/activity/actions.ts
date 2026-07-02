@@ -28,7 +28,9 @@ function pathsFor(entity: ActivityEntity, entityId: string): string[] {
   return [
     `/admin/incidents/${entityId}`,
     '/catering/incidencias',
+    `/catering/incidencias/${entityId}`,
     `/empresa/incidencias/${entityId}`,
+    `/empleado/incidencias/${entityId}`,
   ]
 }
 

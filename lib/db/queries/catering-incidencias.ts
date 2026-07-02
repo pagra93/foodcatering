@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import { notifyIncidentStatusChange } from '@/lib/incidents/notify'
 
 // ============================================================================
 // MAPEO DE TIPOS Y ESTADOS
@@ -375,6 +376,18 @@ export async function updateIncidentStatus(
     },
   })
 
+  // Feedback: traza en el hilo + notificación a empresa/Plati (no bloqueante).
+  try {
+    await notifyIncidentStatusChange({
+      incidentId,
+      actorUserId: userId,
+      actorTenantId: tenantId,
+      status,
+    })
+  } catch (err) {
+    console.error('[incident] notifyIncidentStatusChange fallo', err)
+  }
+
   return updated
 }
 
@@ -414,16 +427,30 @@ export async function resolveIncident(
     resolvedAt: new Date(),
   }
 
+  const nextStatus = data.compensationAmount ? 'COMPENSATED' : 'RESOLVED'
   const updated = await prisma.incident.update({
     where: { id: incidentId },
     data: {
-      status: data.compensationAmount ? 'COMPENSATED' : 'RESOLVED',
+      status: nextStatus,
       resolution,
       assignedTo: userId,
       resolvedAt: new Date(),
       updatedAt: new Date(),
     },
   })
+
+  // Feedback: traza en el hilo + notificación a empresa/Plati (no bloqueante).
+  try {
+    await notifyIncidentStatusChange({
+      incidentId,
+      actorUserId: userId,
+      actorTenantId: tenantId,
+      status: nextStatus,
+      note: data.resolutionDetails,
+    })
+  } catch (err) {
+    console.error('[incident] notifyIncidentStatusChange fallo', err)
+  }
 
   return updated
 }

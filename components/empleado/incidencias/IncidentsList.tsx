@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { format } from 'date-fns'
@@ -124,6 +125,16 @@ export function IncidentsList({ incidents }: IncidentsListProps) {
                     )}
                   </div>
                 )}
+
+                {/* Seguimiento */}
+                <div className="mt-4">
+                  <Link
+                    href={`/empleado/incidencias/${incident.id}`}
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Ver seguimiento →
+                  </Link>
+                </div>
               </div>
 
               {/* Fecha de creación */}
