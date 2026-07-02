@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-07-02T18:00:00Z
+> Last updated: 2026-07-02T20:00:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** hechos
+- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** hechos
 - **Sprint**: —
-- **Stories**: 15 hechas / 26 totales · `██████░░░░ 58%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
+- **Stories**: 16 hechas / 27 totales · `██████░░░░ 59%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones + HU-041 Reputación; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-07-02 · `claude-code` (Incidencias: rediseño cross-portal en 4 fases — catálogo + nombre legible + notificaciones/hilo + detalle empleado)
+- **Última actividad**: 2026-07-02 · `claude-code` (Reputación: rediseño cross-portal en 5 fases — DishRating por plato, el empleado valora, matriz catering×empresa)
 <!-- /AUTO:status -->
 
 ---
@@ -108,10 +108,11 @@ Hallazgos confirmados:
 |----|--------|-------|--------|
 | HU-039 | Rediseño del módulo de Incidencias (cross-portal, 4 fases) | high | ✅ hecho |
 | HU-040 | Penalizaciones: detalle + hilo + notificaciones + liquidación | high | ✅ hecho |
+| HU-041 | Rediseño de Rating y Reputación (cross-portal, por plato, 5 fases) | high | ✅ hecho |
 
 **Dependencias**: HU-023 → [HU-015, HU-016, HU-017, HU-018, HU-019] · HU-034 → [HU-020] · HU-039 → [HU-018, HU-040 (comparte infra de hilo+notif)]
 
-— Añadido por: registro de backlog · 2026-06-28 · ampliado 2026-07-02 (HU-039/HU-040)
+— Añadido por: registro de backlog · 2026-06-28 · ampliado 2026-07-02 (HU-039/HU-040/HU-041)
 <!-- /AUTO:define -->
 
 ---
@@ -164,6 +165,14 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
    incidencia del **empleado** con `ActivityThread`.
 - Doc: [`incidencias.md`](./incidencias.md). Tech-debt: constantes aún triplicadas en los 3 `*-incidencias.ts`.
 
+**HU-041 Reputación — rediseño cross-portal (2026-07-02):** el módulo no servía (nadie creaba ratings, por pedido, vista por plato rota). 5 fases.
+1. *Modelo+capa* (`6459052`) — nuevo `DishRating` (por plato, denormalizado tenant/fecha) + `lib/db/queries/ratings.ts` (fuente única) + repunta `getCateringQualityMetrics` + seed/backfill 558 filas.
+2. *Empleado valora* (`5ab465e`) — `rateDishesAction` (RBAC `emp-rating-own:create`) + `RateMealDialog` + columna Valorar en Historial + aviso "valora la comida de ayer" en menús.
+3. *Catering ve* (`8e417d2`) — platos mejor/peor reales + **valoración por empresa cliente**.
+4. *Empresa ve* (`cd75735`) — `CompanyRatingsTab` (media/tendencia/distribución/platos/comentarios); borra tab+API muertos.
+5. *Admin sección propia* (`e424e9a`) — "Reputación" en el sidebar + **matriz catering×empresa** + ranking + leaderboards.
+- Doc: [`reputacion.md`](./reputacion.md). Tech-debt: borrar queries legacy de rating (OrderRating) en `admin-quality.ts`.
+
 ### 🧰 Patrones y utilidades reutilizables (apoyarse en esto)
 - **Métricas canónicas por entidad** (una sola definición, reusada en todas las pantallas):
   [`getCompanyAdoption`](../../../../lib/db/queries/company-metrics.ts) ·
@@ -171,6 +180,7 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 - **Constantes de incidencias** (nombre/severidad/estado + `incidentDisplayName`/`incidentSummary`): [`lib/incidents/constants.ts`](../../../../lib/incidents/constants.ts).
 - **Hilo de seguimiento + notificaciones** (compartido penalizaciones↔incidencias): [`lib/notifications.ts`](../../../../lib/notifications.ts) (`notifyEntityParties`, `getEntityParties`, `canAccessEntity`) · [`components/shared/activity/ActivityThread.tsx`](../../../../components/shared/activity/ActivityThread.tsx) · [`components/shared/NotificationBell.tsx`](../../../../components/shared/NotificationBell.tsx). **Patrón a replicar** para cualquier entidad con partes que se comunican.
 - **Feedback de una entidad** (avisar + timeline al crear/cambiar estado): [`lib/incidents/notify.ts`](../../../../lib/incidents/notify.ts) como plantilla.
+- **Métrica canónica multi-portal** (una definición reusada en empleado/catering/empresa/admin): [`lib/db/queries/ratings.ts`](../../../../lib/db/queries/ratings.ts) — modelo denormalizado (`tenantCatering`/`tenantEmpresa`/`serviceDate`) para agregar por entidad, por relación y por ventana temporal sin joins. **Patrón a replicar** para cualquier dato agregable cross-portal.
 - **PII**: [`decryptNameSafe`](../../../../lib/crypto/pii.ts) para mostrar nombres (descifra en prod, tolera texto plano en dev).
 - **Reuse de listados**: incidencias por entidad → `getGlobalIncidents({ tenantEmpresa | tenantCatering })`.
 - **Gráficas**: Recharts (instalado) — patrón en `components/admin/dashboard/ChartsSection.tsx`.
@@ -207,6 +217,9 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 - 2026-07-02 — Pablo — **Incidencias · taxonomía**: conectar las incidencias al **catálogo `IncidentReason`** que gestiona el admin (los motivos se usan de verdad; se acaba con el catálogo huérfano).
 - 2026-07-02 — Pablo — **Incidencias · identidad**: **resumen automático + `subject` opcional** (nombre legible que cubre incidencias antiguas por fallback al tipo).
 - 2026-07-02 — Pablo — **Incidencias · navegación**: **sección propia "Incidencias"** en el sidebar admin, fuera de "Calidad y SLAs".
+- 2026-07-02 — Pablo — **Reputación · granularidad**: valoración **por plato** (1–5) + comentario del día; el empleado puntúa cada plato tras la entrega. Media de menú/catering computadas.
+- 2026-07-02 — Pablo — **Reputación · entrada**: el empleado valora desde **Historial** + **aviso proactivo** en la portada de menús.
+- 2026-07-02 — Pablo — **Reputación · navegación**: **sección propia "Reputación"** en el sidebar admin, fuera de "Calidad y SLAs".
 <!-- /AUTO:decisions -->
 
 ---
@@ -220,6 +233,7 @@ queries), y **consistencia cross-pantalla** de adopción/empleados con `getCompa
 - Informes por módulo (Bloque B): se generarán en esta misma carpeta como `<modulo>.md`
 - [`incidencias.md`](./incidencias.md) — rediseño completo del módulo de Incidencias (HU-039)
 - [`penalizaciones.md`](./penalizaciones.md) — detalle + hilo + notificaciones + liquidación (HU-040)
+- [`reputacion.md`](./reputacion.md) — rediseño de Rating y Reputación por plato (HU-041)
 - [`empresas.md`](./empresas.md) · [`caterings.md`](./caterings.md) · [`catalogos-alergenos.md`](./catalogos-alergenos.md)
 <!-- /AUTO:artifacts -->
 

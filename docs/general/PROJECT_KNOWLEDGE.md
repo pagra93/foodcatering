@@ -183,6 +183,14 @@ Una incidencia es un **triángulo** sobre un pedido: **empleado** reporta → **
 4. **Feedback**: `lib/incidents/notify.ts` (avisa al crear/resolver + deja **traza en el hilo**, reutiliza la infra de penalizaciones) + **detalle de incidencia del empleado** con `ActivityThread`.
 Tech-debt: las constantes `INCIDENT_TYPES/SEVERITY_MAP/STATUS_MAP` siguen triplicadas en los 3 `*-incidencias.ts`. Detalle: memoria `thread-notifications` y `docs/producto/features/admin-launch-audit/incidencias.md`.
 
+### Reputación — rating por plato (HU-041, 2026-07-02)
+El módulo "Rating y Reputación" no servía (nadie creaba valoraciones —solo seeds—, eran por **pedido** no por plato, la vista por plato leía un JSON inexistente, `Restaurant.averageRating` stale). Rediseño cross-portal: nuevo modelo **`DishRating`** (valoración **por plato** 1–5 + comentario), con `tenantCatering`/`tenantEmpresa`/`serviceDate` **denormalizados**. Fuente única **`lib/db/queries/ratings.ts`** reusada en los 4 portales.
+- **Empleado** crea la valoración: `rateDishesAction` (RBAC `emp-rating-own:create`) + `RateMealDialog`, desde **Historial** (columna Valorar) y un **aviso proactivo** en la portada de menús.
+- **Catering** ve platos mejor/peor valorados + **valoración por empresa cliente**.
+- **Empresa** ve media/tendencia/distribución/platos/comentarios de sus empleados (`CompanyRatingsTab`).
+- **Admin**: sección propia **"Reputación"** con la **matriz catering×empresa** (calidad de servicio por relación), ranking de caterings y leaderboards de platos.
+`Order.selection` ya llevaba `dishId` por curso (`first/second/dessert`), lo que hizo directa la valoración por plato. Tech-debt: borrar queries legacy de rating (OrderRating) en `admin-quality.ts`. Detalle: `docs/producto/features/admin-launch-audit/reputacion.md`.
+
 ## Key Pointers (para nuevas sesiones)
 
 - **Reglas de trabajo**: [`CLAUDE.md`](../CLAUDE.md) en la raíz.

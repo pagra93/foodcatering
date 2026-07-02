@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "area": "producto",
-  "last_indexed_at": "2026-07-02T18:00:00Z",
+  "last_indexed_at": "2026-07-02T20:00:00Z",
   "tasks": [
     {
       "id": "HU-001",
@@ -610,12 +610,12 @@
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Parcial: incidents→HU-039 (rediseño), penalties→HU-040 (detalle+hilo), audits→8232b49 (detalle). Falta auditar ratings.",
+      "next_action": "Casi cerrado: incidents→HU-039, penalties→HU-040, ratings→HU-041 (rediseño), audits→8232b49 (detalle). Queda solo afinar auditoría de audits/SLA.",
       "created_at": "2026-06-28T07:00:00Z",
-      "last_activity": "2026-07-02T18:00:00Z",
-      "activity_count": 2,
-      "notes": "Incluye audits, incidents, ratings, penalties. incidents y penalties YA hechos como features propias (HU-039 Incidencias, HU-040 Penalizaciones); audits tiene detalle (8232b49). Pendiente real: auditar Rating y Reputación (/admin/quality/ratings).",
-      "updated_at": "2026-07-02T18:00:00Z"
+      "last_activity": "2026-07-02T20:00:00Z",
+      "activity_count": 3,
+      "notes": "Incluye audits, incidents, ratings, penalties. incidents (HU-039), penalties (HU-040) y ratings→Reputación (HU-041) YA hechos como features propias; audits tiene detalle (8232b49). Pendiente real menor: revisión fina de auditorías/SLA.",
+      "updated_at": "2026-07-02T20:00:00Z"
     },
     {
       "id": "HU-029",
@@ -875,6 +875,28 @@
       "activity_count": 4,
       "notes": "Sanción de Plati al catering. f6f50c9: página de detalle admin quality/penalties/[id] + PenaltyDetailActions (aplicar/disputar/resolver). 499fc4c: hilo compartido ActivityMessage + base de notificaciones (lib/notifications.ts getEntityParties/notifyEntityParties/canAccessEntity, lib/db/queries/activity.ts, ActivityThread) — reusable con incidencias. 46d590f (Fase D): NotificationBell + campana en navbars admin/catering/empresa, aviso al aplicar. 75c57e6: plazo de disputa centralizado, timing de liquidación correcto, origen de la penalización registrado. type-check+lint limpios. Doc: docs/producto/features/admin-launch-audit/penalizaciones.md.",
       "updated_at": "2026-07-01T18:00:00Z"
+    },
+    {
+      "id": "HU-041",
+      "title": "Rediseño completo de Rating y Reputación (cross-portal, por plato)",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "high",
+      "origin": "conversacion",
+      "agent_suggested": "age-spe-tech-architect",
+      "depends_on": [],
+      "parent_epic": "EPIC-003",
+      "feature": "admin-launch-audit",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho (5 fases). Sesiones de empleado abiertas requieren re-login para el permiso emp-rating-own:create. Limpieza pendiente: borrar queries legacy de rating (OrderRating) en admin-quality.ts.",
+      "created_at": "2026-07-02T09:00:00Z",
+      "last_activity": "2026-07-02T20:00:00Z",
+      "activity_count": 5,
+      "notes": "El módulo no servía: nadie creaba valoraciones (solo seeds), eran por PEDIDO no por plato, la vista por plato leía selection.dish_ids (inexistente) y Restaurant.averageRating stale. Rediseño: por PLATO (DishRating) que el empleado crea de verdad. F1 (6459052): modelo DishRating + lib/db/queries/ratings.ts (capa canónica) + repunta getCateringQualityMetrics + seed/backfill 558 filas. F2 (5ab465e): el empleado valora — rateDishesAction (RBAC emp-rating-own:create) + RateMealDialog + columna Valorar en Historial + aviso 'valora la comida de ayer' en menús. F3 (8e417d2): catering ve top/bottom platos reales + valoración por empresa cliente. F4 (cd75735): empresa ve media/tendencia/distribución/platos/comentarios (CompanyRatingsTab; borra CateringRatingsTab+API muertos). F5 (e424e9a): sección propia admin 'Reputación' (git mv quality/ratings→reputation, sidebar+section-permissions+breadcrumbs) con matriz catering×empresa + ranking + leaderboards. type-check+lint limpios por fase. Doc: docs/producto/features/admin-launch-audit/reputacion.md.",
+      "updated_at": "2026-07-02T20:00:00Z"
     }
   ],
   "epics": [
@@ -965,25 +987,27 @@
         "HU-037",
         "HU-038",
         "HU-039",
-        "HU-040"
+        "HU-040",
+        "HU-041"
       ],
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Dashboard + Empresas + Caterings hechos + Usuarios/RBAC + Catálogos/Alérgenos + Incidencias (HU-039) + Penalizaciones (HU-040). Siguiente: HU-029 Facturación y HU-031 Compliance (críticos para lanzar).",
+      "next_action": "Hechos: Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + Incidencias (HU-039) + Penalizaciones (HU-040) + Reputación (HU-041). Siguiente: HU-029 Facturación y HU-031 Compliance (críticos para lanzar).",
       "prd_path": null,
       "dossier_path": "docs/producto/features/admin-launch-audit/_dossier.md",
       "artifacts": [
         "docs/producto/features/admin-launch-audit/_dossier.md",
         "docs/producto/features/admin-launch-audit/_events.jsonl",
         "docs/producto/features/admin-launch-audit/incidencias.md",
-        "docs/producto/features/admin-launch-audit/penalizaciones.md"
+        "docs/producto/features/admin-launch-audit/penalizaciones.md",
+        "docs/producto/features/admin-launch-audit/reputacion.md"
       ],
       "created_at": "2026-06-28T07:00:00Z",
-      "last_activity": "2026-07-02T18:00:00Z",
+      "last_activity": "2026-07-02T20:00:00Z",
       "activity_count": 1,
-      "notes": "Revisión completa del panel /admin para lanzamiento: datos cableados correctos, botones que cumplen su etiqueta, sin secciones a medias. Plan: ~/.claude/plans/necesito-que-nos-centremos-cozy-blossom.md. Bloque A=arreglos dashboard, B=auditoría 11 módulos, C=transversal. Incidencias y Penalizaciones se llevaron a rediseño completo (no solo auditoría): HU-039/HU-040.",
-      "updated_at": "2026-07-02T18:00:00Z"
+      "notes": "Revisión completa del panel /admin para lanzamiento: datos cableados correctos, botones que cumplen su etiqueta, sin secciones a medias. Plan: ~/.claude/plans/necesito-que-nos-centremos-cozy-blossom.md. Bloque A=arreglos dashboard, B=auditoría 11 módulos, C=transversal. Incidencias, Penalizaciones y Reputación se llevaron a rediseño completo (no solo auditoría): HU-039/HU-040/HU-041.",
+      "updated_at": "2026-07-02T20:00:00Z"
     }
   ],
   "drift_warnings": [

@@ -15,6 +15,17 @@ Append-only. Cada /review deja una entrada aqui.
 
 ## Reviews
 
+## 2026-07-02 — HU-041 Rediseño de Rating y Reputación (cross-portal, por plato)
+**Tests**: `pnpm type-check` + `pnpm lint` limpios en las 5 fases (0 errores; warnings preexistentes). Migración `20260702190000_dish_rating` aplicada a `comidas_dev` sin drift. Rutas `/admin/reputation` y `/empleado/historial` compilan (307→login), sin 500. Verificado el output de la capa canónica con datos reales (558 DishRating tras backfill): reputación catering 3.9, matriz 2×2, leaderboards con señal. Sin tests automatizados nuevos.
+**Code review**: capa canónica única (`lib/db/queries/ratings.ts`) reusada en los 4 portales — evita el descuadre histórico entre pantallas. Modelo `DishRating` denormaliza `tenantCatering/tenantEmpresa/serviceDate` para agregar sin joins; `@@unique([orderId,dishId])` hace idempotente el upsert. Server action con RBAC (`emp-rating-own:create`) + validación de propiedad (pedido del empleado y DELIVERED). `dishesFromSelection` extraído a módulo puro para no arrastrar Prisma al cliente. Se borró código muerto (CateringRatingsTab + API route que leían OrderRating).
+**Audit**: cumple CLAUDE.md — Server Action para la mutación, filtrado por tenant/propiedad, schema como fuente de verdad, sección nueva cableada al RBAC (sidebar + section-permissions + `rating:view`). Arregla la vista rota que leía `selection.dish_ids`.
+**Evaluator score**: 8.5/10 — Correctness alta, Completeness alta (crea el dato + lo explota en 4 portales + insight catering×empresa), Consistency alta (métrica única). −puntos por falta de tests automatizados y por dejar queries legacy de rating sin borrar.
+**Action items**:
+- [ ] Borrar queries legacy `getGlobalRatingStats/getRatingsByCatering/getRecentRatingComments` (OrderRating) en `admin-quality.ts`.
+- [ ] Tests: valorar un pedido entregado → aparece en catering/empresa/admin; el aviso desaparece al valorar.
+- [ ] Empleados con sesión abierta: re-login para recibir `emp-rating-own:create`.
+- Doc: `docs/producto/features/admin-launch-audit/reputacion.md`.
+
 ## 2026-07-02 — HU-039 Rediseño del módulo de Incidencias (cross-portal)
 **Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores (solo warnings preexistentes) en las 4 fases. Migración aditiva aplicada a `comidas_dev`; `prisma migrate status` sin drift. No se añadieron tests unitarios/E2E nuevos (feature mayormente UI + queries; verificación por type-check estricto + revisión de flujo).
 **Code review**: cambios alineados con las reglas del repo — Server Actions para mutaciones, filtro por tenant en las queries de cada portal, sin `as any`/`@ts-ignore`, RBAC respetado (`permittedAction('emp-incident:create')` en la API nueva de empresa). El catálogo `IncidentReason` deja de estar huérfano. Notificaciones cableadas de forma **no bloqueante** (try/catch) para no romper el flujo de creación/resolución si falla el aviso.
