@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
+import { getUnreadNotifications, getUnreadCount } from '@/lib/db/queries/activity'
 import { EmpresaSidebar } from '@/components/empresa/EmpresaSidebar'
 import { EmpresaNavbar } from '@/components/empresa/EmpresaNavbar'
 import { Toaster } from '@/components/ui/sonner'
@@ -16,6 +17,11 @@ export default async function EmpresaLayout({
   const tenant = await getCurrentTenant()
   const { branding, style } = await withBranding(tenant.id)
 
+  const [notifications, notifCount] = await Promise.all([
+    getUnreadNotifications(session.user.tenantId, session.user.id),
+    getUnreadCount(session.user.tenantId, session.user.id),
+  ])
+
   return (
     <div className="min-h-screen bg-gray-50" style={style}>
       {branding.faviconUrl && (
@@ -29,7 +35,18 @@ export default async function EmpresaLayout({
       />
 
       <div className="lg:pl-64">
-        <EmpresaNavbar tenant={tenant} user={session.user} />
+        <EmpresaNavbar
+          tenant={tenant}
+          user={session.user}
+          notifications={notifications.map((n) => ({
+            id: n.id,
+            title: n.title,
+            message: n.message,
+            actionUrl: n.actionUrl,
+            createdAt: n.createdAt,
+          }))}
+          notifCount={notifCount}
+        />
 
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

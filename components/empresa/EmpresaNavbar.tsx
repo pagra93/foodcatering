@@ -1,7 +1,8 @@
 'use client'
 
-import { Bell, Search, LogOut, User, Settings } from 'lucide-react'
+import { Search, LogOut, User, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { NotificationBell } from '@/components/shared/NotificationBell'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,9 +25,22 @@ type EmpresaNavbarProps = {
     email?: string | null
     role?: string | null
   }
+  notifications?: {
+    id: string
+    title: string
+    message: string
+    actionUrl: string | null
+    createdAt: Date
+  }[]
+  notifCount?: number
 }
 
-export function EmpresaNavbar({ tenant: _tenant, user }: EmpresaNavbarProps) {
+export function EmpresaNavbar({
+  tenant: _tenant,
+  user,
+  notifications = [],
+  notifCount = 0,
+}: EmpresaNavbarProps) {
   const handleSignOut = async () => {
     await signOut({ callbackUrl: '/login' })
   }
@@ -48,11 +62,8 @@ export function EmpresaNavbar({ tenant: _tenant, user }: EmpresaNavbarProps) {
 
         {/* Acciones */}
         <div className="flex items-center gap-3">
-          {/* Notificaciones */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-          </Button>
+          {/* Notificaciones (reales) */}
+          <NotificationBell items={notifications} count={notifCount} />
 
           {/* Menú de usuario */}
           <DropdownMenu>

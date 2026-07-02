@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
+import { createNotification, notifyEntityParties } from '@/lib/notifications'
 import {
   applyPenaltySchema,
   createPenaltySchema,
@@ -119,6 +120,15 @@ export async function applyPenaltyAction(input: { penaltyId: string }) {
     },
   })
 
+  await createNotification({
+    tenantId: current.tenantCatering,
+    type: 'ALERT',
+    priority: 'HIGH',
+    title: 'Penalización aplicada',
+    message: `Se te ha aplicado una penalización de ${Number(current.amount).toFixed(2)}€. Tienes 7 días para disputarla si no procede.`,
+    actionUrl: `/catering/calidad/penalizaciones/${penaltyId}`,
+  })
+
   revalidatePath('/admin/quality/penalties')
   revalidatePath(`/admin/quality/penalties/${penaltyId}`)
   return { id: updated.id }
@@ -159,6 +169,14 @@ export async function waivePenaltyAction(input: {
       before: { status: current.status },
       after: { status: 'WAIVED', reason },
     },
+  })
+
+  await createNotification({
+    tenantId: current.tenantCatering,
+    type: 'INFO',
+    title: 'Penalización perdonada',
+    message: 'Una penalización que tenías ha sido perdonada por el equipo Plati.',
+    actionUrl: `/catering/calidad/penalizaciones/${penaltyId}`,
   })
 
   revalidatePath('/admin/quality/penalties')
@@ -215,7 +233,17 @@ export async function disputePenaltyAction(input: {
     },
   })
 
+  // Avisa al equipo Plati (ROOT) — se excluye al propio catering autor.
+  await notifyEntityParties('PENALTY', penaltyId, {
+    excludeTenantId: current.tenantCatering,
+    priority: 'HIGH',
+    title: 'Penalización disputada',
+    message: `Un catering ha disputado una penalización: ${reason.slice(0, 140)}`,
+  })
+
   revalidatePath('/catering/calidad')
+  revalidatePath(`/catering/calidad/penalizaciones/${penaltyId}`)
   revalidatePath('/admin/quality/penalties')
+  revalidatePath(`/admin/quality/penalties/${penaltyId}`)
   return { id: updated.id }
 }

@@ -3,7 +3,7 @@
  * Diseño limpio y moderno
  */
 
-import { Bell, Search, User, LogOut, Settings, Moon } from 'lucide-react'
+import { Search, User, LogOut, Settings, Moon } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
+import { NotificationBellServer } from '@/components/shared/NotificationBellServer'
 import { getRequiredSession } from '@/lib/auth/session'
 import { signOut } from '@/lib/auth'
 
@@ -54,52 +55,8 @@ export async function AdminNavbar() {
             <Moon className="h-5 w-5" />
           </button>
 
-          {/* Notificaciones */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="relative flex h-10 w-10 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground">
-                <Bell className="h-5 w-5" />
-                {/* Badge de notificaciones no leídas */}
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-80">
-              <DropdownMenuLabel>Notificaciones</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <div className="max-h-96 overflow-y-auto">
-                {/* Ejemplo de notificación */}
-                <div className="flex gap-3 p-3 hover:bg-muted">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-                    <Bell className="h-5 w-5 text-destructive" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Documento sanitario vencido</p>
-                    <p className="text-xs text-muted-foreground">
-                      Catering "La Buena Mesa" - hace 2 horas
-                    </p>
-                  </div>
-                </div>
-                <DropdownMenuSeparator />
-                <div className="flex gap-3 p-3 hover:bg-muted">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-yema-soft">
-                    <Bell className="h-5 w-5 text-tinta" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">Pico de cancelaciones</p>
-                    <p className="text-xs text-muted-foreground">
-                      Empresa "Tech Corp" - hace 3 horas
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-              <div className="p-2 text-center">
-                <button className="text-sm text-primary hover:underline">
-                  Ver todas las notificaciones
-                </button>
-              </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {/* Notificaciones (reales) */}
+          <NotificationBellServer />
 
           {/* User Menu */}
           <DropdownMenu>
