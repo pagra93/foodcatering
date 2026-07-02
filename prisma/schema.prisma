@@ -1032,7 +1032,9 @@ model Incident {
   orderId        String? @map("order_id")
 
   // Tipo y severidad
-  type        String // De catálogo
+  type        String // legacy: código del motivo (fallback si no hay reasonId)
+  reasonId    String?          @map("reason_id") // motivo del catálogo IncidentReason
+  subject     String? // título/asunto corto opcional
   severity    IncidentSeverity @default(LOW)
   description String?
   metadata    Json?
@@ -1051,11 +1053,13 @@ model Incident {
   resolvedAt DateTime? @map("resolved_at")
 
   // Relación
-  order Order? @relation(fields: [orderId], references: [id])
+  order  Order?          @relation(fields: [orderId], references: [id])
+  reason IncidentReason? @relation(fields: [reasonId], references: [id])
 
   @@index([tenantEmpresa, status])
   @@index([tenantCatering, status])
   @@index([orderId])
+  @@index([reasonId])
   @@map("incidents")
 }
 
@@ -2065,6 +2069,8 @@ model IncidentReason {
   active               Boolean                @default(true)
   createdAt            DateTime               @default(now()) @map("created_at")
   updatedAt            DateTime               @updatedAt @map("updated_at")
+
+  incidents Incident[]
 
   @@index([scope, active])
   @@index([tenantId])

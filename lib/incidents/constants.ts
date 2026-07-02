@@ -48,6 +48,32 @@ export function incidentTypeDescription(type: string): string | null {
   return INCIDENT_TYPES[type as keyof typeof INCIDENT_TYPES]?.description ?? null
 }
 
+/**
+ * Nombre legible de una incidencia para listados/cabeceras.
+ * Prioridad: asunto escrito > nombre del motivo del catálogo > etiqueta del tipo legacy.
+ */
+export function incidentDisplayName(input: {
+  subject?: string | null
+  reasonName?: string | null
+  type: string
+}): string {
+  const subject = input.subject?.trim()
+  if (subject) return subject
+  if (input.reasonName) return input.reasonName
+  return incidentTypeLabel(input.type)
+}
+
+/** Resumen de una línea: nombre + contexto (plato/pedido). */
+export function incidentSummary(input: {
+  subject?: string | null
+  reasonName?: string | null
+  type: string
+  context?: string | null
+}): string {
+  const name = incidentDisplayName(input)
+  return input.context ? `${name} · ${input.context}` : name
+}
+
 // ── Severidad (enum real: LOW / MEDIUM / HIGH) ──────────────────────────────
 export const SEVERITY_META: Record<
   IncidentSeverity,
