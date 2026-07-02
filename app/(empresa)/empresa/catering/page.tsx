@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getAssignedCatering } from '@/lib/db/queries/empresa-catering'
+import { getCompanyCateringReputation } from '@/lib/db/queries/ratings'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -8,7 +9,7 @@ import { AlertTriangle } from 'lucide-react'
 import { CateringInfoTab } from '@/components/empresa/catering/CateringInfoTab'
 import { CateringMenusTab } from '@/components/empresa/catering/CateringMenusTab'
 import { CateringSLATab } from '@/components/empresa/catering/CateringSLATab'
-import { CateringRatingsTab } from '@/components/empresa/catering/CateringRatingsTab'
+import { CompanyRatingsTab } from '@/components/empresa/catering/CompanyRatingsTab'
 
 /**
  * Página de gestión de Catering
@@ -17,7 +18,10 @@ import { CateringRatingsTab } from '@/components/empresa/catering/CateringRating
 
 async function CateringData() {
   const tenant = await getCurrentTenant()
-  const catering = await getAssignedCatering(tenant.id)
+  const [catering, reputation] = await Promise.all([
+    getAssignedCatering(tenant.id),
+    getCompanyCateringReputation(tenant.id),
+  ])
 
   if (!catering || !catering.restaurant) {
     return (
@@ -65,10 +69,7 @@ async function CateringData() {
         </TabsContent>
 
         <TabsContent value="ratings">
-          <CateringRatingsTab
-            tenantId={tenant.id}
-            cateringId={restaurant.id}
-          />
+          <CompanyRatingsTab data={reputation} />
         </TabsContent>
       </Tabs>
     </>
