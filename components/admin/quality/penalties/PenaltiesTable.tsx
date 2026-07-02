@@ -1,6 +1,7 @@
 'use client'
 
 import { useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -89,6 +90,7 @@ export function PenaltiesTable({ rows }: { rows: Row[] }) {
             <th className="px-4 py-3 text-left">Estado</th>
             <th className="px-4 py-3 text-left">Fecha</th>
             <th className="px-4 py-3 text-right">Acciones</th>
+            <th className="px-4 py-3 text-right">Detalle</th>
           </tr>
         </thead>
         <tbody>
@@ -155,12 +157,20 @@ export function PenaltiesTable({ rows }: { rows: Row[] }) {
                   )}
                 </div>
               </td>
+              <td className="px-4 py-3 text-right">
+                <Link
+                  href={`/admin/quality/penalties/${p.id}`}
+                  className="text-xs font-medium text-primary hover:underline"
+                >
+                  Ver detalle
+                </Link>
+              </td>
             </tr>
           ))}
           {rows.length === 0 && (
             <tr>
               <td
-                colSpan={7}
+                colSpan={8}
                 className="px-4 py-12 text-center text-sm text-gray-500"
               >
                 No hay penalizaciones registradas.
