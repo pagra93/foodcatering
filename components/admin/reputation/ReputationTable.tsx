@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment, useMemo, useState } from 'react'
+import Link from 'next/link'
 import {
   ChevronDown,
   ChevronRight,
@@ -329,6 +330,14 @@ export function ReputationTable({ caterings }: { caterings: CateringReputationRo
                               )}
                             </ul>
                           </div>
+                        </div>
+                        <div className="mt-4 border-t pt-3">
+                          <Link
+                            href={`/admin/reputation/${c.tenantId}`}
+                            className="text-sm font-medium text-primary hover:underline"
+                          >
+                            Ver ficha completa →
+                          </Link>
                         </div>
                       </td>
                     </tr>

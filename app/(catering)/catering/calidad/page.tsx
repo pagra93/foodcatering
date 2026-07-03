@@ -6,14 +6,16 @@ import {
   getAuditsForCatering,
 } from '@/lib/db/queries/admin-audits'
 import {
-  getCateringDishRatings,
-  getCateringOwnRatingStats,
   getCateringRecentComments,
   getOwnPenalties,
   getOwnPenaltiesKPIs,
   getSlaByClient,
 } from '@/lib/db/queries/catering-calidad'
-import { getCateringReputationByCompany } from '@/lib/db/queries/ratings'
+import {
+  getCateringReputationByCompany,
+  getCateringReputation,
+  getCateringDishTable,
+} from '@/lib/db/queries/ratings'
 import { CalidadTabs } from '@/components/catering/calidad/CalidadTabs'
 
 export default async function CateringCalidadPage() {
@@ -22,8 +24,8 @@ export default async function CateringCalidadPage() {
   const tenantId = session.user.tenantId
 
   const [
-    stats,
-    dishRatings,
+    reputation,
+    dishTable,
     comments,
     byCompany,
     audits,
@@ -31,8 +33,8 @@ export default async function CateringCalidadPage() {
     penaltiesKpis,
     slas,
   ] = await Promise.all([
-    getCateringOwnRatingStats(tenantId),
-    getCateringDishRatings(tenantId, 10),
+    getCateringReputation(tenantId),
+    getCateringDishTable(tenantId),
     getCateringRecentComments(tenantId, 20),
     getCateringReputationByCompany(tenantId),
     getAuditsForCatering(tenantId),
@@ -56,7 +58,7 @@ export default async function CateringCalidadPage() {
         <Card className="p-4">
           <p className="text-sm text-gray-500">Rating medio</p>
           <p className="mt-1 text-2xl font-bold">
-            {stats.averageRating ?? '—'}{' '}
+            {reputation.average ?? '—'}{' '}
             <span className="text-sm font-normal text-gray-500">/ 5</span>
           </p>
         </Card>
@@ -88,9 +90,8 @@ export default async function CateringCalidadPage() {
       </div>
 
       <CalidadTabs
-        stats={stats}
-        topDishes={dishRatings.top}
-        bottomDishes={dishRatings.bottom}
+        reputation={reputation}
+        dishTable={dishTable}
         comments={comments}
         byCompany={byCompany}
         audits={audits}

@@ -2,66 +2,36 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { format, formatDistanceToNow } from 'date-fns'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import {
   AlertTriangle,
   ExternalLink,
-  MessageSquare,
   ShieldCheck,
-  Star,
 } from 'lucide-react'
 import type {
   AuditType,
-  DishCourse,
   PenaltyStatus,
   PenaltyType,
   RestaurantAudit,
   AssignmentType,
 } from '@prisma/client'
 import { DISPUTE_WINDOW_DAYS } from '@/lib/validations/penalty'
+import type {
+  ReputationSummary,
+  TrendPoint,
+  EntityScore,
+  DishRow,
+  RatingComment,
+} from '@/lib/db/queries/ratings'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { CateringReputationPanel } from '@/components/reputation/CateringReputationPanel'
 import { DisputePenaltyButton } from './DisputePenaltyButton'
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
 type Tab = 'ratings' | 'audits' | 'penalties' | 'slas'
-
-type RatingStats = {
-  total: number
-  averageRating: number | null
-  averageTaste: number | null
-  averagePortion: number | null
-  averagePresentation: number | null
-  ratings30d: number
-  avg30d: number | null
-  avgThisWeek: number | null
-  avgPrevWeek: number | null
-}
-
-type DishRating = {
-  dishId: string
-  name: string
-  course: DishCourse
-  avgRating: number
-  ratings: number
-}
-
-type Comment = {
-  id: string
-  rating: number
-  comment: string | null
-  createdAt: Date
-  dishName?: string
-}
-
-type CompanyScore = {
-  tenantId: string
-  name: string
-  average: number
-  count: number
-}
 
 type PenaltyRow = {
   id: string
@@ -92,11 +62,10 @@ type SlaRow = {
 }
 
 type Props = {
-  stats: RatingStats
-  topDishes: DishRating[]
-  bottomDishes: DishRating[]
-  comments: Comment[]
-  byCompany: CompanyScore[]
+  reputation: ReputationSummary & { trend: TrendPoint[] }
+  dishTable: DishRow[]
+  comments: RatingComment[]
+  byCompany: EntityScore[]
   audits: RestaurantAudit[]
   penalties: PenaltyRow[]
   slas: SlaRow[]
@@ -108,11 +77,6 @@ function scoreColor(s: number) {
   if (s >= 80) return 'text-emerald-600'
   if (s >= 60) return 'text-amber-600'
   return 'text-red-600'
-}
-
-function starsInline(rating: number | null) {
-  if (rating === null) return '—'
-  return `${rating.toFixed(1)} ⭐`
 }
 
 const AUDIT_TYPE_LABEL: Record<AuditType, string> = {
@@ -144,7 +108,7 @@ export function CalidadTabs(props: Props) {
   const [tab, setTab] = useState<Tab>('ratings')
 
   const tabs: { id: Tab; label: string; badge?: string }[] = [
-    { id: 'ratings', label: 'Ratings', badge: props.stats.averageRating ? `${props.stats.averageRating} ⭐` : undefined },
+    { id: 'ratings', label: 'Reputación', badge: props.reputation.average ? `${props.reputation.average} ⭐` : undefined },
     { id: 'audits', label: 'Auditorías', badge: `${props.audits.length}` },
     {
       id: 'penalties',
@@ -185,7 +149,16 @@ export function CalidadTabs(props: Props) {
         ))}
       </div>
 
-      {tab === 'ratings' && <RatingsTab {...props} />}
+      {tab === 'ratings' && (
+        <CateringReputationPanel
+          summary={props.reputation}
+          trend={props.reputation.trend}
+          byCompany={props.byCompany}
+          dishes={props.dishTable}
+          comments={props.comments}
+          dishHrefBase="/catering/calidad/plato"
+        />
+      )}
       {tab === 'audits' && <AuditsTab audits={props.audits} />}
       {tab === 'penalties' && <PenaltiesTab penalties={props.penalties} />}
       {tab === 'slas' && <SlasTab slas={props.slas} />}
@@ -193,181 +166,6 @@ export function CalidadTabs(props: Props) {
   )
 }
 
-// ─── Tab: Ratings ───────────────────────────────────────────────────────
-
-function RatingsTab({
-  stats,
-  topDishes,
-  bottomDishes,
-  comments,
-  byCompany,
-}: {
-  stats: RatingStats
-  topDishes: DishRating[]
-  bottomDishes: DishRating[]
-  comments: Comment[]
-  byCompany: CompanyScore[]
-}) {
-  const weekTrend =
-    stats.avgThisWeek !== null && stats.avgPrevWeek !== null
-      ? stats.avgThisWeek - stats.avgPrevWeek
-      : null
-
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Rating medio</p>
-          <p className="mt-1 text-2xl font-bold">{starsInline(stats.averageRating)}</p>
-          <p className="mt-1 text-xs text-gray-500">
-            {stats.total} valoraciones de platos
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Últimos 30 días</p>
-          <p className="mt-1 text-2xl font-bold">{starsInline(stats.avg30d)}</p>
-          <p className="mt-1 text-xs text-gray-500">
-            {stats.ratings30d} valoraciones
-          </p>
-        </Card>
-        <Card className="p-4">
-          <p className="text-sm text-gray-500">Esta semana</p>
-          <p className="mt-1 text-2xl font-bold">{starsInline(stats.avgThisWeek)}</p>
-          {weekTrend !== null && (
-            <p
-              className={`mt-1 text-xs ${
-                weekTrend >= 0 ? 'text-emerald-600' : 'text-red-600'
-              }`}
-            >
-              {weekTrend >= 0 ? '↑' : '↓'} {Math.abs(weekTrend).toFixed(1)} vs semana pasada
-            </p>
-          )}
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        <Card className="p-5">
-          <h3 className="mb-3 text-base font-semibold text-emerald-700">
-            Platos mejor valorados
-          </h3>
-          <ol className="space-y-2 text-sm">
-            {topDishes.map((d, i) => (
-              <li key={d.dishId} className="flex items-center justify-between">
-                <span>
-                  <span className="mr-2 text-xs text-gray-500">#{i + 1}</span>
-                  {d.name}
-                  <span className="ml-2 text-xs text-gray-400">
-                    ({d.ratings} valoraciones)
-                  </span>
-                </span>
-                <span className="font-medium">{d.avgRating} ⭐</span>
-              </li>
-            ))}
-            {topDishes.length === 0 && (
-              <li className="py-4 text-center text-xs text-gray-500">
-                Aún no hay platos valorados.
-              </li>
-            )}
-          </ol>
-        </Card>
-        <Card className="p-5">
-          <h3 className="mb-3 text-base font-semibold text-red-700">
-            Platos con peor valoración
-          </h3>
-          <ol className="space-y-2 text-sm">
-            {bottomDishes.map((d, i) => (
-              <li key={d.dishId} className="flex items-center justify-between">
-                <span>
-                  <span className="mr-2 text-xs text-gray-500">#{i + 1}</span>
-                  {d.name}
-                  <span className="ml-2 text-xs text-gray-400">
-                    ({d.ratings})
-                  </span>
-                </span>
-                <span className="font-medium">{d.avgRating} ⭐</span>
-              </li>
-            ))}
-            {bottomDishes.length === 0 && (
-              <li className="py-4 text-center text-xs text-gray-500">
-                Sin datos suficientes.
-              </li>
-            )}
-          </ol>
-        </Card>
-      </div>
-
-      {/* Cómo te valora cada empresa cliente */}
-      <Card className="p-5">
-        <h3 className="mb-3 text-base font-semibold">
-          Valoración por empresa cliente
-        </h3>
-        <p className="mb-3 text-xs text-gray-500">
-          Nota media que dan los empleados de cada empresa a tus platos. Detecta
-          en qué cliente flojea el servicio.
-        </p>
-        <ol className="space-y-2 text-sm">
-          {byCompany.map((c) => (
-            <li key={c.tenantId} className="flex items-center justify-between">
-              <span className="truncate">{c.name}</span>
-              <span className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
-                  ({c.count} valoraciones)
-                </span>
-                <span className="font-medium">{c.average} ⭐</span>
-              </span>
-            </li>
-          ))}
-          {byCompany.length === 0 && (
-            <li className="py-4 text-center text-xs text-gray-500">
-              Aún no hay valoraciones de ninguna empresa.
-            </li>
-          )}
-        </ol>
-      </Card>
-
-      <Card className="p-5">
-        <div className="mb-3 flex items-center gap-2">
-          <MessageSquare className="h-4 w-4 text-primary" />
-          <h3 className="text-base font-semibold">Comentarios recientes</h3>
-        </div>
-        <div className="space-y-3">
-          {comments.map((c) => (
-            <div
-              key={c.id}
-              className="border-l-2 border-gray-200 pl-3 text-sm"
-            >
-              <div className="mb-1 flex items-center gap-2 text-xs text-gray-500">
-                <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
-                <span>{c.rating} / 5</span>
-                {c.dishName && (
-                  <>
-                    <span>·</span>
-                    <span className="font-medium text-gray-600">
-                      {c.dishName}
-                    </span>
-                  </>
-                )}
-                <span>·</span>
-                <span>
-                  {formatDistanceToNow(c.createdAt, {
-                    locale: es,
-                    addSuffix: true,
-                  })}
-                </span>
-              </div>
-              <p className="text-gray-700">"{c.comment}"</p>
-            </div>
-          ))}
-          {comments.length === 0 && (
-            <p className="py-4 text-center text-sm text-gray-500">
-              Aún no hay comentarios.
-            </p>
-          )}
-        </div>
-      </Card>
-    </div>
-  )
-}
 
 // ─── Tab: Auditorías ────────────────────────────────────────────────────
 
