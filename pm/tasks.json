@@ -913,7 +913,7 @@
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Hecho (4 fases). Reiniciar pnpm dev tras migración. Tech-debt: retirar columna legacy Company.plan (requiere reescribir 3 seeds); enforcement de cuota de caterings pendiente.",
+      "next_action": "Hecho y cerrado del todo (4 fases + retirada del enum f0547e9). Todas las empresas con saasPlanId (7/7). Sin legacy. Reiniciar pnpm dev tras migraciones.",
       "created_at": "2026-07-03T09:00:00Z",
       "last_activity": "2026-07-03T14:00:00Z",
       "activity_count": 4,

@@ -2,7 +2,7 @@
 
 > Feature: `admin-launch-audit` · Épica: **EPIC-003** · Tarea: **HU-042**
 > Estado: **hecho** (2026-07-03) · Rama: `chore/pmx10-v3-migration`
-> Commits: `6a0ac64` (F1) · `848d18b` (F2) · `413ef1d` (F3) · `3f0a105` (F4)
+> Commits: `6a0ac64` (F1) · `848d18b` (F2) · `413ef1d` (F3) · `3f0a105` (F4) · `f0547e9` (retirada del enum)
 
 ## Por qué (auditoría)
 
@@ -61,6 +61,13 @@ planes dinámicos (enum→FK), cuotas de empleados/sedes/caterings, features de 
   Validación `createCompanySchema` a `saasPlanId`. `companies.ts` expone el plan por nombre + id.
   MRR verificado idéntico (**1643 €/mes**).
 
+### Cierre — retirada del enum (`f0547e9`)
+Todas las empresas tienen plan asignado (`saasPlanId`, 7/7). Se **retira el enum `Company.plan`**
+(migración `20260703150000_drop_company_plan_enum`: DROP COLUMN + DROP TYPE). Los seeds
+(`seed.ts`/`seed-demo.ts`/`seed-companies.ts`) asignan `saasPlanId` vía helper
+`prisma/_ensure-plans.ts`; `createTenant` asigna Starter por FK. Código muerto retirado
+(`updateSaasPlanAction`/`updateSaasPlanSchema`/`companyPlanEnum`). 145 tests verdes.
+
 ## Modelo de datos (referencia)
 
 - `SaasPlan`: `code String @unique`, `scope PlanScope`, `tenantEmpresa?`, `monthlyPrice`/`yearlyPrice`,
@@ -78,10 +85,11 @@ planes dinámicos (enum→FK), cuotas de empleados/sedes/caterings, features de 
 
 ## Notas / tech-debt
 
-- **`Company.plan` (enum) queda como columna legacy** sin uso (removible en limpieza futura, requiere
-  reescribir 3 seeds + migración de columna). Idem `SaasPlan.maxOrdersMonth` (no se enforca aún).
-- Cuota de **caterings**: el límite existe y se muestra, pero la asignación de catering es admin-driven
-  (sin path de creación empresa) → enforcement pendiente si se decide.
+- **Enum `Company.plan` RETIRADO** (`f0547e9`) — ya no queda legacy. `SaasPlan.maxOrdersMonth` sigue en
+  el modelo pero no se enforca (columna disponible).
+- Cuota de **caterings**: el límite existe, se muestra y se cuenta, pero **no existe ningún flujo que
+  cree asignaciones de catering en la app** (solo seeds) → no hay punto donde bloquear. Cuando se
+  construya el flujo de asignar catering, se cablea igual que empleados/sedes (`withinLimit`).
 - La **landing** (`lib/landing/content.ts` `pricingTiers`) sigue desacoplada (marketing, precio por
   empleado).
 
