@@ -3,6 +3,7 @@
 > Feature: `admin-launch-audit` · Épica: **EPIC-003** · Tarea: **HU-041**
 > Estado: **hecho** (2026-07-02) · Rama: `chore/pmx10-v3-migration`
 > Commits: `6459052` (F1) · `5ab465e` (F2) · `8e417d2` (F3) · `cd75735` (F4) · `e424e9a` (F5)
+> Ampliaciones: `18527d8` (tabla superadmin) · `3eed684` (detalle por catering + por plato)
 
 ## Por qué (el módulo no servía)
 
@@ -72,6 +73,28 @@ catering y por relación **catering×empresa**. Ventaja: `Order.selection` ya ll
 - Página reescrita: media global + distribución, **matriz catering×empresa** (insight clave),
   ranking de caterings, leaderboards de platos de la plataforma, comentarios. "Calidad y SLAs" queda
   con auditorías + penalizaciones.
+
+### Ampliación A — Vista superadmin como tabla (`18527d8`)
+La página `/admin/reputation` pasó de tarjetas pasivas a una **tabla de caterings** buscable +
+ordenable por cualquier columna, con filas expandibles (por empresa + platos del catering). Se retiró
+el leaderboard global de platos (mezclaba platos de distintos caterings) y la matriz suelta.
+`getReputationOverview()` arma una fila rica por catering en una pasada.
+
+### Ampliación B — Detalle por catering + por plato (`3eed684`)
+Profundidad para investigar (admin) y para el dueño (catering):
+- Capa: `getCateringDishTable` (todos los platos con media/nº/distribución/tendencia) y
+  `getCateringDishDetail` (distribución + tendencia mensual + por empresa + **todos los comentarios**);
+  parametrizadas por `tenantCatering` → reutilizadas por admin y catering.
+- Componentes compartidos `components/reputation/`: `CateringReputationPanel` (KPIs + tendencia + por
+  empresa + **tabla de platos** buscable/ordenable con drill-down) y `DishReputationDetail` (ficha del
+  plato con todos sus comentarios).
+- **Catering**: la pestaña de Calidad es ahora "Reputación" con la tabla completa; clic en un plato →
+  `/catering/calidad/plato/[dishId]`.
+- **Admin**: ficha `/admin/reputation/[cateringId]` (misma vista) + `.../plato/[dishId]`; la tabla
+  enlaza "Ver ficha completa". Los platos van **anidados por catering** (no globales). Scope: el
+  detalle hace `notFound` si el plato no tiene valoraciones bajo ese catering.
+- Decisiones: la reputación del catering se queda **dentro de Calidad** (no sección nueva); detalle de
+  plato como **página dedicada**; comentarios **solo lectura** (sin respuesta del catering, sin cambios de BD).
 
 ## Modelo de datos (referencia)
 
