@@ -94,7 +94,7 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
       label: 'penalizaciones',
       actions: [VIEW('penalizaciones'), { action: 'create', desc: 'Crear penalización' }, { action: 'edit', desc: 'Editar penalización' }],
     },
-    { resource: 'plan', label: 'planes SaaS', actions: [VIEW('planes SaaS'), { action: 'create', desc: 'Crear plan' }, { action: 'edit', desc: 'Editar plan' }] },
+    { resource: 'plan', label: 'planes SaaS', actions: [VIEW('planes SaaS'), { action: 'create', desc: 'Crear plan' }, { action: 'edit', desc: 'Editar plan' }, { action: 'delete', desc: 'Eliminar plan' }] },
     { resource: 'settlement', label: 'liquidaciones', actions: [VIEW('liquidaciones'), { action: 'create', desc: 'Generar liquidación' }] },
     { resource: 'commission', label: 'comisiones', actions: [VIEW('comisiones'), { action: 'edit', desc: 'Editar comisiones' }] },
     { resource: 'metric', label: 'métricas MRR/ARR', actions: [VIEW('métricas')] },

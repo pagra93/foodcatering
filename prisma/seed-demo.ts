@@ -49,10 +49,12 @@ async function main() {
     },
   })
 
+  // Catálogo de planes: lo siembra prisma/seed-plans.ts (features + límites +
+  // scope). Aquí solo garantizamos que existan los 3 de sistema (idempotente).
   const saasPlans = [
-    { code: 'STARTER' as const, name: 'Starter', monthlyPrice: 49, maxEmployees: 20, maxOrdersMonth: 500 },
-    { code: 'GROWTH' as const, name: 'Growth', monthlyPrice: 149, maxEmployees: 100, maxOrdersMonth: 3000 },
-    { code: 'ENTERPRISE' as const, name: 'Enterprise', monthlyPrice: 499, maxEmployees: null, maxOrdersMonth: null },
+    { code: 'starter', name: 'Starter', monthlyPrice: 49, maxEmployees: 20, maxOrdersMonth: 500, support: 'BASIC' },
+    { code: 'growth', name: 'Growth', monthlyPrice: 149, maxEmployees: 100, maxOrdersMonth: 3000, support: 'PRIORITY' },
+    { code: 'enterprise', name: 'Enterprise', monthlyPrice: 499, maxEmployees: null, maxOrdersMonth: null, support: 'DEDICATED' },
   ]
   for (const plan of saasPlans) {
     await prisma.saasPlan.upsert({
@@ -64,8 +66,7 @@ async function main() {
         monthlyPrice: plan.monthlyPrice,
         maxEmployees: plan.maxEmployees,
         maxOrdersMonth: plan.maxOrdersMonth,
-        features: [],
-        supportLevel: plan.code === 'ENTERPRISE' ? 'DEDICATED' : plan.code === 'GROWTH' ? 'PRIORITY' : 'BASIC',
+        supportLevel: plan.support,
       },
     })
   }

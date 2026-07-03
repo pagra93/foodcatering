@@ -13,16 +13,15 @@ export async function getAllSaasPlans() {
 export async function getSaasPlanStats() {
   const plans = await prisma.saasPlan.findMany()
   const usage = await prisma.company.groupBy({
-    by: ['plan'],
+    by: ['saasPlanId'],
     where: { tenant: { status: 'ACTIVE', deletedAt: null } },
     _count: { _all: true },
   })
-  const countByPlan = new Map(usage.map((u) => [u.plan, u._count._all]))
+  const countById = new Map(usage.map((u) => [u.saasPlanId, u._count._all]))
   return plans.map((p) => ({
     ...p,
-    activeCompanies: countByPlan.get(p.code) ?? 0,
-    monthlyRevenue:
-      (countByPlan.get(p.code) ?? 0) * Number(p.monthlyPrice),
+    activeCompanies: countById.get(p.id) ?? 0,
+    monthlyRevenue: (countById.get(p.id) ?? 0) * Number(p.monthlyPrice),
   }))
 }
 

@@ -221,7 +221,9 @@ model Company {
   legalName      String      @map("legal_name")
   cif            String      @unique
   billingAddress String      @map("billing_address")
+  /// @deprecated Transitorio: en migración a `saasPlanId` (FK). Se retirará.
   plan           CompanyPlan @default(STARTER)
+  saasPlanId     String?     @map("saas_plan_id") // FK dinámica al catálogo SaasPlan
 
   // ===== CONTACTOS =====
   contactRrhhName     String? @map("contact_rrhh_name")
@@ -264,10 +266,12 @@ model Company {
   policyHistory       CompanyPolicyHistory[]
   cateringAssignments CompanyCateringAssignment[]
   settings            CompanySettings? // Preferencias operativas del portal
+  saasPlan            SaasPlan?                   @relation(fields: [saasPlanId], references: [id])
 
   @@index([tenantId])
   @@index([deductibilityRate])
   @@index([plan])
+  @@index([saasPlanId])
   @@map("companies")
 }
 
@@ -1826,26 +1830,62 @@ model SecurityReport {
 
 // ─── Facturación (Sprint 4) ────────────────────────────────────────────
 
-/// Catálogo de planes SaaS que Plati ofrece a las empresas.
-/// `Company.plan` (enum existente) referencia este catálogo por `code`.
-/// El precio es lo que la empresa paga mensualmente como suscripción SaaS,
-/// separado de la factura que el catering le emite por los pedidos.
-model SaasPlan {
-  id             String      @id @default(uuid())
-  code           CompanyPlan @unique
-  name           String
-  description    String?
-  monthlyPrice   Decimal     @db.Decimal(10, 2) @map("monthly_price")
-  yearlyPrice    Decimal?    @db.Decimal(10, 2) @map("yearly_price")
-  features       Json        @default("[]") // [{name, included, limit?}]
-  maxEmployees   Int?        @map("max_employees")
-  maxOrdersMonth Int?        @map("max_orders_month")
-  supportLevel   String      @default("BASIC") @map("support_level") // BASIC / PRIORITY / DEDICATED
-  active         Boolean     @default(true)
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+/// Ámbito de un plan SaaS: de sistema (los estándar, no borrables) o a medida
+/// (custom; si `tenantEmpresa` está fijado, es privado de esa empresa).
+enum PlanScope {
+  SYSTEM @map("system")
+  CUSTOM @map("custom")
 
+  @@map("plan_scope")
+}
+
+/// Catálogo de planes SaaS que Plati ofrece a las empresas (dinámico, como los
+/// roles). `Company.saasPlanId` referencia este catálogo por FK. Las features
+/// habilitadas viven en `PlanFeature` (join, como `RolePermission`); los límites
+/// numéricos en las columnas `max*`. El precio es la suscripción SaaS mensual,
+/// separada de la factura que el catering emite por los pedidos.
+model SaasPlan {
+  id            String    @id @default(uuid())
+  code          String    @unique // clave estable libre (ej. "starter", "acme-custom")
+  name          String
+  description   String?
+  scope         PlanScope @default(SYSTEM)
+  tenantEmpresa String?   @map("tenant_empresa") // plan privado de una empresa (scope CUSTOM)
+
+  monthlyPrice Decimal  @db.Decimal(10, 2) @map("monthly_price")
+  yearlyPrice  Decimal? @db.Decimal(10, 2) @map("yearly_price")
+
+  // Límites (null = ilimitado)
+  maxEmployees   Int? @map("max_employees")
+  maxSites       Int? @map("max_sites")
+  maxCaterings   Int? @map("max_caterings")
+  maxOrdersMonth Int? @map("max_orders_month")
+
+  supportLevel String  @default("BASIC") @map("support_level") // BASIC / PRIORITY / DEDICATED
+  active       Boolean @default(true)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  planFeatures PlanFeature[]
+  companies    Company[]
+
+  @@index([scope])
+  @@index([tenantEmpresa])
   @@map("saas_plans")
+}
+
+/// Feature de un plan habilitada (join plan↔feature del catálogo, espejo de
+/// RolePermission). La presencia de la fila = feature activa para ese plan.
+model PlanFeature {
+  planId     String @map("plan_id")
+  featureKey String @map("feature_key")
+
+  plan SaasPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, featureKey])
+  @@index([featureKey])
+  @@map("plan_features")
 }
 
 enum SettlementStatus {
@@ -1903,7 +1943,7 @@ model SaasInvoice {
   id            String            @id @default(uuid())
   tenantEmpresa String            @map("tenant_empresa")
   period        String // "YYYY-MM"
-  planCode      CompanyPlan       @map("plan_code")
+  planCode      String            @map("plan_code") // snapshot del código del plan al emitir
   planName      String            @map("plan_name") // snapshot del nombre al emitir
   number        String // correlativo tipo SAAS-2026-0001
   subtotal      Decimal           @db.Decimal(10, 2)
