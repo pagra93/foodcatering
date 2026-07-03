@@ -7,6 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { permittedAction } from '@/lib/auth/permissions'
+import { getCompanyEntitlements, withinLimit } from '@/lib/plans/entitlements'
 import { z } from 'zod'
 
 const createSiteSchema = z.object({
@@ -43,6 +44,21 @@ export async function POST(request: NextRequest) {
 
     if (!company) {
       return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
+    }
+
+    // 4b. Cuota del plan: nº de sedes activas vs maxSites.
+    const [entitlements, siteCount] = await Promise.all([
+      getCompanyEntitlements(tenantId),
+      prisma.companySite.count({ where: { tenantId, active: true } }),
+    ])
+    if (!withinLimit(entitlements, 'maxSites', siteCount)) {
+      return NextResponse.json(
+        {
+          error: `Has alcanzado el límite de sedes de tu plan (${entitlements.limits.maxSites}). Mejora tu plan para añadir más.`,
+          code: 'PLAN_LIMIT',
+        },
+        { status: 403 }
+      )
     }
 
     // 5. Validar datos

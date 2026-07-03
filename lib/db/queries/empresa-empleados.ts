@@ -8,6 +8,11 @@ import { subDays } from 'date-fns'
 import bcrypt from 'bcryptjs'
 import { nanoid } from 'nanoid'
 import { type Prisma } from '@prisma/client'
+import {
+  getCompanyEntitlements,
+  withinLimit,
+  PlanLimitError,
+} from '@/lib/plans/entitlements'
 
 // ============================================================================
 // LISTADO DE EMPLEADOS CON FILTROS
@@ -361,6 +366,19 @@ export async function createEmployee(
     sendInvitation?: boolean
   }
 ) {
+  // Cuota del plan: nº de empleados activos vs maxEmployees.
+  const [entitlements, activeCount] = await Promise.all([
+    getCompanyEntitlements(tenantId),
+    prisma.employee.count({ where: { tenantId, status: 'ACTIVE' } }),
+  ])
+  if (!withinLimit(entitlements, 'maxEmployees', activeCount)) {
+    throw new PlanLimitError(
+      'maxEmployees',
+      entitlements.limits.maxEmployees ?? activeCount,
+      `Has alcanzado el límite de empleados de tu plan (${entitlements.limits.maxEmployees}). Mejora tu plan para añadir más.`
+    )
+  }
+
   // Verificar que el email no exista
   const existingUser = await prisma.user.findFirst({
     where: {

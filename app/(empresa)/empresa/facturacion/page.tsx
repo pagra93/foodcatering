@@ -9,38 +9,44 @@ import {
   getEmpresaSaasInvoices,
 } from '@/lib/db/queries/empresa-billing'
 import { BillingTabs } from '@/components/empresa/facturacion/BillingTabs'
+import { getCompanyPlanUsage } from '@/lib/plans/entitlements'
+import { PlanUsageCard } from '@/components/empresa/plan/PlanUsageCard'
 
 async function BillingData({ tenantId }: { tenantId: string }) {
-  const [kpis, cateringInvoices, saasInvoices] = await Promise.all([
+  const [kpis, cateringInvoices, saasInvoices, planUsage] = await Promise.all([
     getEmpresaBillingKPIs(tenantId),
     getEmpresaInvoicesFromCatering(tenantId),
     getEmpresaSaasInvoices(tenantId),
+    getCompanyPlanUsage(tenantId),
   ])
 
   return (
-    <BillingTabs
-      kpis={kpis}
-      cateringInvoices={cateringInvoices.map((i) => ({
-        id: i.id,
-        period: i.period,
-        number: i.number,
-        issueDate: i.issueDate,
-        dueDate: i.dueDate,
-        total: i.total.toString(),
-        status: i.status,
-        catering: i.catering,
-      }))}
-      saasInvoices={saasInvoices.map((i) => ({
-        id: i.id,
-        period: i.period,
-        number: i.number,
-        planName: i.planName,
-        total: i.total.toString(),
-        status: i.status,
-        issuedAt: i.issuedAt,
-        dueBy: i.dueBy,
-      }))}
-    />
+    <div className="space-y-6">
+      <PlanUsageCard data={planUsage} />
+      <BillingTabs
+        kpis={kpis}
+        cateringInvoices={cateringInvoices.map((i) => ({
+          id: i.id,
+          period: i.period,
+          number: i.number,
+          issueDate: i.issueDate,
+          dueDate: i.dueDate,
+          total: i.total.toString(),
+          status: i.status,
+          catering: i.catering,
+        }))}
+        saasInvoices={saasInvoices.map((i) => ({
+          id: i.id,
+          period: i.period,
+          number: i.number,
+          planName: i.planName,
+          total: i.total.toString(),
+          status: i.status,
+          issuedAt: i.issuedAt,
+          dueBy: i.dueBy,
+        }))}
+      />
+    </div>
   )
 }
 

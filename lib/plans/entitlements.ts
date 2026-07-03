@@ -81,6 +81,24 @@ export const getCompanyEntitlements = cache(
   }
 )
 
+export type PlanUsage = {
+  entitlements: CompanyEntitlements
+  usage: { employees: number; sites: number; caterings: number }
+}
+
+/** Plan + uso actual (empleados/sedes/caterings) para la vista de la empresa. */
+export async function getCompanyPlanUsage(tenantEmpresa: string): Promise<PlanUsage> {
+  const [entitlements, employees, sites, caterings] = await Promise.all([
+    getCompanyEntitlements(tenantEmpresa),
+    prisma.employee.count({ where: { tenantId: tenantEmpresa, status: 'ACTIVE' } }),
+    prisma.companySite.count({ where: { tenantId: tenantEmpresa, active: true } }),
+    prisma.companyCateringAssignment.count({
+      where: { company: { tenantId: tenantEmpresa } },
+    }),
+  ])
+  return { entitlements, usage: { employees, sites, caterings } }
+}
+
 /** ¿El plan de la empresa incluye esta feature? */
 export function companyHasFeature(
   ent: CompanyEntitlements,

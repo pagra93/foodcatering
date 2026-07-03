@@ -25,6 +25,7 @@ import {
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Activity, User, Zap } from 'lucide-react'
+import { requireCompanyFeature } from '@/lib/plans/guard'
 
 // ============================================================================
 // Server Component - Datos con cache
@@ -33,6 +34,10 @@ import { Activity, User, Zap } from 'lucide-react'
 async function ActividadData({ searchParams }: { searchParams: any }) {
   const tenant = await getCurrentTenant()
   const tenantId = tenant.id
+
+  // Gating por plan: el registro de actividad es una feature de pago.
+  const locked = await requireCompanyFeature(tenantId, 'activity-log')
+  if (locked) return locked
 
   const page = searchParams.page ? parseInt(searchParams.page) : 1
 

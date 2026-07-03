@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getUnreadNotifications, getUnreadCount } from '@/lib/db/queries/activity'
+import { getCompanyEntitlements } from '@/lib/plans/entitlements'
 import { EmpresaSidebar } from '@/components/empresa/EmpresaSidebar'
 import { EmpresaNavbar } from '@/components/empresa/EmpresaNavbar'
 import { Toaster } from '@/components/ui/sonner'
@@ -17,9 +18,10 @@ export default async function EmpresaLayout({
   const tenant = await getCurrentTenant()
   const { branding, style } = await withBranding(tenant.id)
 
-  const [notifications, notifCount] = await Promise.all([
+  const [notifications, notifCount, entitlements] = await Promise.all([
     getUnreadNotifications(session.user.tenantId, session.user.id),
     getUnreadCount(session.user.tenantId, session.user.id),
+    getCompanyEntitlements(session.user.tenantId),
   ])
 
   return (
@@ -31,6 +33,7 @@ export default async function EmpresaLayout({
         tenant={tenant}
         user={session.user}
         permissions={session.user.permissions ?? []}
+        features={[...entitlements.features]}
         branding={branding}
       />
 

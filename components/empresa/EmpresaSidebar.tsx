@@ -14,6 +14,7 @@ import {
   FileText,
   Activity,
   Building2,
+  Lock,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
@@ -35,6 +36,8 @@ type EmpresaSidebarProps = {
   }
   /** Permisos de la sesión. Vacío (sesión antigua) → se muestra todo. */
   permissions?: string[]
+  /** Features del plan de la empresa. Las secciones gated sin su feature salen con candado. */
+  features?: string[]
   branding?: {
     primaryColor: string
     primaryForeground: string
@@ -90,12 +93,14 @@ const navigation = [
     href: '/empresa/auditoria',
     icon: FileText,
     permission: 'emp-fiscal:view',
+    feature: 'fiscal-audit',
   },
   {
     name: 'Actividad',
     href: '/empresa/actividad',
     icon: Activity,
     permission: 'emp-activity:view',
+    feature: 'activity-log',
   },
 ]
 
@@ -103,6 +108,7 @@ export function EmpresaSidebar({
   tenant,
   user,
   permissions = [],
+  features = [],
   branding,
 }: EmpresaSidebarProps) {
   const pathname = usePathname()
@@ -111,6 +117,9 @@ export function EmpresaSidebar({
     permissions.length > 0
       ? navigation.filter((item) => permitted(permissions, item.permission))
       : navigation
+  // Feature del plan: si falta, la sección sale con candado (clic → upsell).
+  const isLocked = (item: { feature?: string }) =>
+    Boolean(item.feature) && features.length > 0 && !features.includes(item.feature!)
   const effectiveLogo = branding?.logoUrl ?? tenant.logoUrl
   const effectivePrimary = branding?.primaryColor ?? tenant.primaryColor ?? '#3B82F6'
   const effectivePrimaryFg = branding?.primaryForeground ?? '#ffffff'
@@ -146,16 +155,20 @@ export function EmpresaSidebar({
         {visibleNavigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
           const Icon = item.icon
+          const locked = isLocked(item)
 
           return (
             <Link
               key={item.name}
               href={item.href}
+              title={locked ? 'No incluida en tu plan — mejora para desbloquear' : undefined}
               className={cn(
                 'group flex items-center gap-3 px-3 py-2.5 text-sm font-medium rounded-lg transition-colors',
                 isActive
                   ? ''
-                  : 'text-foreground hover:bg-background hover:text-foreground'
+                  : locked
+                    ? 'text-muted-foreground hover:bg-background'
+                    : 'text-foreground hover:bg-background hover:text-foreground'
               )}
               style={
                 isActive
@@ -173,7 +186,8 @@ export function EmpresaSidebar({
                 )}
                 style={isActive ? { color: effectivePrimary } : undefined}
               />
-              <span>{item.name}</span>
+              <span className="flex-1">{item.name}</span>
+              {locked && <Lock className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />}
             </Link>
           )
         })}

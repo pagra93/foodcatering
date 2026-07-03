@@ -22,6 +22,7 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from 'lucide-react'
+import { requireCompanyFeature } from '@/lib/plans/guard'
 
 // ============================================================================
 // Server Component - Datos con cache
@@ -30,6 +31,10 @@ import {
 async function AuditoriaData() {
   const tenant = await getCurrentTenant()
   const tenantId = tenant.id
+
+  // Gating por plan: la auditoría fiscal es una feature de pago.
+  const locked = await requireCompanyFeature(tenantId, 'fiscal-audit')
+  if (locked) return locked
 
   // Obtener company para sacar el companyId
   const { prisma } = await import('@/lib/db/prisma')

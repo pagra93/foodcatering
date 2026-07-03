@@ -6,6 +6,7 @@ import {
 } from '@/lib/auth/session'
 import { createEmployee } from '@/lib/db/queries/empresa-empleados'
 import { permittedAction } from '@/lib/auth/permissions'
+import { PlanLimitError } from '@/lib/plans/entitlements'
 import { z } from 'zod'
 
 const createEmployeeSchema = z.object({
@@ -53,6 +54,13 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof TenantMismatchError) {
       return NextResponse.json({ error: error.message }, { status: 403 })
+    }
+
+    if (error instanceof PlanLimitError) {
+      return NextResponse.json(
+        { error: error.message, code: error.code },
+        { status: 403 }
+      )
     }
 
     console.error('Error creating employee:', error)
