@@ -48,22 +48,12 @@ async function main() {
     console.log(`  · ${def.code}: ${keys.length} features, ${def.monthlyPrice} €/mes`)
   }
 
-  // Backfill de empresas sin saasPlanId (por si alguna quedó suelta).
-  const plans = await prisma.saasPlan.findMany({ select: { id: true, code: true } })
-  const idByCode = new Map(plans.map((p) => [p.code, p.id]))
-  const pending = await prisma.company.findMany({
-    where: { saasPlanId: null },
-    select: { id: true, plan: true },
-  })
-  let backfilled = 0
-  for (const c of pending) {
-    const id = idByCode.get(String(c.plan))
-    if (id) {
-      await prisma.company.update({ where: { id: c.id }, data: { saasPlanId: id } })
-      backfilled++
-    }
+  // Nota: las empresas reciben su saasPlanId al crearse (seeds + admin). Ya no se
+  // hace backfill desde el enum legacy (retirado).
+  const withoutPlan = await prisma.company.count({ where: { saasPlanId: null } })
+  if (withoutPlan > 0) {
+    console.log(`  ⚠ ${withoutPlan} empresa(s) sin plan — asígnalo desde /admin/empresas.`)
   }
-  console.log(`  · backfill Company.saasPlanId: ${backfilled} empresas`)
   console.log('✅ Planes SaaS sembrados')
 }
 

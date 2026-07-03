@@ -146,10 +146,7 @@ export default async function CateringEmpresaDetailPage({ params }: PageProps) {
             {company.legalName}
           </h1>
           <p className="mt-1 text-sm text-gray-500">
-            CIF {company.cif} · Sector {company.sector ?? '—'} · Plan{' '}
-            <Badge variant="outline" className="ml-1 text-[10px]">
-              {company.plan}
-            </Badge>
+            CIF {company.cif} · Sector {company.sector ?? '—'}
           </p>
         </div>
         <Badge

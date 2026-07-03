@@ -5,6 +5,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import type { OrderStatus } from '@prisma/client'
+import { ensureSystemPlans } from './_ensure-plans'
 import bcryptjs from 'bcryptjs'
 import { subDays, startOfDay } from 'date-fns'
 import {
@@ -87,15 +88,16 @@ async function main() {
   })
 
   // Company data
+  const planIdByCode = await ensureSystemPlans(prisma)
   const company = await prisma.company.upsert({
     where: { tenantId: empresaTenant.id },
-    update: {},
+    update: { saasPlanId: planIdByCode.get('growth') ?? null },
     create: {
       tenantId: empresaTenant.id,
       legalName: 'ACME Corporation S.L.',
       cif: 'B12345678',
       billingAddress: 'Calle Gran Vía 1, 28013 Madrid',
-      plan: 'GROWTH',
+      saasPlanId: planIdByCode.get('growth') ?? null,
       sector: 'Tecnología',
       employeeCount: 50,
       contactRrhhName: 'María García',

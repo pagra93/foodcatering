@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   generateMonthSchema,
   markPaidSchema,
-  updateSaasPlanSchema,
   updateTaxRuleSchema,
 } from '@/lib/validations/billing'
 
@@ -27,42 +26,6 @@ describe('billing validations', () => {
     })
   })
 
-  describe('updateSaasPlanSchema', () => {
-    it('acepta plan válido', () => {
-      const r = updateSaasPlanSchema.safeParse({
-        code: 'STARTER',
-        name: 'Starter',
-        monthlyPrice: 49,
-        yearlyPrice: 490,
-        maxEmployees: 50,
-        supportLevel: 'BASIC',
-        active: true,
-      })
-      expect(r.success).toBe(true)
-    })
-
-    it('rechaza precio negativo', () => {
-      const r = updateSaasPlanSchema.safeParse({
-        code: 'STARTER',
-        name: 'Starter',
-        monthlyPrice: -10,
-        supportLevel: 'BASIC',
-        active: true,
-      })
-      expect(r.success).toBe(false)
-    })
-
-    it('rechaza code desconocido', () => {
-      const r = updateSaasPlanSchema.safeParse({
-        code: 'UNKNOWN',
-        name: 'Unknown',
-        monthlyPrice: 1,
-        supportLevel: 'BASIC',
-        active: true,
-      })
-      expect(r.success).toBe(false)
-    })
-  })
 
   describe('markPaidSchema', () => {
     it('acepta solo id', () => {

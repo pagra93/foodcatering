@@ -16,19 +16,8 @@ export const saasInvoiceStatusEnum = z.enum([
   'CANCELLED',
 ])
 
-export const companyPlanEnum = z.enum(['STARTER', 'GROWTH', 'ENTERPRISE'])
-
-export const updateSaasPlanSchema = z.object({
-  code: companyPlanEnum,
-  name: z.string().min(2).max(100),
-  description: z.string().max(500).optional(),
-  monthlyPrice: z.number().nonnegative().max(10000),
-  yearlyPrice: z.number().nonnegative().max(100000).optional(),
-  maxEmployees: z.number().int().positive().optional(),
-  maxOrdersMonth: z.number().int().positive().optional(),
-  supportLevel: z.enum(['BASIC', 'PRIORITY', 'DEDICATED']),
-  active: z.boolean(),
-})
+// Los planes SaaS se gestionan en components/admin/billing/plan-actions.ts
+// (crear/editar/borrar + features + límites + planes a medida).
 
 export const markPaidSchema = z.object({
   id: z.string().uuid(),

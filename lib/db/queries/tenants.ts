@@ -176,15 +176,19 @@ export async function createTenant(data: CreateTenantInput, _createdBy: string) 
     },
   })
 
-  // Si es empresa, crear registro en Company
+  // Si es empresa, crear registro en Company con el plan Starter por defecto.
   if (tenant.type === 'EMPRESA') {
+    const starter = await prisma.saasPlan.findUnique({
+      where: { code: 'starter' },
+      select: { id: true },
+    })
     await prisma.company.create({
       data: {
         tenantId: tenant.id,
         legalName: data.name,
         cif: '',
         billingAddress: data.address || '',
-        plan: 'STARTER',
+        saasPlanId: starter?.id ?? null,
       },
     })
   }

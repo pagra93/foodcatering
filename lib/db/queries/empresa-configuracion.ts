@@ -20,7 +20,7 @@ export async function getCompanyConfiguration(tenantId: string) {
       legalName: true,
       cif: true,
       billingAddress: true,
-      plan: true,
+      saasPlan: { select: { name: true } },
       sector: true,
       employeeCount: true,
       contactRrhhName: true,

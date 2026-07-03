@@ -11,6 +11,7 @@
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { subDays } from 'date-fns'
+import { ensureSystemPlans } from './_ensure-plans'
 
 const prisma = new PrismaClient()
 
@@ -252,6 +253,7 @@ async function main() {
   // 3. Crear empresas
   // ============================================================================
   const adminPassword = await bcrypt.hash('admin123', 10)
+  const planIdByCode = await ensureSystemPlans(prisma)
 
   for (let i = 0; i < companies.length; i++) {
     const companyData = companies[i]
@@ -283,7 +285,7 @@ async function main() {
         legalName: companyData.legalName,
         cif: companyData.cif,
         billingAddress: companyData.sites[0]?.address ?? '',
-        plan: companyData.plan,
+        saasPlanId: planIdByCode.get(companyData.plan.toLowerCase()) ?? null,
         sector: companyData.sector,
         contactRrhhName: companyData.contactRrhhName,
         contactRrhhEmail: companyData.contactRrhhEmail,

@@ -11,7 +11,6 @@ import {
   DEFAULT_DUE_DAYS,
   generateMonthSchema,
   markPaidSchema,
-  updateSaasPlanSchema,
   updateTaxRuleSchema,
 } from '@/lib/validations/billing'
 
@@ -328,48 +327,8 @@ export async function markSaasInvoicePaidAction(input: {
   return { id: updated.id }
 }
 
-export async function updateSaasPlanAction(
-  input: Parameters<typeof updateSaasPlanSchema.parse>[0]
-) {
-  const actor = await requireSuperAdmin('plan:edit')
-  const data = updateSaasPlanSchema.parse(input)
-
-  const updated = await prisma.saasPlan.upsert({
-    where: { code: data.code },
-    update: {
-      name: data.name,
-      description: data.description,
-      monthlyPrice: data.monthlyPrice,
-      yearlyPrice: data.yearlyPrice,
-      maxEmployees: data.maxEmployees,
-      maxOrdersMonth: data.maxOrdersMonth,
-      supportLevel: data.supportLevel,
-      active: data.active,
-    },
-    create: {
-      code: data.code,
-      name: data.name,
-      description: data.description,
-      monthlyPrice: data.monthlyPrice,
-      yearlyPrice: data.yearlyPrice,
-      maxEmployees: data.maxEmployees,
-      maxOrdersMonth: data.maxOrdersMonth,
-      supportLevel: data.supportLevel,
-      active: data.active,
-    },
-  })
-
-  await logAudit({
-    actorId: actor.id,
-    action: 'UPDATE',
-    entity: 'SaasPlan',
-    entityId: updated.id,
-    diff: { before: null, after: { code: data.code, monthlyPrice: data.monthlyPrice } },
-  })
-
-  revalidatePath('/admin/billing/plans')
-  return { id: updated.id }
-}
+// (Retirado) updateSaasPlanAction: sustituido por components/admin/billing/plan-actions.ts
+// (createPlan/updatePlan/deletePlan), que gestiona features + límites + planes a medida.
 
 export async function upsertTaxRuleAction(
   input: Parameters<typeof updateTaxRuleSchema.parse>[0]

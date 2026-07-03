@@ -15,6 +15,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
+import { ensureSystemPlans } from './_ensure-plans'
 import type { OrderStatus } from '@prisma/client'
 import bcryptjs from 'bcryptjs'
 import { subDays, startOfDay, startOfMonth, endOfMonth, subMonths, format } from 'date-fns'
@@ -180,15 +181,16 @@ async function main() {
     },
   })
 
+  const planIdByCode = await ensureSystemPlans(prisma)
   const company = await prisma.company.upsert({
     where: { tenantId: empresaTenant.id },
-    update: {},
+    update: { saasPlanId: planIdByCode.get('growth') ?? null },
     create: {
       tenantId: empresaTenant.id,
       legalName: 'Demo Empresa S.L.',
       cif: 'B99999999',
       billingAddress: 'Calle Demo 1, 28013 Madrid',
-      plan: 'GROWTH',
+      saasPlanId: planIdByCode.get('growth') ?? null,
       sector: 'Tecnología',
       employeeCount: 5,
       contactRrhhName: 'Laura Martín',

@@ -206,14 +206,6 @@ model RolePermission {
 // EMPRESAS
 // ============================================================================
 
-enum CompanyPlan {
-  STARTER    @map("starter")
-  GROWTH     @map("growth")
-  ENTERPRISE @map("enterprise")
-
-  @@map("company_plan")
-}
-
 model Company {
   id             String      @id @default(uuid())
   tenantId       String      @unique @map("tenant_id")
@@ -221,8 +213,6 @@ model Company {
   legalName      String      @map("legal_name")
   cif            String      @unique
   billingAddress String      @map("billing_address")
-  /// @deprecated Transitorio: en migración a `saasPlanId` (FK). Se retirará.
-  plan           CompanyPlan @default(STARTER)
   saasPlanId     String?     @map("saas_plan_id") // FK dinámica al catálogo SaasPlan
 
   // ===== CONTACTOS =====
@@ -270,7 +260,6 @@ model Company {
 
   @@index([tenantId])
   @@index([deductibilityRate])
-  @@index([plan])
   @@index([saasPlanId])
   @@map("companies")
 }
