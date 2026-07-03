@@ -191,6 +191,15 @@ El módulo "Rating y Reputación" no servía (nadie creaba valoraciones —solo 
 - **Admin**: sección propia **"Reputación"** con la **matriz catering×empresa** (calidad de servicio por relación), ranking de caterings y leaderboards de platos.
 `Order.selection` ya llevaba `dishId` por curso (`first/second/dessert`), lo que hizo directa la valoración por plato. Tech-debt: borrar queries legacy de rating (OrderRating) en `admin-quality.ts`. Detalle: `docs/producto/features/admin-launch-audit/reputacion.md`.
 
+### Planes SaaS dinámicos — como los roles (HU-042, 2026-07-03)
+El plan de una empresa funciona **como un rol**: según el plan se **habilitan/limitan funcionalidades**. Antes era un **enum fijo** `CompanyPlan` (imposible plan a medida), sin ningún enforcement. Ahora:
+- **Modelo dinámico**: `SaasPlan.code` String libre + `scope SYSTEM/CUSTOM` (+ `tenantEmpresa` para plan privado); **`PlanFeature`** (join, como `RolePermission`); **`Company.saasPlanId`** FK. `Company.plan` (enum) queda **legacy/deprecado**.
+- **Catálogo de features** `lib/plans/feature-catalog.ts` (mapea todo el portal empresa) + **entitlements** `lib/plans/entitlements.ts` (`getCompanyEntitlements`/`companyHasFeature`/`withinLimit`) — espejo del RBAC pero **por empresa (tenant)**, no por usuario.
+- **Enforcement duro**: cuotas (empleados/sedes) bloquean con 403 + CTA de upgrade; features gated con guard `requireCompanyFeature` + candado en sidebar + `UpgradeLock`. `PlanUsageCard` en facturación.
+- **Gestión (admin)**: `/admin/billing/plans` con crear/editar/borrar + **planes a medida** (`PlanForm`/`FeaturePicker`/`plan-actions`, espejo de roles). Asignación a la empresa por `saasPlanId` en `CompanyForm`.
+- **Cobro**: `SaasInvoice` (Plati→empresa) y MRR/ARR ya van por `saasPlanId`. Precio editable desde el plan.
+- **OJO**: tras cambiar el schema Prisma hay que **reiniciar `pnpm dev`** (el server cachea el cliente). Detalle: memoria `plans-saas` y `docs/producto/features/admin-launch-audit/planes-saas.md`.
+
 ## Key Pointers (para nuevas sesiones)
 
 - **Reglas de trabajo**: [`CLAUDE.md`](../CLAUDE.md) en la raíz.

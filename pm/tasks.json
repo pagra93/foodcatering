@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "area": "producto",
-  "last_indexed_at": "2026-07-02T20:00:00Z",
+  "last_indexed_at": "2026-07-03T14:00:00Z",
   "tasks": [
     {
       "id": "HU-001",
@@ -895,8 +895,30 @@
       "created_at": "2026-07-02T09:00:00Z",
       "last_activity": "2026-07-02T20:00:00Z",
       "activity_count": 5,
-      "notes": "El módulo no servía: nadie creaba valoraciones (solo seeds), eran por PEDIDO no por plato, la vista por plato leía selection.dish_ids (inexistente) y Restaurant.averageRating stale. Rediseño: por PLATO (DishRating) que el empleado crea de verdad. F1 (6459052): modelo DishRating + lib/db/queries/ratings.ts (capa canónica) + repunta getCateringQualityMetrics + seed/backfill 558 filas. F2 (5ab465e): el empleado valora — rateDishesAction (RBAC emp-rating-own:create) + RateMealDialog + columna Valorar en Historial + aviso 'valora la comida de ayer' en menús. F3 (8e417d2): catering ve top/bottom platos reales + valoración por empresa cliente. F4 (cd75735): empresa ve media/tendencia/distribución/platos/comentarios (CompanyRatingsTab; borra CateringRatingsTab+API muertos). F5 (e424e9a): sección propia admin 'Reputación' (git mv quality/ratings→reputation, sidebar+section-permissions+breadcrumbs) con matriz catering×empresa + ranking + leaderboards. type-check+lint limpios por fase. Doc: docs/producto/features/admin-launch-audit/reputacion.md.",
+      "notes": "El módulo no servía: nadie creaba valoraciones (solo seeds), eran por PEDIDO no por plato, la vista por plato leía selection.dish_ids (inexistente) y Restaurant.averageRating stale. Rediseño: por PLATO (DishRating) que el empleado crea de verdad. F1 (6459052): modelo DishRating + lib/db/queries/ratings.ts (capa canónica) + repunta getCateringQualityMetrics + seed/backfill 558 filas. F2 (5ab465e): el empleado valora — rateDishesAction (RBAC emp-rating-own:create) + RateMealDialog + columna Valorar en Historial + aviso 'valora la comida de ayer' en menús. F3 (8e417d2): catering ve top/bottom platos reales + valoración por empresa cliente. F4 (cd75735): empresa ve media/tendencia/distribución/platos/comentarios (CompanyRatingsTab; borra CateringRatingsTab+API muertos). F5 (e424e9a): sección propia admin 'Reputación' (git mv quality/ratings→reputation, sidebar+section-permissions+breadcrumbs) con matriz catering×empresa + ranking + leaderboards. Ampliaciones 18527d8 (tabla superadmin) y 3eed684 (detalle por catering + por plato). type-check+lint limpios por fase. Doc: docs/producto/features/admin-launch-audit/reputacion.md.",
       "updated_at": "2026-07-02T20:00:00Z"
+    },
+    {
+      "id": "HU-042",
+      "title": "Planes SaaS dinámicos (como roles): features + cuotas + a medida + cobro",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "high",
+      "origin": "conversacion",
+      "agent_suggested": "age-spe-tech-architect",
+      "depends_on": [],
+      "parent_epic": "EPIC-003",
+      "feature": "admin-launch-audit",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho (4 fases). Reiniciar pnpm dev tras migración. Tech-debt: retirar columna legacy Company.plan (requiere reescribir 3 seeds); enforcement de cuota de caterings pendiente.",
+      "created_at": "2026-07-03T09:00:00Z",
+      "last_activity": "2026-07-03T14:00:00Z",
+      "activity_count": 4,
+      "notes": "El plan de la empresa funciona como los roles: habilita/limita funcionalidades. Auditoría: enum fijo CompanyPlan (imposible plan a medida), cero enforcement, página solo lectura; el cobro (SaasInvoice) ya existía. F1 (6a0ac64): SaasPlan.code enum→String + scope SYSTEM/CUSTOM + tenantEmpresa + maxSites/maxCaterings; PlanFeature (join, como RolePermission); Company.saasPlanId FK; migración con backfill perfecto; lib/plans/feature-catalog.ts (15 features/7 cats) + entitlements.ts + seed-plans.ts. F2 (848d18b): enforcement duro — cuotas en createEmployee/sedes (403+upsell), gating de features (section-features + requireCompanyFeature + UpgradeLock + candado sidebar en Auditoría Fiscal/Actividad), PlanUsageCard en facturación. F3 (413ef1d): CRUD de planes como roles (PlanForm/FeaturePicker/plan-actions, crear/editar/borrar + planes a medida). F4 (3f0a105): asignación por saasPlanId en CompanyForm + MRR/facturación/empresa-billing/validaciones por FK (MRR 1643€ igual). Company.plan enum queda legacy. type-check+lint limpios. Doc: docs/producto/features/admin-launch-audit/planes-saas.md.",
+      "updated_at": "2026-07-03T14:00:00Z"
     }
   ],
   "epics": [
@@ -988,12 +1010,13 @@
         "HU-038",
         "HU-039",
         "HU-040",
-        "HU-041"
+        "HU-041",
+        "HU-042"
       ],
       "blocked": false,
       "blocked_reason": null,
       "previous_status": null,
-      "next_action": "Hechos: Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + Incidencias (HU-039) + Penalizaciones (HU-040) + Reputación (HU-041). Siguiente: HU-029 Facturación y HU-031 Compliance (críticos para lanzar).",
+      "next_action": "Hechos: Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + Incidencias (HU-039) + Penalizaciones (HU-040) + Reputación (HU-041) + Planes SaaS (HU-042). Siguiente: resto de Facturación (HU-029) y Compliance (HU-031).",
       "prd_path": null,
       "dossier_path": "docs/producto/features/admin-launch-audit/_dossier.md",
       "artifacts": [
