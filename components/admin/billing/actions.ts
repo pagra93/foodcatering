@@ -147,11 +147,11 @@ export async function generateMonthBillingAction(input: {
     where: {
       tenant: { status: 'ACTIVE', deletedAt: null },
     },
-    select: { tenantId: true, legalName: true, plan: true },
+    select: { tenantId: true, legalName: true, saasPlanId: true },
   })
 
   const plans = await prisma.saasPlan.findMany({ where: { active: true } })
-  const planByCode = new Map(plans.map((p) => [p.code, p]))
+  const planById = new Map(plans.map((p) => [p.id, p]))
 
   const taxRule = await prisma.taxRule.findFirst({
     where: { code: 'IVA_GENERAL', active: true },
@@ -172,7 +172,7 @@ export async function generateMonthBillingAction(input: {
   let saasSkipped = 0
 
   for (const c of companies) {
-    const plan = planByCode.get(c.plan)
+    const plan = c.saasPlanId ? planById.get(c.saasPlanId) : undefined
     if (!plan) {
       saasSkipped++
       continue

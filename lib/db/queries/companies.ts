@@ -246,6 +246,7 @@ export async function getCompanies({
         companies: {
           include: {
             policy: true,
+            saasPlan: { select: { id: true, code: true, name: true } },
             sites: {
               where: { active: true },
               include: {
@@ -312,7 +313,8 @@ export async function getCompanies({
           id: company.id,
           legalName: company.legalName,
           cif: company.cif,
-          plan: company.plan,
+          plan: company.saasPlan?.name ?? '—',
+          saasPlanId: company.saasPlanId,
           sector: company.sector,
         },
         policy: company.policy ? {
@@ -387,6 +389,7 @@ export async function getCompanyByIdComplete(tenantId: string) {
       companies: {
         include: {
           policy: true,
+          saasPlan: { select: { id: true, code: true, name: true } },
           sites: {
             where: { active: true }, // CompanySite usa 'active', no 'deletedAt'
             include: {
@@ -633,7 +636,8 @@ export async function getCompanyByIdComplete(tenantId: string) {
       legalName: company.legalName,
       cif: company.cif,
       billingAddress: company.billingAddress,
-      plan: company.plan,
+      plan: company.saasPlan?.name ?? '—',
+      saasPlanId: company.saasPlanId,
       sector: company.sector,
       contactRrhhName: company.contactRrhhName,
       contactRrhhEmail: company.contactRrhhEmail,
@@ -775,6 +779,7 @@ export async function getCompanyById(tenantId: string) {
       companies: {
         include: {
           policy: true,
+          saasPlan: { select: { id: true, code: true, name: true } },
           sites: {
             where: { active: true },
             include: {
@@ -886,7 +891,8 @@ export async function getCompanyById(tenantId: string) {
       legalName: company.legalName,
       cif: company.cif,
       billingAddress: company.billingAddress,
-      plan: company.plan,
+      plan: company.saasPlan?.name ?? '—',
+      saasPlanId: company.saasPlanId,
       // Política de servicio incluida en company
       policy: company.policy,
     },
@@ -965,7 +971,7 @@ export async function createCompany(data: {
   legalName: string
   cif: string
   billingAddress: string
-  plan: 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+  saasPlanId?: string | null
   policy: {
     cutoffTime: string
     daysActive: string[]
@@ -1009,7 +1015,7 @@ export async function createCompany(data: {
         legalName: data.legalName,
         cif: data.cif,
         billingAddress: data.billingAddress,
-        plan: data.plan,
+        saasPlanId: data.saasPlanId ?? null,
       },
     })
 
@@ -1064,7 +1070,7 @@ export async function updateCompany(
     logoUrl?: string
     legalName: string
     billingAddress: string
-    plan: 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+    saasPlanId: string | null
     policy: {
       cutoffTime: string
       daysActive: string[]
@@ -1089,7 +1095,7 @@ export async function updateCompany(
     })
 
     // 2. Si hay datos de company, actualizar
-    if (data.legalName || data.billingAddress || data.plan) {
+    if (data.legalName || data.billingAddress || data.saasPlanId) {
       const company = await tx.company.findFirst({
         where: { tenantId },
       })
@@ -1100,7 +1106,7 @@ export async function updateCompany(
           data: {
             legalName: data.legalName,
             billingAddress: data.billingAddress,
-            plan: data.plan,
+            ...(data.saasPlanId ? { saasPlanId: data.saasPlanId } : {}),
           },
         })
       }

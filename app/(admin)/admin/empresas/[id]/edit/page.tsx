@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCompanyById, updateCompany } from '@/lib/db/queries/companies'
 import { updateCompanySchema } from '@/lib/validations/company'
+import { getAllSaasPlans } from '@/lib/db/queries/admin-plans-taxes'
 import { CompanyForm } from '@/components/admin/companies/CompanyForm'
 
 async function updateCompanyAction(id: string, formData: FormData) {
@@ -28,7 +29,7 @@ async function updateCompanyAction(id: string, formData: FormData) {
     // Info legal (Company)
     legalName: formData.get('legalName') as string,
     billingAddress: formData.get('billingAddress') as string,
-    plan: formData.get('plan') as 'STARTER' | 'GROWTH' | 'ENTERPRISE',
+    saasPlanId: (formData.get('saasPlanId') as string) || undefined,
 
     // Política de servicio
     policy: {
@@ -59,7 +60,7 @@ export default async function EditCompanyPage({
   await getRequiredSession()
   const { id } = await params
 
-  const company = await getCompanyById(id)
+  const [company, plans] = await Promise.all([getCompanyById(id), getAllSaasPlans()])
 
   if (!company) {
     notFound()
@@ -113,6 +114,7 @@ export default async function EditCompanyPage({
       <CompanyForm
         action={updateCompanyAction.bind(null, id)}
         initialData={serializedCompany}
+        plans={plans.map((p) => ({ id: p.id, name: p.name, scope: p.scope }))}
       />
     </div>
   )

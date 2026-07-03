@@ -81,12 +81,12 @@ export async function getEmpresaBillingKPIs(tenantEmpresa: string) {
     }),
     prisma.company.findFirst({
       where: { tenantId: tenantEmpresa },
-      select: { plan: true, legalName: true },
+      select: { saasPlanId: true, legalName: true },
     }),
   ])
 
-  const plan = company
-    ? await prisma.saasPlan.findUnique({ where: { code: company.plan } })
+  const plan = company?.saasPlanId
+    ? await prisma.saasPlan.findUnique({ where: { id: company.saasPlanId } })
     : null
 
   return {

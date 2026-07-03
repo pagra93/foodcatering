@@ -36,7 +36,7 @@ export const createCompanySchema = z.object({
       'CIF inválido (debe ser letra mayúscula seguida de 8 dígitos)'
     ),
   billingAddress: z.string().min(5, 'La dirección de facturación es requerida'),
-  plan: z.enum(['STARTER', 'GROWTH', 'ENTERPRISE']).default('STARTER'),
+  saasPlanId: z.string().uuid('Selecciona un plan').optional().nullable(),
 
   // ===== POLÍTICA DE SERVICIO (CompanyPolicy) =====
   policy: z.object({

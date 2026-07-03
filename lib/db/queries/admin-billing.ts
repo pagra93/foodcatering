@@ -61,21 +61,17 @@ export async function getBillingDashboardKPIs() {
     }),
   ])
 
-  // MRR estimado: sumar SaasPlan.monthlyPrice de todas las companies activas por plan.
-  const plans = await prisma.saasPlan.findMany({
-    where: { active: true },
-  })
-  const planPriceByCode = new Map(
-    plans.map((p) => [p.code, Number(p.monthlyPrice)])
-  )
+  // MRR estimado: sumar SaasPlan.monthlyPrice de las companies activas por su plan (FK).
+  const plans = await prisma.saasPlan.findMany({ select: { id: true, monthlyPrice: true } })
+  const priceById = new Map(plans.map((p) => [p.id, Number(p.monthlyPrice)]))
   const companiesByPlan = await prisma.company.groupBy({
-    by: ['plan'],
+    by: ['saasPlanId'],
     where: { tenant: { status: 'ACTIVE', deletedAt: null } },
     _count: { _all: true },
   })
   let mrrSaas = 0
   for (const row of companiesByPlan) {
-    const price = planPriceByCode.get(row.plan) ?? 0
+    const price = row.saasPlanId ? priceById.get(row.saasPlanId) ?? 0 : 0
     mrrSaas += price * row._count._all
   }
 

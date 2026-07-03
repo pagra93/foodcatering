@@ -187,9 +187,13 @@ export function CompaniesTable({ companies }: Props) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos planes</SelectItem>
-              <SelectItem value="STARTER">Starter</SelectItem>
-              <SelectItem value="GROWTH">Growth</SelectItem>
-              <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+              {[...new Set(companies.map((c) => c.company.plan))]
+                .filter((p) => p && p !== '—')
+                .map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
             </SelectContent>
           </Select>
 

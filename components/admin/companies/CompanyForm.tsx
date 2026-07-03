@@ -31,9 +31,11 @@ const DIAS_SEMANA = [
 type CompanyFormProps = {
   action: (formData: FormData) => Promise<void>
   initialData?: any
+  /** Catálogo de planes SaaS para asignar (por saasPlanId). */
+  plans?: { id: string; name: string; scope: string }[]
 }
 
-export function CompanyForm({ action, initialData }: CompanyFormProps) {
+export function CompanyForm({ action, initialData, plans = [] }: CompanyFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedDays, setSelectedDays] = useState<string[]>(
     initialData?.policy?.daysActive || ['monday', 'tuesday', 'wednesday', 'thursday']
@@ -215,19 +217,28 @@ export function CompanyForm({ action, initialData }: CompanyFormProps) {
           </div>
 
           <div>
-            <Label htmlFor="plan">
+            <Label htmlFor="saasPlanId">
               Plan <span className="text-red-500">*</span>
             </Label>
-            <Select name="plan" defaultValue={initialData?.company?.plan || 'STARTER'}>
+            <Select
+              name="saasPlanId"
+              defaultValue={initialData?.company?.saasPlanId ?? plans[0]?.id ?? ''}
+            >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecciona un plan" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="STARTER">Starter</SelectItem>
-                <SelectItem value="GROWTH">Growth</SelectItem>
-                <SelectItem value="ENTERPRISE">Enterprise</SelectItem>
+                {plans.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.name}
+                    {p.scope === 'CUSTOM' ? ' · a medida' : ''}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
+            <p className="mt-1 text-xs text-gray-500">
+              Define precio, límites y funcionalidades de la empresa.
+            </p>
           </div>
         </div>
       </div>
