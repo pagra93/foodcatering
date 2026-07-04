@@ -26,3 +26,20 @@ export function requiredFeatureForPath(pathname: string): string | null {
   }
   return null
 }
+
+/** Secciones de PAGO del portal catering (las core no se listan → nunca se bloquean). */
+export const CATERING_FEATURE_RULES: FeatureRule[] = [
+  { prefix: '/catering/produccion', feature: 'cat-production' },
+  { prefix: '/catering/rutas', feature: 'cat-routes' },
+  { prefix: '/catering/calidad', feature: 'cat-quality' },
+]
+
+/** Feature requerida por una ruta catering, o null si no está gated. */
+export function requiredCateringFeatureForPath(pathname: string): string | null {
+  for (const rule of CATERING_FEATURE_RULES) {
+    if (pathname === rule.prefix || pathname.startsWith(`${rule.prefix}/`)) {
+      return rule.feature
+    }
+  }
+  return null
+}

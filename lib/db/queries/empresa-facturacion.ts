@@ -166,20 +166,33 @@ export async function getMonthlyBreakdown(
       select: {
         legalName: true,
         commission: true,
+        saasPlan: {
+          select: { pricingModel: true, commissionPct: true },
+        },
       },
     })
   }
 
+  // Comisión efectiva desde el plan del catering: COMMISSION → commissionPct;
+  // FIXED → 0 (cuota fija, no por factura); sin plan → Restaurant.commission (legacy).
+  const plan = restaurant?.saasPlan
+  const effectiveCommission =
+    plan?.pricingModel === 'COMMISSION'
+      ? Number(plan.commissionPct ?? 0)
+      : plan?.pricingModel === 'FIXED'
+        ? 0
+        : Number(restaurant?.commission ?? 0)
+
   // Calcular porcentaje de subsidio basado en copayCompany y copayEmployee
   const totalCopay = Number(policy?.copayCompany || 0) + Number(policy?.copayEmployee || 0)
   const subsidyPercentage = totalCopay > 0 ? (Number(policy?.copayCompany || 0) / totalCopay) * 100 : 100
-  const commissionRate = restaurant ? Number(restaurant.commission) * 100 : 0 // Convertir decimal a porcentaje
+  const commissionRate = effectiveCommission * 100 // Convertir decimal a porcentaje
 
   // Calcular totales
   const subtotal = orders.reduce((sum, o) => sum + Number(o.price), 0)
   const companyPart = subtotal * (subsidyPercentage / 100)
   const employeePart = subtotal * ((100 - subsidyPercentage) / 100)
-  const commission = subtotal * (Number(restaurant?.commission || 0))
+  const commission = subtotal * effectiveCommission
 
   // Agrupar por empleado
   const byEmployee = orders.reduce((acc, order) => {

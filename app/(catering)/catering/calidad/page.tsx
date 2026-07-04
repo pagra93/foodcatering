@@ -17,11 +17,16 @@ import {
   getCateringDishTable,
 } from '@/lib/db/queries/ratings'
 import { CalidadTabs } from '@/components/catering/calidad/CalidadTabs'
+import { requireCateringFeature } from '@/lib/plans/guard'
 
 export default async function CateringCalidadPage() {
   const session = (await auth()) as Session | null
   if (!session?.user?.tenantId) redirect('/login')
   const tenantId = session.user.tenantId
+
+  // Gating por plan: Calidad y Reputación es una feature de pago.
+  const locked = await requireCateringFeature(tenantId, 'cat-quality')
+  if (locked) return locked
 
   const [
     reputation,

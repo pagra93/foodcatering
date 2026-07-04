@@ -48,7 +48,14 @@ export async function generateMonthBillingAction(input: {
   const caterings = await prisma.tenant.findMany({
     where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
     include: {
-      restaurants: { select: { commission: true } },
+      restaurants: {
+        select: {
+          commission: true,
+          saasPlan: {
+            select: { pricingModel: true, commissionPct: true, flatMonthlyFee: true },
+          },
+        },
+      },
     },
   })
 
@@ -73,11 +80,24 @@ export async function generateMonthBillingAction(input: {
     })
     const gross = Number(invoicesAgg._sum.total ?? 0)
 
-    const commissionRate = c.restaurants[0]
-      ? Number(c.restaurants[0].commission)
-      : 0.05
-
-    const commissionAmount = Math.round(gross * commissionRate * 100) / 100
+    // El cobro sale del PLAN del catering (Restaurant.saasPlan):
+    //  · COMMISSION → comisión = gross × commissionPct  (rate = commissionPct)
+    //  · FIXED      → comisión = flatMonthlyFee          (rate = 0)
+    // Fallback a Restaurant.commission (legacy) si el catering no tiene plan.
+    const restaurant = c.restaurants[0]
+    const plan = restaurant?.saasPlan
+    let commissionRate: number
+    let commissionAmount: number
+    if (plan?.pricingModel === 'FIXED') {
+      commissionRate = 0
+      commissionAmount = Number(plan.flatMonthlyFee ?? 0)
+    } else if (plan?.pricingModel === 'COMMISSION') {
+      commissionRate = Number(plan.commissionPct ?? 0)
+      commissionAmount = Math.round(gross * commissionRate * 100) / 100
+    } else {
+      commissionRate = restaurant ? Number(restaurant.commission) : 0.05
+      commissionAmount = Math.round(gross * commissionRate * 100) / 100
+    }
 
     // Se descuentan las penalizaciones que se APLICARON (settledAt) durante el
     // mes liquidado — no las creadas (appliedAt). Así una penalización creada un

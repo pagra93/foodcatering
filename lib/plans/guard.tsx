@@ -1,4 +1,9 @@
-import { getCompanyEntitlements, companyHasFeature } from '@/lib/plans/entitlements'
+import {
+  getCompanyEntitlements,
+  companyHasFeature,
+  getCateringEntitlements,
+  cateringHasFeature,
+} from '@/lib/plans/entitlements'
 import { UpgradeLock } from '@/components/empresa/plan/UpgradeLock'
 import { FEATURE_CATALOG } from '@/lib/plans/feature-catalog'
 
@@ -27,6 +32,33 @@ export async function requireCompanyFeature(
           : undefined
       }
       planName={ent.planName}
+    />
+  )
+}
+
+/**
+ * Guard de feature para páginas del portal CATERING (espejo del de empresa).
+ *   const locked = await requireCateringFeature(tenantId, 'cat-production')
+ *   if (locked) return locked
+ */
+export async function requireCateringFeature(
+  tenantCatering: string,
+  featureKey: string
+): Promise<React.ReactNode | null> {
+  const ent = await getCateringEntitlements(tenantCatering)
+  if (cateringHasFeature(ent, featureKey)) return null
+
+  const feature = FEATURE_CATALOG.find((f) => f.key === featureKey)
+  return (
+    <UpgradeLock
+      title={feature?.label ?? 'Funcionalidad no incluida'}
+      description={
+        feature?.description
+          ? `${feature.description} No está incluida en el plan de tu catering.`
+          : undefined
+      }
+      planName={ent.planName}
+      ctaHref="/catering/facturacion"
     />
   )
 }

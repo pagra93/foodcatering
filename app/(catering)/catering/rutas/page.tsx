@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { prisma } from '@/lib/db/prisma'
+import { requireCateringFeature } from '@/lib/plans/guard'
 import {
   getAvailableDrivers,
   getRoutes,
@@ -43,6 +44,10 @@ export default async function CateringRoutesPage() {
   const session = (await auth()) as Session | null
   if (!session?.user?.tenantId) redirect('/login')
   const tenantId = session.user.tenantId
+
+  // Gating por plan: Repartos (rutas) es una feature de pago.
+  const locked = await requireCateringFeature(tenantId, 'cat-routes')
+  if (locked) return locked
 
   const today = new Date()
 

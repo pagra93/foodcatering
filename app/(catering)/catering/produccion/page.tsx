@@ -9,6 +9,8 @@ import Link from 'next/link'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getRequiredSession } from '@/lib/auth/session'
+import { requireCateringFeature } from '@/lib/plans/guard'
 import {
   Monitor,
   Package,
@@ -19,7 +21,11 @@ import {
   ChefHat,
 } from 'lucide-react'
 
-export default function ProductionDashboardPage() {
+export default async function ProductionDashboardPage() {
+  const session = await getRequiredSession()
+  const locked = await requireCateringFeature(session.user.tenantId, 'cat-production')
+  if (locked) return locked
+
   const today = new Date().toISOString().split('T')[0]
 
   return (

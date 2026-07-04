@@ -12,10 +12,12 @@ export function UpgradeLock({
   title,
   description,
   planName,
+  ctaHref = '/empresa/facturacion',
 }: {
   title: string
   description?: string
   planName?: string | null
+  ctaHref?: string
 }) {
   return (
     <Card className="mx-auto max-w-xl p-8 text-center">
@@ -30,7 +32,7 @@ export function UpgradeLock({
       </p>
       <div className="mt-5 flex justify-center gap-2">
         <Button asChild>
-          <Link href="/empresa/facturacion">
+          <Link href={ctaHref}>
             <Sparkles className="mr-2 h-4 w-4" />
             Ver planes y mejorar
           </Link>

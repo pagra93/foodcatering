@@ -15,6 +15,7 @@ import { withBranding } from '@/components/shared/BrandProvider'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getUnreadNotifications, getUnreadCount } from '@/lib/db/queries/activity'
+import { getCateringEntitlements } from '@/lib/plans/entitlements'
 import { redirect } from 'next/navigation'
 
 export default async function CateringInnerLayout({
@@ -62,9 +63,10 @@ export default async function CateringInnerLayout({
 
   const { branding, style } = await withBranding(tenant.id)
 
-  const [notifications, notifCount] = await Promise.all([
+  const [notifications, notifCount, entitlements] = await Promise.all([
     getUnreadNotifications(session.user.tenantId, session.user.id),
     getUnreadCount(session.user.tenantId, session.user.id),
+    getCateringEntitlements(session.user.tenantId),
   ])
 
   return (
@@ -77,6 +79,7 @@ export default async function CateringInnerLayout({
         tenant={tenantData}
         user={userData}
         permissions={session.user.permissions ?? []}
+        features={[...entitlements.features]}
         branding={branding}
       />
 
