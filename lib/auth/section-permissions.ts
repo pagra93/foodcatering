@@ -59,6 +59,7 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/compliance/fiscal-audit', permission: 'fiscal-audit:view' },
   { prefix: '/admin/compliance/gdpr', permission: 'gdpr:view' },
   { prefix: '/admin/compliance/security', permission: 'security:view' },
+  { prefix: '/admin/compliance/audit-log', permission: 'audit-log:view' },
 
   // Plantillas y branding
   { prefix: '/admin/templates/branding', permission: 'template-branding:view' },

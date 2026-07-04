@@ -110,6 +110,7 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
     { resource: 'fiscal-audit', label: 'auditoría fiscal', actions: [VIEW('auditoría fiscal'), { action: 'export', desc: 'Exportar auditoría fiscal' }] },
     { resource: 'gdpr', label: 'solicitudes RGPD', actions: [VIEW('solicitudes RGPD'), { action: 'process', desc: 'Procesar solicitud RGPD' }] },
     { resource: 'security', label: 'seguridad', actions: [VIEW('seguridad'), { action: 'run-test', desc: 'Ejecutar pentest' }] },
+    { resource: 'audit-log', label: 'traza de auditoría', actions: [VIEW('la traza de auditoría')] },
     { resource: 'template-branding', label: 'branding', actions: [VIEW('branding'), { action: 'create', desc: 'Crear tema' }, { action: 'edit', desc: 'Editar tema' }] },
     { resource: 'template-communication', label: 'plantillas de comunicación', actions: [VIEW('plantillas'), { action: 'create', desc: 'Crear plantilla' }, { action: 'edit', desc: 'Editar plantilla' }] },
     { resource: 'announcement', label: 'avisos', actions: [VIEW('avisos'), { action: 'create', desc: 'Crear aviso' }, { action: 'edit', desc: 'Editar aviso' }, { action: 'publish', desc: 'Publicar aviso' }] },

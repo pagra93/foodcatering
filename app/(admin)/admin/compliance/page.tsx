@@ -136,6 +136,13 @@ export default async function CompliancePage() {
           }
           badgeVariant={kpis.securityFailed > 0 ? 'destructive' : 'outline'}
         />
+        <SubModule
+          href="/admin/compliance/audit-log"
+          icon={FileText}
+          iconColor="text-gray-600"
+          title="Traza de auditoría"
+          description="Registro tamper-evident (hash SHA-256) de las acciones sensibles: quién hizo qué y cuándo."
+        />
       </div>
 
       <Card className="bg-gray-50/60 p-5">

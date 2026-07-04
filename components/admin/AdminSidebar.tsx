@@ -151,6 +151,7 @@ const navItems: NavItem[] = [
       { title: 'Auditoría Fiscal', href: '/admin/compliance/fiscal-audit', permission: 'fiscal-audit:view' },
       { title: 'Derechos RGPD', href: '/admin/compliance/gdpr', permission: 'gdpr:view' },
       { title: 'Pentest / OWASP', href: '/admin/compliance/security', permission: 'security:view' },
+      { title: 'Traza de auditoría', href: '/admin/compliance/audit-log', permission: 'audit-log:view' },
     ],
   },
   {
