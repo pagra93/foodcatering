@@ -77,3 +77,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Tests del cálculo de comisión (base sin IVA) y de la derivación de "vencida".
 - [ ] Cablear o retirar los componentes huérfanos de empresa (BillingConciliation/MonthlyBreakdown/KPIs).
 - Doc: `docs/producto/features/admin-launch-audit/facturacion-centro.md`.
+
+## 2026-07-04 — HU-046 Facturación: consolidar secciones (IA 8→6) + Métricas MRR/ARR
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores en las 2 fases. **145 tests verdes**. **Sin migraciones**. Grep confirma 0 enlaces a las rutas eliminadas (`/commissions`, `/estado-cuentas`, `/metrics`).
+**Code review**: MRR corregido (mensual-equivalente por empresa activa: `monthlyPrice` o `yearlyPrice/12`; filtra `planType='EMPRESA'` + `active`) — antes contaba cualquier `saasPlanId` e ignoraba anuales; serie SaaS pasada a neto (`subtotal`) para comparar con comisiones netas; gráfica migrada a Recharts (coherente con el dashboard general). Consolidación: Comisiones era un `GROUP BY` de Liquidaciones → fusionada como toggle "Por catering" (query `getCommissionsByCatering`); índice + Estado de cuentas + Métricas unificados en un Resumen (componente `AccountsOverviewCards` reutilizable). Se retiró la promesa falsa de churn/LTV.
+**Audit**: reorganización sin entidades ni migraciones; Impuestos intacto por decisión de negocio (reglas de comida/IGIC = referencia no aplicada; la comida se factura a 21% fijo, solo `IVA_GENERAL` se consume). Permisos `metric:view`/`commission:view` quedan en el catálogo sin uso (no se reseed-ea).
+**Evaluator score**: 8.5/10 — Correctness alta (MRR verificado en dev, tests verdes), UX mejor (8→6 secciones sin perder funcionalidad), −puntos por deuda anotada (IVA comida inerte, Churn/LTV sin datos, huérfanos de empresa).
+**Action items**:
+- [ ] Decisión de negocio: aplicar IVA_COMIDA (10%) a las facturas de comida o retirar esas reglas de la UI.
+- [ ] Modelo de eventos de suscripción para churn/LTV reales (si se quiere la métrica).
+- Doc: `docs/producto/features/admin-launch-audit/facturacion-centro.md`.

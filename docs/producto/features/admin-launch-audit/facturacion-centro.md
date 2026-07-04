@@ -1,8 +1,9 @@
 # Centro de facturación del admin (Liquidaciones y Comisiones): auditoría + mejoras
 
-> Feature: `admin-launch-audit` · Épica: **EPIC-003** · Tarea: **HU-045**
+> Feature: `admin-launch-audit` · Épica: **EPIC-003** · Tareas: **HU-045** (centro) + **HU-046** (IA + métricas)
 > Estado: **hecho** (2026-07-04) · Rama: `chore/pmx10-v3-migration`
-> Commits: `ff273c0` (F1) · `7ee4ec6` (F2) · `eecda06` (F3) · `bf8daf1` (F4)
+> Commits HU-045: `ff273c0` · `7ee4ec6` · `eecda06` · `bf8daf1`
+> Commits HU-046: `691f2a8` (métricas) · `bb0234e` (consolidación 8→6)
 
 ## Por qué (auditoría)
 
@@ -68,12 +69,40 @@ cableada (`TaxRuleManager` + dialog); correlativo SaaS robusto (reintento ante P
   estado de cuentas cuadra con los tres detalles; permisos `admin-invoice:view`/`saas-invoice:view`
   sembrados. **Sin migraciones** de schema (todo derivado al vuelo).
 
+## HU-046 — Consolidación de secciones (IA) + Métricas MRR/ARR
+
+Al usar el centro, Pablo detectó **demasiadas secciones** (8 subítems) con solapamientos, y quedaban
+por auditar **Métricas** y **Reglas fiscales**.
+
+**Auditoría añadida:**
+- **Comisiones = Liquidaciones agrupadas** (mismo `getSettlements`, un `GROUP BY` en memoria) → no es
+  entidad aparte.
+- **Índice + Estado de cuentas** eran dos resúmenes del mismo dato.
+- **Métricas**: MRR usaba solo `monthlyPrice` (ignoraba anuales, no filtraba `active`/`planType`),
+  mezclaba MRR neto con `SaasInvoice.total` (con IVA), y la gráfica eran barras CSS a mano (el
+  dashboard general ya usa Recharts). MRR/ARR duplicados con el índice.
+- **Reglas fiscales**: `IVA_COMIDA`(10%)/`IGIC`(7%) son editables pero **inertes** — la comida se
+  factura a 21% fijo (`catering-invoices.ts:23`); solo `IVA_GENERAL` (SaaS) se aplica.
+
+**Qué se hizo:**
+- **Fase 1 (`691f2a8`)** — Métricas: MRR = precio mensual-equivalente por empresa activa
+  (`monthlyPrice` o `yearlyPrice/12`), filtrando planes de EMPRESA activos; serie SaaS a **neto**
+  (`subtotal`) para comparar con comisiones; nueva gráfica **Recharts** (`BillingTrendChart`).
+- **Fase 2 (`bb0234e`)** — Consolidación **8 → 6**: el índice pasa a **Resumen** (KPIs + Estado de
+  cuentas + MRR/ARR + gráfica, vía `AccountsOverviewCards`); **Comisiones** se fusiona en Liquidaciones
+  como toggle **"Detalle | Por catering"** (`getCommissionsByCatering`); se **eliminan** las rutas
+  `/commissions`, `/estado-cuentas` y `/metrics`. Sidebar: Resumen · Facturas de comida · Liquidaciones
+  · Facturas SaaS · Planes SaaS · Impuestos.
+- **Impuestos**: sin cambios (decisión de Pablo — reglas de comida/IGIC quedan como referencia no
+  aplicada; la comida sigue a 21%).
+
 ## Deuda consciente (anotada, no en esta pasada)
-- **IVA de la comida (21% vs 10%)**: la generación de `Invoice` (portal catering) usa 21% fijo. Decisión
+- **IVA de la comida (21% vs 10%)**: la generación de `Invoice` (portal catering) usa 21% fijo, y las
+  reglas `IVA_COMIDA`/`IGIC` son editables pero **no se aplican** (solo `IVA_GENERAL` en SaaS). Decisión
   de negocio pendiente; Plati presta el SaaS, no la comida.
-- **Churn & LTV**: sigue placeholder en Métricas (requiere histórico ≥6 meses).
+- **Churn & LTV**: requiere un modelo de eventos/histórico de suscripción que **no existe** en el schema
+  (solo `Tenant.deletedAt` como proxy). Se retiró la promesa falsa de la UI.
 - **Componentes huérfanos de empresa** (`BillingConciliation`, `BillingMonthlyBreakdown`, `BillingKPIs`):
   existen sin usarse; cablearlos o retirarlos en una pasada del portal empresa.
-- **MRR/ARR**: usa `monthlyPrice` e ignora planes anuales (no hay ciclo de facturación por empresa).
 - **Generación de `Invoice`** sigue siendo manual del catering; no hay validación cruzada
   pedidos-entregados ↔ facturas antes de liquidar.
