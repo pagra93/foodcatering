@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-07-02T20:00:00Z
+> Last updated: 2026-07-04T09:30:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** hechos
+- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** + **Planes SaaS (empresa + catering)** hechos
 - **Sprint**: —
-- **Stories**: 16 hechas / 27 totales · `██████░░░░ 59%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones + HU-041 Reputación; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
+- **Stories**: 18 hechas / 28 totales · `██████░░░░ 64%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones + HU-041 Reputación + HU-042 Planes empresa + HU-043 Planes catering; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-07-02 · `claude-code` (Reputación: rediseño cross-portal en 5 fases — DishRating por plato, el empleado valora, matriz catering×empresa)
+- **Última actividad**: 2026-07-04 · `claude-code` (Planes SaaS para caterings: SaasPlan tipado, cobro comisión%/precio fijo por plan, gating de features cat-*, retirada de Restaurant.commission; el catering ve su plan en /catering/facturacion)
 <!-- /AUTO:status -->
 
 ---

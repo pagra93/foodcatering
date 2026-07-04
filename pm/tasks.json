@@ -919,6 +919,28 @@
       "activity_count": 4,
       "notes": "El plan de la empresa funciona como los roles: habilita/limita funcionalidades. Auditoría: enum fijo CompanyPlan (imposible plan a medida), cero enforcement, página solo lectura; el cobro (SaasInvoice) ya existía. F1 (6a0ac64): SaasPlan.code enum→String + scope SYSTEM/CUSTOM + tenantEmpresa + maxSites/maxCaterings; PlanFeature (join, como RolePermission); Company.saasPlanId FK; migración con backfill perfecto; lib/plans/feature-catalog.ts (15 features/7 cats) + entitlements.ts + seed-plans.ts. F2 (848d18b): enforcement duro — cuotas en createEmployee/sedes (403+upsell), gating de features (section-features + requireCompanyFeature + UpgradeLock + candado sidebar en Auditoría Fiscal/Actividad), PlanUsageCard en facturación. F3 (413ef1d): CRUD de planes como roles (PlanForm/FeaturePicker/plan-actions, crear/editar/borrar + planes a medida). F4 (3f0a105): asignación por saasPlanId en CompanyForm + MRR/facturación/empresa-billing/validaciones por FK (MRR 1643€ igual). Company.plan enum queda legacy. type-check+lint limpios. Doc: docs/producto/features/admin-launch-audit/planes-saas.md.",
       "updated_at": "2026-07-03T14:00:00Z"
+    },
+    {
+      "id": "HU-043",
+      "title": "Planes SaaS para caterings: comisión/precio fijo + límite de empresas + features",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "high",
+      "origin": "conversacion",
+      "agent_suggested": "age-spe-tech-architect",
+      "depends_on": ["HU-042"],
+      "parent_epic": "EPIC-003",
+      "feature": "admin-launch-audit",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho y cerrado (4 fases). 7/7 caterings con saasPlanId; Restaurant.commission retirado. Deuda consciente: maxCompanies sin enforcement (no existe flujo de asignación catering↔empresa). Reiniciar pnpm dev tras migraciones.",
+      "created_at": "2026-07-04T08:00:00Z",
+      "last_activity": "2026-07-04T09:30:00Z",
+      "activity_count": 4,
+      "notes": "Paralelo a HU-042 (planes de empresa). SaasPlan pasa a tipado (planType EMPRESA|CATERING) reutilizando toda la infra. F1 (5fb15e4): enums PlanType/PricingModel; SaasPlan gana pricingModel/commissionPct/flatMonthlyFee/maxCompanies; Restaurant.saasPlanId FK; feature-catalog con portal + features cat-* (4 planes de sistema: cat-basico 8%/3, cat-estandar 5%/10, cat-premium 3%/∞, cat-cuota-fija 299€/mes); getCateringEntitlements/getCateringPlanUsage; seed-plans + backfill (5%→cat-estandar, Settlement idéntico). F2 (30efd7f): Settlement por plan (COMMISSION→gross×pct; FIXED→flatFee) en generateMonthBillingAction + empresa-facturacion; gating (CATERING_FEATURE_RULES + requireCateringFeature + candado CateringSidebar + guards produccion/rutas/calidad + UpgradeLock). F3 (3dd097e): /admin/billing/plans separado por tipo, PlanForm adaptado por planType, plan-actions con planType; selector de plan (Restaurant.saasPlanId) en CateringEditForm. F4 (de108fc): CateringPlanCard en /catering/facturacion; retirada de Restaurant.commission (migración drop-column con backfill defensivo), alta por selector de plan (CateringWizard), display derivado del plan (lista/detalle/OperationalStatus), seeds con saasPlanId. type-check + 145 tests verdes; BD comidas_dev: 7 caterings, 0 sin plan, columna commission eliminada. Doc: docs/producto/features/admin-launch-audit/planes-catering.md.",
+      "updated_at": "2026-07-04T09:30:00Z"
     }
   ],
   "epics": [

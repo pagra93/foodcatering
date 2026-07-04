@@ -46,3 +46,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Tests del flujo aplicar→disputar→resolver y del contador de la campana.
 - Doc: `docs/producto/features/admin-launch-audit/penalizaciones.md`.
 
+
+## 2026-07-04 — HU-043 Planes SaaS para CATERINGS (comisión/precio fijo + límite + features)
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores (solo warnings preexistentes) en las 4 fases. **145 tests verdes** (`pnpm exec vitest run`). Dos migraciones aplicadas a `comidas_dev`: `20260704120000_catering_plans` (aditiva, con backfill de `Restaurant.saasPlanId`) y `20260704140000_drop_restaurant_commission` (backfill defensivo → drop). Verificado en BD: 7 caterings, **0 sin plan**, columna `commission` eliminada; Settlement idéntico antes/después del backfill.
+**Code review**: `SaasPlan` pasa a **tipado** (`planType EMPRESA|CATERING`) reutilizando toda la infra de planes de empresa (features namespaced `cat-*`, entitlements espejo, guard/sidebar/upsell). Cobro del catering **derivado del plan** (COMMISSION → `gross×commissionPct`; FIXED → `flatMonthlyFee`), sin fallback legacy. Alta por **selector de plan** (wizard) en vez de comisión manual. Sin `as any`/`@ts-ignore`; queries de catering filtradas por tenant; RBAC reutiliza `plan:*`.
+**Audit**: cumple CLAUDE.md — schema como fuente de verdad (campo suelto `Restaurant.commission` retirado, el cobro vive en el plan como se hizo con `Company.plan`), nada de stubs. Migración no-destructiva con backfill antes del drop.
+**Evaluator score**: 8.5/10 — Correctness alta (type-check + tests + verificación en BD), Completeness alta (modelo + cobro + gating + admin CRUD + vista catering + retirada del campo), −puntos por **`maxCompanies` sin enforcement** (deuda consciente: no existe flujo de asignación catering↔empresa) y falta de tests automatizados nuevos.
+**Action items**:
+- [ ] Cablear `withinLimit(maxCompanies)` cuando se construya "asignar catering a empresa" (crea `CompanyCateringAssignment`).
+- [ ] Tests: crear plan de catering (comisión/fijo) → asignar → Settlement con el modelo correcto; candado en Producción/Rutas/Calidad según plan.
+- Doc: `docs/producto/features/admin-launch-audit/planes-catering.md`.
