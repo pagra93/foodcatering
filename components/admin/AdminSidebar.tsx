@@ -120,6 +120,7 @@ const navItems: NavItem[] = [
     icon: CreditCard,
     description: 'Planes, comisiones, liquidaciones',
     subItems: [
+      { title: 'Estado de cuentas', href: '/admin/billing/estado-cuentas', permission: 'settlement:view' },
       { title: 'Facturas (comida)', href: '/admin/billing/invoices', permission: 'admin-invoice:view' },
       { title: 'Liquidaciones', href: '/admin/billing/settlements', permission: 'settlement:view' },
       { title: 'Comisiones', href: '/admin/billing/commissions', permission: 'commission:view' },

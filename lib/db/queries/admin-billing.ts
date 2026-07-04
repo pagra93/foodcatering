@@ -4,6 +4,80 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import type {
+  InvoiceStatus,
+  SettlementStatus,
+  SaasInvoiceStatus,
+} from '@prisma/client'
+
+/**
+ * Estado de cuentas consolidado: los tres flujos de dinero de la plataforma.
+ * Por cada flujo: facturado (emitido, sin borradores/anuladas), cobrado (pagado),
+ * pendiente (abierto) y vencido (abierto con fecha pasada, derivado al vuelo).
+ *  · food       → empresa paga la comida al catering (Invoice)
+ *  · commission → catering paga la comisión a Plati (Settlement, sobre netOwed)
+ *  · saas       → empresa paga la suscripción a Plati (SaasInvoice)
+ */
+export async function getAccountsOverview() {
+  const now = new Date()
+  const invoiceOpen: InvoiceStatus[] = ['ISSUED', 'SENT', 'OVERDUE']
+  const invoiceBilled: InvoiceStatus[] = ['ISSUED', 'SENT', 'PAID', 'OVERDUE']
+  const settleOpen: SettlementStatus[] = ['ISSUED', 'OVERDUE']
+  const settleBilled: SettlementStatus[] = ['ISSUED', 'PAID', 'OVERDUE']
+  const saasOpen: SaasInvoiceStatus[] = ['ISSUED', 'OVERDUE']
+  const saasBilled: SaasInvoiceStatus[] = ['ISSUED', 'PAID', 'OVERDUE']
+
+  const [
+    invBilled,
+    invPaid,
+    invPending,
+    invOverdue,
+    setBilled,
+    setPaid,
+    setPending,
+    setOverdue,
+    saasBilledAgg,
+    saasPaid,
+    saasPending,
+    saasOverdue,
+  ] = await Promise.all([
+    prisma.invoice.aggregate({ where: { status: { in: invoiceBilled } }, _sum: { total: true } }),
+    prisma.invoice.aggregate({ where: { status: 'PAID' }, _sum: { total: true } }),
+    prisma.invoice.aggregate({ where: { status: { in: invoiceOpen } }, _sum: { total: true } }),
+    prisma.invoice.aggregate({ where: { status: { in: invoiceOpen }, dueDate: { lt: now } }, _sum: { total: true } }),
+    prisma.settlement.aggregate({ where: { status: { in: settleBilled } }, _sum: { netOwed: true } }),
+    prisma.settlement.aggregate({ where: { status: 'PAID' }, _sum: { netOwed: true } }),
+    prisma.settlement.aggregate({ where: { status: { in: settleOpen } }, _sum: { netOwed: true } }),
+    prisma.settlement.aggregate({ where: { status: { in: settleOpen }, dueBy: { lt: now } }, _sum: { netOwed: true } }),
+    prisma.saasInvoice.aggregate({ where: { status: { in: saasBilled } }, _sum: { total: true } }),
+    prisma.saasInvoice.aggregate({ where: { status: 'PAID' }, _sum: { total: true } }),
+    prisma.saasInvoice.aggregate({ where: { status: { in: saasOpen } }, _sum: { total: true } }),
+    prisma.saasInvoice.aggregate({ where: { status: { in: saasOpen }, dueBy: { lt: now } }, _sum: { total: true } }),
+  ])
+
+  return {
+    food: {
+      billed: Number(invBilled._sum.total ?? 0),
+      paid: Number(invPaid._sum.total ?? 0),
+      pending: Number(invPending._sum.total ?? 0),
+      overdue: Number(invOverdue._sum.total ?? 0),
+    },
+    commission: {
+      billed: Number(setBilled._sum.netOwed ?? 0),
+      paid: Number(setPaid._sum.netOwed ?? 0),
+      pending: Number(setPending._sum.netOwed ?? 0),
+      overdue: Number(setOverdue._sum.netOwed ?? 0),
+    },
+    saas: {
+      billed: Number(saasBilledAgg._sum.total ?? 0),
+      paid: Number(saasPaid._sum.total ?? 0),
+      pending: Number(saasPending._sum.total ?? 0),
+      overdue: Number(saasOverdue._sum.total ?? 0),
+    },
+  }
+}
+
+export type AccountsOverview = Awaited<ReturnType<typeof getAccountsOverview>>
 
 /**
  * KPIs principales del dashboard /admin/billing.

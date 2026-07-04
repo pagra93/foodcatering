@@ -6,6 +6,7 @@ import {
   Landmark,
   Percent,
   Receipt,
+  Scale,
   TrendingUp,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -80,6 +81,13 @@ export default async function BillingDashboardPage() {
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
+        <SubModule
+          href="/admin/billing/estado-cuentas"
+          icon={Scale}
+          iconColor="text-primary"
+          title="Estado de cuentas"
+          description="Visión consolidada de los tres flujos: comida, comisiones y SaaS. Quién debe qué."
+        />
         <SubModule
           href="/admin/billing/invoices"
           icon={FileText}
