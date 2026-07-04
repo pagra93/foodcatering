@@ -5,15 +5,41 @@ import { es } from 'date-fns/locale'
 import type { SettlementStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import {
   getSettlements,
   getSettlementsKPIs,
+  getCommissionsByCatering,
 } from '@/lib/db/queries/admin-settlements'
 import { effectiveStatus, statusMeta, SETTLEMENT_STATUS } from '@/lib/billing/status'
 import { MarkPaidButton } from '@/components/admin/billing/MarkPaidButton'
 
-type SP = { status?: string; period?: string; page?: string }
+type SP = { status?: string; period?: string; page?: string; view?: string }
+
+/** Pestañas "Detalle | Por catering" (la vista por catering sustituye a la antigua sección Comisiones). */
+function ViewTabs({ view, params }: { view: 'detalle' | 'catering'; params: SP }) {
+  const base = { pathname: '/admin/billing/settlements' as const }
+  const tab = (v: 'detalle' | 'catering', label: string) => {
+    const active = view === v
+    return (
+      <Link
+        href={{ ...base, query: { ...params, view: v, page: undefined } }}
+        className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+          active ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+        }`}
+      >
+        {label}
+      </Link>
+    )
+  }
+  return (
+    <div className="inline-flex gap-1 rounded-lg border border-gray-200 bg-gray-50 p-1">
+      {tab('detalle', 'Detalle')}
+      {tab('catering', 'Por catering')}
+    </div>
+  )
+}
 
 export default async function SettlementsPage({
   searchParams,
@@ -22,8 +48,9 @@ export default async function SettlementsPage({
 }) {
   const params = await searchParams
   const pageNum = Number(params.page ?? '1')
+  const view: 'detalle' | 'catering' = params.view === 'catering' ? 'catering' : 'detalle'
 
-  const [{ settlements, total, pageSize }, kpis] = await Promise.all([
+  const [{ settlements, total, pageSize }, kpis, byCatering] = await Promise.all([
     getSettlements({
       status: (params.status as SettlementStatus) || undefined,
       period: params.period,
@@ -31,6 +58,7 @@ export default async function SettlementsPage({
       pageSize: 25,
     }),
     getSettlementsKPIs(),
+    view === 'catering' ? getCommissionsByCatering() : Promise.resolve([]),
   ])
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -54,6 +82,8 @@ export default async function SettlementsPage({
           Marca como pagada cuando recibas la transferencia.
         </p>
       </div>
+
+      <ViewTabs view={view} params={params} />
 
       <div className="grid gap-4 md:grid-cols-5">
         <Card className="p-4">
@@ -80,8 +110,11 @@ export default async function SettlementsPage({
         </Card>
       </div>
 
+      {view === 'detalle' && (
+      <>
       <Card className="p-4">
         <form method="get" className="flex flex-wrap items-end gap-3">
+          <input type="hidden" name="view" value="detalle" />
           <div>
             <label className="mb-1 block text-xs font-medium text-gray-600">
               Estado
@@ -229,6 +262,61 @@ export default async function SettlementsPage({
             )}
           </div>
         </div>
+      )}
+      </>
+      )}
+
+      {view === 'catering' && (
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="border-b bg-gray-50 text-xs uppercase text-gray-500">
+                <tr>
+                  <th className="px-4 py-3 text-left">Catering</th>
+                  <th className="px-4 py-3 text-right">Base facturada</th>
+                  <th className="px-4 py-3 text-right">Comisión total</th>
+                  <th className="px-4 py-3 text-right">Cobrado</th>
+                  <th className="px-4 py-3 text-right">Pendiente</th>
+                  <th className="px-4 py-3 text-center">Liquidaciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {byCatering.map((c) => (
+                  <tr key={c.tenantCatering} className="border-b last:border-0 hover:bg-gray-50">
+                    <td className="px-4 py-3">
+                      <div className="font-medium">{c.name}</div>
+                      <div className="font-mono text-[10px] text-gray-500">{c.subdomain}</div>
+                    </td>
+                    <td className="px-4 py-3 text-right">{c.totalGross.toFixed(2)} €</td>
+                    <td className="px-4 py-3 text-right font-semibold">
+                      {c.totalCommission.toFixed(2)} €
+                    </td>
+                    <td className="px-4 py-3 text-right text-emerald-600">
+                      {c.paidCommission.toFixed(2)} €
+                    </td>
+                    <td
+                      className={`px-4 py-3 text-right ${c.pendingCommission > 0 ? 'text-amber-600' : 'text-gray-400'}`}
+                    >
+                      {c.pendingCommission.toFixed(2)} €
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      <Badge variant="outline" className="text-[10px]">
+                        {c.count}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+                {byCatering.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-12 text-center text-sm text-gray-500">
+                      Sin liquidaciones registradas.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       )}
     </div>
   )

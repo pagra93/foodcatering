@@ -1,9 +1,14 @@
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, UtensilsCrossed, Percent, CreditCard } from 'lucide-react'
+import {
+  ArrowRight,
+  UtensilsCrossed,
+  Percent,
+  CreditCard,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { getAccountsOverview, type AccountsOverview } from '@/lib/db/queries/admin-billing'
+import { Button } from '@/components/ui/button'
+import type { AccountsOverview } from '@/lib/db/queries/admin-billing'
 
 const eur = (n: number) =>
   n.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
@@ -52,8 +57,7 @@ const FLOWS: FlowDef[] = [
 
 function FlowCard({ def, data }: { def: FlowDef; data: AccountsOverview[FlowKey] }) {
   const Icon = def.icon
-  const collectedPct =
-    data.billed > 0 ? Math.round((data.paid / data.billed) * 100) : 0
+  const collectedPct = data.billed > 0 ? Math.round((data.paid / data.billed) * 100) : 0
   return (
     <Card className="flex flex-col p-5">
       <div className="mb-4 flex items-start justify-between">
@@ -112,33 +116,13 @@ function FlowCard({ def, data }: { def: FlowDef; data: AccountsOverview[FlowKey]
   )
 }
 
-export default async function EstadoCuentasPage() {
-  const overview = await getAccountsOverview()
-
-  const pendingToPlati = overview.commission.pending + overview.saas.pending
-  const overdueToPlati = overview.commission.overdue + overview.saas.overdue
+/** Estado de cuentas: pendiente/vencido a favor de Plati + los 3 flujos de dinero. */
+export function AccountsOverviewCards({ data }: { data: AccountsOverview }) {
+  const pendingToPlati = data.commission.pending + data.saas.pending
+  const overdueToPlati = data.commission.overdue + data.saas.overdue
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/admin/billing">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Volver a Facturación
-          </Link>
-        </Button>
-      </div>
-
-      <div>
-        <h1 className="text-2xl font-bold">Estado de cuentas</h1>
-        <p className="mt-1 max-w-3xl text-sm text-gray-500">
-          Visión consolidada de los tres flujos de dinero de la plataforma: quién
-          debe qué, cuánto se ha cobrado y qué está vencido. "Vencido" se calcula por
-          fecha de vencimiento.
-        </p>
-      </div>
-
-      {/* Ingresos de Plati (comisiones + SaaS) */}
+    <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="p-5">
           <p className="text-sm text-gray-500">Pendiente de cobro de Plati</p>
@@ -156,10 +140,9 @@ export default async function EstadoCuentasPage() {
         </Card>
       </div>
 
-      {/* Los tres flujos */}
       <div className="grid gap-4 lg:grid-cols-3">
         {FLOWS.map((def) => (
-          <FlowCard key={def.key} def={def} data={overview[def.key]} />
+          <FlowCard key={def.key} def={def} data={data[def.key]} />
         ))}
       </div>
     </div>

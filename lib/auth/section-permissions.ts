@@ -42,11 +42,8 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/billing/settlements', permission: 'settlement:view' },
   { prefix: '/admin/billing/invoices', permission: 'admin-invoice:view' },
   { prefix: '/admin/billing/saas-invoices', permission: 'saas-invoice:view' },
-  { prefix: '/admin/billing/commissions', permission: 'commission:view' },
-  { prefix: '/admin/billing/estado-cuentas', permission: 'settlement:view' },
-  { prefix: '/admin/billing/metrics', permission: 'metric:view' },
   { prefix: '/admin/billing/taxes', permission: 'tax:view' },
-  // Índice del área (solo la raíz exacta): visible con permiso de liquidaciones.
+  // Resumen (raíz del área): visible con permiso de liquidaciones.
   { prefix: '/admin/billing', permission: 'settlement:view', exact: true },
 
   // Integraciones

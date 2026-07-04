@@ -75,6 +75,53 @@ export async function getSettlementsKPIs() {
   }
 }
 
+/**
+ * Comisiones agregadas por catering (vista "Por catering" de Liquidaciones).
+ * Es un GROUP BY sobre los mismos Settlement — no hay entidad "comisión" aparte.
+ */
+export async function getCommissionsByCatering() {
+  const { settlements } = await getSettlements({ pageSize: 500 })
+
+  const byId = new Map<
+    string,
+    {
+      name: string
+      subdomain: string | null
+      totalCommission: number
+      paidCommission: number
+      pendingCommission: number
+      totalGross: number
+      count: number
+    }
+  >()
+
+  for (const s of settlements) {
+    const id = s.tenantCatering
+    const entry =
+      byId.get(id) ?? {
+        name: s.catering?.name ?? '—',
+        subdomain: s.catering?.subdomain ?? null,
+        totalCommission: 0,
+        paidCommission: 0,
+        pendingCommission: 0,
+        totalGross: 0,
+        count: 0,
+      }
+    const amount = Number(s.commissionAmount)
+    entry.totalCommission += amount
+    entry.totalGross += Number(s.grossAmount)
+    if (s.status === 'PAID') entry.paidCommission += amount
+    else if (s.status === 'ISSUED' || s.status === 'OVERDUE')
+      entry.pendingCommission += amount
+    entry.count += 1
+    byId.set(id, entry)
+  }
+
+  return [...byId.entries()]
+    .map(([tenantCatering, v]) => ({ tenantCatering, ...v }))
+    .sort((a, b) => b.totalCommission - a.totalCommission)
+}
+
 export async function getSettlementsForCatering(tenantCatering: string) {
   return prisma.settlement.findMany({
     where: { tenantCatering },
