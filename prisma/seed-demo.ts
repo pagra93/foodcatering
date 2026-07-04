@@ -177,7 +177,7 @@ async function main() {
       name: 'Demo Empresa',
       subdomain: 'demoempresa',
       status: 'ACTIVE',
-      config: { branding: { primaryColor: '#2563eb' } },
+      primaryColor: '#2563eb',
     },
   })
 
@@ -357,7 +357,7 @@ async function main() {
       name: 'Demo Catering',
       subdomain: 'democatering',
       status: 'ACTIVE',
-      config: { branding: { primaryColor: '#ef4444' } },
+      primaryColor: '#ef4444',
     },
   })
 
