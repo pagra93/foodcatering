@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-07-04T14:40:00Z
+> Last updated: 2026-07-04T16:00:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — … + **Centro de facturación** + **Compliance** (Seguridad OWASP real + visor AuditLog; Fiscal/RGPD/DPA auditados) hechos
+- **Status**: `en progreso` (EPIC-003) — … + **Compliance** + **Branding** (white-label real + edición por tenant + Avisos en-app) hechos
 - **Sprint**: —
-- **Stories**: 22 hechas / 28 totales · `████████░░ 79%` (… + HU-045 Centro de facturación + HU-046 Consolidación IA + HU-047 Compliance; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
+- **Stories**: 23 hechas / 28 totales · `████████░░ 82%` (… + HU-046 Consolidación IA + HU-047 Compliance + HU-048 Branding; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-07-04 · `claude-code` (Compliance: Seguridad OWASP/Pentest deja de ser fachada —registro real— y nuevo visor de traza de auditoría (AuditLog); Fiscal/RGPD/DPA auditados, Retención en pausa)
+- **Última actividad**: 2026-07-04 · `claude-code` (Branding: white-label real —el color del tenant tiñe todo el portal—, edición por tenant desde admin, y Avisos en-app nuevos con banner en los portales)
 <!-- /AUTO:status -->
 
 ---

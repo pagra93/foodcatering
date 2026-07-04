@@ -97,3 +97,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Retención: vista previa + ejecución guardada cuando se priorice (destructivo).
 - [ ] Fiscal: `generatedBy` real + filtro por empresa en la UI. DPA: editar/versionar + seed.
 - Doc: `docs/producto/features/admin-launch-audit/compliance.md`.
+
+## 2026-07-04 — HU-048 Auditoría de Branding (white-label real + edición por tenant + Avisos en-app)
+**Tests**: `pnpm type-check` + `pnpm lint` limpios en las 3 fases. **149 tests verdes** (145 + 4 nuevos de branding: `hexToHslTriple` + vars del tema). Migración `20260704160000_announcements` aplicada a `comidas_dev` + cliente regenerado + `pnpm dev` reiniciado.
+**Code review**: white-label resuelto en la raíz — `buildBrandingStyle` emite las variables del tema shadcn (`--primary`/`--primary-foreground`/`--ring`/`--secondary`) derivadas del color del tenant (hex→HSL), y como el `style` cuelga del wrapper de los layouts, cascada a todos los componentes; el admin/landing no se ven afectados. Edición por tenant cablea la acción huérfana `overrideTenantBrandingAction` (gate `template-branding:edit`). Avisos en-app: modelo + migración a mano (convención del repo), CRUD como Server Actions (gate `announcement:*`), banner descartable en cliente (localStorage, sin tabla por-usuario); `getActiveAnnouncements` resuelve audiencia + ventana temporal.
+**Audit**: cumple CLAUDE.md — mutaciones como Server Actions, migración no-destructiva aplicada a dev (no prod), sin `as any`. Fix de la inconsistencia del seed (color en columna, no en JSON no leído).
+**Evaluator score**: 8.5/10 — Correctness alta (tests + smoke), convierte 3 placeholders/fachadas en funcionalidad real y hace el branding realmente útil (marca blanca completa); −puntos por dejar Comunicación como placeholder y por el impacto visual menor de `secondaryColor`.
+**Action items**:
+- [ ] Comunicación (email/SMS/WhatsApp): feature propia (modelo CommunicationTemplate + proveedor de envío).
+- [ ] Revisar contraste de botones cuando un tenant elige un color muy claro (el foreground se calcula, pero conviene QA visual).
+- Doc: `docs/producto/features/admin-launch-audit/branding.md`.
