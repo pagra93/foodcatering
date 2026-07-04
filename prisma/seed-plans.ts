@@ -16,17 +16,25 @@ async function main() {
   console.log('🌱 Sembrando planes SaaS de sistema…')
 
   for (const def of SYSTEM_PLANS) {
+    const isCatering = def.planType === 'CATERING'
     const data = {
       name: def.name,
       description: def.description,
+      planType: def.planType,
       scope: 'SYSTEM' as const,
       tenantEmpresa: null,
-      monthlyPrice: def.monthlyPrice,
-      yearlyPrice: def.yearlyPrice,
-      maxEmployees: def.limits.maxEmployees,
-      maxSites: def.limits.maxSites,
-      maxCaterings: def.limits.maxCaterings,
-      maxOrdersMonth: def.limits.maxOrdersMonth,
+      // Empresa
+      monthlyPrice: def.monthlyPrice ?? 0,
+      yearlyPrice: def.yearlyPrice ?? null,
+      maxEmployees: def.limits?.maxEmployees ?? null,
+      maxSites: def.limits?.maxSites ?? null,
+      maxCaterings: def.limits?.maxCaterings ?? null,
+      maxOrdersMonth: def.limits?.maxOrdersMonth ?? null,
+      // Catering
+      pricingModel: def.pricing?.model ?? null,
+      commissionPct: def.pricing?.commissionPct ?? null,
+      flatMonthlyFee: def.pricing?.flatMonthlyFee ?? null,
+      maxCompanies: def.maxCompanies ?? null,
       supportLevel: def.supportLevel,
       active: true,
     }
@@ -37,7 +45,7 @@ async function main() {
     })
 
     // Features: reset exacto al catálogo del plan (core se añaden en runtime).
-    const keys = resolvePlanFeatureKeys(def.features)
+    const keys = resolvePlanFeatureKeys(def.features, def.planType)
     await prisma.planFeature.deleteMany({ where: { planId: plan.id } })
     if (keys.length > 0) {
       await prisma.planFeature.createMany({
@@ -45,14 +53,31 @@ async function main() {
         skipDuplicates: true,
       })
     }
-    console.log(`  · ${def.code}: ${keys.length} features, ${def.monthlyPrice} €/mes`)
+    const priceLabel = isCatering
+      ? def.pricing?.model === 'FIXED'
+        ? `${def.pricing.flatMonthlyFee} €/mes`
+        : `${(def.pricing?.commissionPct ?? 0) * 100}% comisión`
+      : `${def.monthlyPrice} €/mes`
+    console.log(`  · ${def.code} [${def.planType}]: ${keys.length} features, ${priceLabel}`)
   }
 
-  // Nota: las empresas reciben su saasPlanId al crearse (seeds + admin). Ya no se
-  // hace backfill desde el enum legacy (retirado).
-  const withoutPlan = await prisma.company.count({ where: { saasPlanId: null } })
-  if (withoutPlan > 0) {
-    console.log(`  ⚠ ${withoutPlan} empresa(s) sin plan — asígnalo desde /admin/empresas.`)
+  // Backfill: caterings sin plan → plan de comisión estándar (5%, "cat-estandar").
+  const estandar = await prisma.saasPlan.findUnique({
+    where: { code: 'cat-estandar' },
+    select: { id: true },
+  })
+  if (estandar) {
+    const res = await prisma.restaurant.updateMany({
+      where: { saasPlanId: null },
+      data: { saasPlanId: estandar.id },
+    })
+    if (res.count > 0) console.log(`  · backfill Restaurant.saasPlanId: ${res.count} caterings → cat-estandar`)
+  }
+
+  // Nota: empresas/caterings reciben su saasPlanId al crearse (seeds + admin).
+  const companiesNoPlan = await prisma.company.count({ where: { saasPlanId: null } })
+  if (companiesNoPlan > 0) {
+    console.log(`  ⚠ ${companiesNoPlan} empresa(s) sin plan — asígnalo desde /admin/empresas.`)
   }
   console.log('✅ Planes SaaS sembrados')
 }

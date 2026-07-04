@@ -11,7 +11,11 @@
 
 import { cache } from 'react'
 import { prisma } from '@/lib/db/prisma'
-import { CORE_FEATURE_KEYS, type LimitKey } from './feature-catalog'
+import {
+  EMPRESA_CORE_KEYS,
+  CATERING_CORE_KEYS,
+  type LimitKey,
+} from './feature-catalog'
 
 export type CompanyEntitlements = {
   planId: string | null
@@ -31,7 +35,7 @@ function defaultEntitlements(): CompanyEntitlements {
     planId: null,
     planCode: null,
     planName: null,
-    features: new Set(CORE_FEATURE_KEYS),
+    features: new Set(EMPRESA_CORE_KEYS),
     limits: { maxEmployees: null, maxSites: null, maxCaterings: null },
   }
 }
@@ -64,7 +68,7 @@ export const getCompanyEntitlements = cache(
     if (!plan) return defaultEntitlements()
 
     // Las core están siempre; el resto salen del plan.
-    const features = new Set<string>(CORE_FEATURE_KEYS)
+    const features = new Set<string>(EMPRESA_CORE_KEYS)
     for (const f of plan.planFeatures) features.add(f.featureKey)
 
     return {
@@ -108,22 +112,122 @@ export function companyHasFeature(
 }
 
 /** Límite del plan para una cuota (null = ilimitado). */
-export function limitFor(ent: CompanyEntitlements, key: LimitKey): number | null {
+type EmpresaLimitKey = 'maxEmployees' | 'maxSites' | 'maxCaterings'
+
+export function limitFor(ent: CompanyEntitlements, key: EmpresaLimitKey): number | null {
   return ent.limits[key]
 }
 
+/** ¿Cabe una unidad más dentro de un límite concreto? (null = ilimitado). */
+export function withinLimitOf(limit: number | null, current: number): boolean {
+  if (limit == null) return true
+  return current < limit
+}
+
 /**
- * ¿Cabe una unidad más dentro de la cuota? `current` = nº de elementos actuales.
- * true si el límite es ilimitado (null) o si `current < límite`.
+ * ¿Cabe una unidad más dentro de la cuota de empresa? `current` = nº actual.
  */
 export function withinLimit(
   ent: CompanyEntitlements,
-  key: LimitKey,
+  key: EmpresaLimitKey,
   current: number
 ): boolean {
-  const limit = ent.limits[key]
-  if (limit == null) return true
-  return current < limit
+  return withinLimitOf(ent.limits[key], current)
+}
+
+// ── Catering ─────────────────────────────────────────────────────────────────
+
+export type CateringPricing = {
+  model: 'COMMISSION' | 'FIXED' | null
+  commissionPct: number | null
+  flatMonthlyFee: number | null
+}
+
+export type CateringEntitlements = {
+  planId: string | null
+  planCode: string | null
+  planName: string | null
+  features: Set<string>
+  maxCompanies: number | null
+  pricing: CateringPricing
+}
+
+function defaultCateringEntitlements(): CateringEntitlements {
+  return {
+    planId: null,
+    planCode: null,
+    planName: null,
+    features: new Set(CATERING_CORE_KEYS),
+    maxCompanies: null,
+    pricing: { model: null, commissionPct: null, flatMonthlyFee: null },
+  }
+}
+
+/** Resuelve features + límite de empresas + cobro de un catering por su tenantId. */
+export const getCateringEntitlements = cache(
+  async (tenantCatering: string): Promise<CateringEntitlements> => {
+    const restaurant = await prisma.restaurant.findUnique({
+      where: { tenantId: tenantCatering },
+      select: {
+        saasPlan: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            maxCompanies: true,
+            pricingModel: true,
+            commissionPct: true,
+            flatMonthlyFee: true,
+            planFeatures: { select: { featureKey: true } },
+          },
+        },
+      },
+    })
+
+    const plan = restaurant?.saasPlan
+    if (!plan) return defaultCateringEntitlements()
+
+    const features = new Set<string>(CATERING_CORE_KEYS)
+    for (const f of plan.planFeatures) features.add(f.featureKey)
+
+    return {
+      planId: plan.id,
+      planCode: plan.code,
+      planName: plan.name,
+      features,
+      maxCompanies: plan.maxCompanies,
+      pricing: {
+        model: plan.pricingModel ?? null,
+        commissionPct: plan.commissionPct != null ? Number(plan.commissionPct) : null,
+        flatMonthlyFee: plan.flatMonthlyFee != null ? Number(plan.flatMonthlyFee) : null,
+      },
+    }
+  }
+)
+
+export function cateringHasFeature(
+  ent: CateringEntitlements,
+  featureKey: string
+): boolean {
+  return ent.features.has(featureKey)
+}
+
+export type CateringPlanUsage = {
+  entitlements: CateringEntitlements
+  usage: { companies: number }
+}
+
+/** Plan + uso (nº de empresas servidas) para la vista del catering. */
+export async function getCateringPlanUsage(
+  tenantCatering: string
+): Promise<CateringPlanUsage> {
+  const [entitlements, companies] = await Promise.all([
+    getCateringEntitlements(tenantCatering),
+    prisma.companyCateringAssignment.count({
+      where: { tenantCatering, active: true },
+    }),
+  ])
+  return { entitlements, usage: { companies } }
 }
 
 /** Error tipado para superación de cuota → la UI muestra CTA de upgrade. */

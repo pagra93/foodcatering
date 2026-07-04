@@ -510,7 +510,9 @@ model Restaurant {
   zones Json @default("[]") // [{name, postalCodes: [...], maxDistance, operator}]
 
   // ===== ECONÓMICO =====
+  /// @deprecated Transitorio: la comisión pasa al plan del catering (saasPlanId). Se retira en Fase 4.
   commission     Decimal @default(0.05) @db.Decimal(5, 4) // 0.05 = 5%
+  saasPlanId     String? @map("saas_plan_id") // plan de catering (cobro + límites + features)
   minimumBilling Decimal @default(0) @map("minimum_billing") @db.Decimal(8, 2)
   paymentCycle   String  @default("MENSUAL") @map("payment_cycle") // SEMANAL, QUINCENAL, MENSUAL
 
@@ -537,10 +539,12 @@ model Restaurant {
   tenant    Tenant               @relation(fields: [tenantId], references: [id])
   documents RestaurantDocument[]
   dishes    Dish[]
+  saasPlan  SaasPlan?            @relation(fields: [saasPlanId], references: [id])
 
   @@index([tenantId])
   @@index([operationalStatus])
   @@index([documentsStatus])
+  @@index([saasPlanId])
   @@map("restaurants")
 }
 
@@ -1828,6 +1832,22 @@ enum PlanScope {
   @@map("plan_scope")
 }
 
+/// Para quién es un plan SaaS.
+enum PlanType {
+  EMPRESA  @map("empresa")
+  CATERING @map("catering")
+
+  @@map("plan_type")
+}
+
+/// Modelo de cobro de un plan de catering.
+enum PricingModel {
+  COMMISSION @map("commission") // % sobre lo facturado en el mes
+  FIXED      @map("fixed") // cuota fija mensual
+
+  @@map("pricing_model")
+}
+
 /// Catálogo de planes SaaS que Plati ofrece a las empresas (dinámico, como los
 /// roles). `Company.saasPlanId` referencia este catálogo por FK. Las features
 /// habilitadas viven en `PlanFeature` (join, como `RolePermission`); los límites
@@ -1838,17 +1858,25 @@ model SaasPlan {
   code          String    @unique // clave estable libre (ej. "starter", "acme-custom")
   name          String
   description   String?
+  planType      PlanType  @default(EMPRESA) @map("plan_type") // para quién es el plan
   scope         PlanScope @default(SYSTEM)
   tenantEmpresa String?   @map("tenant_empresa") // plan privado de una empresa (scope CUSTOM)
 
+  // Precio (planes de EMPRESA: suscripción mensual/anual)
   monthlyPrice Decimal  @db.Decimal(10, 2) @map("monthly_price")
   yearlyPrice  Decimal? @db.Decimal(10, 2) @map("yearly_price")
 
-  // Límites (null = ilimitado)
+  // Límites de EMPRESA (null = ilimitado)
   maxEmployees   Int? @map("max_employees")
   maxSites       Int? @map("max_sites")
   maxCaterings   Int? @map("max_caterings")
   maxOrdersMonth Int? @map("max_orders_month")
+
+  // Cobro y límites de CATERING
+  pricingModel   PricingModel? @map("pricing_model") // COMMISSION | FIXED
+  commissionPct  Decimal?      @map("commission_pct") @db.Decimal(5, 4) // 0.05 = 5% (si COMMISSION)
+  flatMonthlyFee Decimal?      @map("flat_monthly_fee") @db.Decimal(10, 2) // €/mes (si FIXED)
+  maxCompanies   Int?          @map("max_companies") // empresas que puede servir (null = ∞)
 
   supportLevel String  @default("BASIC") @map("support_level") // BASIC / PRIORITY / DEDICATED
   active       Boolean @default(true)
@@ -1858,7 +1886,9 @@ model SaasPlan {
   // Relaciones
   planFeatures PlanFeature[]
   companies    Company[]
+  restaurants  Restaurant[]
 
+  @@index([planType])
   @@index([scope])
   @@index([tenantEmpresa])
   @@map("saas_plans")
