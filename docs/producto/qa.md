@@ -66,3 +66,14 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Tests del enforcement: catering al límite → asignación rechazada (server action) y opción deshabilitada (UI).
 - [ ] (Opcional) permitir que la empresa elija/solicite proveedor reutilizando estas queries/acciones.
 - Doc: `docs/producto/features/admin-launch-audit/asignar-catering-empresa.md`.
+
+## 2026-07-04 — HU-045 Centro de facturación del admin (auditoría Liquidaciones y Comisiones)
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores (solo warnings preexistentes) en las 4 fases. **145 tests verdes**. **Sin migraciones** de schema (la "vencida" se deriva al vuelo; no se persiste). Permisos nuevos (`admin-invoice:view`, `saas-invoice:view`) sembrados en `comidas_dev`.
+**Code review**: correcciones de dinero bien acotadas — comisión sobre base imponible (`Σ Invoice.subtotal`), YTD por `period`, "vencida" derivada por fecha en un único helper (`lib/billing/status.ts`) reutilizado por admin, catering y empresa (fin de la duplicación en ≥4 sitios). Queries cross-tenant `admin-invoices.ts` siguen el molde de settlements/saas-invoices. RBAC con claves propias de admin para no colisionar con el `invoice:view` del catering. Correlativo SaaS con reintento ante P2002. Edición de tasas cableada a la acción ya existente (`upsertTaxRuleAction`, gate `tax:edit`).
+**Audit**: cumple CLAUDE.md — mutaciones como Server Actions, sección nueva cableada al RBAC (catálogo→seed→section-permissions), sin `as any`. Se gatearon huecos (`/admin/billing` raíz, `saas-invoices`).
+**Evaluator score**: 8.5/10 — Correctness alta (fixes de cálculo verificados en dev), Completeness alta (Facturas + Estado de cuentas + fixes + pulido), −puntos por deuda anotada (IVA comida 21vs10 pendiente de negocio, Churn/LTV, componentes huérfanos de empresa, MRR anual) y falta de tests automatizados de los cálculos.
+**Action items**:
+- [ ] Decidir IVA de la comida (21% vs 10% vía TaxRule) — decisión de negocio.
+- [ ] Tests del cálculo de comisión (base sin IVA) y de la derivación de "vencida".
+- [ ] Cablear o retirar los componentes huérfanos de empresa (BillingConciliation/MonthlyBreakdown/KPIs).
+- Doc: `docs/producto/features/admin-launch-audit/facturacion-centro.md`.

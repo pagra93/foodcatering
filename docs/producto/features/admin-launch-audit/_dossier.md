@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-07-04T10:45:00Z
+> Last updated: 2026-07-04T12:20:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** + **Planes SaaS (empresa + catering)** hechos
+- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** + **Planes SaaS (empresa + catering)** + **Asignar catering↔empresa** + **Centro de facturación** hechos
 - **Sprint**: —
-- **Stories**: 19 hechas / 28 totales · `███████░░░ 68%` (Bloque A HU-015…023 + HU-024 Empresas + HU-025 Caterings + HU-039 Incidencias + HU-040 Penalizaciones + HU-041 Reputación + HU-042 Planes empresa + HU-043 Planes catering + HU-044 Asignar catering↔empresa; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
+- **Stories**: 20 hechas / 28 totales · `███████░░░ 71%` (… + HU-042/043 Planes + HU-044 Asignar catering↔empresa + HU-045 Centro de facturación; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-07-04 · `claude-code` (Asignar catering↔empresa desde admin: pestaña Caterings en la ficha de empresa + enforcement de maxCompanies; cierra la deuda de HU-043)
+- **Última actividad**: 2026-07-04 · `claude-code` (Centro de facturación del admin: comisión sobre base imponible, vencidas al vuelo, sección Facturas cross-tenant, Estado de cuentas de los 3 flujos, edición de tasas)
 <!-- /AUTO:status -->
 
 ---
