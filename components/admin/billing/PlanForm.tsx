@@ -26,16 +26,21 @@ import { createPlan, updatePlan, deletePlan } from './plan-actions'
 type Initial = {
   name: string
   description: string
+  planType: 'EMPRESA' | 'CATERING'
   monthlyPrice: number
   yearlyPrice: number | null
   maxEmployees: number | null
   maxSites: number | null
   maxCaterings: number | null
+  pricingModel: 'COMMISSION' | 'FIXED' | null
+  commissionPct: number | null
+  flatMonthlyFee: number | null
+  maxCompanies: number | null
   supportLevel: string
   active: boolean
   scope: 'SYSTEM' | 'CUSTOM'
   featureKeys: string[]
-  companiesCount?: number
+  assignedCount?: number
 }
 
 type Props = {
@@ -89,11 +94,18 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
   const [maxEmployees, setMaxEmployees] = useState<number | null>(initial.maxEmployees)
   const [maxSites, setMaxSites] = useState<number | null>(initial.maxSites)
   const [maxCaterings, setMaxCaterings] = useState<number | null>(initial.maxCaterings)
+  const [pricingModel, setPricingModel] = useState<'COMMISSION' | 'FIXED'>(
+    initial.pricingModel ?? 'COMMISSION'
+  )
+  const [commissionPct, setCommissionPct] = useState<number | null>(initial.commissionPct)
+  const [flatMonthlyFee, setFlatMonthlyFee] = useState<number | null>(initial.flatMonthlyFee)
+  const [maxCompanies, setMaxCompanies] = useState<number | null>(initial.maxCompanies)
   const [supportLevel, setSupportLevel] = useState(initial.supportLevel)
   const [active, setActive] = useState(initial.active)
   const [selected, setSelected] = useState<Set<string>>(new Set(initial.featureKeys))
 
   const isSystem = initial.scope === 'SYSTEM'
+  const isCatering = initial.planType === 'CATERING'
 
   const toggle = (key: string, on: boolean) =>
     setSelected((prev) => {
@@ -118,11 +130,16 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
     const payload = {
       name,
       description,
+      planType: initial.planType,
       monthlyPrice,
       yearlyPrice,
       maxEmployees,
       maxSites,
       maxCaterings,
+      pricingModel,
+      commissionPct,
+      flatMonthlyFee,
+      maxCompanies,
       supportLevel,
       active,
       featureKeys: [...selected],
@@ -158,12 +175,13 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
     <div className="space-y-6">
       <Card className="space-y-4 p-6">
         <div className="flex items-center gap-2">
+          <Badge variant="default">{isCatering ? 'Catering' : 'Empresa'}</Badge>
           <Badge variant={isSystem ? 'secondary' : 'outline'}>
             {isSystem ? 'Plan de sistema' : 'Plan a medida'}
           </Badge>
-          {typeof initial.companiesCount === 'number' && (
+          {typeof initial.assignedCount === 'number' && (
             <span className="text-xs text-gray-500">
-              {initial.companiesCount} empresa(s) con este plan
+              {initial.assignedCount} {isCatering ? 'catering(s)' : 'empresa(s)'} con este plan
             </span>
           )}
         </div>
@@ -198,55 +216,96 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
         </div>
       </Card>
 
-      <Card className="space-y-4 p-6">
-        <h3 className="text-sm font-semibold text-gray-900">Precio y límites</h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <NumberField
-            id="monthlyPrice"
-            label="Precio mensual (€)"
-            value={monthlyPrice}
-            onChange={(v) => setMonthlyPrice(v ?? 0)}
-          />
-          <NumberField
-            id="yearlyPrice"
-            label="Precio anual (€)"
-            hint="Opcional"
-            value={yearlyPrice}
-            onChange={setYearlyPrice}
-          />
-          <div className="flex items-end">
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={active}
-                onChange={(e) => setActive(e.target.checked)}
+      {isCatering ? (
+        <Card className="space-y-4 p-6">
+          <h3 className="text-sm font-semibold text-gray-900">Cobro y límites</h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div>
+              <Label htmlFor="pricingModel">Modelo de cobro</Label>
+              <Select
+                value={pricingModel}
+                onValueChange={(v) => setPricingModel(v as 'COMMISSION' | 'FIXED')}
+              >
+                <SelectTrigger id="pricingModel">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="COMMISSION">Comisión %</SelectItem>
+                  <SelectItem value="FIXED">Precio fijo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {pricingModel === 'COMMISSION' ? (
+              <div>
+                <Label htmlFor="commissionPct">Comisión (%)</Label>
+                <Input
+                  id="commissionPct"
+                  type="number"
+                  min={0}
+                  max={100}
+                  step="0.1"
+                  value={commissionPct != null ? commissionPct * 100 : ''}
+                  placeholder="5"
+                  onChange={(e) =>
+                    setCommissionPct(
+                      e.target.value === '' ? null : Math.max(0, Number(e.target.value)) / 100
+                    )
+                  }
+                />
+                <p className="mt-1 text-xs text-gray-400">Sobre lo facturado en el mes.</p>
+              </div>
+            ) : (
+              <NumberField
+                id="flatMonthlyFee"
+                label="Precio fijo (€/mes)"
+                value={flatMonthlyFee}
+                onChange={setFlatMonthlyFee}
               />
-              Plan activo
-            </label>
+            )}
+            <NumberField
+              id="maxCompanies"
+              label="Máx. empresas"
+              hint="Vacío = ilimitado"
+              value={maxCompanies}
+              onChange={setMaxCompanies}
+            />
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+                Plan activo
+              </label>
+            </div>
           </div>
-          <NumberField
-            id="maxEmployees"
-            label="Máx. empleados"
-            hint="Vacío = ilimitado"
-            value={maxEmployees}
-            onChange={setMaxEmployees}
-          />
-          <NumberField
-            id="maxSites"
-            label="Máx. sedes"
-            hint="Vacío = ilimitado"
-            value={maxSites}
-            onChange={setMaxSites}
-          />
-          <NumberField
-            id="maxCaterings"
-            label="Máx. caterings"
-            hint="Vacío = ilimitado"
-            value={maxCaterings}
-            onChange={setMaxCaterings}
-          />
-        </div>
-      </Card>
+        </Card>
+      ) : (
+        <Card className="space-y-4 p-6">
+          <h3 className="text-sm font-semibold text-gray-900">Precio y límites</h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <NumberField
+              id="monthlyPrice"
+              label="Precio mensual (€)"
+              value={monthlyPrice}
+              onChange={(v) => setMonthlyPrice(v ?? 0)}
+            />
+            <NumberField
+              id="yearlyPrice"
+              label="Precio anual (€)"
+              hint="Opcional"
+              value={yearlyPrice}
+              onChange={setYearlyPrice}
+            />
+            <div className="flex items-end">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
+                Plan activo
+              </label>
+            </div>
+            <NumberField id="maxEmployees" label="Máx. empleados" hint="Vacío = ilimitado" value={maxEmployees} onChange={setMaxEmployees} />
+            <NumberField id="maxSites" label="Máx. sedes" hint="Vacío = ilimitado" value={maxSites} onChange={setMaxSites} />
+            <NumberField id="maxCaterings" label="Máx. caterings" hint="Vacío = ilimitado" value={maxCaterings} onChange={setMaxCaterings} />
+          </div>
+        </Card>
+      )}
 
       <div>
         <div className="mb-2 flex items-center justify-between">

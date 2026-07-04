@@ -233,6 +233,7 @@ export async function getCateringById(tenantId: string) {
       operationalDays: restaurant.operationalDays,
       zones: restaurant.zones,
       commission: Number(restaurant.commission),
+      saasPlanId: restaurant.saasPlanId,
       minimumBilling: Number(restaurant.minimumBilling),
       paymentCycle: restaurant.paymentCycle,
       // En vivo (no los stored stale de Restaurant)
@@ -486,6 +487,7 @@ export async function updateCatering(
     operationalDays: string[]
     zones: any
     commission: number
+    saasPlanId: string | null
   }>
 ) {
   await prisma.$transaction(async (tx) => {
@@ -521,6 +523,7 @@ export async function updateCatering(
           operationalDays: data.operationalDays,
           zones: data.zones,
           commission: data.commission,
+          saasPlanId: data.saasPlanId,
         },
       })
     }

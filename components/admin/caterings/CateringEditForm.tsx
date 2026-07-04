@@ -36,13 +36,22 @@ export type CateringEditInitialData = {
   restaurantContactPhone: string
   dailyCapacity: number
   cutoffTime: string
-  commission: number
+  saasPlanId: string | null
   operationalDays: string[]
+}
+
+export type CateringPlanOption = {
+  id: string
+  name: string
+  pricingModel: 'COMMISSION' | 'FIXED' | null
+  commissionPct: number | null
+  flatMonthlyFee: number | null
 }
 
 type Props = {
   action: (formData: FormData) => Promise<{ error?: string } | void>
   initialData: CateringEditInitialData
+  plans: CateringPlanOption[]
 }
 
 function Field({
@@ -66,7 +75,7 @@ function Field({
   )
 }
 
-export function CateringEditForm({ action, initialData }: Props) {
+export function CateringEditForm({ action, initialData, plans }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [days, setDays] = useState<string[]>(initialData.operationalDays ?? [])
@@ -116,7 +125,30 @@ export function CateringEditForm({ action, initialData }: Props) {
         <div className="grid gap-4 md:grid-cols-3">
           <Field label="Capacidad diaria (platos)" name="dailyCapacity" type="number" defaultValue={initialData.dailyCapacity} />
           <Field label="Hora de cutoff (HH:mm)" name="cutoffTime" defaultValue={initialData.cutoffTime} />
-          <Field label="Comisión (0–1, ej. 0.05)" name="commission" type="number" defaultValue={initialData.commission} />
+          <div>
+            <Label htmlFor="saasPlanId">Plan del catering</Label>
+            <select
+              id="saasPlanId"
+              name="saasPlanId"
+              title="Plan del catering"
+              defaultValue={initialData.saasPlanId ?? ''}
+              className="mt-1 h-10 w-full rounded-md border border-gray-200 bg-white px-3 text-sm"
+            >
+              <option value="">— Sin plan —</option>
+              {plans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                  {p.pricingModel === 'FIXED'
+                    ? ` · ${p.flatMonthlyFee} €/mes`
+                    : ` · ${((p.commissionPct ?? 0) * 100).toFixed(1)}%`}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Define el cobro (comisión o precio fijo), el máx. de empresas y las
+              funcionalidades.
+            </p>
+          </div>
         </div>
         <div>
           <Label>Días operativos</Label>

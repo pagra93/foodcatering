@@ -14,11 +14,9 @@ export default async function EditPlanPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const [plan, catalog] = await Promise.all([
-    getPlanDetail(id),
-    getFeatureCatalogGrouped(),
-  ])
+  const plan = await getPlanDetail(id)
   if (!plan) notFound()
+  const catalog = getFeatureCatalogGrouped(plan.planType)
 
   return (
     <div className="space-y-6">
@@ -43,16 +41,21 @@ export default async function EditPlanPage({
         initial={{
           name: plan.name,
           description: plan.description ?? '',
+          planType: plan.planType,
           monthlyPrice: plan.monthlyPrice,
           yearlyPrice: plan.yearlyPrice,
           maxEmployees: plan.maxEmployees,
           maxSites: plan.maxSites,
           maxCaterings: plan.maxCaterings,
+          pricingModel: plan.pricingModel,
+          commissionPct: plan.commissionPct,
+          flatMonthlyFee: plan.flatMonthlyFee,
+          maxCompanies: plan.maxCompanies,
           supportLevel: plan.supportLevel,
           active: plan.active,
           scope: plan.scope,
           featureKeys: plan.featureKeys,
-          companiesCount: plan.companiesCount,
+          assignedCount: plan.assignedCount,
         }}
       />
     </div>

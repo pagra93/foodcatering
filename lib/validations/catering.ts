@@ -75,6 +75,8 @@ export const updateCateringSchema = z.object({
   cutoffTime: z.string().optional(),
   operationalDays: z.array(z.string()).optional(),
   commission: z.coerce.number().min(0).max(1).optional(),
+  /** Plan de catering asignado. null = sin plan. */
+  saasPlanId: z.string().nullable().optional(),
 })
 
 export type UpdateCateringInput = z.infer<typeof updateCateringSchema>

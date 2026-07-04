@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCateringById, updateCatering } from '@/lib/db/queries/caterings'
+import { getCateringPlanOptions } from '@/lib/db/queries/admin-plans-taxes'
 import { updateCateringSchema } from '@/lib/validations/catering'
 import { Button } from '@/components/ui/button'
 import { CateringEditForm } from '@/components/admin/caterings/CateringEditForm'
@@ -32,8 +33,9 @@ async function updateCateringAction(
     restaurantContactPhone: get('restaurantContactPhone'),
     dailyCapacity: get('dailyCapacity'),
     cutoffTime: get('cutoffTime'),
-    commission: get('commission'),
     operationalDays: formData.getAll('operationalDays').map(String),
+    // Plan de catering: vacío = sin plan (null), no "no cambiar".
+    saasPlanId: (formData.get('saasPlanId') as string) || null,
   }
 
   const parsed = updateCateringSchema.safeParse(data)
@@ -63,6 +65,8 @@ export default async function EditCateringPage({
     notFound()
   }
 
+  const plans = await getCateringPlanOptions()
+
   const r = catering.restaurant
   const initialData = {
     name: catering.name,
@@ -78,7 +82,7 @@ export default async function EditCateringPage({
     restaurantContactPhone: r.contactPhone ?? '',
     dailyCapacity: r.dailyCapacity,
     cutoffTime: r.cutoffTime,
-    commission: r.commission,
+    saasPlanId: r.saasPlanId,
     operationalDays: (r.operationalDays as string[]) ?? [],
   }
 
@@ -101,6 +105,7 @@ export default async function EditCateringPage({
       <CateringEditForm
         action={updateCateringAction.bind(null, id)}
         initialData={initialData}
+        plans={plans}
       />
     </div>
   )
