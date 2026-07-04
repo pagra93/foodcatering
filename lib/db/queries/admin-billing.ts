@@ -138,9 +138,21 @@ export async function getBillingDashboardKPIs() {
     }),
   ])
 
-  // MRR estimado: sumar SaasPlan.monthlyPrice de las companies activas por su plan (FK).
-  const plans = await prisma.saasPlan.findMany({ select: { id: true, monthlyPrice: true } })
-  const priceById = new Map(plans.map((p) => [p.id, Number(p.monthlyPrice)]))
+  // MRR (neto, sin IVA): por cada empresa activa, el precio mensual-equivalente de
+  // su plan. Solo planes de EMPRESA activos; los anuales se normalizan a
+  // yearlyPrice/12 cuando no tienen mensual. Excluye planes de catering/inactivos.
+  const plans = await prisma.saasPlan.findMany({
+    where: { planType: 'EMPRESA', active: true },
+    select: { id: true, monthlyPrice: true, yearlyPrice: true },
+  })
+  const monthlyEquivById = new Map(
+    plans.map((p) => {
+      const monthly = Number(p.monthlyPrice)
+      const equiv =
+        monthly > 0 ? monthly : p.yearlyPrice ? Number(p.yearlyPrice) / 12 : 0
+      return [p.id, equiv]
+    })
+  )
   const companiesByPlan = await prisma.company.groupBy({
     by: ['saasPlanId'],
     where: { tenant: { status: 'ACTIVE', deletedAt: null } },
@@ -148,9 +160,10 @@ export async function getBillingDashboardKPIs() {
   })
   let mrrSaas = 0
   for (const row of companiesByPlan) {
-    const price = row.saasPlanId ? priceById.get(row.saasPlanId) ?? 0 : 0
+    const price = row.saasPlanId ? monthlyEquivById.get(row.saasPlanId) ?? 0 : 0
     mrrSaas += price * row._count._all
   }
+  mrrSaas = Math.round(mrrSaas * 100) / 100
 
   return {
     commissionsYTD: Number(settlementsYTD._sum.commissionAmount ?? 0),
@@ -182,10 +195,12 @@ export async function getBillingMonthlySeries() {
     where: { period: { in: months } },
     _sum: { commissionAmount: true, grossAmount: true },
   })
+  // SaaS en NETO (subtotal, sin IVA) para que ambas barras sean comparables con
+  // las comisiones (que ya son netas).
   const saas = await prisma.saasInvoice.groupBy({
     by: ['period'],
     where: { period: { in: months } },
-    _sum: { total: true },
+    _sum: { subtotal: true },
   })
 
   const settlementsByPeriod = new Map(
@@ -199,6 +214,6 @@ export async function getBillingMonthlySeries() {
       settlementsByPeriod.get(period)?.commissionAmount ?? 0
     ),
     gross: Number(settlementsByPeriod.get(period)?.grossAmount ?? 0),
-    saas: Number(saasByPeriod.get(period)?.total ?? 0),
+    saas: Number(saasByPeriod.get(period)?.subtotal ?? 0),
   }))
 }
