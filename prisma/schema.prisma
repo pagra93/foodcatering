@@ -2193,6 +2193,44 @@ model SystemSettings {
   @@map("system_settings")
 }
 
+enum AnnouncementSeverity {
+  INFO     @map("info")
+  WARNING  @map("warning")
+  CRITICAL @map("critical")
+
+  @@map("announcement_severity")
+}
+
+/// Audiencia de un aviso: portal(es) donde se muestra el banner.
+enum AnnouncementAudience {
+  ALL      @map("all")
+  EMPRESA  @map("empresa")
+  CATERING @map("catering")
+  EMPLEADO @map("empleado")
+
+  @@map("announcement_audience")
+}
+
+/// Aviso en-app: banner segmentado por audiencia y ventana temporal, mostrado
+/// en los portales. La descarta el usuario en cliente (localStorage por id).
+model Announcement {
+  id          String               @id @default(uuid())
+  title       String
+  body        String
+  severity    AnnouncementSeverity @default(INFO)
+  audience    AnnouncementAudience @default(ALL)
+  startsAt    DateTime?            @map("starts_at")
+  endsAt      DateTime?            @map("ends_at")
+  dismissible Boolean              @default(true)
+  active      Boolean              @default(true)
+  createdBy   String               @map("created_by")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+
+  @@index([active, audience])
+  @@map("announcements")
+}
+
 /// Reglas fiscales (IVA) configurables. Sustituye el valor hardcoded
 /// 10% en Invoice.taxRate cuando el flujo lo consulte.
 model TaxRule {

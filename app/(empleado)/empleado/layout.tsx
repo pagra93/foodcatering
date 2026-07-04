@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { EmpleadoNavbar } from '@/components/empleado/EmpleadoNavbar'
 import { withBranding } from '@/components/shared/BrandProvider'
+import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner'
 
 export default async function EmpleadoLayout({
   children,
@@ -21,6 +23,7 @@ export default async function EmpleadoLayout({
   }
 
   const { branding, style } = await withBranding(tenant.id)
+  const announcements = await getActiveAnnouncements('EMPLEADO')
 
   return (
     <div className="min-h-screen bg-gray-50" style={style}>
@@ -36,6 +39,7 @@ export default async function EmpleadoLayout({
         permissions={session.user.permissions ?? []}
         branding={branding}
       />
+      <AnnouncementBanner announcements={announcements} />
       <main className="pb-20">{children}</main>
     </div>
   )

@@ -28,11 +28,11 @@ export default function TemplatesPage() {
         <SubModule
           href="/admin/templates/announcements"
           icon={Megaphone}
-          iconColor="text-gray-500"
+          iconColor="text-amber-600"
           title="Avisos en-app"
           description="Banners INFO/WARNING/CRITICAL segmentados por portal y ventana temporal."
-          badge="Próximamente"
-          badgeVariant="secondary"
+          badge="Activo"
+          badgeVariant="default"
         />
         <SubModule
           href="/admin/templates/communication"

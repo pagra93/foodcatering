@@ -16,6 +16,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { getUnreadNotifications, getUnreadCount } from '@/lib/db/queries/activity'
 import { getCateringEntitlements } from '@/lib/plans/entitlements'
+import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner'
 import { redirect } from 'next/navigation'
 
 export default async function CateringInnerLayout({
@@ -63,10 +65,11 @@ export default async function CateringInnerLayout({
 
   const { branding, style } = await withBranding(tenant.id)
 
-  const [notifications, notifCount, entitlements] = await Promise.all([
+  const [notifications, notifCount, entitlements, announcements] = await Promise.all([
     getUnreadNotifications(session.user.tenantId, session.user.id),
     getUnreadCount(session.user.tenantId, session.user.id),
     getCateringEntitlements(session.user.tenantId),
+    getActiveAnnouncements('CATERING'),
   ])
 
   return (
@@ -97,6 +100,7 @@ export default async function CateringInnerLayout({
           }))}
           notifCount={notifCount}
         />
+        <AnnouncementBanner announcements={announcements} />
         <main className="flex-1 overflow-y-auto bg-gray-50 p-6">
           {children}
         </main>

@@ -1,26 +1,47 @@
-import { ModuleUnderDevelopment } from '@/components/admin/ModuleUnderDevelopment'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { getAnnouncements } from '@/lib/db/queries/admin-announcements'
+import {
+  AnnouncementManager,
+  type AnnouncementRow,
+} from '@/components/admin/templates/announcements/AnnouncementManager'
 
-export default function AnnouncementsPage() {
+export default async function AnnouncementsPage() {
+  const announcements = await getAnnouncements()
+  const rows: AnnouncementRow[] = announcements.map((a) => ({
+    id: a.id,
+    title: a.title,
+    body: a.body,
+    severity: a.severity,
+    audience: a.audience,
+    startsAt: a.startsAt ? a.startsAt.toISOString().slice(0, 10) : null,
+    endsAt: a.endsAt ? a.endsAt.toISOString().slice(0, 10) : null,
+    dismissible: a.dismissible,
+    active: a.active,
+  }))
+
   return (
-    <ModuleUnderDevelopment
-      title="Avisos en-app"
-      breadcrumb={['Plantillas y Branding']}
-      backHref="/admin/templates"
-      backLabel="Volver a Plantillas"
-      purpose="Banners in-app que aparecen a ciertos usuarios cuando entran a su portal. Útil para anunciar nuevas features, mantenimientos programados, cambios de política, etc. Segmentables por rol, tipo de tenant, duración."
-      plannedFeatures={[
-        'CRUD de aviso con título, cuerpo, severidad (INFO/WARNING/CRITICAL).',
-        'Audiencia: roles + tipos de tenant + lista de tenants concretos.',
-        'Programación: startsAt / endsAt.',
-        'Flag dismissible (el user puede cerrarlo) vs permanente.',
-        'Preview cómo se verá en cada portal antes de publicar.',
-        'Componente <AnnouncementBanner> inyectado en layouts automáticamente.',
-      ]}
-      dataSources={[
-        'Announcement (nuevo modelo Prisma)',
-        'Audiencia JSON: { roles: [...], tenantTypes: [...], tenantIds: [...] }',
-      ]}
-      eta="Sprint 4"
-    />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/admin/templates">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Volver a Plantillas
+          </Link>
+        </Button>
+      </div>
+
+      <div>
+        <h1 className="text-2xl font-bold">Avisos en-app</h1>
+        <p className="mt-1 max-w-3xl text-sm text-gray-500">
+          Banners que se muestran a los usuarios dentro de sus portales:
+          mantenimientos, cambios, novedades. Segmentados por portal y ventana
+          temporal, con severidad Info / Aviso / Crítico.
+        </p>
+      </div>
+
+      <AnnouncementManager announcements={rows} />
+    </div>
   )
 }

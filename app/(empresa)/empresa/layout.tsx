@@ -3,6 +3,8 @@ import { getRequiredSession } from '@/lib/auth/session'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getUnreadNotifications, getUnreadCount } from '@/lib/db/queries/activity'
 import { getCompanyEntitlements } from '@/lib/plans/entitlements'
+import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
+import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner'
 import { EmpresaSidebar } from '@/components/empresa/EmpresaSidebar'
 import { EmpresaNavbar } from '@/components/empresa/EmpresaNavbar'
 import { Toaster } from '@/components/ui/sonner'
@@ -18,10 +20,11 @@ export default async function EmpresaLayout({
   const tenant = await getCurrentTenant()
   const { branding, style } = await withBranding(tenant.id)
 
-  const [notifications, notifCount, entitlements] = await Promise.all([
+  const [notifications, notifCount, entitlements, announcements] = await Promise.all([
     getUnreadNotifications(session.user.tenantId, session.user.id),
     getUnreadCount(session.user.tenantId, session.user.id),
     getCompanyEntitlements(session.user.tenantId),
+    getActiveAnnouncements('EMPRESA'),
   ])
 
   return (
@@ -50,6 +53,8 @@ export default async function EmpresaLayout({
           }))}
           notifCount={notifCount}
         />
+
+        <AnnouncementBanner announcements={announcements} />
 
         <main className="py-6">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
