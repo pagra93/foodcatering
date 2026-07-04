@@ -5,6 +5,7 @@ import {
   type CateringFormData,
 } from '@/components/admin/caterings/CateringWizard'
 import { createCatering } from '@/lib/db/queries/caterings'
+import { getCateringPlanOptions } from '@/lib/db/queries/admin-plans-taxes'
 import { createCateringSchema, slugify } from '@/lib/validations/catering'
 
 async function createCateringAction(
@@ -42,7 +43,7 @@ async function createCateringAction(
       maxDistance: z.maxDistance ?? 0,
       operator: z.operator ?? '',
     })),
-    commission: data.commission,
+    saasPlanId: data.saasPlanId || null,
   }
 
   const parsed = createCateringSchema.safeParse(mapped)
@@ -65,6 +66,7 @@ async function createCateringAction(
 
 export default async function NewCateringPage() {
   await getRequiredSession()
+  const plans = await getCateringPlanOptions()
 
   return (
     <div className="space-y-6">
@@ -75,7 +77,7 @@ export default async function NewCateringPage() {
         </p>
       </div>
 
-      <CateringWizard onSubmit={createCateringAction} />
+      <CateringWizard onSubmit={createCateringAction} plans={plans} />
     </div>
   )
 }

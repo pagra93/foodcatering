@@ -33,6 +33,13 @@ import {
 } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Badge } from '@/components/ui/badge'
+import type { CateringPlanOption } from './CateringEditForm'
+
+/** Etiqueta de cobro de un plan de catering (comisión % o precio fijo). */
+function planPricingLabel(p: CateringPlanOption): string {
+  if (p.pricingModel === 'FIXED') return `${(p.flatMonthlyFee ?? 0).toFixed(2)} €/mes`
+  return `${((p.commissionPct ?? 0) * 100).toFixed(1)}% comisión`
+}
 
 // Tipos
 export type CateringFormData = {
@@ -74,7 +81,7 @@ export type CateringFormData = {
   }>
 
   // Paso 6: Condiciones Económicas
-  commission: number
+  saasPlanId: string
   minimumBilling: number
   paymentCycle: string
 
@@ -108,9 +115,10 @@ const DIAS_SEMANA = [
 
 type CateringWizardProps = {
   onSubmit: (data: CateringFormData) => Promise<{ error?: string } | void>
+  plans: CateringPlanOption[]
 }
 
-export function CateringWizard({ onSubmit }: CateringWizardProps) {
+export function CateringWizard({ onSubmit, plans }: CateringWizardProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -144,7 +152,7 @@ export function CateringWizard({ onSubmit }: CateringWizardProps) {
         operator: 'Stuart',
       },
     ],
-    commission: 5,
+    saasPlanId: plans[0]?.id ?? '',
     minimumBilling: 1000,
     paymentCycle: 'MONTHLY',
     initialUsers: [
@@ -749,22 +757,27 @@ export function CateringWizard({ onSubmit }: CateringWizardProps) {
             <div className="space-y-6">
               <div className="grid gap-6 md:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="commission">
-                    Comisión (%) <span className="text-red-500">*</span>
+                  <Label htmlFor="saasPlanId">
+                    Plan del catering <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="commission"
-                    type="number"
-                    value={formData.commission}
-                    onChange={(e) =>
-                      updateFormData('commission', parseFloat(e.target.value))
-                    }
-                    min={0}
-                    max={100}
-                    step={0.1}
-                  />
+                  <Select
+                    value={formData.saasPlanId}
+                    onValueChange={(value) => updateFormData('saasPlanId', value)}
+                  >
+                    <SelectTrigger id="saasPlanId">
+                      <SelectValue placeholder="Selecciona un plan" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {plans.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name} · {planPricingLabel(p)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <p className="text-xs text-gray-500">
-                    Porcentaje que se cobra por cada pedido gestionado
+                    Define el cobro (comisión o precio fijo), el máx. de empresas y las
+                    funcionalidades. Se puede cambiar después.
                   </p>
                 </div>
 
@@ -816,7 +829,14 @@ export function CateringWizard({ onSubmit }: CateringWizardProps) {
                     </h4>
                     <div className="mt-2 space-y-1 text-xs text-green-700">
                       <p>
-                        • Comisión por pedido: <strong>{formData.commission}%</strong>
+                        • Plan:{' '}
+                        <strong>
+                          {plans.find((p) => p.id === formData.saasPlanId)?.name ?? '—'}
+                          {(() => {
+                            const p = plans.find((pl) => pl.id === formData.saasPlanId)
+                            return p ? ` (${planPricingLabel(p)})` : ''
+                          })()}
+                        </strong>
                       </p>
                       <p>
                         • Facturación mínima: <strong>{formData.minimumBilling} €/mes</strong>
@@ -997,8 +1017,10 @@ export function CateringWizard({ onSubmit }: CateringWizardProps) {
                     <p className="font-medium text-gray-900">{formData.cutoffTime}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Comisión</p>
-                    <p className="font-medium text-gray-900">{formData.commission}%</p>
+                    <p className="text-gray-500">Plan</p>
+                    <p className="font-medium text-gray-900">
+                      {plans.find((p) => p.id === formData.saasPlanId)?.name ?? '—'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-gray-500">Zonas de Servicio</p>

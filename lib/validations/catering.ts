@@ -49,7 +49,8 @@ export const createCateringSchema = z.object({
   cutoffTime: z.string().min(1),
   operationalDays: z.array(z.string()).min(1, 'Selecciona al menos un día operativo'),
   zones: z.array(zoneSchema).default([]),
-  commission: z.coerce.number().min(0).max(1, 'La comisión es una fracción (0–1)'),
+  /** Plan de catering asignado al dar de alta. null = sin plan (cobro 0). */
+  saasPlanId: z.string().nullable().optional(),
 
   // Regional
   timezone: z.string().optional(),
@@ -74,7 +75,6 @@ export const updateCateringSchema = z.object({
   dailyCapacity: z.coerce.number().int().positive().optional(),
   cutoffTime: z.string().optional(),
   operationalDays: z.array(z.string()).optional(),
-  commission: z.coerce.number().min(0).max(1).optional(),
   /** Plan de catering asignado. null = sin plan. */
   saasPlanId: z.string().nullable().optional(),
 })

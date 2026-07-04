@@ -7,17 +7,20 @@ import {
   getCateringBillingKPIs,
   getCateringInvoicesEmitidas,
 } from '@/lib/db/queries/catering-billing'
+import { getCateringPlanUsage } from '@/lib/plans/entitlements'
 import { CateringBillingTabs } from '@/components/catering/facturacion/CateringBillingTabs'
+import { CateringPlanCard } from '@/components/catering/plan/CateringPlanCard'
 
 export default async function CateringFacturacionPage() {
   const session = (await auth()) as Session | null
   if (!session?.user?.tenantId) redirect('/login')
   const tenantId = session.user.tenantId
 
-  const [kpis, invoices, settlements] = await Promise.all([
+  const [kpis, invoices, settlements, planUsage] = await Promise.all([
     getCateringBillingKPIs(tenantId),
     getCateringInvoicesEmitidas(tenantId),
     getSettlementsForCatering(tenantId),
+    getCateringPlanUsage(tenantId),
   ])
 
   return (
@@ -72,6 +75,8 @@ export default async function CateringFacturacionPage() {
           </p>
         </Card>
       </div>
+
+      <CateringPlanCard data={planUsage} />
 
       <CateringBillingTabs
         invoices={invoices.map((i) => ({

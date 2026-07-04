@@ -510,8 +510,7 @@ model Restaurant {
   zones Json @default("[]") // [{name, postalCodes: [...], maxDistance, operator}]
 
   // ===== ECONÓMICO =====
-  /// @deprecated Transitorio: la comisión pasa al plan del catering (saasPlanId). Se retira en Fase 4.
-  commission     Decimal @default(0.05) @db.Decimal(5, 4) // 0.05 = 5%
+  // El cobro (comisión % o precio fijo) vive en el plan de catering (saasPlanId).
   saasPlanId     String? @map("saas_plan_id") // plan de catering (cobro + límites + features)
   minimumBilling Decimal @default(0) @map("minimum_billing") @db.Decimal(8, 2)
   paymentCycle   String  @default("MENSUAL") @map("payment_cycle") // SEMANAL, QUINCENAL, MENSUAL

@@ -50,7 +50,6 @@ export async function generateMonthBillingAction(input: {
     include: {
       restaurants: {
         select: {
-          commission: true,
           saasPlan: {
             select: { pricingModel: true, commissionPct: true, flatMonthlyFee: true },
           },
@@ -83,7 +82,7 @@ export async function generateMonthBillingAction(input: {
     // El cobro sale del PLAN del catering (Restaurant.saasPlan):
     //  · COMMISSION → comisión = gross × commissionPct  (rate = commissionPct)
     //  · FIXED      → comisión = flatMonthlyFee          (rate = 0)
-    // Fallback a Restaurant.commission (legacy) si el catering no tiene plan.
+    // Sin plan asignado → no se cobra (rate 0). El alta siempre asigna plan.
     const restaurant = c.restaurants[0]
     const plan = restaurant?.saasPlan
     let commissionRate: number
@@ -95,8 +94,8 @@ export async function generateMonthBillingAction(input: {
       commissionRate = Number(plan.commissionPct ?? 0)
       commissionAmount = Math.round(gross * commissionRate * 100) / 100
     } else {
-      commissionRate = restaurant ? Number(restaurant.commission) : 0.05
-      commissionAmount = Math.round(gross * commissionRate * 100) / 100
+      commissionRate = 0
+      commissionAmount = 0
     }
 
     // Se descuentan las penalizaciones que se APLICARON (settledAt) durante el

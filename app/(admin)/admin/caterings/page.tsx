@@ -76,7 +76,13 @@ async function CateringsTableData({ filter }: { filter?: string }) {
         avgRating: quality.averageRating,
         documentsStatus: restaurant?.documentsStatus ? mapDocStatus(restaurant.documentsStatus) : 'OK',
         lastInvoiceDate: null,
-        commission: restaurant?.commission ? Number(restaurant.commission) : 0,
+        // Cobro derivado del plan del catering (comisión % o precio fijo).
+        pricing: (() => {
+          const plan = restaurant?.saasPlan
+          if (!plan) return 'Sin plan'
+          if (plan.pricingModel === 'FIXED') return `${Number(plan.flatMonthlyFee ?? 0).toFixed(0)}€/mes`
+          return `${(Number(plan.commissionPct ?? 0) * 100).toFixed(1)}%`
+        })(),
       }
     })
   )

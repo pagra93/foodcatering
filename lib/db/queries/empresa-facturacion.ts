@@ -165,7 +165,6 @@ export async function getMonthlyBreakdown(
       where: { tenantId: cateringAssignment.tenantCatering },
       select: {
         legalName: true,
-        commission: true,
         saasPlan: {
           select: { pricingModel: true, commissionPct: true },
         },
@@ -174,14 +173,10 @@ export async function getMonthlyBreakdown(
   }
 
   // Comisión efectiva desde el plan del catering: COMMISSION → commissionPct;
-  // FIXED → 0 (cuota fija, no por factura); sin plan → Restaurant.commission (legacy).
+  // FIXED → 0 (cuota fija, no por factura); sin plan → 0.
   const plan = restaurant?.saasPlan
   const effectiveCommission =
-    plan?.pricingModel === 'COMMISSION'
-      ? Number(plan.commissionPct ?? 0)
-      : plan?.pricingModel === 'FIXED'
-        ? 0
-        : Number(restaurant?.commission ?? 0)
+    plan?.pricingModel === 'COMMISSION' ? Number(plan.commissionPct ?? 0) : 0
 
   // Calcular porcentaje de subsidio basado en copayCompany y copayEmployee
   const totalCopay = Number(policy?.copayCompany || 0) + Number(policy?.copayEmployee || 0)

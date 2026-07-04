@@ -375,7 +375,12 @@ async function main() {
       contactPhone: '+34 91 000 10 00',
       dailyCapacity: 100,
       zones: [{ name: 'Centro', postalCodes: ['28001', '28013'], maxDistance: 5 }],
-      commission: 0.1,
+      // El cobro vive en el plan de catering (no en Restaurant).
+      saasPlanId:
+        (await prisma.saasPlan.findUnique({
+          where: { code: 'cat-estandar' },
+          select: { id: true },
+        }))?.id ?? null,
       punctualityRate: 96,
       incidentRate: 2,
       averageRating: 4.4,

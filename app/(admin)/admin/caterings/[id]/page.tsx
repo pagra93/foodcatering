@@ -275,9 +275,19 @@ async function CateringContent({ id }: { id: string }) {
               </h3>
               <dl className="space-y-3">
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Comisión</dt>
+                  <dt className="text-sm font-medium text-gray-500">Plan</dt>
                   <dd className="text-lg font-bold text-gray-900">
-                    {(Number(catering.restaurant.commission) * 100).toFixed(2)}%
+                    {catering.restaurant.plan?.name ?? 'Sin plan'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Cobro de Plati</dt>
+                  <dd className="text-sm text-gray-900">
+                    {catering.restaurant.plan?.pricingModel === 'FIXED'
+                      ? `${(catering.restaurant.plan.flatMonthlyFee ?? 0).toFixed(2)} €/mes (fijo)`
+                      : catering.restaurant.plan?.pricingModel === 'COMMISSION'
+                        ? `${((catering.restaurant.plan.commissionPct ?? 0) * 100).toFixed(2)}% sobre lo facturado`
+                        : '—'}
                   </dd>
                 </div>
                 <div>

@@ -17,7 +17,12 @@ type RestaurantData = {
   leadTimeMinutes: number
   operationalDays: any // JSON
   zones: any // JSON
-  commission: any // Decimal
+  plan: {
+    name: string
+    pricingModel: 'COMMISSION' | 'FIXED' | null
+    commissionPct: number | null
+    flatMonthlyFee: number | null
+  } | null
 }
 
 type OperationalStatusProps = {
@@ -204,15 +209,21 @@ export function OperationalStatus({ restaurant }: OperationalStatusProps) {
           <div className="flex items-center gap-3 mb-4">
             <Euro className="h-5 w-5 text-primary" />
             <h3 className="text-base font-semibold text-gray-900">
-              Comisión
+              Cobro de Plati
             </h3>
           </div>
           <div>
             <dd className="text-3xl font-bold text-gray-900 mt-2">
-              {(Number(restaurant.commission) * 100).toFixed(2)}%
+              {restaurant.plan?.pricingModel === 'FIXED'
+                ? `${(restaurant.plan.flatMonthlyFee ?? 0).toFixed(0)}€/mes`
+                : restaurant.plan?.pricingModel === 'COMMISSION'
+                  ? `${((restaurant.plan.commissionPct ?? 0) * 100).toFixed(2)}%`
+                  : '—'}
             </dd>
             <p className="text-sm text-gray-500 mt-1">
-              Comisión por pedido
+              {restaurant.plan
+                ? `Plan ${restaurant.plan.name}`
+                : 'Sin plan asignado'}
             </p>
           </div>
         </div>

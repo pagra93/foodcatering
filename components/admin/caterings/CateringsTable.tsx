@@ -1,6 +1,6 @@
 /**
  * Tabla Específica de Caterings con Filtros Avanzados
- * Columnas: Estado, Zonas, Capacidad, SLAs, Documentos, Facturación, Comisión, Acciones
+ * Columnas: Estado, Zonas, Capacidad, SLAs, Documentos, Facturación, Cobro, Acciones
  */
 
 'use client'
@@ -60,7 +60,8 @@ type CateringListItem = {
   avgRating: number | null
   documentsStatus: 'OK' | 'EXPIRING' | 'EXPIRED'
   lastInvoiceDate: Date | null
-  commission: number
+  /** Etiqueta de cobro derivada del plan (comisión % o precio fijo). */
+  pricing: string
 }
 
 type CateringsTableProps = {
@@ -231,7 +232,7 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
               <TableHead className="text-center">Capacidad</TableHead>
               <TableHead className="text-center">SLA (30d)</TableHead>
               <TableHead className="text-center">Documentos</TableHead>
-              <TableHead className="text-right">Comisión</TableHead>
+              <TableHead className="text-right">Cobro</TableHead>
               <TableHead className="text-right">Acciones</TableHead>
             </TableRow>
           </TableHeader>
@@ -335,10 +336,10 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
                     {getDocsBadge(catering.documentsStatus)}
                   </TableCell>
 
-                  {/* Comisión */}
+                  {/* Cobro (plan) */}
                   <TableCell className="text-right">
                     <p className="text-sm font-semibold text-gray-900">
-                      {catering.commission}%
+                      {catering.pricing}
                     </p>
                   </TableCell>
 

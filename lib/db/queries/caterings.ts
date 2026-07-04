@@ -75,6 +75,16 @@ export async function getCateringById(tenantId: string) {
     include: {
       restaurants: {
         include: {
+          saasPlan: {
+            select: {
+              id: true,
+              name: true,
+              pricingModel: true,
+              commissionPct: true,
+              flatMonthlyFee: true,
+              maxCompanies: true,
+            },
+          },
           documents: {
             orderBy: { expiresAt: 'asc' },
           },
@@ -232,8 +242,24 @@ export async function getCateringById(tenantId: string) {
       leadTimeMinutes: restaurant.leadTimeMinutes,
       operationalDays: restaurant.operationalDays,
       zones: restaurant.zones,
-      commission: Number(restaurant.commission),
       saasPlanId: restaurant.saasPlanId,
+      // Cobro de Plati derivado del plan del catering (no de un campo suelto).
+      plan: restaurant.saasPlan
+        ? {
+            id: restaurant.saasPlan.id,
+            name: restaurant.saasPlan.name,
+            pricingModel: restaurant.saasPlan.pricingModel,
+            commissionPct:
+              restaurant.saasPlan.commissionPct != null
+                ? Number(restaurant.saasPlan.commissionPct)
+                : null,
+            flatMonthlyFee:
+              restaurant.saasPlan.flatMonthlyFee != null
+                ? Number(restaurant.saasPlan.flatMonthlyFee)
+                : null,
+            maxCompanies: restaurant.saasPlan.maxCompanies,
+          }
+        : null,
       minimumBilling: Number(restaurant.minimumBilling),
       paymentCycle: restaurant.paymentCycle,
       // En vivo (no los stored stale de Restaurant)
@@ -359,7 +385,18 @@ export async function getCaterings({
     prisma.tenant.findMany({
       where,
       include: {
-        restaurants: true, // Traer todos los campos del restaurant
+        restaurants: {
+          include: {
+            saasPlan: {
+              select: {
+                name: true,
+                pricingModel: true,
+                commissionPct: true,
+                flatMonthlyFee: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             users: true,
@@ -413,8 +450,8 @@ export async function createCatering(data: {
     maxDistance: number
     operator: string
   }>
-  commission: number
-  
+  saasPlanId?: string | null
+
   // Regional
   timezone?: string
   currency?: string
@@ -454,7 +491,7 @@ export async function createCatering(data: {
         cutoffTime: data.cutoffTime,
         operationalDays: data.operationalDays,
         zones: data.zones,
-        commission: data.commission,
+        saasPlanId: data.saasPlanId ?? null,
         operationalStatus: 'UNDER_REVIEW', // Requiere revisión inicial
       },
     })
@@ -486,7 +523,6 @@ export async function updateCatering(
     cutoffTime: string
     operationalDays: string[]
     zones: any
-    commission: number
     saasPlanId: string | null
   }>
 ) {
@@ -522,7 +558,6 @@ export async function updateCatering(
           cutoffTime: data.cutoffTime,
           operationalDays: data.operationalDays,
           zones: data.zones,
-          commission: data.commission,
           saasPlanId: data.saasPlanId,
         },
       })

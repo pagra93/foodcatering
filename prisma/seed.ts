@@ -352,7 +352,12 @@ async function main() {
       zones: [
         { name: 'Centro', postalCodes: ['28001', '28002', '28003', '28013'], maxDistance: 5 },
       ],
-      commission: 0.10, // 10%
+      // El cobro vive en el plan de catering (no en Restaurant).
+      saasPlanId:
+        (await prisma.saasPlan.findUnique({
+          where: { code: 'cat-estandar' },
+          select: { id: true },
+        }))?.id ?? null,
       punctualityRate: 95.5,
       incidentRate: 2.1,
       averageRating: 4.3,

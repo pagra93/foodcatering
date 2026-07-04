@@ -34,6 +34,13 @@ async function main() {
   // Hash de password para usuarios (todos usan "password123")
   const passwordHash = await bcrypt.hash('password123', 10)
 
+  // Plan de catering por defecto (el cobro vive en el plan, no en Restaurant).
+  const estandarPlan = await prisma.saasPlan.findUnique({
+    where: { code: 'cat-estandar' },
+    select: { id: true },
+  })
+  const cateringPlanId = estandarPlan?.id ?? null
+
   // ==========================================
   // CATERING 1: Catering Delicious
   // ==========================================
@@ -83,7 +90,7 @@ async function main() {
         { name: 'Centro', postalCodes: ['28001', '28013', '28014'], maxDistance: 5, operator: 'Stuart' },
         { name: 'Norte', postalCodes: ['28020', '28050'], maxDistance: 8, operator: 'Glovo' },
       ],
-      commission: 0.05,
+      saasPlanId: cateringPlanId,
       minimumBilling: 500.0,
       paymentCycle: 'MONTHLY',
       punctualityRate: 96.0,
@@ -158,7 +165,7 @@ async function main() {
         { name: 'Este', postalCodes: ['28028', '28029'], maxDistance: 7, operator: 'Stuart' },
         { name: 'Oeste', postalCodes: ['28034', '28035'], maxDistance: 6, operator: 'Glovo' },
       ],
-      commission: 0.06,
+      saasPlanId: cateringPlanId,
       minimumBilling: 800.0,
       paymentCycle: 'BIWEEKLY',
       punctualityRate: 92.0,
@@ -230,7 +237,7 @@ async function main() {
       zones: [
         { name: 'Centro', postalCodes: ['28001', '28013'], maxDistance: 3, operator: 'Stuart' },
       ],
-      commission: 0.055,
+      saasPlanId: cateringPlanId,
       minimumBilling: 400.0,
       paymentCycle: 'MONTHLY',
       punctualityRate: 85.0,
@@ -305,7 +312,7 @@ async function main() {
         { name: 'Centro', postalCodes: ['28001', '28006', '28010'], maxDistance: 5, operator: 'Stuart' },
         { name: 'Norte', postalCodes: ['28016', '28050'], maxDistance: 10, operator: 'Paack' },
       ],
-      commission: 0.07,
+      saasPlanId: cateringPlanId,
       minimumBilling: 1000.0,
       paymentCycle: 'MONTHLY',
       punctualityRate: 98.0,
@@ -377,7 +384,7 @@ async function main() {
       zones: [
         { name: 'Norte', postalCodes: ['28010', '28050'], maxDistance: 8, operator: 'Stuart' },
       ],
-      commission: 0.06,
+      saasPlanId: cateringPlanId,
       minimumBilling: 300.0,
       paymentCycle: 'MONTHLY',
       punctualityRate: null,
