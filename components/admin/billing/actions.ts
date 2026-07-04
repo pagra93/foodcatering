@@ -73,15 +73,17 @@ export async function generateMonthBillingAction(input: {
       continue
     }
 
+    // La comisión se calcula sobre la BASE IMPONIBLE (subtotal, sin IVA): el IVA
+    // lo recauda el catering para Hacienda, no forma parte de su facturación.
     const invoicesAgg = await prisma.invoice.aggregate({
       where: { tenantCatering: c.id, period },
-      _sum: { total: true },
+      _sum: { subtotal: true },
     })
-    const gross = Number(invoicesAgg._sum.total ?? 0)
+    const gross = Number(invoicesAgg._sum.subtotal ?? 0)
 
     // El cobro sale del PLAN del catering (Restaurant.saasPlan):
-    //  · COMMISSION → comisión = gross × commissionPct  (rate = commissionPct)
-    //  · FIXED      → comisión = flatMonthlyFee          (rate = 0)
+    //  · COMMISSION → comisión = base × commissionPct  (rate = commissionPct)
+    //  · FIXED      → comisión = flatMonthlyFee         (rate = 0)
     // Sin plan asignado → no se cobra (rate 0). El alta siempre asigna plan.
     const restaurant = c.restaurants[0]
     const plan = restaurant?.saasPlan

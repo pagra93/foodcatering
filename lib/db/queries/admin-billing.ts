@@ -10,7 +10,10 @@ import { prisma } from '@/lib/db/prisma'
  */
 export async function getBillingDashboardKPIs() {
   const now = new Date()
-  const yearStart = new Date(now.getFullYear(), 0, 1)
+  // YTD por PERÍODO (año del period "YYYY-MM"), no por createdAt: así una
+  // liquidación de diciembre generada en enero cuenta en su ejercicio, no en el
+  // siguiente, y el YTD cuadra con la suma de los meses de las series.
+  const yearPrefix = `${now.getFullYear()}-`
   const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
   const lastMonth = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, '0')}`
@@ -27,19 +30,19 @@ export async function getBillingDashboardKPIs() {
     activeCompanies,
   ] = await Promise.all([
     prisma.settlement.aggregate({
-      where: { createdAt: { gte: yearStart } },
+      where: { period: { startsWith: yearPrefix } },
       _sum: { commissionAmount: true },
     }),
     prisma.settlement.aggregate({
-      where: { createdAt: { gte: yearStart }, status: 'PAID' },
+      where: { period: { startsWith: yearPrefix }, status: 'PAID' },
       _sum: { commissionAmount: true },
     }),
     prisma.saasInvoice.aggregate({
-      where: { createdAt: { gte: yearStart } },
+      where: { period: { startsWith: yearPrefix } },
       _sum: { total: true },
     }),
     prisma.saasInvoice.aggregate({
-      where: { createdAt: { gte: yearStart }, status: 'PAID' },
+      where: { period: { startsWith: yearPrefix }, status: 'PAID' },
       _sum: { total: true },
     }),
     prisma.settlement.count({

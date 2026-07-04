@@ -52,19 +52,23 @@ export async function getSettlements(filters: SettlementFilters = {}) {
 }
 
 export async function getSettlementsKPIs() {
-  const [draft, issued, paid, overdue, sumPending] = await Promise.all([
+  // "Vencida" se deriva por fecha (dueBy < ahora): una liquidación abierta
+  // (ISSUED/OVERDUE) cuyo vencimiento pasó cuenta como vencida; el resto, al día.
+  const now = new Date()
+  const openStatuses: SettlementStatus[] = ['ISSUED', 'OVERDUE']
+  const open = { status: { in: openStatuses } }
+  const [draft, issuedCurrent, overdue, paid, sumPending] = await Promise.all([
     prisma.settlement.count({ where: { status: 'DRAFT' } }),
-    prisma.settlement.count({ where: { status: 'ISSUED' } }),
-    prisma.settlement.count({ where: { status: 'PAID' } }),
-    prisma.settlement.count({ where: { status: 'OVERDUE' } }),
-    prisma.settlement.aggregate({
-      where: { status: { in: ['ISSUED', 'OVERDUE'] } },
-      _sum: { netOwed: true },
+    prisma.settlement.count({
+      where: { ...open, OR: [{ dueBy: null }, { dueBy: { gte: now } }] },
     }),
+    prisma.settlement.count({ where: { ...open, dueBy: { lt: now } } }),
+    prisma.settlement.count({ where: { status: 'PAID' } }),
+    prisma.settlement.aggregate({ where: open, _sum: { netOwed: true } }),
   ])
   return {
     draft,
-    issued,
+    issued: issuedCurrent,
     paid,
     overdue,
     pendingAmount: Number(sumPending._sum.netOwed ?? 0),

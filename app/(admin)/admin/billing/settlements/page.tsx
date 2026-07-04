@@ -5,23 +5,13 @@ import { es } from 'date-fns/locale'
 import type { SettlementStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import {
   getSettlements,
   getSettlementsKPIs,
 } from '@/lib/db/queries/admin-settlements'
+import { effectiveStatus, statusMeta, SETTLEMENT_STATUS } from '@/lib/billing/status'
 import { MarkPaidButton } from '@/components/admin/billing/MarkPaidButton'
-
-const STATUS_META: Record<
-  SettlementStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
-}
 
 type SP = { status?: string; period?: string; page?: string }
 
@@ -131,7 +121,7 @@ export default async function SettlementsPage({
             <tr>
               <th className="px-4 py-3 text-left">Catering</th>
               <th className="px-4 py-3 text-left">Período</th>
-              <th className="px-4 py-3 text-right">Gross</th>
+              <th className="px-4 py-3 text-right">Base (sin IVA)</th>
               <th className="px-4 py-3 text-right">%</th>
               <th className="px-4 py-3 text-right">Comisión</th>
               <th className="px-4 py-3 text-right">Neto</th>
@@ -163,9 +153,13 @@ export default async function SettlementsPage({
                   {Number(s.netOwed).toFixed(2)} €
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_META[s.status].variant}>
-                    {STATUS_META[s.status].label}
-                  </Badge>
+                  {(() => {
+                    const meta = statusMeta(
+                      SETTLEMENT_STATUS,
+                      effectiveStatus(s.status, s.dueBy)
+                    )
+                    return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">
                   {s.dueBy ? format(s.dueBy, 'dd MMM yyyy', { locale: es }) : '—'}

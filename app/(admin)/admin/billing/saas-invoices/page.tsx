@@ -6,22 +6,13 @@ import type { SaasInvoiceStatus } from '@prisma/client'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import {
   getSaasInvoices,
   getSaasInvoicesKPIs,
 } from '@/lib/db/queries/admin-saas-invoices'
+import { effectiveStatus, statusMeta, SAAS_STATUS } from '@/lib/billing/status'
 import { MarkPaidButton } from '@/components/admin/billing/MarkPaidButton'
-
-const STATUS_META: Record<
-  SaasInvoiceStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
-}
 
 type SP = { status?: string; period?: string; page?: string }
 
@@ -159,9 +150,13 @@ export default async function SaasInvoicesPage({
                   {Number(inv.total).toFixed(2)} €
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={STATUS_META[inv.status].variant}>
-                    {STATUS_META[inv.status].label}
-                  </Badge>
+                  {(() => {
+                    const meta = statusMeta(
+                      SAAS_STATUS,
+                      effectiveStatus(inv.status, inv.dueBy)
+                    )
+                    return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">
                   {inv.dueBy

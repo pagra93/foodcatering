@@ -52,19 +52,22 @@ export async function getSaasInvoices(filters: SaasInvoiceFilters = {}) {
 }
 
 export async function getSaasInvoicesKPIs() {
-  const [draft, issued, paid, overdue, sumPending] = await Promise.all([
+  // "Vencida" derivada por fecha (dueBy < ahora), como en liquidaciones.
+  const now = new Date()
+  const openStatuses: SaasInvoiceStatus[] = ['ISSUED', 'OVERDUE']
+  const open = { status: { in: openStatuses } }
+  const [draft, issuedCurrent, overdue, paid, sumPending] = await Promise.all([
     prisma.saasInvoice.count({ where: { status: 'DRAFT' } }),
-    prisma.saasInvoice.count({ where: { status: 'ISSUED' } }),
-    prisma.saasInvoice.count({ where: { status: 'PAID' } }),
-    prisma.saasInvoice.count({ where: { status: 'OVERDUE' } }),
-    prisma.saasInvoice.aggregate({
-      where: { status: { in: ['ISSUED', 'OVERDUE'] } },
-      _sum: { total: true },
+    prisma.saasInvoice.count({
+      where: { ...open, OR: [{ dueBy: null }, { dueBy: { gte: now } }] },
     }),
+    prisma.saasInvoice.count({ where: { ...open, dueBy: { lt: now } } }),
+    prisma.saasInvoice.count({ where: { status: 'PAID' } }),
+    prisma.saasInvoice.aggregate({ where: open, _sum: { total: true } }),
   ])
   return {
     draft,
-    issued,
+    issued: issuedCurrent,
     paid,
     overdue,
     pendingAmount: Number(sumPending._sum.total ?? 0),
