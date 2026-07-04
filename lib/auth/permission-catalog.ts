@@ -36,6 +36,7 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
         { action: 'create', desc: 'Crear empresa' },
         { action: 'edit', desc: 'Editar empresa' },
         { action: 'edit-status', desc: 'Suspender/activar empresa' },
+        { action: 'assign-catering', desc: 'Asignar/quitar caterings a una empresa' },
         { action: 'view-reports', desc: 'Ver reportes de empresas' },
         { action: 'view-alerts', desc: 'Ver alertas de empresas' },
       ],

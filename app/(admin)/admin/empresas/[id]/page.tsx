@@ -9,12 +9,18 @@ import Link from 'next/link'
 import { ArrowLeft, Edit } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCompanyByIdComplete } from '@/lib/db/queries/companies'
+import {
+  getCompanyCateringAssignments,
+  getAssignableCaterings,
+} from '@/lib/db/queries/catering-assignments'
+import { permissionsInclude } from '@/lib/auth/permissions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CompanyOverviewTab } from '@/components/admin/companies/CompanyOverviewTab'
+import { CompanyCateringsTab } from '@/components/admin/companies/CompanyCateringsTab'
 
 // ============================================================================
 // SKELETONS
@@ -48,6 +54,18 @@ async function CompanyDetailData({ id }: { id: string }) {
   if (!company) {
     notFound()
   }
+
+  const session = await getRequiredSession()
+  const canManageCaterings = permissionsInclude(
+    session.user.permissions,
+    'empresa:assign-catering'
+  )
+  const companyId = company.company.id
+  const [cateringAssignments, assignableCaterings] = await Promise.all([
+    getCompanyCateringAssignments(companyId),
+    canManageCaterings ? getAssignableCaterings(companyId) : Promise.resolve([]),
+  ])
+  const activeCateringCount = cateringAssignments.filter((a) => a.active).length
 
   return (
     <>
@@ -128,6 +146,9 @@ async function CompanyDetailData({ id }: { id: string }) {
             )}
           </TabsTrigger>
           <TabsTrigger value="config">Configuración</TabsTrigger>
+          <TabsTrigger value="caterings">
+            Caterings ({activeCateringCount})
+          </TabsTrigger>
           <TabsTrigger value="sites">
             Sedes ({company.sites.length})
           </TabsTrigger>
@@ -263,6 +284,16 @@ async function CompanyDetailData({ id }: { id: string }) {
               </div>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Tab: Caterings asignados */}
+        <TabsContent value="caterings">
+          <CompanyCateringsTab
+            companyId={companyId}
+            assignments={cateringAssignments}
+            assignable={assignableCaterings}
+            canManage={canManageCaterings}
+          />
         </TabsContent>
 
         {/* Tab 3: Sedes */}
