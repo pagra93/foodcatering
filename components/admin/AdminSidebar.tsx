@@ -24,7 +24,7 @@ import {
   ChevronDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { PlatiSymbol } from '@/components/marketing/PlatiLogo'
 
 type SubNavItem = {
@@ -219,6 +219,19 @@ export function AdminSidebar({ permissions }: { permissions: string[] }) {
     return pathname?.startsWith(href)
   }
 
+  // Sección padre a la que pertenece la ruta actual: se auto-despliega para que
+  // sus subsecciones queden visibles al entrar (sin impedir contraerla a mano).
+  const activeParentTitle = visibleItems.find(
+    (i) => i.subItems && i.subItems.length > 0 && isActive(i.href)
+  )?.title
+  useEffect(() => {
+    if (activeParentTitle) {
+      setExpandedItems((prev) =>
+        prev.includes(activeParentTitle) ? prev : [...prev, activeParentTitle]
+      )
+    }
+  }, [activeParentTitle])
+
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-border bg-card">
       {/* Logo */}
@@ -245,47 +258,55 @@ export function AdminSidebar({ permissions }: { permissions: string[] }) {
 
             return (
               <li key={item.title}>
-                {/* Main Item */}
-                <div>
+                {/* Main Item: el enlace navega a la página de la sección; el
+                    chevron (aparte) solo despliega/contrae las subsecciones. */}
+                <div
+                  className={cn(
+                    'flex items-center rounded-lg transition-all',
+                    isActive(item.href)
+                      ? 'bg-primary/10'
+                      : 'hover:bg-muted'
+                  )}
+                >
                   <Link
                     href={item.href}
                     aria-current={isActive(item.href) ? 'page' : undefined}
                     className={cn(
-                      'flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-all',
+                      'flex flex-1 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium',
                       isActive(item.href)
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                        ? 'text-primary'
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
-                    onClick={(e) => {
-                      if (hasSubItems) {
-                        e.preventDefault()
-                        toggleExpand(item.title)
-                      }
-                    }}
                   >
-                    <div className="flex items-center gap-3">
-                      <Icon className={cn(
-                        'h-5 w-5',
-                        isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
-                      )} />
-                      <span>{item.title}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {item.badge !== undefined && item.badge > 0 && (
-                        <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
-                          {item.badge}
-                        </span>
-                      )}
-                      {hasSubItems && (
+                    <Icon className={cn(
+                      'h-5 w-5',
+                      isActive(item.href) ? 'text-primary' : 'text-muted-foreground'
+                    )} />
+                    <span>{item.title}</span>
+                  </Link>
+                  <div className="flex items-center gap-1 pr-2">
+                    {item.badge !== undefined && item.badge > 0 && (
+                      <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
+                        {item.badge}
+                      </span>
+                    )}
+                    {hasSubItems && (
+                      <button
+                        type="button"
+                        aria-label={isExpanded ? `Contraer ${item.title}` : `Desplegar ${item.title}`}
+                        aria-expanded={isExpanded}
+                        onClick={() => toggleExpand(item.title)}
+                        className="rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
                         <ChevronDown
                           className={cn(
-                            'h-4 w-4 text-muted-foreground transition-transform',
+                            'h-4 w-4 transition-transform',
                             isExpanded && 'rotate-180'
                           )}
                         />
-                      )}
-                    </div>
-                  </Link>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Sub Items */}
