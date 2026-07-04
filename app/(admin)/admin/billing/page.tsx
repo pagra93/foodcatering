@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   ChevronRight,
   CreditCard,
+  FileText,
   Landmark,
   Percent,
   Receipt,
@@ -80,11 +81,11 @@ export default async function BillingDashboardPage() {
 
       <div className="grid gap-3 md:grid-cols-2">
         <SubModule
-          href="/admin/billing/plans"
-          icon={TrendingUp}
+          href="/admin/billing/invoices"
+          icon={FileText}
           iconColor="text-primary"
-          title="Planes SaaS"
-          description="Catálogo editable de planes STARTER/GROWTH/ENTERPRISE con precios, features y límites."
+          title="Facturas de comida"
+          description="Todas las facturas catering → empresa. Filtra por catering, empresa, estado o mes."
         />
         <SubModule
           href="/admin/billing/settlements"

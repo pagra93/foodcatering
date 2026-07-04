@@ -97,6 +97,8 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
     },
     { resource: 'plan', label: 'planes SaaS', actions: [VIEW('planes SaaS'), { action: 'create', desc: 'Crear plan' }, { action: 'edit', desc: 'Editar plan' }, { action: 'delete', desc: 'Eliminar plan' }] },
     { resource: 'settlement', label: 'liquidaciones', actions: [VIEW('liquidaciones'), { action: 'create', desc: 'Generar liquidación' }] },
+    { resource: 'admin-invoice', label: 'facturas de comida (todas)', actions: [VIEW('todas las facturas de comida')] },
+    { resource: 'saas-invoice', label: 'facturas SaaS', actions: [VIEW('facturas SaaS')] },
     { resource: 'commission', label: 'comisiones', actions: [VIEW('comisiones'), { action: 'edit', desc: 'Editar comisiones' }] },
     { resource: 'metric', label: 'métricas MRR/ARR', actions: [VIEW('métricas')] },
     { resource: 'tax', label: 'impuestos', actions: [VIEW('impuestos'), { action: 'edit', desc: 'Editar impuestos' }] },

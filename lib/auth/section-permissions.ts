@@ -37,12 +37,17 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   { prefix: '/admin/quality/audits', permission: 'audit:view' },
   { prefix: '/admin/quality/penalties', permission: 'penalty:view' },
 
-  // Facturación y planes
+  // Facturación y planes (reglas específicas antes de la raíz)
   { prefix: '/admin/billing/plans', permission: 'plan:view' },
   { prefix: '/admin/billing/settlements', permission: 'settlement:view' },
+  { prefix: '/admin/billing/invoices', permission: 'admin-invoice:view' },
+  { prefix: '/admin/billing/saas-invoices', permission: 'saas-invoice:view' },
   { prefix: '/admin/billing/commissions', permission: 'commission:view' },
+  { prefix: '/admin/billing/estado-cuentas', permission: 'settlement:view' },
   { prefix: '/admin/billing/metrics', permission: 'metric:view' },
   { prefix: '/admin/billing/taxes', permission: 'tax:view' },
+  // Índice del área (solo la raíz exacta): visible con permiso de liquidaciones.
+  { prefix: '/admin/billing', permission: 'settlement:view', exact: true },
 
   // Integraciones
   { prefix: '/admin/integrations/webhooks', permission: 'webhook:view' },
