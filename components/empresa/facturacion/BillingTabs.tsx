@@ -9,7 +9,13 @@ import type {
   SaasInvoiceStatus,
 } from '@prisma/client'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import {
+  effectiveStatus,
+  statusMeta,
+  INVOICE_STATUS,
+  SAAS_STATUS,
+} from '@/lib/billing/status'
 
 type Tab = 'resumen' | 'catering' | 'saas'
 
@@ -48,30 +54,6 @@ type Props = {
   }
   cateringInvoices: CateringInvoice[]
   saasInvoices: SaasInvoice[]
-}
-
-const INVOICE_STATUS_META: Record<
-  InvoiceStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  SENT: { label: 'Enviada', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
-  VOID: { label: 'Anulada', variant: 'secondary' },
-}
-
-const SAAS_STATUS_META: Record<
-  SaasInvoiceStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
 }
 
 export function BillingTabs({ kpis, cateringInvoices, saasInvoices }: Props) {
@@ -221,9 +203,13 @@ function CateringTab({ invoices }: { invoices: CateringInvoice[] }) {
                 {Number(i.total).toFixed(2)} €
               </td>
               <td className="px-4 py-3">
-                <Badge variant={INVOICE_STATUS_META[i.status].variant}>
-                  {INVOICE_STATUS_META[i.status].label}
-                </Badge>
+                {(() => {
+                  const meta = statusMeta(
+                    INVOICE_STATUS,
+                    effectiveStatus(i.status, i.dueDate)
+                  )
+                  return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                })()}
               </td>
               <td className="px-4 py-3 text-xs text-gray-600">
                 {format(i.dueDate, 'dd MMM yyyy', { locale: es })}
@@ -282,9 +268,10 @@ function SaasTab({ invoices }: { invoices: SaasInvoice[] }) {
                 {Number(i.total).toFixed(2)} €
               </td>
               <td className="px-4 py-3">
-                <Badge variant={SAAS_STATUS_META[i.status].variant}>
-                  {SAAS_STATUS_META[i.status].label}
-                </Badge>
+                {(() => {
+                  const meta = statusMeta(SAAS_STATUS, effectiveStatus(i.status, i.dueBy))
+                  return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                })()}
               </td>
               <td className="px-4 py-3 text-xs text-gray-600">
                 {i.dueBy ? format(i.dueBy, 'dd MMM yyyy', { locale: es }) : '—'}

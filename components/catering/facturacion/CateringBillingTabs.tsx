@@ -6,7 +6,13 @@ import { es } from 'date-fns/locale'
 import { Download } from 'lucide-react'
 import type { InvoiceStatus, SettlementStatus } from '@prisma/client'
 import { Card } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/StatusBadge'
+import {
+  effectiveStatus,
+  statusMeta,
+  INVOICE_STATUS,
+  SETTLEMENT_STATUS,
+} from '@/lib/billing/status'
 
 type Tab = 'cobrar' | 'pagar'
 
@@ -33,30 +39,6 @@ type SettlementRow = {
   dueBy: Date | null
   paidAt: Date | null
   paymentRef: string | null
-}
-
-const INVOICE_META: Record<
-  InvoiceStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  SENT: { label: 'Enviada', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
-  VOID: { label: 'Anulada', variant: 'secondary' },
-}
-
-const SETTLEMENT_META: Record<
-  SettlementStatus,
-  { label: string; variant: 'default' | 'destructive' | 'secondary' | 'outline' }
-> = {
-  DRAFT: { label: 'Borrador', variant: 'secondary' },
-  ISSUED: { label: 'Emitida', variant: 'outline' },
-  PAID: { label: 'Pagada', variant: 'default' },
-  OVERDUE: { label: 'Vencida', variant: 'destructive' },
-  CANCELLED: { label: 'Cancelada', variant: 'secondary' },
 }
 
 export function CateringBillingTabs({
@@ -126,9 +108,13 @@ function CobrarTab({ invoices }: { invoices: CateringInvoiceRow[] }) {
                 {Number(i.total).toFixed(2)} €
               </td>
               <td className="px-4 py-3">
-                <Badge variant={INVOICE_META[i.status].variant}>
-                  {INVOICE_META[i.status].label}
-                </Badge>
+                {(() => {
+                  const meta = statusMeta(
+                    INVOICE_STATUS,
+                    effectiveStatus(i.status, i.dueDate)
+                  )
+                  return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                })()}
               </td>
               <td className="px-4 py-3 text-xs text-gray-600">
                 {format(i.dueDate, 'dd MMM yyyy', { locale: es })}
@@ -212,9 +198,13 @@ function PagarTab({ settlements }: { settlements: SettlementRow[] }) {
                   {Number(s.netOwed).toFixed(2)} €
                 </td>
                 <td className="px-4 py-3">
-                  <Badge variant={SETTLEMENT_META[s.status].variant}>
-                    {SETTLEMENT_META[s.status].label}
-                  </Badge>
+                  {(() => {
+                    const meta = statusMeta(
+                      SETTLEMENT_STATUS,
+                      effectiveStatus(s.status, s.dueBy)
+                    )
+                    return <StatusBadge tone={meta.tone}>{meta.label}</StatusBadge>
+                  })()}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-600">
                   {s.dueBy ? format(s.dueBy, 'dd MMM yyyy', { locale: es }) : '—'}

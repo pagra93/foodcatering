@@ -3,6 +3,7 @@
 import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
@@ -210,33 +211,64 @@ export async function generateMonthBillingAction(input: {
     const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
     const total = subtotal + taxAmount
 
-    const number = `${yearPrefix}${String(counter).padStart(4, '0')}`
-    counter++
-
     if (dryRun) {
       saasCreated++
       continue
     }
 
-    const created = await prisma.saasInvoice.create({
-      data: {
-        tenantEmpresa: c.tenantId,
-        period,
-        planCode: plan.code,
-        planName: plan.name,
-        number,
-        subtotal,
-        taxRate,
-        taxAmount,
-        total,
-        status: 'ISSUED',
-        issuedAt: new Date(),
-        dueBy,
-        integrityHash: sha256(
-          `${c.tenantId}|${period}|${plan.code}|${total}|${number}`
-        ),
-      },
-    })
+    // Correlativo robusto: si otro proceso tomó el mismo número (unique [number]),
+    // recomputar el siguiente y reintentar. Si ya existe para (empresa, período),
+    // saltar. Evita numeración duplicada en ejecuciones concurrentes.
+    let created: Awaited<ReturnType<typeof prisma.saasInvoice.create>> | null = null
+    let skipDup = false
+    for (let attempt = 0; attempt < 6 && !created && !skipDup; attempt++) {
+      const number = `${yearPrefix}${String(counter).padStart(4, '0')}`
+      try {
+        created = await prisma.saasInvoice.create({
+          data: {
+            tenantEmpresa: c.tenantId,
+            period,
+            planCode: plan.code,
+            planName: plan.name,
+            number,
+            subtotal,
+            taxRate,
+            taxAmount,
+            total,
+            status: 'ISSUED',
+            issuedAt: new Date(),
+            dueBy,
+            integrityHash: sha256(
+              `${c.tenantId}|${period}|${plan.code}|${total}|${number}`
+            ),
+          },
+        })
+        counter++
+      } catch (e) {
+        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+          const dup = await prisma.saasInvoice.findUnique({
+            where: { tenantEmpresa_period: { tenantEmpresa: c.tenantId, period } },
+          })
+          if (dup) {
+            skipDup = true
+            break
+          }
+          const last = await prisma.saasInvoice.findFirst({
+            where: { number: { startsWith: yearPrefix } },
+            orderBy: { number: 'desc' },
+          })
+          counter = last
+            ? parseInt(last.number.slice(yearPrefix.length), 10) + 1
+            : 1
+          continue
+        }
+        throw e
+      }
+    }
+    if (!created) {
+      saasSkipped++
+      continue
+    }
 
     await logAudit({
       tenantId: c.tenantId,
@@ -246,7 +278,7 @@ export async function generateMonthBillingAction(input: {
       entityId: created.id,
       diff: {
         before: null,
-        after: { period, plan: plan.code, total, number },
+        after: { period, plan: plan.code, total, number: created.number },
       },
     })
 
