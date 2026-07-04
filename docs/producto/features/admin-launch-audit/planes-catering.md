@@ -99,8 +99,9 @@ no-core en `PlanFeature`.
 - Catering: `/catering/facturacion` muestra su plan; Producción/Rutas/Calidad con candado si el plan
   no las incluye.
 
-## Deuda consciente
+## Deuda consciente → **saldada en HU-044**
 
-- **Límite `maxCompanies`**: definido, mostrado y contado, pero **sin enforcement al asignar** — no
-  existe flujo de creación de `CompanyCateringAssignment` en la app. Cablear `withinLimit(maxCompanies)`
-  cuando se construya "asignar catering a empresa".
+- **Límite `maxCompanies`**: en HU-043 quedó definido, mostrado y contado, pero **sin enforcement al
+  asignar** — no existía flujo de creación de `CompanyCateringAssignment` en la app. **HU-044**
+  (`asignar-catering-empresa.md`) construyó ese flujo desde el admin y cableó el enforcement
+  (`getCateringPlanUsage` + `withinLimitOf(maxCompanies, …)`). Deuda cerrada.

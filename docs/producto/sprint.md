@@ -40,6 +40,15 @@ Last updated: 2026-06-28
       (`scripts/setup-prod-backups.md`).
 - [ ] Crear primer super-admin en prod (RUNBOOK sección 7).
 
+## 🚧 En curso — EPIC-003
+
+- [ ] **HU-044 — Asignar catering ↔ empresa (desde admin)**. Hoy la relación
+      `CompanyCateringAssignment` solo se crea por seeds; no hay flujo en la app.
+      Se construye desde el admin (ficha de empresa): asignar/quitar caterings,
+      con **enforcement del límite `maxCompanies`** del plan del catering (cierra
+      la deuda consciente de HU-043). Acción cableada al RBAC
+      (`empresa:assign-catering`).
+
 ## 📋 Backlog (priorizado)
 
 - [ ] Activar RLS Postgres en prod (migrar queries a `withTenantContext`

@@ -56,3 +56,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Cablear `withinLimit(maxCompanies)` cuando se construya "asignar catering a empresa" (crea `CompanyCateringAssignment`).
 - [ ] Tests: crear plan de catering (comisión/fijo) → asignar → Settlement con el modelo correcto; candado en Producción/Rutas/Calidad según plan.
 - Doc: `docs/producto/features/admin-launch-audit/planes-catering.md`.
+
+## 2026-07-04 — HU-044 Asignar catering ↔ empresa (desde admin) + enforcement de maxCompanies
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores (solo warnings preexistentes). Sin cambios de schema (no migración). Smoke test en `comidas_dev`: `getCompanyCateringAssignments`/`getAssignableCaterings` devuelven asignados e "asignables" con su uso vs límite correctos; permiso `empresa:assign-catering` sembrado.
+**Code review**: mutaciones como **Server Actions** (no fetch desde cliente), gate por permiso con `permissionsInclude` + UI que oculta controles sin permiso; enforcement del límite del plan en el punto de asignación (`getCateringPlanUsage` + `withinLimitOf`) — no en la UI, que solo lo refleja. Reactivación de asignación histórica en vez de duplicar (respeta el `@@unique(companyId, tenantCatering)`). Auditoría en ambas acciones. `revalidatePath` corregido al tenantId (la ruta `/admin/empresas/[id]` usa tenantId, no `Company.id`).
+**Audit**: cumple CLAUDE.md — acción no-pública cableada al RBAC (catálogo→seed→enforcement), no `if role===X`. Soft-delete con trazabilidad (`deactivatedBy/At/Reason`).
+**Evaluator score**: 8.5/10 — Correctness alta (type-check + smoke), cierra deuda real de HU-043; −puntos por falta de tests automatizados y por no abrir (aún) el flujo desde el portal empresa (fuera de alcance).
+**Action items**:
+- [ ] Tests del enforcement: catering al límite → asignación rechazada (server action) y opción deshabilitada (UI).
+- [ ] (Opcional) permitir que la empresa elija/solicite proveedor reutilizando estas queries/acciones.
+- Doc: `docs/producto/features/admin-launch-audit/asignar-catering-empresa.md`.
