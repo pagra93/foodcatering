@@ -2,18 +2,18 @@
 
 > Generated and maintained by `age-spe-pm-producto` (modo `dossier`).
 > No edites manualmente entre marcadores `<!-- AUTO:section -->` y `<!-- /AUTO:section -->`.
-> Last updated: 2026-07-04T13:05:00Z
+> Last updated: 2026-07-04T14:40:00Z
 
 ---
 
 ## 📍 Estado actual
 
 <!-- AUTO:status -->
-- **Status**: `en progreso` (EPIC-003) — Dashboard + Empresas + Caterings + Usuarios/RBAC + Catálogos/Alérgenos + **Incidencias** + **Penalizaciones** + **Reputación** + **Planes SaaS (empresa + catering)** + **Asignar catering↔empresa** + **Centro de facturación** hechos
+- **Status**: `en progreso` (EPIC-003) — … + **Centro de facturación** + **Compliance** (Seguridad OWASP real + visor AuditLog; Fiscal/RGPD/DPA auditados) hechos
 - **Sprint**: —
-- **Stories**: 21 hechas / 28 totales · `████████░░ 75%` (… + HU-044 Asignar catering↔empresa + HU-045 Centro de facturación + HU-046 Consolidación IA + Métricas; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
+- **Stories**: 22 hechas / 28 totales · `████████░░ 79%` (… + HU-045 Centro de facturación + HU-046 Consolidación IA + HU-047 Compliance; Usuarios/RBAC y Catálogos/Alérgenos también avanzados)
 - **Siguiente recomendado**: HU-029 Facturación / HU-031 Compliance (críticos para lanzar)
-- **Última actividad**: 2026-07-04 · `claude-code` (Facturación: consolidación de secciones 8→6 —Resumen unificado, Comisiones fusionada en Liquidaciones— y Métricas MRR/ARR corregidas con gráfica Recharts)
+- **Última actividad**: 2026-07-04 · `claude-code` (Compliance: Seguridad OWASP/Pentest deja de ser fachada —registro real— y nuevo visor de traza de auditoría (AuditLog); Fiscal/RGPD/DPA auditados, Retención en pausa)
 <!-- /AUTO:status -->
 
 ---

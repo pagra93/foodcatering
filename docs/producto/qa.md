@@ -87,3 +87,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Decisión de negocio: aplicar IVA_COMIDA (10%) a las facturas de comida o retirar esas reglas de la UI.
 - [ ] Modelo de eventos de suscripción para churn/LTV reales (si se quiere la métrica).
 - Doc: `docs/producto/features/admin-launch-audit/facturacion-centro.md`.
+
+## 2026-07-04 — HU-047 Auditoría de Compliance (Seguridad OWASP + Visor AuditLog)
+**Tests**: `pnpm type-check` limpio y `pnpm lint` sin errores en las 2 fases. **145 tests verdes**. **Sin migraciones** (las tablas de compliance ya existían). `seed-security.ts` (10 controles OWASP) y `seed-rbac.ts` (`audit-log:view`) aplicados a `comidas_dev`.
+**Code review**: las 5 subsecciones responden a necesidades reales del PRD; ninguna se elimina. Seguridad pasa de fachada a registro real cableando las server actions huérfanas (`upsertSecurityCheckAction`/`createSecurityReportAction`) con un client `SecurityManager` (patrón `TaxRuleManager`) — mutaciones como Server Actions, gate `security:run-test`. Visor de AuditLog cross-tenant que resuelve actor (PII descifrada con `decryptNameSafe`) y tenant; RBAC nuevo `audit-log:view` cableado (catálogo→seed→section-permissions→sidebar→índice). Retención se deja en pausa (declarativa) por decisión de negocio — no se construye ejecución destructiva sin validación.
+**Audit**: cumple CLAUDE.md — sección nueva cableada al RBAC, sin `as any`, PII descifrada solo en el visor admin (super admin). El AuditLog tamper-evident (hash SHA-256) por fin tiene visor.
+**Evaluator score**: 8.5/10 — Correctness alta (smoke + tests), cierra dos gaps reales (fachada de seguridad + falta de visor de traza); −puntos por deuda anotada (retención sin ejecución, fiscal generatedBy, DPA sin editar, RGPD dump en memoria).
+**Action items**:
+- [ ] Retención: vista previa + ejecución guardada cuando se priorice (destructivo).
+- [ ] Fiscal: `generatedBy` real + filtro por empresa en la UI. DPA: editar/versionar + seed.
+- Doc: `docs/producto/features/admin-launch-audit/compliance.md`.
