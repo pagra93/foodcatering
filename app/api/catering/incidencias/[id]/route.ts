@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { permittedAction } from '@/lib/auth/permissions'
 import { resolveIncident } from '@/lib/db/queries/catering-incidencias'
 import { z } from 'zod'
 
@@ -23,6 +24,19 @@ export async function PATCH(
 
     if (!session || !session.user) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    // Autorización (M9): resolver/compensar una incidencia es acción de gestión,
+    // no de cualquier rol operativo (un REPARTIDOR sólo tiene cat-incident:view).
+    if (
+      !permittedAction(
+        session.user.permissions,
+        session.user.role as string,
+        'cat-incident:resolve',
+        ['SUPER_ADMIN', 'ADMIN_CATERING']
+      )
+    ) {
+      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
     }
 
     const body = await request.json()
