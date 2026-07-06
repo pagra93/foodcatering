@@ -22,6 +22,7 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { EMPRESA_MANAGEMENT_ROLES } from '@/lib/db/queries/empresa-usuarios'
+import { encryptPII } from '@/lib/crypto/pii'
 
 const CONFIG_USER_ADMIN_ROLES = ['ADMIN_EMPRESA', 'SUPER_ADMIN'] as const
 
@@ -66,15 +67,24 @@ export async function createEmpresaUserAction(
   })
   if (existing) throw new Error('Ya existe un usuario con ese email')
 
+  // Resolver el rol de sistema para setear roleId (RBAC dinámico). Sin roleId el
+  // usuario se quedaría con permisos del mapa estático y bloqueado del portal (H2).
+  const sysRole = await prisma.role.findFirst({
+    where: { baseRole: data.role as UserRole, isSystem: true, category: 'EMPRESA' },
+    select: { id: true },
+  })
+  if (!sysRole) throw new Error(`Rol de sistema no encontrado para ${data.role}`)
+
   const passwordHash = await bcryptHash(data.password, 10)
 
   const user = await prisma.user.create({
     data: {
       tenantId: actor.tenantId,
       email: data.email,
-      nameEnc: data.name,
-      phoneEnc: data.phone || null,
+      nameEnc: encryptPII(data.name),
+      phoneEnc: data.phone ? encryptPII(data.phone) : null,
       role: data.role as UserRole,
+      roleId: sysRole.id,
       passwordHash,
       status: 'ACTIVE',
     },
@@ -131,13 +141,26 @@ export async function updateEmpresaUserAction(
     )
   }
 
+  let roleIdUpdate: string | undefined
+  if (data.role) {
+    const sysRole = await prisma.role.findFirst({
+      where: { baseRole: data.role as UserRole, isSystem: true, category: 'EMPRESA' },
+      select: { id: true },
+    })
+    if (!sysRole) throw new Error(`Rol de sistema no encontrado para ${data.role}`)
+    roleIdUpdate = sysRole.id
+  }
+
   const updated = await prisma.user.update({
     where: { id: data.userId },
     data: {
       ...(data.email && { email: data.email }),
-      ...(data.name && { nameEnc: data.name }),
-      ...(data.phone !== undefined && { phoneEnc: data.phone || null }),
+      ...(data.name && { nameEnc: encryptPII(data.name) }),
+      ...(data.phone !== undefined && {
+        phoneEnc: data.phone ? encryptPII(data.phone) : null,
+      }),
       ...(data.role && { role: data.role as UserRole }),
+      ...(roleIdUpdate && { roleId: roleIdUpdate }),
     },
   })
 
@@ -224,7 +247,8 @@ export async function resetEmpresaUserPasswordAction(input: {
 
   await prisma.user.update({
     where: { id: current.id },
-    data: { passwordHash },
+    // tokenVersion++ invalida las sesiones activas del usuario (H7).
+    data: { passwordHash, tokenVersion: { increment: 1 } },
   })
 
   await logAudit({

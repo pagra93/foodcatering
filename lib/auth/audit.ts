@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db'
+import { auth } from '@/lib/auth'
 import { createHash } from 'crypto'
 import { Prisma } from '@prisma/client'
 import type { AuditAction } from '@prisma/client'
@@ -11,6 +12,8 @@ import type { AuditAction } from '@prisma/client'
 type AuditLogInput = {
   tenantId?: string | null
   actorId: string
+  /** Admin real cuando la acción se hace bajo impersonación (H8). */
+  impersonatorId?: string | null
   action: AuditAction
   entity: string
   entityId: string
@@ -26,6 +29,7 @@ function createIntegrityHash(data: AuditLogInput): string {
   const content = JSON.stringify({
     tenantId: data.tenantId,
     actorId: data.actorId,
+    impersonatorId: data.impersonatorId ?? null,
     action: data.action,
     entity: data.entity,
     entityId: data.entityId,
@@ -40,12 +44,31 @@ function createIntegrityHash(data: AuditLogInput): string {
  */
 export async function logAudit(input: AuditLogInput) {
   try {
-    const hash = createIntegrityHash(input)
+    // H8: si la acción se hace bajo impersonación, el rastro debe apuntar al
+    // admin real. Se resuelve de la sesión salvo que el caller lo pase explícito.
+    // En contextos sin request (scripts/seeds) auth() lanza → se ignora.
+    let impersonatorId = input.impersonatorId ?? null
+    if (impersonatorId === null) {
+      try {
+        const session = await auth()
+        const imp = (
+          session?.user as
+            | { impersonationToken?: { originalUserId?: string } }
+            | undefined
+        )?.impersonationToken
+        if (imp?.originalUserId) impersonatorId = imp.originalUserId
+      } catch {
+        // sin contexto de sesión: sin impersonador
+      }
+    }
+
+    const hash = createIntegrityHash({ ...input, impersonatorId })
 
     await prisma.auditLog.create({
       data: {
         tenantId: input.tenantId,
         actorId: input.actorId,
+        impersonatorId,
         action: input.action,
         entity: input.entity,
         entityId: input.entityId,

@@ -31,6 +31,8 @@ export async function getAllUsers(filters: AdminUserFilters = {}) {
   const page = Math.max(1, filters.page ?? 1)
   const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25))
 
+  const search = filters.search?.trim().toLowerCase()
+
   const where: Prisma.UserWhereInput = {
     deletedAt: filters.includeDeleted ? undefined : null,
     ...(filters.role && { role: filters.role }),
@@ -39,29 +41,49 @@ export async function getAllUsers(filters: AdminUserFilters = {}) {
     ...(filters.tenantType && {
       tenant: { type: filters.tenantType },
     }),
-    ...(filters.search && {
-      OR: [
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { nameEnc: { contains: filters.search, mode: 'insensitive' } },
-      ],
-    }),
   }
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      include: {
-        tenant: {
-          select: { id: true, name: true, type: true, subdomain: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.user.count({ where }),
-  ])
+  const includeTenant = {
+    tenant: {
+      select: { id: true, name: true, type: true, subdomain: true },
+    },
+  } as const
 
+  // Sin búsqueda: paginación en BD (rápido).
+  if (!search) {
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        include: includeTenant,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.user.count({ where }),
+    ])
+    return { users, total, page, pageSize }
+  }
+
+  // Con búsqueda: el nombre está cifrado y no se puede filtrar en SQL. Este
+  // portal es cross-tenant (todos los usuarios), así que acotamos el escaneo en
+  // memoria; el middleware de Prisma descifra nameEnc y filtramos en servidor.
+  const SCAN_CAP = 5000
+  const scanned = await prisma.user.findMany({
+    where,
+    include: includeTenant,
+    orderBy: { createdAt: 'desc' },
+    take: SCAN_CAP,
+  })
+  const matched = scanned.filter(
+    (u) =>
+      u.email.toLowerCase().includes(search) ||
+      (u.nameEnc ? u.nameEnc.toLowerCase().includes(search) : false)
+  )
+  const total = matched.length
+  const users = matched.slice(
+    (page - 1) * pageSize,
+    (page - 1) * pageSize + pageSize
+  )
   return { users, total, page, pageSize }
 }
 

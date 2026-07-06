@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       'COCINERO',
     ]
 
-    if (!permittedAction(session.user.permissions, session.user.role, 'production:mark-packed', allowedRoles)) {
+    if (!permittedAction(session.user.permissions, session.user.role, 'production:view', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
     }
 

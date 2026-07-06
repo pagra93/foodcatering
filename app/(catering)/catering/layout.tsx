@@ -19,6 +19,7 @@ import { getCateringEntitlements } from '@/lib/plans/entitlements'
 import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
 import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner'
 import { redirect } from 'next/navigation'
+import { checkMaintenance } from '@/lib/auth/maintenance-check'
 
 export default async function CateringInnerLayout({
   children,
@@ -47,6 +48,8 @@ export default async function CateringInnerLayout({
   if (!tenant) {
     redirect('/unauthorized')
   }
+
+  await checkMaintenance(session.user.role)
 
   const tenantData = {
     id: tenant.id,

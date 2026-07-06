@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
+import { checkMaintenance } from '@/lib/auth/maintenance-check'
 import { EmpleadoNavbar } from '@/components/empleado/EmpleadoNavbar'
 import { withBranding } from '@/components/shared/BrandProvider'
 import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
@@ -21,6 +22,8 @@ export default async function EmpleadoLayout({
   if (tenant.type !== 'EMPRESA') {
     redirect('/login')
   }
+
+  await checkMaintenance(session.user.role)
 
   const { branding, style } = await withBranding(tenant.id)
   const announcements = await getActiveAnnouncements('EMPLEADO')

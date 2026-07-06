@@ -51,13 +51,21 @@ export default async function CateringRoutesPage() {
 
   const today = new Date()
 
+  // Sólo las sedes de empresas asignadas (activas) a este catering. Antes se
+  // listaban TODAS las sedes de TODAS las empresas del sistema.
+  const assigned = await prisma.companyCateringAssignment.findMany({
+    where: { tenantCatering: tenantId, active: true },
+    select: { companyId: true },
+  })
+  const assignedCompanyIds = assigned.map((a) => a.companyId)
+
   const [todayRoutes, allRoutes, stats, drivers, sites] = await Promise.all([
     getRoutes(tenantId, { date: today }),
     getRoutes(tenantId),
     getRoutesStats(tenantId, today),
     getAvailableDrivers(tenantId, today),
     prisma.companySite.findMany({
-      where: { active: true },
+      where: { active: true, companyId: { in: assignedCompanyIds } },
       select: {
         id: true,
         name: true,

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { encryptPII } from '@/lib/crypto/pii'
 import { permittedAction } from '@/lib/auth/permissions'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
@@ -57,6 +58,18 @@ export async function PUT(
         { error: 'Empleado no encontrado' },
         { status: 404 }
       )
+    }
+
+    // La sede destino debe pertenecer al mismo tenant (evita apuntar a una sede
+    // de otra empresa por su UUID).
+    if (data.siteId) {
+      const site = await prisma.companySite.findFirst({
+        where: { id: data.siteId, tenantId: session.user.tenantId },
+        select: { id: true },
+      })
+      if (!site) {
+        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+      }
     }
 
     // Actualizar empleado
@@ -167,6 +180,18 @@ export async function PATCH(
 
     const validated = updateFullEmployeeSchema.parse(body)
 
+    // La sede destino debe pertenecer al mismo tenant (evita apuntar a una sede
+    // de otra empresa por su UUID).
+    if (validated.siteId) {
+      const site = await prisma.companySite.findFirst({
+        where: { id: validated.siteId, tenantId: session.user.tenantId },
+        select: { id: true },
+      })
+      if (!site) {
+        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+      }
+    }
+
     // Actualizar en transacción
     const updated = await prisma.$transaction(async (tx) => {
       // Actualizar usuario si hay cambios
@@ -174,8 +199,8 @@ export async function PATCH(
         await tx.user.update({
           where: { id: employee.userId },
           data: {
-            ...(validated.name && { nameEnc: validated.name }),
-            ...(validated.phone && { phoneEnc: validated.phone }),
+            ...(validated.name && { nameEnc: encryptPII(validated.name) }),
+            ...(validated.phone && { phoneEnc: encryptPII(validated.phone) }),
           },
         })
       }

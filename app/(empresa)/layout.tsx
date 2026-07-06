@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
+import { checkMaintenance } from '@/lib/auth/maintenance-check'
 
 // Portal multi-tenant con datos por sesión: nunca se prerenderiza en build.
 export const dynamic = 'force-dynamic'
@@ -21,6 +22,8 @@ export default async function EmpresaRootLayout({
   if (!allowedRoles.includes(session.user.role as string)) {
     redirect('/acceso-denegado')
   }
+
+  await checkMaintenance(session.user.role)
 
   return children
 }

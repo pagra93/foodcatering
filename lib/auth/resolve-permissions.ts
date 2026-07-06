@@ -14,17 +14,39 @@ export async function resolveUserPermissions(
   role: UserRole
 ): Promise<string[]> {
   if (roleId) {
-    const rps = await prisma.rolePermission.findMany({
-      where: { roleId },
-      select: { permission: { select: { key: true } } },
+    const dbRole = await prisma.role.findUnique({
+      where: { id: roleId },
+      select: {
+        isSystem: true,
+        baseRole: true,
+        permissions: { select: { permission: { select: { key: true } } } },
+      },
     })
-    if (rps.length > 0) {
-      if (rps.length >= ALL_PERMISSION_KEYS.length) return ['*']
-      return rps.map((rp) => rp.permission.key)
+
+    if (dbRole) {
+      // El super_admin DE SISTEMA siempre tiene acceso total, sin depender de que
+      // el catálogo esté completamente sembrado (evita lockout tras cambios de
+      // catálogo). Un rol A MEDIDA (isSystem=false) basado en SUPER_ADMIN NO
+      // recibe este atajo: cierra la escalada por rol vacío (H1).
+      if (dbRole.isSystem && dbRole.baseRole === 'SUPER_ADMIN') return ['*']
+
+      const keys = dbRole.permissions.map((rp) => rp.permission.key)
+
+      // Colapsar a ['*'] sólo si cubre EXACTAMENTE todo el catálogo.
+      if (
+        keys.length >= ALL_PERMISSION_KEYS.length &&
+        ALL_PERMISSION_KEYS.every((k) => keys.includes(k))
+      ) {
+        return ['*']
+      }
+
+      // roleId presente ⇒ TERMINAL y fail-closed: 0 permisos = sin acceso. Nunca
+      // cae al mapa estático.
+      return keys
     }
   }
 
-  // Fallback de transición (usuario sin roleId): mapa estático.
+  // Sólo usuarios SIN roleId (o con un roleId inexistente) caen al mapa estático.
   if (role === 'SUPER_ADMIN') return ['*']
   return [...((PERMISSIONS[role] as readonly string[] | undefined) ?? [])]
 }

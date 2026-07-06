@@ -14,6 +14,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import { env } from '@/lib/env'
+import { decryptPII, looksEncrypted } from '@/lib/crypto/pii'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -67,8 +68,21 @@ const MULTI_TENANT_MODELS = new Set([
   'Integration',
   'Webhook',
   'WebhookDelivery',
-  'EmployeeInvitation',
   'DeliveryRoute',
+  'DeliveryRouteSite',
+  // Añadidos (H9): faltaban en la lista original; 'EmployeeInvitation' se retiró
+  // (el modelo pasó a llamarse 'UserInvitation').
+  'UserInvitation',
+  'DishRating',
+  'Penalty',
+  'Settlement',
+  'SaasInvoice',
+  'MenuTemplate',
+  'DeliveryZone',
+  'GdprRequest',
+  'DpaAgreement',
+  'ActivityMessage',
+  'HolidayOverride',
 ])
 
 const READ_ACTIONS = new Set([
@@ -94,27 +108,90 @@ function hasTenantFilter(where: unknown): boolean {
   )
 }
 
-// Sólo en desarrollo: avisa cuando una query multi-tenant olvida el filtro.
-// No bloquea la ejecución; sirve para detectar olvidos y mantener disciplina.
-if (env.NODE_ENV === 'development') {
-  prisma.$use(async (params, next) => {
-    if (
-      params.model &&
-      MULTI_TENANT_MODELS.has(params.model) &&
-      params.action &&
-      READ_ACTIONS.has(params.action)
-    ) {
-      const args = params.args as { where?: unknown } | undefined
-      if (!hasTenantFilter(args?.where)) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[prisma:tenant-check] ${params.model}.${params.action} sin filtro de tenant. Añadir tenantId/tenantEmpresa/tenantCatering al where.`
-        )
+/**
+ * Guard de aislamiento por tenant (H9, opción B).
+ *
+ * - Loguea SIEMPRE (todos los entornos) cuando una LECTURA sobre un modelo
+ *   multi-tenant no lleva filtro de tenant → visibilidad de olvidos en prod.
+ * - BLOQUEA (lanza) sólo si `TENANT_GUARD_ENFORCE=true`, para poder activarlo
+ *   tras validar en logs que no hay falsos positivos.
+ *
+ * Cubre sólo LECTURAS: las escrituras siguen el patrón seguro
+ * findFirst({id, tenantId}) → update({ where: { id } }), que deja el update sin
+ * filtro a propósito, así que vigilarlas daría falsos positivos.
+ *
+ * Nota: el portal root/admin lee cross-tenant a propósito; hoy esas lecturas
+ * salen como AVISO. Antes de poner `TENANT_GUARD_ENFORCE=true` en prod hay que
+ * acotarlas (revisar logs y añadir el escape correspondiente) — ver runbook. No
+ * se usa AsyncLocalStorage aquí para mantener este módulo apto para el bundle de
+ * cliente (algún componente cliente lo arrastra vía queries).
+ */
+const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] === 'true'
+
+prisma.$use(async (params, next) => {
+  if (
+    params.model &&
+    MULTI_TENANT_MODELS.has(params.model) &&
+    params.action &&
+    READ_ACTIONS.has(params.action)
+  ) {
+    const args = params.args as { where?: unknown } | undefined
+    if (!hasTenantFilter(args?.where)) {
+      const msg = `[prisma:tenant-guard] ${params.model}.${params.action} sin filtro de tenant.`
+      if (TENANT_GUARD_ENFORCE) {
+        throw new Error(`${msg} Bloqueado por TENANT_GUARD_ENFORCE.`)
       }
+      // eslint-disable-next-line no-console
+      console.warn(`${msg} (aviso; TENANT_GUARD_ENFORCE=true para bloquear)`)
     }
-    return next(params)
-  })
+  }
+  return next(params)
+})
+
+// ─── Descifrado automático de PII en lectura (C4) ──────────────────────────
+//
+// Los campos `nameEnc` / `phoneEnc` del modelo User se guardan cifrados
+// (AES-256-GCM, ver lib/crypto/pii.ts). Este middleware los descifra en CUALQUIER
+// resultado de Prisma —incluidos los anidados vía include— para que toda la app
+// siga recibiendo el valor en claro sin tener que descifrar en cada sitio.
+//
+// - En sitio (muta el objeto) para no romper instancias de clase (Date, Decimal).
+// - Sólo recorre objetos "planos" y arrays; nunca Date/Decimal/Buffer.
+// - Tolerante: si el valor está en texto plano (legado, aún sin migrar) lo deja
+//   igual; si falla el descifrado (clave ausente/incorrecta) devuelve el valor
+//   original en vez de reventar.
+// - Sólo User tiene estos campos, así que la coincidencia por nombre de clave es
+//   segura. Las queries `$queryRaw`/backfill no pasan por `$use`, por lo que el
+//   script de migración ve el valor crudo.
+function decryptPiiInPlace(node: unknown, depth = 0): void {
+  if (node === null || typeof node !== 'object' || depth > 8) return
+  if (Array.isArray(node)) {
+    for (const item of node) decryptPiiInPlace(item, depth + 1)
+    return
+  }
+  if ((node as { constructor?: unknown }).constructor !== Object) return
+  const obj = node as Record<string, unknown>
+  for (const key of Object.keys(obj)) {
+    const val = obj[key]
+    if ((key === 'nameEnc' || key === 'phoneEnc') && typeof val === 'string') {
+      if (looksEncrypted(val)) {
+        try {
+          obj[key] = decryptPII(val)
+        } catch {
+          // Clave ausente/incorrecta: dejar el valor tal cual (no enmascarar).
+        }
+      }
+    } else if (val && typeof val === 'object') {
+      decryptPiiInPlace(val, depth + 1)
+    }
+  }
 }
+
+prisma.$use(async (params, next) => {
+  const result = await next(params)
+  if (result && typeof result === 'object') decryptPiiInPlace(result)
+  return result
+})
 
 /**
  * Ejecuta un bloque dentro de una transacción con las variables de sesión

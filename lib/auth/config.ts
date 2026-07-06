@@ -12,6 +12,7 @@ import { prisma } from '@/lib/db'
 import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
 import { resolveUserPermissions } from './resolve-permissions'
+import { authRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
 
 /**
  * Schema de validación para login
@@ -21,6 +22,15 @@ const loginSchema = z.object({
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   tenantSubdomain: z.string().optional(), // Para multi-tenant
 })
+
+// Duplicado deliberado de impersonation.ts#IMPERSONATION_DURATION_MINUTES:
+// importarlo de ahí crearía un ciclo (config → impersonation → @/lib/auth → config).
+const IMPERSONATION_DURATION_MINUTES = 15
+
+// Hash bcrypt señuelo (cacheado) para igualar el tiempo de respuesta del login
+// cuando el usuario no existe (M7 — anti-enumeración por timing). Coste 10 para
+// igualar el de los hashes almacenados hoy.
+let dummyPasswordHash: string | null = null
 
 /**
  * Configuración de NextAuth
@@ -54,12 +64,29 @@ export const authConfig = {
         password: { label: 'Password', type: 'password' },
         tenantSubdomain: { label: 'Tenant', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         try {
           // Validar input
           const { email, password, tenantSubdomain } = loginSchema.parse(
             credentials
           )
+
+          // H6: rate limit de login por IP + email, para frenar fuerza bruta y
+          // credential stuffing dirigido a una cuenta concreta.
+          if (request) {
+            const rl = await authRateLimiter.check(
+              `login:${getRateLimitKey(request)}:${email}`
+            )
+            if (!rl.allowed) return null
+          }
+
+          // bcryptjs se importa dinámicamente (problemas con Edge Runtime).
+          const { compare, hash } = await import('bcryptjs')
+          // M7: hash señuelo (mismo coste) para gastar el mismo tiempo cuando el
+          // usuario no existe y no filtrar por timing qué emails están dados de alta.
+          if (!dummyPasswordHash) {
+            dummyPasswordHash = await hash('timing-guard-placeholder', 10)
+          }
 
           // Buscar usuario
           const user = await prisma.user.findFirst({
@@ -74,17 +101,17 @@ export const authConfig = {
           })
 
           if (!user || !user.passwordHash) {
+            await compare(password, dummyPasswordHash) // M7: tiempo constante
             return null
           }
 
           // Verificar tenant (si se especificó)
           if (tenantSubdomain && user.tenant.subdomain !== tenantSubdomain) {
+            await compare(password, dummyPasswordHash) // M7: tiempo constante
             return null
           }
 
           // Verificar contraseña
-          // Importación dinámica de bcryptjs para evitar problemas con Edge Runtime
-          const { compare } = await import('bcryptjs')
           const isPasswordValid = await compare(password, user.passwordHash)
           if (!isPasswordValid) {
             return null
@@ -109,6 +136,7 @@ export const authConfig = {
             status: user.status,
             roleId: user.roleId,
             permissions,
+            tokenVersion: user.tokenVersion,
           }
         } catch (error) {
           console.error('Error en authorize:', error)
@@ -135,33 +163,82 @@ export const authConfig = {
         token.mfaEnabled = user.mfaEnabled
         token.roleId = user.roleId
         token.permissions = user.permissions
+        token.tokenVersion = user.tokenVersion
+        token.checkedAt = Date.now()
       }
 
       // Update session (cuando se llama a update())
       if (trigger === 'update' && session) {
         token.name = session.name
         
-        // Manejar impersonación
+        // Manejar impersonación (endurecido — C1).
+        // El payload de `update()` lo controla el cliente, así que aquí NO se
+        // confía en él salvo para saber A QUIÉN se quiere impersonar. El rol,
+        // el tenant y los permisos se derivan SIEMPRE de la BD, y solo un
+        // SUPER_ADMIN verificado (por el token vigente, firmado por el servidor)
+        // puede impersonar. Esto cierra el bypass por el que cualquier usuario
+        // se autoconcedía SUPER_ADMIN vía useSession().update().
         if (session.impersonationToken) {
-          token.impersonationToken = session.impersonationToken as ImpersonationToken
-          
-          // Sobrescribir datos del usuario con los del usuario impersonado
-          token.id = session.impersonationToken.targetUserId
-          token.role = session.impersonationToken.targetRole
-          token.tenantId = session.impersonationToken.targetTenantId
-          
-          // Cargar datos completos del usuario impersonado
-          const targetUser = await prisma.user.findUnique({
-            where: { id: session.impersonationToken.targetUserId },
-            select: { nameEnc: true, email: true, roleId: true, tenant: { select: { type: true } } },
-          })
+          // Identidad real del token vigente, antes de sobreescribir nada.
+          const realUserId = token.id
+          const realRole = token.role
+          const requestedTargetId = (
+            session.impersonationToken as ImpersonationToken
+          ).targetUserId
 
-          if (targetUser) {
-            token.name = targetUser.nameEnc
-            token.email = targetUser.email
-            token.tenantType = targetUser.tenant.type
-            token.roleId = targetUser.roleId
-            token.permissions = await resolveUserPermissions(targetUser.roleId, token.role)
+          // Guarda 1: solo un super admin real puede impersonar. Si no, se
+          // ignora la petición por completo (no se muta el token).
+          if (realRole === 'SUPER_ADMIN' && requestedTargetId) {
+            const targetUser = await prisma.user.findUnique({
+              where: { id: requestedTargetId },
+              select: {
+                id: true,
+                role: true,
+                tenantId: true,
+                roleId: true,
+                nameEnc: true,
+                email: true,
+                deletedAt: true,
+                tokenVersion: true,
+                tenant: { select: { type: true } },
+              },
+            })
+
+            // Guarda 2/3: el objetivo debe existir, no estar borrado y no ser
+            // otro super admin. Rol/tenant/permisos salen de la BD, nunca del
+            // payload del cliente.
+            if (
+              targetUser &&
+              !targetUser.deletedAt &&
+              targetUser.role !== 'SUPER_ADMIN'
+            ) {
+              const now = Date.now()
+              // Token reconstruido en servidor: la identidad "original" es la
+              // del token vigente verificado, no la que envíe el cliente.
+              token.impersonationToken = {
+                originalUserId: realUserId,
+                originalRole: realRole,
+                targetUserId: targetUser.id,
+                targetRole: targetUser.role,
+                targetTenantId: targetUser.tenantId,
+                startedAt: now,
+                expiresAt: now + IMPERSONATION_DURATION_MINUTES * 60 * 1000,
+              } satisfies ImpersonationToken
+
+              token.id = targetUser.id
+              token.role = targetUser.role
+              token.tenantId = targetUser.tenantId
+              token.tenantType = targetUser.tenant.type
+              token.name = targetUser.nameEnc
+              token.email = targetUser.email
+              token.roleId = targetUser.roleId
+              token.permissions = await resolveUserPermissions(
+                targetUser.roleId,
+                targetUser.role
+              )
+              token.tokenVersion = targetUser.tokenVersion
+              token.checkedAt = now
+            }
           }
         } else if (token.impersonationToken) {
           // Si se removió el token de impersonación, restaurar usuario original
@@ -176,6 +253,7 @@ export const authConfig = {
               role: true,
               roleId: true,
               tenantId: true,
+              tokenVersion: true,
               tenant: { select: { type: true } },
             },
           })
@@ -192,10 +270,59 @@ export const authConfig = {
               originalUser.roleId,
               originalUser.role
             )
+            token.tokenVersion = originalUser.tokenVersion
+            token.checkedAt = Date.now()
           }
           
           // Remover token de impersonación
           delete token.impersonationToken
+        }
+      }
+
+      // H7: revalidación periódica contra BD (throttled) para revocar sesiones.
+      // Sólo en peticiones posteriores (no en el sign-in inicial ni en updates,
+      // que ya refrescan checkedAt). Cubre: usuario deshabilitado/borrado, cambio
+      // de rol/permisos/tenant (se propagan sin re-login), y bump de tokenVersion
+      // (p.ej. cambio de contraseña → invalida las demás sesiones).
+      if (!user && trigger !== 'update') {
+        const THROTTLE_MS = 5 * 60 * 1000
+        const last = token.checkedAt ?? 0
+        if (Date.now() - last > THROTTLE_MS) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: {
+              status: true,
+              deletedAt: true,
+              tokenVersion: true,
+              role: true,
+              roleId: true,
+              tenantId: true,
+            },
+          })
+
+          if (!dbUser || dbUser.status !== 'ACTIVE' || dbUser.deletedAt) {
+            return null
+          }
+          if (
+            typeof token.tokenVersion === 'number' &&
+            dbUser.tokenVersion !== token.tokenVersion
+          ) {
+            return null
+          }
+
+          // Propagar rol/permisos/tenant sin re-login. No durante impersonación
+          // activa (esos valores son del usuario impersonado, no del real).
+          if (!token.impersonationToken) {
+            token.role = dbUser.role
+            token.roleId = dbUser.roleId
+            token.tenantId = dbUser.tenantId
+            token.permissions = await resolveUserPermissions(
+              dbUser.roleId,
+              dbUser.role
+            )
+            token.tokenVersion = dbUser.tokenVersion
+          }
+          token.checkedAt = Date.now()
         }
       }
 
