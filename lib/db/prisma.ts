@@ -14,6 +14,7 @@
 
 import { PrismaClient } from '@prisma/client'
 import { env } from '@/lib/env'
+import { decryptPII, looksEncrypted } from '@/lib/crypto/pii'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -115,6 +116,51 @@ if (env.NODE_ENV === 'development') {
     return next(params)
   })
 }
+
+// ─── Descifrado automático de PII en lectura (C4) ──────────────────────────
+//
+// Los campos `nameEnc` / `phoneEnc` del modelo User se guardan cifrados
+// (AES-256-GCM, ver lib/crypto/pii.ts). Este middleware los descifra en CUALQUIER
+// resultado de Prisma —incluidos los anidados vía include— para que toda la app
+// siga recibiendo el valor en claro sin tener que descifrar en cada sitio.
+//
+// - En sitio (muta el objeto) para no romper instancias de clase (Date, Decimal).
+// - Sólo recorre objetos "planos" y arrays; nunca Date/Decimal/Buffer.
+// - Tolerante: si el valor está en texto plano (legado, aún sin migrar) lo deja
+//   igual; si falla el descifrado (clave ausente/incorrecta) devuelve el valor
+//   original en vez de reventar.
+// - Sólo User tiene estos campos, así que la coincidencia por nombre de clave es
+//   segura. Las queries `$queryRaw`/backfill no pasan por `$use`, por lo que el
+//   script de migración ve el valor crudo.
+function decryptPiiInPlace(node: unknown, depth = 0): void {
+  if (node === null || typeof node !== 'object' || depth > 8) return
+  if (Array.isArray(node)) {
+    for (const item of node) decryptPiiInPlace(item, depth + 1)
+    return
+  }
+  if ((node as { constructor?: unknown }).constructor !== Object) return
+  const obj = node as Record<string, unknown>
+  for (const key of Object.keys(obj)) {
+    const val = obj[key]
+    if ((key === 'nameEnc' || key === 'phoneEnc') && typeof val === 'string') {
+      if (looksEncrypted(val)) {
+        try {
+          obj[key] = decryptPII(val)
+        } catch {
+          // Clave ausente/incorrecta: dejar el valor tal cual (no enmascarar).
+        }
+      }
+    } else if (val && typeof val === 'object') {
+      decryptPiiInPlace(val, depth + 1)
+    }
+  }
+}
+
+prisma.$use(async (params, next) => {
+  const result = await next(params)
+  if (result && typeof result === 'object') decryptPiiInPlace(result)
+  return result
+})
 
 /**
  * Ejecuta un bloque dentro de una transacción con las variables de sesión

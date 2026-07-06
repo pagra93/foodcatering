@@ -32,6 +32,8 @@ export async function getEmpresaManagementUsers(
   const page = Math.max(1, filters.page ?? 1)
   const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 25))
 
+  const search = filters.search?.trim().toLowerCase()
+
   const where: Prisma.UserWhereInput = {
     tenantId,
     deletedAt: null,
@@ -39,24 +41,39 @@ export async function getEmpresaManagementUsers(
       ? filters.role
       : { in: EMPRESA_MANAGEMENT_ROLES },
     ...(filters.status && { status: filters.status }),
-    ...(filters.search && {
-      OR: [
-        { email: { contains: filters.search, mode: 'insensitive' } },
-        { nameEnc: { contains: filters.search, mode: 'insensitive' } },
-      ],
-    }),
   }
 
-  const [users, total] = await Promise.all([
-    prisma.user.findMany({
-      where,
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.user.count({ where }),
-  ])
+  // Sin búsqueda: paginación en BD (rápido).
+  if (!search) {
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.user.count({ where }),
+    ])
+    return { users, total, page, pageSize }
+  }
 
+  // Con búsqueda: el nombre está cifrado y no se puede filtrar en SQL. Traemos
+  // los usuarios del tenant (el middleware de Prisma descifra nameEnc) y
+  // filtramos por email/nombre en servidor. Lista acotada por tenant.
+  const all = await prisma.user.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+  })
+  const matched = all.filter(
+    (u) =>
+      u.email.toLowerCase().includes(search) ||
+      (u.nameEnc ? u.nameEnc.toLowerCase().includes(search) : false)
+  )
+  const total = matched.length
+  const users = matched.slice(
+    (page - 1) * pageSize,
+    (page - 1) * pageSize + pageSize
+  )
   return { users, total, page, pageSize }
 }
 

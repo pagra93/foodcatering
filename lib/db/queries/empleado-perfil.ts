@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import { encryptPII } from '@/lib/crypto/pii'
 import { subDays, startOfMonth, endOfMonth } from 'date-fns'
 import { parseDietPrefs } from '@/lib/types/diet-prefs'
 
@@ -276,7 +277,7 @@ export async function updateEmployeeProfile(
   }
   return prisma.user.update({
     where: { id: employee.userId },
-    data: { phoneEnc: data.phone },
+    data: { phoneEnc: data.phone ? encryptPII(data.phone) : null },
   })
 }
 

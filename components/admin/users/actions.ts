@@ -17,6 +17,7 @@ import { hash as bcryptHash } from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
+import { encryptPII } from '@/lib/crypto/pii'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 
@@ -87,8 +88,8 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>) 
     data: {
       tenantId: data.tenantId,
       email: data.email,
-      nameEnc: data.name, // cifrado en futuro (lib/crypto/pii.ts)
-      phoneEnc: data.phone || null,
+      nameEnc: encryptPII(data.name),
+      phoneEnc: data.phone ? encryptPII(data.phone) : null,
       role: dynRole.baseRole,
       roleId: dynRole.id,
       passwordHash,
@@ -185,8 +186,10 @@ export async function updateUserAction(input: z.infer<typeof updateUserSchema>) 
     where: { id: data.userId },
     data: {
       ...(data.email && { email: data.email }),
-      ...(data.name && { nameEnc: data.name }),
-      ...(data.phone !== undefined && { phoneEnc: data.phone || null }),
+      ...(data.name && { nameEnc: encryptPII(data.name) }),
+      ...(data.phone !== undefined && {
+        phoneEnc: data.phone ? encryptPII(data.phone) : null,
+      }),
       ...(roleEnumToSet && { role: roleEnumToSet }),
       ...(roleIdToSet && { roleId: roleIdToSet }),
     },

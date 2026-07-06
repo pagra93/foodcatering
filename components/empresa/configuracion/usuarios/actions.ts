@@ -22,6 +22,7 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { EMPRESA_MANAGEMENT_ROLES } from '@/lib/db/queries/empresa-usuarios'
+import { encryptPII } from '@/lib/crypto/pii'
 
 const CONFIG_USER_ADMIN_ROLES = ['ADMIN_EMPRESA', 'SUPER_ADMIN'] as const
 
@@ -72,8 +73,8 @@ export async function createEmpresaUserAction(
     data: {
       tenantId: actor.tenantId,
       email: data.email,
-      nameEnc: data.name,
-      phoneEnc: data.phone || null,
+      nameEnc: encryptPII(data.name),
+      phoneEnc: data.phone ? encryptPII(data.phone) : null,
       role: data.role as UserRole,
       passwordHash,
       status: 'ACTIVE',
@@ -135,8 +136,10 @@ export async function updateEmpresaUserAction(
     where: { id: data.userId },
     data: {
       ...(data.email && { email: data.email }),
-      ...(data.name && { nameEnc: data.name }),
-      ...(data.phone !== undefined && { phoneEnc: data.phone || null }),
+      ...(data.name && { nameEnc: encryptPII(data.name) }),
+      ...(data.phone !== undefined && {
+        phoneEnc: data.phone ? encryptPII(data.phone) : null,
+      }),
       ...(data.role && { role: data.role as UserRole }),
     },
   })

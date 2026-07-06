@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import { encryptPII } from '@/lib/crypto/pii'
 import { subDays } from 'date-fns'
 import bcrypt from 'bcryptjs'
 import { nanoid } from 'nanoid'
@@ -44,23 +45,6 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
     deletedAt: null,
   }
 
-  // Filtro de búsqueda
-  if (search) {
-    where.OR = [
-      { employeeNumber: { contains: search, mode: 'insensitive' } },
-      { department: { contains: search, mode: 'insensitive' } },
-      { position: { contains: search, mode: 'insensitive' } },
-      {
-        user: {
-          OR: [
-            { email: { contains: search, mode: 'insensitive' } },
-            { nameEnc: { contains: search, mode: 'insensitive' } },
-          ],
-        },
-      },
-    ]
-  }
-
   // Filtro de estado
   if (status !== 'all') {
     where.status = status
@@ -76,8 +60,39 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
     where.siteId = siteId
   }
 
-  const [employees, total, departments] = await Promise.all([
-    prisma.employee.findMany({
+  const term = search?.trim().toLowerCase()
+
+  // El nombre del usuario está cifrado y no se puede filtrar en SQL. Sin
+  // búsqueda paginamos en BD (rápido); con búsqueda traemos los empleados del
+  // tenant (el middleware de Prisma descifra nameEnc) y filtramos en servidor
+  // por nº de empleado, departamento, puesto, email y nombre.
+  const { rows: employees, count: total } = await (async () => {
+    if (!term) {
+      const [rows, count] = await Promise.all([
+        prisma.employee.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                nameEnc: true,
+                status: true,
+                createdAt: true,
+              },
+            },
+            site: { select: { id: true, name: true, address: true } },
+          },
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: { createdAt: 'desc' },
+        }),
+        prisma.employee.count({ where }),
+      ])
+      return { rows, count }
+    }
+
+    const all = await prisma.employee.findMany({
       where,
       include: {
         user: {
@@ -89,26 +104,35 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
             createdAt: true,
           },
         },
-        site: {
-          select: {
-            id: true,
-            name: true,
-            address: true,
-          },
-        },
+        site: { select: { id: true, name: true, address: true } },
       },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
       orderBy: { createdAt: 'desc' },
-    }),
-    prisma.employee.count({ where }),
-    // Obtener lista de departamentos únicos para filtros
-    prisma.employee.findMany({
+    })
+    const matched = all.filter((e) =>
+      [
+        e.employeeNumber,
+        e.department,
+        e.position,
+        e.user?.email,
+        e.user?.nameEnc,
+      ].some((v) => typeof v === 'string' && v.toLowerCase().includes(term))
+    )
+    return {
+      rows: matched.slice(
+        (page - 1) * pageSize,
+        (page - 1) * pageSize + pageSize
+      ),
+      count: matched.length,
+    }
+  })()
+
+  const departments = await prisma.employee
+    .findMany({
       where: { tenantId, deletedAt: null },
       select: { department: true },
       distinct: ['department'],
-    }).then((depts) => depts.map((d) => d.department).filter(Boolean)),
-  ])
+    })
+    .then((depts) => depts.map((d) => d.department).filter(Boolean))
 
   // Enriquecer con métricas de cada empleado
   const employeesWithMetrics = await Promise.all(
@@ -398,8 +422,8 @@ export async function createEmployee(
       data: {
         tenantId,
         email: data.email,
-        nameEnc: data.name,
-        phoneEnc: data.phone || null,
+        nameEnc: encryptPII(data.name),
+        phoneEnc: data.phone ? encryptPII(data.phone) : null,
         passwordHash: await bcrypt.hash(nanoid(16), 10), // Password temporal
         role: 'EMPLEADO',
         status: 'ACTIVE',
@@ -499,8 +523,10 @@ export async function updateEmployee(
       await tx.user.update({
         where: { id: employee.userId },
         data: {
-          ...(name !== undefined && { nameEnc: name }),
-          ...(phone !== undefined && { phoneEnc: phone }),
+          ...(name !== undefined && { nameEnc: name ? encryptPII(name) : name }),
+          ...(phone !== undefined && {
+            phoneEnc: phone ? encryptPII(phone) : null,
+          }),
         },
       })
     }

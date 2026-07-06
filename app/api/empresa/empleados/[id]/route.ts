@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
+import { encryptPII } from '@/lib/crypto/pii'
 import { permittedAction } from '@/lib/auth/permissions'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
@@ -174,8 +175,8 @@ export async function PATCH(
         await tx.user.update({
           where: { id: employee.userId },
           data: {
-            ...(validated.name && { nameEnc: validated.name }),
-            ...(validated.phone && { phoneEnc: validated.phone }),
+            ...(validated.name && { nameEnc: encryptPII(validated.name) }),
+            ...(validated.phone && { phoneEnc: encryptPII(validated.phone) }),
           },
         })
       }
