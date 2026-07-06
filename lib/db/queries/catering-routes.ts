@@ -14,14 +14,28 @@ import { startOfDay, endOfDay } from 'date-fns'
  */
 export async function createRoute(tenantId: string, data: CreateRouteInput) {
   return prisma.$transaction(async (tx) => {
-    // Verificar que las sedes existen (aceptamos cualquier empresa cliente del catering)
+    // Sólo se aceptan sedes de empresas asignadas (activas) a este catering.
+    // Antes sólo se comprobaba que la sede existiera, lo que permitía a un
+    // catering enlazar (y luego leer vía getRouteById) sedes de empresas que no
+    // son sus clientes.
+    const assigned = await tx.companyCateringAssignment.findMany({
+      where: { tenantCatering: tenantId, active: true },
+      select: { companyId: true },
+    })
+    const assignedCompanyIds = assigned.map((a) => a.companyId)
+
     const sites = await tx.companySite.findMany({
-      where: { id: { in: data.companySiteIds } },
+      where: {
+        id: { in: data.companySiteIds },
+        companyId: { in: assignedCompanyIds },
+      },
       select: { id: true, name: true },
     })
 
     if (sites.length !== data.companySiteIds.length) {
-      throw new Error('Algunas sedes no existen')
+      throw new Error(
+        'Alguna sede no pertenece a una empresa cliente de este catering'
+      )
     }
 
     // Si hay repartidor, verificar que pertenece al catering y tiene el rol correcto

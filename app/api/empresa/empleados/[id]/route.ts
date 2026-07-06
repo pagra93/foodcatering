@@ -60,6 +60,18 @@ export async function PUT(
       )
     }
 
+    // La sede destino debe pertenecer al mismo tenant (evita apuntar a una sede
+    // de otra empresa por su UUID).
+    if (data.siteId) {
+      const site = await prisma.companySite.findFirst({
+        where: { id: data.siteId, tenantId: session.user.tenantId },
+        select: { id: true },
+      })
+      if (!site) {
+        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+      }
+    }
+
     // Actualizar empleado
     const updated = await prisma.employee.update({
       where: { id: params.id },
@@ -167,6 +179,18 @@ export async function PATCH(
     }
 
     const validated = updateFullEmployeeSchema.parse(body)
+
+    // La sede destino debe pertenecer al mismo tenant (evita apuntar a una sede
+    // de otra empresa por su UUID).
+    if (validated.siteId) {
+      const site = await prisma.companySite.findFirst({
+        where: { id: validated.siteId, tenantId: session.user.tenantId },
+        select: { id: true },
+      })
+      if (!site) {
+        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+      }
+    }
 
     // Actualizar en transacción
     const updated = await prisma.$transaction(async (tx) => {
