@@ -68,8 +68,21 @@ const MULTI_TENANT_MODELS = new Set([
   'Integration',
   'Webhook',
   'WebhookDelivery',
-  'EmployeeInvitation',
   'DeliveryRoute',
+  'DeliveryRouteSite',
+  // Añadidos (H9): faltaban en la lista original; 'EmployeeInvitation' se retiró
+  // (el modelo pasó a llamarse 'UserInvitation').
+  'UserInvitation',
+  'DishRating',
+  'Penalty',
+  'Settlement',
+  'SaasInvoice',
+  'MenuTemplate',
+  'DeliveryZone',
+  'GdprRequest',
+  'DpaAgreement',
+  'ActivityMessage',
+  'HolidayOverride',
 ])
 
 const READ_ACTIONS = new Set([
@@ -95,27 +108,45 @@ function hasTenantFilter(where: unknown): boolean {
   )
 }
 
-// Sólo en desarrollo: avisa cuando una query multi-tenant olvida el filtro.
-// No bloquea la ejecución; sirve para detectar olvidos y mantener disciplina.
-if (env.NODE_ENV === 'development') {
-  prisma.$use(async (params, next) => {
-    if (
-      params.model &&
-      MULTI_TENANT_MODELS.has(params.model) &&
-      params.action &&
-      READ_ACTIONS.has(params.action)
-    ) {
-      const args = params.args as { where?: unknown } | undefined
-      if (!hasTenantFilter(args?.where)) {
-        // eslint-disable-next-line no-console
-        console.warn(
-          `[prisma:tenant-check] ${params.model}.${params.action} sin filtro de tenant. Añadir tenantId/tenantEmpresa/tenantCatering al where.`
-        )
+/**
+ * Guard de aislamiento por tenant (H9, opción B).
+ *
+ * - Loguea SIEMPRE (todos los entornos) cuando una LECTURA sobre un modelo
+ *   multi-tenant no lleva filtro de tenant → visibilidad de olvidos en prod.
+ * - BLOQUEA (lanza) sólo si `TENANT_GUARD_ENFORCE=true`, para poder activarlo
+ *   tras validar en logs que no hay falsos positivos.
+ *
+ * Cubre sólo LECTURAS: las escrituras siguen el patrón seguro
+ * findFirst({id, tenantId}) → update({ where: { id } }), que deja el update sin
+ * filtro a propósito, así que vigilarlas daría falsos positivos.
+ *
+ * Nota: el portal root/admin lee cross-tenant a propósito; hoy esas lecturas
+ * salen como AVISO. Antes de poner `TENANT_GUARD_ENFORCE=true` en prod hay que
+ * acotarlas (revisar logs y añadir el escape correspondiente) — ver runbook. No
+ * se usa AsyncLocalStorage aquí para mantener este módulo apto para el bundle de
+ * cliente (algún componente cliente lo arrastra vía queries).
+ */
+const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] === 'true'
+
+prisma.$use(async (params, next) => {
+  if (
+    params.model &&
+    MULTI_TENANT_MODELS.has(params.model) &&
+    params.action &&
+    READ_ACTIONS.has(params.action)
+  ) {
+    const args = params.args as { where?: unknown } | undefined
+    if (!hasTenantFilter(args?.where)) {
+      const msg = `[prisma:tenant-guard] ${params.model}.${params.action} sin filtro de tenant.`
+      if (TENANT_GUARD_ENFORCE) {
+        throw new Error(`${msg} Bloqueado por TENANT_GUARD_ENFORCE.`)
       }
+      // eslint-disable-next-line no-console
+      console.warn(`${msg} (aviso; TENANT_GUARD_ENFORCE=true para bloquear)`)
     }
-    return next(params)
-  })
-}
+  }
+  return next(params)
+})
 
 // ─── Descifrado automático de PII en lectura (C4) ──────────────────────────
 //
