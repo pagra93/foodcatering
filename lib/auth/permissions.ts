@@ -166,10 +166,11 @@ export function hasPermission(role: UserRole, permission: string): boolean {
     // Permiso exacto
     if (p === permission) return true
 
-    // Wildcard (*) al final
+    // Wildcard `recurso:*` — comparar el recurso EXACTO (no por prefijo de
+    // string, que sobre-emparejaría `emp-config:*` con `emp-config-user:x`).
     if (p.endsWith(':*')) {
-      const prefix = p.slice(0, -2)
-      return permission.startsWith(prefix)
+      const resource = p.slice(0, -2)
+      return permission.split(':')[0] === resource
     }
 
     return false
@@ -188,7 +189,8 @@ export function permissionsInclude(
   return permissions.some((p) => {
     if (p === '*') return true
     if (p === permission) return true
-    if (p.endsWith(':*')) return permission.startsWith(p.slice(0, -2))
+    // `recurso:*` empareja por recurso EXACTO (no por prefijo de string).
+    if (p.endsWith(':*')) return permission.split(':')[0] === p.slice(0, -2)
     return false
   })
 }

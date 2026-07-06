@@ -301,6 +301,16 @@ export async function assignDriverToRoute(
   routeId: string,
   deliveryUserId: string
 ) {
+  // La ruta debe pertenecer al tenant que la modifica (L8: evita reasignar el
+  // repartidor de una ruta de otro catering conociendo su id).
+  const route = await prisma.deliveryRoute.findFirst({
+    where: { id: routeId, tenantId },
+    select: { id: true },
+  })
+  if (!route) {
+    throw new Error('Ruta no encontrada')
+  }
+
   const driver = await prisma.user.findFirst({
     where: {
       id: deliveryUserId,

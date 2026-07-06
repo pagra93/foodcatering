@@ -21,12 +21,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
     }
 
-    // Verificar permisos
-    const allowedRoles = [
-      'ADMIN_CATERING',
-      'CHEF',
-      'COCINERO',
-    ]
+    // Imprimir etiquetas es exclusivo de ADMIN_CATERING (production:print-labels
+    // solo lo tiene ese rol en el catálogo).
+    const allowedRoles = ['ADMIN_CATERING']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'production:print-labels', allowedRoles)) {
       return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })

@@ -71,6 +71,14 @@ export async function createCateringUserAction(
   })
   if (existing) throw new Error('Ya existe un usuario con ese email')
 
+  // Resolver el rol de sistema para setear roleId (RBAC dinámico). Sin roleId el
+  // usuario se quedaría con permisos del mapa estático y bloqueado del portal (H2).
+  const sysRole = await prisma.role.findFirst({
+    where: { baseRole: data.role as UserRole, isSystem: true, category: 'CATERING' },
+    select: { id: true },
+  })
+  if (!sysRole) throw new Error(`Rol de sistema no encontrado para ${data.role}`)
+
   const passwordHash = await bcryptHash(data.password, 10)
 
   const user = await prisma.user.create({
@@ -80,6 +88,7 @@ export async function createCateringUserAction(
       nameEnc: encryptPII(data.name),
       phoneEnc: data.phone ? encryptPII(data.phone) : null,
       role: data.role as UserRole,
+      roleId: sysRole.id,
       passwordHash,
       status: 'ACTIVE',
     },
@@ -132,6 +141,16 @@ export async function updateCateringUserAction(
     throw new Error('Este usuario no pertenece al catering')
   }
 
+  let roleIdUpdate: string | undefined
+  if (data.role) {
+    const sysRole = await prisma.role.findFirst({
+      where: { baseRole: data.role as UserRole, isSystem: true, category: 'CATERING' },
+      select: { id: true },
+    })
+    if (!sysRole) throw new Error(`Rol de sistema no encontrado para ${data.role}`)
+    roleIdUpdate = sysRole.id
+  }
+
   const updated = await prisma.user.update({
     where: { id: data.userId },
     data: {
@@ -141,6 +160,7 @@ export async function updateCateringUserAction(
         phoneEnc: data.phone ? encryptPII(data.phone) : null,
       }),
       ...(data.role && { role: data.role as UserRole }),
+      ...(roleIdUpdate && { roleId: roleIdUpdate }),
     },
   })
 

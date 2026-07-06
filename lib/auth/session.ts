@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation'
 import type { UserRole } from '@prisma/client'
 import {
   canAccessTenant,
-  permissionsInclude,
+  permittedAction,
   getDashboardPath,
 } from './permissions'
 
@@ -43,10 +43,24 @@ export async function requireRole(allowedRoles: UserRole[]) {
 /**
  * Obtener sesión y verificar permiso
  */
-export async function requirePermission(permission: string) {
+export async function requirePermission(
+  permission: string,
+  legacyRoles: readonly string[] = []
+) {
   const session = await getRequiredSession()
 
-  if (!permissionsInclude(session.user.permissions, permission)) {
+  // Coherente con el middleware y con permittedAction: el super admin siempre
+  // pasa; si la sesión es legacy (sin permissions[]) se cae a legacyRoles.
+  if (session.user.role === 'SUPER_ADMIN') return session
+
+  if (
+    !permittedAction(
+      session.user.permissions,
+      session.user.role,
+      permission,
+      legacyRoles
+    )
+  ) {
     redirect('/unauthorized')
   }
 
