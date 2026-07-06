@@ -41,6 +41,7 @@ declare module 'next-auth' {
     tenantType: TenantType
     mfaEnabled: boolean
     status: string
+    tokenVersion: number
   }
 }
 
@@ -58,6 +59,10 @@ declare module 'next-auth/jwt' {
     tenantId: string
     tenantType: TenantType
     mfaEnabled: boolean
+
+    // Revocación de sesión (H7): versión del token + marca de última revalidación.
+    tokenVersion?: number
+    checkedAt?: number
 
     // Impersonación (opcional)
     impersonationToken?: ImpersonationToken

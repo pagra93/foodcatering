@@ -12,25 +12,15 @@ export {
   RequireAdminCatering,
 } from './RoleGuard'
 
-export {
-  PermissionGuard,
-  RequireAllPermissions,
-  RequireAnyPermission,
-  RequireOrdersCreate,
-  RequireOrdersDelete,
-  RequireEmployeesManage,
-  RequireDishesManage,
-} from './PermissionGuard'
-
-// Helpers para API routes
+// Helpers para API routes (basados en rol/tenant). Los guards basados en el
+// mapa estático de permisos se retiraron (M11): usar permittedAction/permitted
+// con la lista de permisos de la sesión.
 export {
   requireAuth,
   requireRoles,
-  requirePermission,
   requireTenantAccess,
   requireSuperAdmin,
   withAuth,
   withRoles,
-  withPermission,
 } from './api'
 

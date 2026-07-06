@@ -136,6 +136,7 @@ export const authConfig = {
             status: user.status,
             roleId: user.roleId,
             permissions,
+            tokenVersion: user.tokenVersion,
           }
         } catch (error) {
           console.error('Error en authorize:', error)
@@ -162,6 +163,8 @@ export const authConfig = {
         token.mfaEnabled = user.mfaEnabled
         token.roleId = user.roleId
         token.permissions = user.permissions
+        token.tokenVersion = user.tokenVersion
+        token.checkedAt = Date.now()
       }
 
       // Update session (cuando se llama a update())
@@ -196,6 +199,7 @@ export const authConfig = {
                 nameEnc: true,
                 email: true,
                 deletedAt: true,
+                tokenVersion: true,
                 tenant: { select: { type: true } },
               },
             })
@@ -232,6 +236,8 @@ export const authConfig = {
                 targetUser.roleId,
                 targetUser.role
               )
+              token.tokenVersion = targetUser.tokenVersion
+              token.checkedAt = now
             }
           }
         } else if (token.impersonationToken) {
@@ -247,6 +253,7 @@ export const authConfig = {
               role: true,
               roleId: true,
               tenantId: true,
+              tokenVersion: true,
               tenant: { select: { type: true } },
             },
           })
@@ -263,10 +270,59 @@ export const authConfig = {
               originalUser.roleId,
               originalUser.role
             )
+            token.tokenVersion = originalUser.tokenVersion
+            token.checkedAt = Date.now()
           }
           
           // Remover token de impersonación
           delete token.impersonationToken
+        }
+      }
+
+      // H7: revalidación periódica contra BD (throttled) para revocar sesiones.
+      // Sólo en peticiones posteriores (no en el sign-in inicial ni en updates,
+      // que ya refrescan checkedAt). Cubre: usuario deshabilitado/borrado, cambio
+      // de rol/permisos/tenant (se propagan sin re-login), y bump de tokenVersion
+      // (p.ej. cambio de contraseña → invalida las demás sesiones).
+      if (!user && trigger !== 'update') {
+        const THROTTLE_MS = 5 * 60 * 1000
+        const last = token.checkedAt ?? 0
+        if (Date.now() - last > THROTTLE_MS) {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.id },
+            select: {
+              status: true,
+              deletedAt: true,
+              tokenVersion: true,
+              role: true,
+              roleId: true,
+              tenantId: true,
+            },
+          })
+
+          if (!dbUser || dbUser.status !== 'ACTIVE' || dbUser.deletedAt) {
+            return null
+          }
+          if (
+            typeof token.tokenVersion === 'number' &&
+            dbUser.tokenVersion !== token.tokenVersion
+          ) {
+            return null
+          }
+
+          // Propagar rol/permisos/tenant sin re-login. No durante impersonación
+          // activa (esos valores son del usuario impersonado, no del real).
+          if (!token.impersonationToken) {
+            token.role = dbUser.role
+            token.roleId = dbUser.roleId
+            token.tenantId = dbUser.tenantId
+            token.permissions = await resolveUserPermissions(
+              dbUser.roleId,
+              dbUser.role
+            )
+            token.tokenVersion = dbUser.tokenVersion
+          }
+          token.checkedAt = Date.now()
         }
       }
 

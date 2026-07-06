@@ -119,6 +119,7 @@ model User {
   roleId       String?    @map("role_id")
   mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
   status       UserStatus @default(ACTIVE)
+  tokenVersion Int        @default(0) @map("token_version") // se incrementa para invalidar sesiones activas (H7)
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
   deletedAt    DateTime?  @map("deleted_at")
@@ -696,6 +697,7 @@ model AuditLog {
   id        String      @id @default(uuid())
   tenantId  String?     @map("tenant_id") // nullable para acciones root
   actorId   String      @map("actor_id")
+  impersonatorId String? @map("impersonator_id") // admin real si la acción se hizo bajo impersonación (H8)
   action    AuditAction
   entity    String // tabla afectada
   entityId  String      @map("entity_id")

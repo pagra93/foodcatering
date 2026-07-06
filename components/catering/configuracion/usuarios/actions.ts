@@ -245,7 +245,8 @@ export async function resetCateringUserPasswordAction(input: {
 
   await prisma.user.update({
     where: { id: current.id },
-    data: { passwordHash },
+    // tokenVersion++ invalida las sesiones activas del usuario (H7).
+    data: { passwordHash, tokenVersion: { increment: 1 } },
   })
 
   await logAudit({

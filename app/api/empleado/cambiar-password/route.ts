@@ -85,6 +85,8 @@ export async function POST(req: NextRequest) {
       where: { id: user.id },
       data: {
         passwordHash: hashedPassword,
+        // tokenVersion++ invalida las demás sesiones activas (H7).
+        tokenVersion: { increment: 1 },
       },
     })
 

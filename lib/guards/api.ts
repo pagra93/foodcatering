@@ -14,7 +14,7 @@
 
 import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { hasPermission, hasRole, canAccessTenant } from '@/lib/auth/permissions'
+import { hasRole, canAccessTenant } from '@/lib/auth/permissions'
 import type { UserRole } from '@prisma/client'
 
 /**
@@ -42,20 +42,6 @@ export async function requireRoles(allowedRoles: UserRole[]) {
 
   if (!isAllowed) {
     throw new Error('Forbidden: Insufficient role')
-  }
-
-  return session
-}
-
-/**
- * Verifica que el usuario tenga un permiso específico
- * Lanza error 403 si no tiene el permiso
- */
-export async function requirePermission(permission: string) {
-  const session = await requireAuth()
-
-  if (!hasPermission(session.user.role, permission)) {
-    throw new Error(`Forbidden: Missing permission '${permission}'`)
   }
 
   return session
@@ -168,36 +154,4 @@ export function withRoles(allowedRoles: UserRole[], handler: ApiHandler) {
   }
 }
 
-/**
- * Middleware wrapper para API routes con verificación de permiso
- */
-export function withPermission(permission: string, handler: ApiHandler) {
-  return async (req: Request) => {
-    try {
-      const session = await requirePermission(permission)
-      return await handler(req, session)
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.message === 'Unauthorized') {
-          return NextResponse.json(
-            { error: 'No autenticado' },
-            { status: 401 }
-          )
-        }
-        if (error.message.startsWith('Forbidden')) {
-          return NextResponse.json(
-            { error: 'No tienes el permiso necesario' },
-            { status: 403 }
-          )
-        }
-      }
-
-      console.error('[withPermission] Error:', error)
-      return NextResponse.json(
-        { error: 'Error interno del servidor' },
-        { status: 500 }
-      )
-    }
-  }
-}
 
