@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getRoleCategory } from '@/lib/auth/permissions'
+import { checkMaintenance } from '@/lib/auth/maintenance-check'
 
 // Portal multi-tenant con datos por sesión: nunca se prerenderiza en build.
 export const dynamic = 'force-dynamic'
@@ -28,6 +29,8 @@ export default async function AdminLayout({
   if (getRoleCategory(session.user.role) !== 'ROOT') {
     redirect('/unauthorized')
   }
+
+  await checkMaintenance(session.user.role)
 
   // El super admin siempre ve todo el menú, aunque su JWT sea anterior a la
   // resolución de permisos (se actualiza del todo al volver a iniciar sesión).

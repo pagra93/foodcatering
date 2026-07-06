@@ -12,6 +12,7 @@ import { prisma } from '@/lib/db'
 import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
 import { resolveUserPermissions } from './resolve-permissions'
+import { authRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
 
 /**
  * Schema de validación para login
@@ -25,6 +26,11 @@ const loginSchema = z.object({
 // Duplicado deliberado de impersonation.ts#IMPERSONATION_DURATION_MINUTES:
 // importarlo de ahí crearía un ciclo (config → impersonation → @/lib/auth → config).
 const IMPERSONATION_DURATION_MINUTES = 15
+
+// Hash bcrypt señuelo (cacheado) para igualar el tiempo de respuesta del login
+// cuando el usuario no existe (M7 — anti-enumeración por timing). Coste 10 para
+// igualar el de los hashes almacenados hoy.
+let dummyPasswordHash: string | null = null
 
 /**
  * Configuración de NextAuth
@@ -58,12 +64,29 @@ export const authConfig = {
         password: { label: 'Password', type: 'password' },
         tenantSubdomain: { label: 'Tenant', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         try {
           // Validar input
           const { email, password, tenantSubdomain } = loginSchema.parse(
             credentials
           )
+
+          // H6: rate limit de login por IP + email, para frenar fuerza bruta y
+          // credential stuffing dirigido a una cuenta concreta.
+          if (request) {
+            const rl = await authRateLimiter.check(
+              `login:${getRateLimitKey(request)}:${email}`
+            )
+            if (!rl.allowed) return null
+          }
+
+          // bcryptjs se importa dinámicamente (problemas con Edge Runtime).
+          const { compare, hash } = await import('bcryptjs')
+          // M7: hash señuelo (mismo coste) para gastar el mismo tiempo cuando el
+          // usuario no existe y no filtrar por timing qué emails están dados de alta.
+          if (!dummyPasswordHash) {
+            dummyPasswordHash = await hash('timing-guard-placeholder', 10)
+          }
 
           // Buscar usuario
           const user = await prisma.user.findFirst({
@@ -78,17 +101,17 @@ export const authConfig = {
           })
 
           if (!user || !user.passwordHash) {
+            await compare(password, dummyPasswordHash) // M7: tiempo constante
             return null
           }
 
           // Verificar tenant (si se especificó)
           if (tenantSubdomain && user.tenant.subdomain !== tenantSubdomain) {
+            await compare(password, dummyPasswordHash) // M7: tiempo constante
             return null
           }
 
           // Verificar contraseña
-          // Importación dinámica de bcryptjs para evitar problemas con Edge Runtime
-          const { compare } = await import('bcryptjs')
           const isPasswordValid = await compare(password, user.passwordHash)
           if (!isPasswordValid) {
             return null
