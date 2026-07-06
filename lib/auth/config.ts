@@ -22,6 +22,10 @@ const loginSchema = z.object({
   tenantSubdomain: z.string().optional(), // Para multi-tenant
 })
 
+// Duplicado deliberado de impersonation.ts#IMPERSONATION_DURATION_MINUTES:
+// importarlo de ahí crearía un ciclo (config → impersonation → @/lib/auth → config).
+const IMPERSONATION_DURATION_MINUTES = 15
+
 /**
  * Configuración de NextAuth
  */
@@ -141,27 +145,71 @@ export const authConfig = {
       if (trigger === 'update' && session) {
         token.name = session.name
         
-        // Manejar impersonación
+        // Manejar impersonación (endurecido — C1).
+        // El payload de `update()` lo controla el cliente, así que aquí NO se
+        // confía en él salvo para saber A QUIÉN se quiere impersonar. El rol,
+        // el tenant y los permisos se derivan SIEMPRE de la BD, y solo un
+        // SUPER_ADMIN verificado (por el token vigente, firmado por el servidor)
+        // puede impersonar. Esto cierra el bypass por el que cualquier usuario
+        // se autoconcedía SUPER_ADMIN vía useSession().update().
         if (session.impersonationToken) {
-          token.impersonationToken = session.impersonationToken as ImpersonationToken
-          
-          // Sobrescribir datos del usuario con los del usuario impersonado
-          token.id = session.impersonationToken.targetUserId
-          token.role = session.impersonationToken.targetRole
-          token.tenantId = session.impersonationToken.targetTenantId
-          
-          // Cargar datos completos del usuario impersonado
-          const targetUser = await prisma.user.findUnique({
-            where: { id: session.impersonationToken.targetUserId },
-            select: { nameEnc: true, email: true, roleId: true, tenant: { select: { type: true } } },
-          })
+          // Identidad real del token vigente, antes de sobreescribir nada.
+          const realUserId = token.id
+          const realRole = token.role
+          const requestedTargetId = (
+            session.impersonationToken as ImpersonationToken
+          ).targetUserId
 
-          if (targetUser) {
-            token.name = targetUser.nameEnc
-            token.email = targetUser.email
-            token.tenantType = targetUser.tenant.type
-            token.roleId = targetUser.roleId
-            token.permissions = await resolveUserPermissions(targetUser.roleId, token.role)
+          // Guarda 1: solo un super admin real puede impersonar. Si no, se
+          // ignora la petición por completo (no se muta el token).
+          if (realRole === 'SUPER_ADMIN' && requestedTargetId) {
+            const targetUser = await prisma.user.findUnique({
+              where: { id: requestedTargetId },
+              select: {
+                id: true,
+                role: true,
+                tenantId: true,
+                roleId: true,
+                nameEnc: true,
+                email: true,
+                deletedAt: true,
+                tenant: { select: { type: true } },
+              },
+            })
+
+            // Guarda 2/3: el objetivo debe existir, no estar borrado y no ser
+            // otro super admin. Rol/tenant/permisos salen de la BD, nunca del
+            // payload del cliente.
+            if (
+              targetUser &&
+              !targetUser.deletedAt &&
+              targetUser.role !== 'SUPER_ADMIN'
+            ) {
+              const now = Date.now()
+              // Token reconstruido en servidor: la identidad "original" es la
+              // del token vigente verificado, no la que envíe el cliente.
+              token.impersonationToken = {
+                originalUserId: realUserId,
+                originalRole: realRole,
+                targetUserId: targetUser.id,
+                targetRole: targetUser.role,
+                targetTenantId: targetUser.tenantId,
+                startedAt: now,
+                expiresAt: now + IMPERSONATION_DURATION_MINUTES * 60 * 1000,
+              } satisfies ImpersonationToken
+
+              token.id = targetUser.id
+              token.role = targetUser.role
+              token.tenantId = targetUser.tenantId
+              token.tenantType = targetUser.tenant.type
+              token.name = targetUser.nameEnc
+              token.email = targetUser.email
+              token.roleId = targetUser.roleId
+              token.permissions = await resolveUserPermissions(
+                targetUser.roleId,
+                targetUser.role
+              )
+            }
           }
         } else if (token.impersonationToken) {
           // Si se removió el token de impersonación, restaurar usuario original

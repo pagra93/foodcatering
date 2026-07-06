@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
+import { requireSuperAdmin } from '@/lib/auth/require-super-admin'
 import { getCateringById, updateCatering } from '@/lib/db/queries/caterings'
 import { getCateringPlanOptions } from '@/lib/db/queries/admin-plans-taxes'
 import { updateCateringSchema } from '@/lib/validations/catering'
@@ -13,6 +14,8 @@ async function updateCateringAction(
   formData: FormData
 ): Promise<{ error?: string } | void> {
   'use server'
+
+  await requireSuperAdmin('catering:edit')
 
   const get = (k: string) => {
     const v = formData.get(k)

@@ -7,6 +7,7 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
+import { requireSuperAdmin } from '@/lib/auth/require-super-admin'
 import { getCompanyById, updateCompany } from '@/lib/db/queries/companies'
 import { updateCompanySchema } from '@/lib/validations/company'
 import { getAllSaasPlans } from '@/lib/db/queries/admin-plans-taxes'
@@ -14,6 +15,8 @@ import { CompanyForm } from '@/components/admin/companies/CompanyForm'
 
 async function updateCompanyAction(id: string, formData: FormData) {
   'use server'
+
+  await requireSuperAdmin('empresa:edit')
 
   // Construir objeto desde FormData
   const data = {

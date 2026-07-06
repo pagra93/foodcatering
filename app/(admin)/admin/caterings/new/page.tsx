@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getRequiredSession } from '@/lib/auth/session'
+import { requireSuperAdmin } from '@/lib/auth/require-super-admin'
 import {
   CateringWizard,
   type CateringFormData,
@@ -12,6 +13,8 @@ async function createCateringAction(
   data: CateringFormData
 ): Promise<{ error?: string } | void> {
   'use server'
+
+  await requireSuperAdmin('catering:create')
 
   // Mapear los datos del wizard a la forma que espera createCatering.
   const mapped = {

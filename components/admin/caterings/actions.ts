@@ -7,6 +7,7 @@
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
+import { requireSuperAdmin } from '@/lib/auth/require-super-admin'
 
 const addDocumentSchema = z.object({
   type: z.enum(['REGISTRO_SANITARIO', 'RC', 'MANIPULADORES', 'OTROS']),
@@ -23,6 +24,8 @@ export async function addCateringDocument(
   tenantId: string,
   formData: FormData
 ): Promise<{ error?: string; ok?: boolean }> {
+  await requireSuperAdmin('catering:add-document')
+
   const parsed = addDocumentSchema.safeParse({
     type: formData.get('type'),
     fileUrl: formData.get('fileUrl'),
@@ -71,6 +74,8 @@ export async function setCateringStatus(
   tenantId: string,
   status: 'ACTIVE' | 'SUSPENDED'
 ): Promise<{ error?: string; ok?: boolean }> {
+  await requireSuperAdmin('catering:edit-status')
+
   const tenant = await prisma.tenant.findFirst({
     where: { id: tenantId, type: 'CATERING' },
     select: { id: true },
