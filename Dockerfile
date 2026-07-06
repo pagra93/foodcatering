@@ -72,6 +72,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 # Prisma schema + migrations (el entrypoint ejecuta `prisma migrate deploy`)
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 
+# Script de migración de datos de seguridad (una sola vez, ejecutable con `node`
+# desde la terminal de Coolify: `ALLOW_PROD=1 node scripts/prod-seguridad-migracion.mjs`)
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/prod-seguridad-migracion.mjs ./scripts/prod-seguridad-migracion.mjs
+
 # node_modules solo con prod deps (incluye CLI de `prisma` porque lo movimos
 # a dependencies). Reemplaza el node_modules que trae el standalone por uno
 # completo de prod — así `prisma migrate deploy` encuentra el binario.
