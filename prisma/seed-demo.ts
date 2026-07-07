@@ -524,7 +524,6 @@ async function main() {
   await prisma.dishRating.deleteMany({ where: { tenantEmpresa: empresaTenant.id } })
   await prisma.orderRating.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
   await prisma.deliveryProof.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
-  await prisma.deliveryEvent.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
   await prisma.orderHistory.deleteMany({ where: { order: { tenantEmpresa: empresaTenant.id } } })
   await prisma.invoiceLine.deleteMany({ where: { invoice: { tenantEmpresa: empresaTenant.id } } })
   await prisma.invoice.deleteMany({ where: { tenantEmpresa: empresaTenant.id } })

@@ -11,7 +11,6 @@ export const RETENTION_ENTITY_LABEL: Record<RetentionEntity, string> = {
   Invoice: 'Facturas',
   User: 'Usuarios dados de baja',
   Notification: 'Notificaciones',
-  DailySnapshot: 'Snapshots diarios fiscales',
   Incident: 'Incidencias',
   OrderHistory: 'Historial de pedidos',
   DeliveryProof: 'Justificantes de entrega',
@@ -30,7 +29,6 @@ export const RETENTION_DEFAULTS: Record<
   Invoice: { days: 1825, mode: 'SOFT' }, // 5 años fiscal
   User: { days: 365, mode: 'SOFT' }, // 1 año tras baja
   Notification: { days: 90, mode: 'HARD' }, // 3 meses
-  DailySnapshot: { days: 1460, mode: 'SOFT' }, // 4 años IRPF
   Incident: { days: 1095, mode: 'SOFT' }, // 3 años
   OrderHistory: { days: 1825, mode: 'SOFT' }, // mismo que Order
   DeliveryProof: { days: 1825, mode: 'SOFT' }, // mismo que Order
