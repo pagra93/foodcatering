@@ -11,7 +11,7 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import type { Prisma, DishCourse } from '@prisma/client'
+import { Prisma, type DishCourse } from '@prisma/client'
 import { subDays, startOfDay } from 'date-fns'
 import { dishesFromSelection } from '@/lib/ratings/selection'
 
@@ -81,31 +81,93 @@ async function summaryFor(
   }
 }
 
-/** Tendencia mensual (YYYY-MM) a partir de las filas del `where` dado. */
+/** Ámbito de valoraciones (siempre acotado por tenant/plato, nunca abierto). */
+type RatingScope = {
+  tenantCatering?: string
+  tenantEmpresa?: string
+  dishId?: string
+}
+
+/** Media mensual sin redondear, tal cual sale de BD. */
+type RawMonthPoint = { period: string; average: number; count: number }
+
+/** Condiciones SQL parametrizadas para un scope (filtros ligados, sin interpolar). */
+function scopeConds(scope: RatingScope, from: Date): Prisma.Sql[] {
+  const conds: Prisma.Sql[] = [Prisma.sql`service_date >= ${from}`]
+  if (scope.tenantCatering)
+    conds.push(Prisma.sql`tenant_catering = ${scope.tenantCatering}`)
+  if (scope.tenantEmpresa)
+    conds.push(Prisma.sql`tenant_empresa = ${scope.tenantEmpresa}`)
+  if (scope.dishId) conds.push(Prisma.sql`dish_id = ${scope.dishId}`)
+  return conds
+}
+
+/**
+ * Tendencia mensual (YYYY-MM) agregada en BD con `date_trunc` (L12: antes se
+ * traían todas las filas y se agrupaban en memoria).
+ */
 async function trendByMonth(
-  where: Prisma.DishRatingWhereInput,
+  scope: RatingScope,
   months = 6
 ): Promise<TrendPoint[]> {
   const from = startOfDay(subDays(new Date(), months * 31))
-  const rows = await prisma.dishRating.findMany({
-    where: { ...where, serviceDate: { gte: from } },
-    select: { serviceDate: true, rating: true },
-  })
-  const buckets = new Map<string, { sum: number; count: number }>()
+  const rows = await prisma.$queryRaw<
+    { period: string; average: number; count: bigint }[]
+  >(Prisma.sql`
+    SELECT to_char(date_trunc('month', service_date), 'YYYY-MM') AS period,
+           AVG(rating)::float AS average,
+           COUNT(*)::bigint AS count
+    FROM dish_ratings
+    WHERE ${Prisma.join(scopeConds(scope, from), ' AND ')}
+    GROUP BY 1
+    ORDER BY 1
+  `)
+  return rows.map((r) => ({
+    period: r.period,
+    average: round1(r.average),
+    count: Number(r.count),
+  }))
+}
+
+/**
+ * Medias mensuales agregadas en BD agrupadas por una columna del allowlist
+ * (`dish_id` | `tenant_catering`) + mes. Devuelve un Map keyed por esa columna
+ * con sus puntos mensuales ordenados. Sustituye el bucketing en memoria (L12).
+ */
+async function monthlyBucketsBy(
+  groupCol: 'dish_id' | 'tenant_catering',
+  sinceDays: number,
+  scope: RatingScope = {}
+): Promise<Map<string, RawMonthPoint[]>> {
+  const from = startOfDay(subDays(new Date(), sinceDays))
+  const col = Prisma.raw(groupCol) // literal del allowlist, sin input externo
+  const rows = await prisma.$queryRaw<
+    { key: string; period: string; average: number; count: bigint }[]
+  >(Prisma.sql`
+    SELECT ${col} AS key,
+           to_char(date_trunc('month', service_date), 'YYYY-MM') AS period,
+           AVG(rating)::float AS average,
+           COUNT(*)::bigint AS count
+    FROM dish_ratings
+    WHERE ${Prisma.join(scopeConds(scope, from), ' AND ')}
+    GROUP BY ${col}, 2
+    ORDER BY ${col}, 2
+  `)
+  const map = new Map<string, RawMonthPoint[]>()
   for (const r of rows) {
-    const key = r.serviceDate.toISOString().slice(0, 7) // YYYY-MM
-    const b = buckets.get(key) ?? { sum: 0, count: 0 }
-    b.sum += r.rating
-    b.count += 1
-    buckets.set(key, b)
+    const arr = map.get(r.key) ?? []
+    arr.push({ period: r.period, average: r.average, count: Number(r.count) })
+    map.set(r.key, arr)
   }
-  return [...buckets.entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([period, b]) => ({
-      period,
-      average: round1(b.sum / b.count),
-      count: b.count,
-    }))
+  return map
+}
+
+/** Delta de la media entre los dos últimos meses con datos (o null). */
+function trendDeltaOf(points: RawMonthPoint[] | undefined): number | null {
+  if (!points || points.length < 2) return null
+  const last = points[points.length - 1]!
+  const prev = points[points.length - 2]!
+  return round1(last.average - prev.average)
 }
 
 /** Top/bottom platos para un `where` dado (mín. `minCount` valoraciones). */
@@ -249,9 +311,8 @@ export type DishRow = {
 export async function getCateringDishTable(
   tenantCatering: string
 ): Promise<DishRow[]> {
-  const from62 = startOfDay(subDays(new Date(), 62))
   const where = { tenantCatering }
-  const [base, dist, lastRows, trendRows] = await Promise.all([
+  const [base, dist, lastRows, trendByDish] = await Promise.all([
     prisma.dishRating.groupBy({
       by: ['dishId', 'course'],
       where,
@@ -260,10 +321,7 @@ export async function getCateringDishTable(
     }),
     prisma.dishRating.groupBy({ by: ['dishId', 'rating'], where, _count: true }),
     prisma.dishRating.groupBy({ by: ['dishId'], where, _max: { createdAt: true } }),
-    prisma.dishRating.findMany({
-      where: { ...where, serviceDate: { gte: from62 } },
-      select: { dishId: true, serviceDate: true, rating: true },
-    }),
+    monthlyBucketsBy('dish_id', 62, { tenantCatering }),
   ])
   if (base.length === 0) return []
 
@@ -286,40 +344,18 @@ export async function getCateringDishTable(
 
   const lastByDish = new Map(lastRows.map((l) => [l.dishId, l._max.createdAt]))
 
-  // Tendencia: bucket por plato→mes, delta de los 2 últimos meses con datos.
-  const monthByDish = new Map<string, Map<string, { sum: number; count: number }>>()
-  for (const r of trendRows) {
-    const month = r.serviceDate.toISOString().slice(0, 7)
-    const m = monthByDish.get(r.dishId) ?? new Map()
-    const b = m.get(month) ?? { sum: 0, count: 0 }
-    b.sum += r.rating
-    b.count += 1
-    m.set(month, b)
-    monthByDish.set(r.dishId, m)
-  }
-
   return base
-    .map((b) => {
-      const months = [...(monthByDish.get(b.dishId)?.entries() ?? [])].sort(
-        ([a], [z]) => a.localeCompare(z)
-      )
-      const last = months[months.length - 1]
-      const prev = months[months.length - 2]
-      const trendDelta =
-        last && prev
-          ? round1(last[1].sum / last[1].count - prev[1].sum / prev[1].count)
-          : null
-      return {
-        dishId: b.dishId,
-        name: names.get(b.dishId) ?? 'Plato eliminado',
-        course: b.course,
-        average: round1(b._avg.rating ?? 0),
-        count: b._count,
-        distribution: distByDish.get(b.dishId) ?? emptyDistribution(),
-        trendDelta,
-        lastRatedAt: lastByDish.get(b.dishId) ?? null,
-      }
-    })
+    .map((b) => ({
+      dishId: b.dishId,
+      name: names.get(b.dishId) ?? 'Plato eliminado',
+      course: b.course,
+      average: round1(b._avg.rating ?? 0),
+      count: b._count,
+      distribution: distByDish.get(b.dishId) ?? emptyDistribution(),
+      // Delta de los 2 últimos meses con datos (agregado en BD).
+      trendDelta: trendDeltaOf(trendByDish.get(b.dishId)),
+      lastRatedAt: lastByDish.get(b.dishId) ?? null,
+    }))
     .sort((a, z) => z.average - a.average)
 }
 
@@ -447,9 +483,8 @@ export async function getReputationOverview(): Promise<{
   caterings: CateringReputationRow[]
 }> {
   const from30 = startOfDay(subDays(new Date(), 30))
-  const from62 = startOfDay(subDays(new Date(), 62))
 
-  const [global, base, dist, byCompany, byDish, base30, trendRows] =
+  const [global, base, dist, byCompany, byDish, base30, trendByCat] =
     await Promise.all([
       summaryFor({}),
       prisma.dishRating.groupBy({
@@ -477,10 +512,7 @@ export async function getReputationOverview(): Promise<{
         _count: true,
         where: { serviceDate: { gte: from30 } },
       }),
-      prisma.dishRating.findMany({
-        where: { serviceDate: { gte: from62 } },
-        select: { tenantCatering: true, serviceDate: true, rating: true },
-      }),
+      monthlyBucketsBy('tenant_catering', 62),
     ])
 
   // Nombres de tenants (caterings + empresas) y platos, en lote.
@@ -533,18 +565,6 @@ export async function getReputationOverview(): Promise<{
   // 30 días por catering.
   const base30ByCat = new Map(base30.map((b) => [b.tenantCatering, b]))
 
-  // Tendencia: bucket por catering→mes, delta últimos 2 meses con datos.
-  const monthByCat = new Map<string, Map<string, { sum: number; count: number }>>()
-  for (const r of trendRows) {
-    const month = r.serviceDate.toISOString().slice(0, 7)
-    const m = monthByCat.get(r.tenantCatering) ?? new Map()
-    const b = m.get(month) ?? { sum: 0, count: 0 }
-    b.sum += r.rating
-    b.count += 1
-    m.set(month, b)
-    monthByCat.set(r.tenantCatering, m)
-  }
-
   const caterings: CateringReputationRow[] = base
     .map((b) => {
       const cat = b.tenantCatering
@@ -554,15 +574,8 @@ export async function getReputationOverview(): Promise<{
       const dishes = dishesByCat.get(cat) ?? []
       const b30 = base30ByCat.get(cat)
 
-      const months = [...(monthByCat.get(cat)?.entries() ?? [])].sort(
-        ([a], [z]) => a.localeCompare(z)
-      )
-      const last = months[months.length - 1]
-      const prev = months[months.length - 2]
-      const trendDelta =
-        last && prev
-          ? round1(last[1].sum / last[1].count - prev[1].sum / prev[1].count)
-          : null
+      // Delta de los 2 últimos meses con datos (agregado en BD).
+      const trendDelta = trendDeltaOf(trendByCat.get(cat))
 
       return {
         tenantId: cat,
