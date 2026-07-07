@@ -1,6 +1,6 @@
 /**
  * Tab de Usuarios & Permisos para Caterings
- * Incluye: Lista de usuarios, Roles, MFA, Últimos accesos, Impersonación
+ * Incluye: Lista de usuarios, Roles, Últimos accesos, Impersonación
  */
 
 'use client'
@@ -18,7 +18,6 @@ import {
   XCircle,
   UserCog,
   Mail,
-  AlertCircle,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -104,8 +103,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
   // Calcular KPIs
   const totalUsers = users.length
   const activeUsers = users.filter((u) => u.status === 'ACTIVE').length
-  const mfaEnabledUsers = users.filter((u) => u.mfaEnabled).length
-  const mfaPercentage = totalUsers > 0 ? ((mfaEnabledUsers / totalUsers) * 100).toFixed(0) : 0
 
   // Helper para obtener info del rol
   const getRoleInfo = (role: string) => {
@@ -131,7 +128,7 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
       </div>
 
       {/* KPIs */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card className="border-0 shadow-sm">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -152,32 +149,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
                 <p className="text-2xl font-bold text-green-600">{activeUsers}</p>
               </div>
               <CheckCircle2 className="h-8 w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">MFA Activado</p>
-                <p className="text-2xl font-bold text-primary">
-                  {mfaEnabledUsers}/{totalUsers}
-                </p>
-              </div>
-              <Shield className="h-8 w-8 text-muted-foreground" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-0 shadow-sm">
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-500">% Seguridad</p>
-                <p className="text-2xl font-bold text-gray-900">{mfaPercentage}%</p>
-              </div>
-              <Key className="h-8 w-8 text-orange-400" />
             </div>
           </CardContent>
         </Card>
@@ -272,7 +243,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
               <TableRow>
                 <TableHead>Usuario</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead>MFA</TableHead>
                 <TableHead>Último Acceso</TableHead>
                 <TableHead>Estado</TableHead>
               </TableRow>
@@ -281,7 +251,7 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
               {filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={5}
+                    colSpan={4}
                     className="h-24 text-center text-gray-500"
                   >
                     <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
@@ -307,19 +277,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
                       >
                         {getRoleInfo(user.role).label}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.mfaEnabled ? (
-                        <div className="flex items-center gap-1 text-green-600">
-                          <Shield className="h-4 w-4" />
-                          <span className="text-sm font-medium">Activo</span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1 text-gray-400">
-                          <AlertCircle className="h-4 w-4" />
-                          <span className="text-sm">Inactivo</span>
-                        </div>
-                      )}
                     </TableCell>
                     <TableCell>
                       {user.lastLoginAt ? (
@@ -356,7 +313,7 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
         </CardContent>
       </Card>
 
-      {/* Seguridad y MFA */}
+      {/* Seguridad y accesos */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="border-b border-gray-100">
           <CardTitle className="text-base font-semibold text-gray-900 flex items-center gap-2">
@@ -366,23 +323,6 @@ export function UsersPermissionsTab({ users: propUsers, cateringId: _cateringId 
         </CardHeader>
         <CardContent className="pt-6">
           <div className="space-y-4">
-            <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-primary mt-0.5" />
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-primary">
-                    Autenticación Multi-Factor (MFA)
-                  </h4>
-                  <p className="text-xs text-primary mt-1">
-                    Se recomienda activar MFA para todos los usuarios, especialmente
-                    Administradores y roles con acceso a datos sensibles. Actualmente{' '}
-                    <strong>{mfaEnabledUsers} de {totalUsers}</strong> usuarios tienen
-                    MFA activado ({mfaPercentage}%).
-                  </p>
-                </div>
-              </div>
-            </div>
-
             <div className="p-4 bg-primary/10 rounded-lg border border-primary/30">
               <div className="flex items-start gap-3">
                 <UserCog className="h-5 w-5 text-primary mt-0.5" />

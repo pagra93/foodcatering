@@ -398,10 +398,7 @@ async function CompanyDetailData({ id }: { id: string }) {
                     <Badge variant="outline" className="text-xs">
                       {user.role}
                     </Badge>
-                    {user.mfaEnabled && (
-                      <Badge variant="success" className="text-xs">MFA</Badge>
-                    )}
-                    <Badge 
+                    <Badge
                       variant={user.status === 'ACTIVE' ? 'success' : 'secondary'}
                       className="text-xs"
                     >

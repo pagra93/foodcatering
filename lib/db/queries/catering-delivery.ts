@@ -8,6 +8,10 @@
 import { prisma } from '@/lib/db/prisma'
 import type { ConfirmDeliveryInput, ReportIncidentInput } from '@/lib/validations/delivery'
 import { createHash } from 'crypto'
+import {
+  computeOrderIntegrityHash,
+  recordOrderHistory,
+} from '@/lib/db/queries/order-history'
 
 function computeProofHash(orderId: string, deliveredAt: Date, proofType: string): string {
   return createHash('sha256')
@@ -35,13 +39,42 @@ export async function confirmDelivery(tenantId: string, data: ConfirmDeliveryInp
       throw new Error('El pedido ya fue entregado')
     }
 
+    const newVersion = order.version + 1
+    const integrityHash = computeOrderIntegrityHash({
+      tenantEmpresa: order.tenantEmpresa,
+      tenantCatering: order.tenantCatering,
+      employeeId: order.employeeId,
+      siteId: order.siteId,
+      serviceDate: order.serviceDate,
+      selection: order.selection,
+      price: order.price,
+      menuType: order.menuType,
+      status: 'DELIVERED',
+      version: newVersion,
+    })
+
     const updatedOrder = await tx.order.update({
       where: { id: data.orderId },
       data: {
         status: 'DELIVERED',
         statusChangedAt: new Date(),
+        version: newVersion,
+        integrityHash,
       },
     })
+
+    await recordOrderHistory(
+      tx,
+      {
+        orderId: order.id,
+        version: newVersion,
+        changedBy: 'DELIVERY',
+        changeReason: 'DELIVERY_MARK',
+        prevValues: { status: order.status },
+        newValues: { status: 'DELIVERED' },
+      },
+      integrityHash
+    )
 
     await tx.deliveryProof.create({
       data: {
@@ -116,13 +149,42 @@ export async function reportDeliveryIncident(
       },
     })
 
+    const newVersion = order.version + 1
+    const integrityHash = computeOrderIntegrityHash({
+      tenantEmpresa: order.tenantEmpresa,
+      tenantCatering: order.tenantCatering,
+      employeeId: order.employeeId,
+      siteId: order.siteId,
+      serviceDate: order.serviceDate,
+      selection: order.selection,
+      price: order.price,
+      menuType: order.menuType,
+      status: 'ISSUE_REPORTED',
+      version: newVersion,
+    })
+
     await tx.order.update({
       where: { id: data.orderId },
       data: {
         status: 'ISSUE_REPORTED',
         statusChangedAt: new Date(),
+        version: newVersion,
+        integrityHash,
       },
     })
+
+    await recordOrderHistory(
+      tx,
+      {
+        orderId: order.id,
+        version: newVersion,
+        changedBy: reportedByUserId ?? 'DELIVERY',
+        changeReason: 'SYSTEM_ADJUSTMENT',
+        prevValues: { status: order.status },
+        newValues: { status: 'ISSUE_REPORTED' },
+      },
+      integrityHash
+    )
 
     if (order.routeId) {
       await tx.deliveryRouteEvent.create({

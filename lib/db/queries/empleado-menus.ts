@@ -7,6 +7,10 @@ import { prisma } from '@/lib/db/prisma'
 import { startOfWeek, endOfWeek, addDays, format, startOfDay, endOfDay } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { parseDietPrefs } from '@/lib/types/diet-prefs'
+import {
+  computeOrderIntegrityHash,
+  recordOrderHistory,
+} from '@/lib/db/queries/order-history'
 
 function parseCutoffTime(cutoff: string): { hours: number; minutes: number } {
   const [hStr, mStr] = cutoff.split(':')
@@ -429,15 +433,56 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   })
 
   if (existingOrder) {
-    // Actualizar pedido existente
-    return prisma.order.update({
-      where: { id: existingOrder.id },
-      data: {
-        selection,
-        price: totalPrice,
-        status: 'CONFIRMED',
-        updatedAt: new Date(),
-      },
+    // Actualizar pedido existente (nueva versión + hash de contenido real).
+    const newVersion = existingOrder.version + 1
+    const integrityHash = computeOrderIntegrityHash({
+      tenantEmpresa: existingOrder.tenantEmpresa,
+      tenantCatering: existingOrder.tenantCatering,
+      employeeId: existingOrder.employeeId,
+      siteId: existingOrder.siteId,
+      serviceDate: existingOrder.serviceDate,
+      selection,
+      price: totalPrice,
+      menuType: existingOrder.menuType,
+      status: 'CONFIRMED',
+      version: newVersion,
+    })
+
+    return prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id: existingOrder.id },
+        data: {
+          selection,
+          price: totalPrice,
+          status: 'CONFIRMED',
+          version: newVersion,
+          lastModifiedBy: employee.userId,
+          integrityHash,
+        },
+      })
+
+      await recordOrderHistory(
+        tx,
+        {
+          orderId: updated.id,
+          version: newVersion,
+          changedBy: employee.userId,
+          changeReason: 'USER_EDIT',
+          prevValues: {
+            selection: existingOrder.selection,
+            price: String(existingOrder.price),
+            status: existingOrder.status,
+          },
+          newValues: {
+            selection,
+            price: String(totalPrice),
+            status: 'CONFIRMED',
+          },
+        },
+        integrityHash
+      )
+
+      return updated
     })
   } else {
     // Crear nuevo pedido
@@ -456,21 +501,56 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
       throw new Error('La empresa no tiene catering asignado')
     }
 
-    return prisma.order.create({
-      data: {
-        employeeId,
-        tenantEmpresa: employee.tenantId,
-        tenantCatering,
-        siteId: employee.siteId,
-        serviceDate: date,
-        menuType: 'FULL',
-        selection,
-        price: totalPrice,
-        status: 'CONFIRMED',
-        createdBy: employee.userId,
-        lastModifiedBy: employee.userId,
-        integrityHash: `hash-${Date.now()}-${Math.random()}`,
-      },
+    const integrityHash = computeOrderIntegrityHash({
+      tenantEmpresa: employee.tenantId,
+      tenantCatering,
+      employeeId,
+      siteId: employee.siteId,
+      serviceDate: date,
+      selection,
+      price: totalPrice,
+      menuType: 'FULL',
+      status: 'CONFIRMED',
+      version: 1,
+    })
+
+    return prisma.$transaction(async (tx) => {
+      const created = await tx.order.create({
+        data: {
+          employeeId,
+          tenantEmpresa: employee.tenantId,
+          tenantCatering,
+          siteId: employee.siteId,
+          serviceDate: date,
+          menuType: 'FULL',
+          selection,
+          price: totalPrice,
+          status: 'CONFIRMED',
+          createdBy: employee.userId,
+          lastModifiedBy: employee.userId,
+          version: 1,
+          integrityHash,
+        },
+      })
+
+      await recordOrderHistory(
+        tx,
+        {
+          orderId: created.id,
+          version: 1,
+          changedBy: employee.userId,
+          changeReason: 'USER_EDIT',
+          prevValues: null,
+          newValues: {
+            selection,
+            price: String(totalPrice),
+            status: 'CONFIRMED',
+          },
+        },
+        integrityHash
+      )
+
+      return created
     })
   }
 }
@@ -522,13 +602,47 @@ export async function cancelOrder(employeeId: string, orderId: string) {
     throw new Error('No se puede cancelar después del cutoff')
   }
 
-  // Cancelar pedido
-  return prisma.order.update({
-    where: { id: orderId },
-    data: {
-      status: 'CANCELLED_BEFORE_CUTOFF',
-      updatedAt: new Date(),
-    },
+  // Cancelar pedido (nueva versión + hash real + fila de historial).
+  const newVersion = order.version + 1
+  const integrityHash = computeOrderIntegrityHash({
+    tenantEmpresa: order.tenantEmpresa,
+    tenantCatering: order.tenantCatering,
+    employeeId: order.employeeId,
+    siteId: order.siteId,
+    serviceDate: order.serviceDate,
+    selection: order.selection,
+    price: order.price,
+    menuType: order.menuType,
+    status: 'CANCELLED_BEFORE_CUTOFF',
+    version: newVersion,
+  })
+
+  return prisma.$transaction(async (tx) => {
+    const cancelled = await tx.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'CANCELLED_BEFORE_CUTOFF',
+        statusChangedAt: new Date(),
+        version: newVersion,
+        lastModifiedBy: employee.userId,
+        integrityHash,
+      },
+    })
+
+    await recordOrderHistory(
+      tx,
+      {
+        orderId: cancelled.id,
+        version: newVersion,
+        changedBy: employee.userId,
+        changeReason: 'CANCEL_BEFORE_CUTOFF',
+        prevValues: { status: order.status },
+        newValues: { status: 'CANCELLED_BEFORE_CUTOFF' },
+      },
+      integrityHash
+    )
+
+    return cancelled
   })
 }
 
