@@ -382,14 +382,31 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     throw new Error('No se pueden realizar cambios después del cutoff')
   }
 
-  // Calcular precio total
+  // Calcular precio total — los platos deben pertenecer a un catering asignado
+  // (activo) a la empresa del empleado (L9: evita meter platos de otro catering
+  // manipulando los ids).
+  const requestedDishIds = [
+    selection.starterId,
+    selection.mainId,
+    selection.dessertId,
+  ].filter(Boolean) as string[]
+
+  const assignments = await prisma.companyCateringAssignment.findMany({
+    where: { companyId: employee.site.company.id, active: true },
+    select: { tenantCatering: true },
+  })
+  const allowedCateringTenants = assignments.map((a) => a.tenantCatering)
+
   const dishes = await prisma.dish.findMany({
     where: {
-      id: {
-        in: [selection.starterId, selection.mainId, selection.dessertId].filter(Boolean) as string[],
-      },
+      id: { in: requestedDishIds },
+      tenantId: { in: allowedCateringTenants },
     },
   })
+
+  if (dishes.length !== requestedDishIds.length) {
+    throw new Error('Algún plato no está disponible en tu catering asignado')
+  }
 
   const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.basePrice), 0)
 
