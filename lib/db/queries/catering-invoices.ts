@@ -455,6 +455,32 @@ export async function updateInvoiceStatus(
       throw new Error('Factura no encontrada')
     }
 
+    // Máquina de estados (M1): 'PAID' solo por la ruta de pago (markInvoiceAsPaid,
+    // que fija paidAt y bloquea el doble pago); no se reabren facturas en estado
+    // terminal (PAID/CANCELLED/VOID). Antes se aceptaba cualquier estado.
+    if (status === 'PAID') {
+      throw new Error(
+        'Para marcar como pagada usa la acción de pago, no el cambio de estado.'
+      )
+    }
+    const allowedNext: Record<string, string[]> = {
+      DRAFT: ['ISSUED', 'SENT', 'CANCELLED', 'VOID'],
+      ISSUED: ['SENT', 'OVERDUE', 'CANCELLED', 'VOID'],
+      SENT: ['OVERDUE', 'CANCELLED', 'VOID'],
+      OVERDUE: ['SENT', 'CANCELLED', 'VOID'],
+      PAID: [],
+      CANCELLED: [],
+      VOID: [],
+    }
+    if (
+      status !== invoice.status &&
+      !(allowedNext[invoice.status] ?? []).includes(status)
+    ) {
+      throw new Error(
+        `Transición de estado no permitida: ${invoice.status} → ${status}`
+      )
+    }
+
     const updated = await tx.invoice.update({
       where: { id: invoiceId },
       data: {

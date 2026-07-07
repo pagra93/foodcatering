@@ -65,7 +65,10 @@ export const getCompanyEntitlements = cache(
     })
 
     const plan = company?.saasPlan
-    if (!plan) return defaultEntitlements()
+    // Sin plan, o con el plan DESACTIVADO, la empresa solo tiene las features
+    // core (M2: un plan desactivado deja de dar acceso premium gratis; queda
+    // alineado con la facturación, que solo factura planes activos).
+    if (!plan || !plan.active) return defaultEntitlements()
 
     // Las core están siempre; el resto salen del plan.
     const features = new Set<string>(EMPRESA_CORE_KEYS)

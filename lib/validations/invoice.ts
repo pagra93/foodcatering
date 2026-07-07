@@ -50,7 +50,9 @@ export const invoiceFiltersSchema = z.object({
  * Schema para actualizar estado de factura
  */
 export const updateInvoiceStatusSchema = z.object({
-  status: z.enum(['DRAFT', 'SENT', 'PAID', 'OVERDUE', 'CANCELLED'], {
+  // 'PAID' se excluye a propósito: marcar como pagada va por la ruta /pagar
+  // (markInvoiceAsPaid), que fija paidAt y evita el doble pago (M1).
+  status: z.enum(['DRAFT', 'ISSUED', 'SENT', 'OVERDUE', 'CANCELLED', 'VOID'], {
     required_error: 'El estado es obligatorio',
   }),
   notes: z.string().max(1000).optional().nullable(),
