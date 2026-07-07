@@ -61,21 +61,24 @@ export const EMAIL_TEMPLATES: EmailTemplateMeta[] = [
     name: 'Invitación de empleado',
     description: 'Invita a un empleado a unirse a su empresa.',
     status: 'pending',
-    trigger: 'Pendiente de cablear al flujo de invitaciones.',
+    trigger:
+      'Bloqueada: falta la página de aceptación de invitación (consumir el token y fijar contraseña). El diseño está listo.',
   },
   {
     id: 'invoice-issued',
     name: 'Factura emitida',
     description: 'Avisa de una nueva factura con importe y vencimiento.',
-    status: 'pending',
-    trigger: 'Pendiente de cablear a facturación.',
+    status: 'active',
+    trigger:
+      'Al marcar una factura como "enviada". Va al email de contacto de la empresa.',
   },
   {
     id: 'incident-reported',
     name: 'Incidencia registrada',
     description: 'Avisa de una incidencia abierta en un pedido.',
-    status: 'pending',
-    trigger: 'Pendiente de cablear a incidencias.',
+    status: 'active',
+    trigger:
+      'Al reportar una incidencia de entrega. Va al email de contacto de la empresa.',
   },
   {
     id: 'generic-notification',

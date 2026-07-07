@@ -13,6 +13,8 @@
 import { prisma } from '@/lib/db/prisma'
 import { Prisma } from '@prisma/client'
 import type { GenerateInvoiceInput, InvoiceFilters } from '@/lib/validations/invoice'
+import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
+import { invoiceIssuedEmail } from '@/lib/email/templates'
 import {
   generateInvoiceNumber,
   calculateInvoiceHash,
@@ -446,7 +448,7 @@ export async function updateInvoiceStatus(
   actorUserId: string,
   notes?: string
 ) {
-  return prisma.$transaction(async (tx) => {
+  const { result, becameSent } = await prisma.$transaction(async (tx) => {
     const invoice = await tx.invoice.findFirst({
       where: { id: invoiceId, tenantCatering: tenantId },
     })
@@ -454,6 +456,9 @@ export async function updateInvoiceStatus(
     if (!invoice) {
       throw new Error('Factura no encontrada')
     }
+
+    // Notificar a la empresa solo la PRIMERA vez que la factura pasa a "enviada".
+    const becameSent = status === 'SENT' && invoice.status !== 'SENT'
 
     // Máquina de estados (M1): 'PAID' solo por la ruta de pago (markInvoiceAsPaid,
     // que fija paidAt y bloquea el doble pago); no se reabren facturas en estado
@@ -506,12 +511,44 @@ export async function updateInvoiceStatus(
     })
 
     return {
-      ...updated,
-      subtotal: Number(updated.subtotal),
-      taxAmount: Number(updated.taxAmount),
-      total: Number(updated.total),
+      result: {
+        ...updated,
+        subtotal: Number(updated.subtotal),
+        taxAmount: Number(updated.taxAmount),
+        total: Number(updated.total),
+      },
+      becameSent,
     }
   })
+
+  // Aviso de factura emitida a la empresa (fuera de la tx; no bloquea el cambio
+  // de estado si el envío falla).
+  if (becameSent) {
+    const company = await prisma.company.findFirst({
+      where: result.companyId
+        ? { id: result.companyId }
+        : { tenantId: result.tenantEmpresa },
+      select: { contactFinanceEmail: true, contactRrhhEmail: true },
+    })
+    const to = company?.contactFinanceEmail ?? company?.contactRrhhEmail
+    if (to) {
+      const email = invoiceIssuedEmail({
+        number: result.number,
+        period: result.period,
+        amount: result.total,
+        dueDate: result.dueDate.toLocaleDateString('es-ES'),
+        url: `${getAppBaseUrl()}/empresa/facturacion`,
+      })
+      await sendEmail({
+        to,
+        subject: email.subject,
+        html: email.html,
+        text: email.text,
+      })
+    }
+  }
+
+  return result
 }
 
 /**
