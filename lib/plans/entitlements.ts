@@ -29,14 +29,19 @@ export type CompanyEntitlements = {
   }
 }
 
-/** Entitlements por defecto si la empresa no tiene plan (no bloquear por config). */
+/**
+ * Entitlements para una empresa SIN plan (o con plan inactivo). Fail-closed
+ * (M4): solo features core y cuotas a 0 — no se puede crecer sin un plan. Como
+ * el plan es obligatorio al crear, este caso es un borde de seguridad; antes
+ * daba límites ilimitados (fail-open).
+ */
 function defaultEntitlements(): CompanyEntitlements {
   return {
     planId: null,
     planCode: null,
     planName: null,
     features: new Set(EMPRESA_CORE_KEYS),
-    limits: { maxEmployees: null, maxSites: null, maxCaterings: null },
+    limits: { maxEmployees: 0, maxSites: 0, maxCaterings: 0 },
   }
 }
 

@@ -212,6 +212,14 @@ export async function generateMonthBillingAction(input: {
     }
 
     const subtotal = Number(plan.monthlyPrice)
+    // M3: no emitir facturas de 0€ (p.ej. un plan con precio anual y monthlyPrice=0).
+    // La facturación de planes ANUALES por mes de aniversario (opción elegida) se
+    // implementará como feature cuando se ofrezcan planes anuales — hoy todos los
+    // planes en uso son mensuales, así que no hay nada mal facturado por esto.
+    if (subtotal <= 0) {
+      saasSkipped++
+      continue
+    }
     const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
     const total = subtotal + taxAmount
 
