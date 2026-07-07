@@ -11,7 +11,6 @@ import {
   PlayCircle,
   Trash2,
   UserCog,
-  Copy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -29,7 +28,9 @@ type Props = {
 export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
-  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [resetNotice, setResetNotice] = useState<
+    { ok: boolean; text: string } | null
+  >(null)
 
   const toggleStatus = () => {
     const next = currentStatus === 'ACTIVE' ? 'DISABLED' : 'ACTIVE'
@@ -48,13 +49,25 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
   }
 
   const resetPassword = () => {
-    if (!confirm('Se generará una contraseña temporal nueva. ¿Continuar?')) return
+    if (
+      !confirm(
+        'Se enviará al usuario un enlace por email para restablecer su contraseña. ¿Continuar?'
+      )
+    )
+      return
 
     startTransition(async () => {
       try {
-        const { temporaryPassword } = await resetPasswordAction({ userId })
-        setTempPassword(temporaryPassword)
-        toast.success('Contraseña temporal generada — cópiala antes de cerrar')
+        const { emailed, email } = await resetPasswordAction({ userId })
+        setResetNotice({
+          ok: emailed,
+          text: emailed
+            ? `Enlace de restablecimiento enviado a ${email}.`
+            : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
+        })
+        toast[emailed ? 'success' : 'error'](
+          emailed ? 'Email enviado' : 'Email no enviado'
+        )
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Error')
       }
@@ -79,12 +92,6 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
         toast.error(err instanceof Error ? err.message : 'Error')
       }
     })
-  }
-
-  const copyPassword = async () => {
-    if (!tempPassword) return
-    await navigator.clipboard.writeText(tempPassword)
-    toast.success('Copiada al portapapeles')
   }
 
   return (
@@ -147,32 +154,23 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
         </Button>
       </div>
 
-      {tempPassword && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-4">
-          <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-semibold text-amber-900">
-              Contraseña temporal generada
+      {resetNotice && (
+        <div
+          className={`rounded-md border p-4 ${resetNotice.ok ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p
+              className={`text-sm font-medium ${resetNotice.ok ? 'text-emerald-900' : 'text-amber-900'}`}
+            >
+              {resetNotice.text}
             </p>
             <button
-              onClick={() => setTempPassword(null)}
-              className="text-xs text-amber-700 hover:text-amber-900"
+              onClick={() => setResetNotice(null)}
+              className="text-xs text-gray-600 hover:text-gray-900"
             >
               Cerrar
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 rounded bg-white px-3 py-2 font-mono text-sm">
-              {tempPassword}
-            </code>
-            <Button variant="outline" size="sm" onClick={copyPassword}>
-              <Copy className="mr-2 h-4 w-4" />
-              Copiar
-            </Button>
-          </div>
-          <p className="mt-2 text-xs text-amber-800">
-            Cópiala y entrégasela al usuario por un canal seguro. No se podrá
-            volver a mostrar.
-          </p>
         </div>
       )}
     </div>

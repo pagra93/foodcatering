@@ -11,14 +11,16 @@
  * adecuado en la UI.
  */
 
-import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { hash as bcryptHash } from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
-import { encryptPII } from '@/lib/crypto/pii'
+import { encryptPII, decryptNameSafe } from '@/lib/crypto/pii'
 import { BCRYPT_COST } from '@/lib/auth/password'
+import { createPasswordResetToken, TOKEN_TTL_MINUTES } from '@/lib/auth/password-reset'
+import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
+import { passwordResetEmail } from '@/lib/email/templates'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 
@@ -300,15 +302,18 @@ export async function resetPasswordAction(input: { userId: string }) {
   })
   if (!current) throw new Error('Usuario no encontrado')
 
-  // Password temporal de 16 caracteres aleatorios (letras + números).
-  const temp = randomBytes(12).toString('base64url').slice(0, 16)
-  const passwordHash = await bcryptHash(temp, BCRYPT_COST)
-
-  await prisma.user.update({
-    where: { id: input.userId },
-    // tokenVersion++ invalida las sesiones activas del usuario (H7).
-    data: { passwordHash, tokenVersion: { increment: 1 } },
+  // L3: en vez de devolver una contraseña temporal en claro, se envía al usuario
+  // un enlace de un solo uso para que fije su propia contraseña. No se cambia la
+  // contraseña actual hasta que el usuario complete el flujo.
+  const raw = await createPasswordResetToken(current.id)
+  const resetUrl = `${getAppBaseUrl()}/reset-password?token=${encodeURIComponent(raw)}`
+  const { subject, html, text } = passwordResetEmail({
+    resetUrl,
+    name: decryptNameSafe(current.nameEnc, ''),
+    byAdmin: true,
+    expiresMinutes: TOKEN_TTL_MINUTES,
   })
+  const result = await sendEmail({ to: current.email, subject, html, text })
 
   const headers = AUDIT_HEADERS
   await logAudit({
@@ -319,12 +324,10 @@ export async function resetPasswordAction(input: { userId: string }) {
     entityId: current.id,
     diff: {
       before: null,
-      after: { password: 'reset' },
+      after: { password: 'reset-link-sent' },
     },
     ...headers,
   })
 
-  // TODO: enviar email al user con password temporal. Por ahora la
-  // devolvemos al frontend para que el super admin la copie manualmente.
-  return { temporaryPassword: temp }
+  return { emailed: result.ok, email: current.email }
 }

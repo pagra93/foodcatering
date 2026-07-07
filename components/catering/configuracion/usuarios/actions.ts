@@ -7,7 +7,6 @@
  * Sólo ADMIN_CATERING (o SUPER_ADMIN impersonando) puede gestionar.
  */
 
-import { randomBytes } from 'node:crypto'
 import { z } from 'zod'
 import { hash as bcryptHash } from 'bcryptjs'
 import { revalidatePath } from 'next/cache'
@@ -18,8 +17,11 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { CATERING_ROLES } from '@/lib/db/queries/catering-usuarios'
-import { encryptPII } from '@/lib/crypto/pii'
+import { encryptPII, decryptNameSafe } from '@/lib/crypto/pii'
 import { BCRYPT_COST } from '@/lib/auth/password'
+import { createPasswordResetToken, TOKEN_TTL_MINUTES } from '@/lib/auth/password-reset'
+import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
+import { passwordResetEmail } from '@/lib/email/templates'
 
 const CONFIG_USER_ADMIN_ROLES = ['ADMIN_CATERING', 'SUPER_ADMIN'] as const
 
@@ -241,14 +243,16 @@ export async function resetCateringUserPasswordAction(input: {
   })
   if (!current) throw new Error('Usuario no encontrado')
 
-  const temp = randomBytes(12).toString('base64url').slice(0, 16)
-  const passwordHash = await bcryptHash(temp, BCRYPT_COST)
-
-  await prisma.user.update({
-    where: { id: current.id },
-    // tokenVersion++ invalida las sesiones activas del usuario (H7).
-    data: { passwordHash, tokenVersion: { increment: 1 } },
+  // L3: se envía un enlace de un solo uso en vez de una contraseña en claro.
+  const raw = await createPasswordResetToken(current.id)
+  const resetUrl = `${getAppBaseUrl()}/reset-password?token=${encodeURIComponent(raw)}`
+  const { subject, html, text } = passwordResetEmail({
+    resetUrl,
+    name: decryptNameSafe(current.nameEnc, ''),
+    byAdmin: true,
+    expiresMinutes: TOKEN_TTL_MINUTES,
   })
+  const result = await sendEmail({ to: current.email, subject, html, text })
 
   await logAudit({
     tenantId: actor.tenantId,
@@ -256,10 +260,10 @@ export async function resetCateringUserPasswordAction(input: {
     action: 'UPDATE',
     entity: 'User',
     entityId: current.id,
-    diff: { before: null, after: { password: 'reset' } },
+    diff: { before: null, after: { password: 'reset-link-sent' } },
   })
 
-  return { temporaryPassword: temp }
+  return { emailed: result.ok, email: current.email }
 }
 
 export async function deleteCateringUserAction(input: { userId: string }) {

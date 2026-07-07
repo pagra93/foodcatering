@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export const metadata: Metadata = {
   title: 'Restablecer Contraseña · Plati',
@@ -20,9 +21,10 @@ export const metadata: Metadata = {
 export default async function ResetPasswordPage({
   searchParams,
 }: {
-  searchParams: { token?: string }
+  searchParams: { token?: string; error?: string }
 }) {
   const token = searchParams.token
+  const error = searchParams.error
 
   // Si no hay token, redirigir a forgot-password
   if (!token) {
@@ -47,6 +49,11 @@ export default async function ResetPasswordPage({
           </CardHeader>
 
           <CardContent>
+            {error && (
+              <Alert variant="destructive" className="mb-5">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
             {/* Form con shadcn */}
             <form action="/api/auth/reset-password" method="POST" className="space-y-5">
               {/* Hidden token */}

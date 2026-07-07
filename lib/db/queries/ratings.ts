@@ -165,8 +165,9 @@ async function monthlyBucketsBy(
 /** Delta de la media entre los dos últimos meses con datos (o null). */
 function trendDeltaOf(points: RawMonthPoint[] | undefined): number | null {
   if (!points || points.length < 2) return null
-  const last = points[points.length - 1]!
-  const prev = points[points.length - 2]!
+  const last = points[points.length - 1]
+  const prev = points[points.length - 2]
+  if (!last || !prev) return null
   return round1(last.average - prev.average)
 }
 
