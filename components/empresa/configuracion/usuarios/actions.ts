@@ -23,6 +23,7 @@ import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { EMPRESA_MANAGEMENT_ROLES } from '@/lib/db/queries/empresa-usuarios'
 import { encryptPII } from '@/lib/crypto/pii'
+import { BCRYPT_COST } from '@/lib/auth/password'
 
 const CONFIG_USER_ADMIN_ROLES = ['ADMIN_EMPRESA', 'SUPER_ADMIN'] as const
 
@@ -75,7 +76,7 @@ export async function createEmpresaUserAction(
   })
   if (!sysRole) throw new Error(`Rol de sistema no encontrado para ${data.role}`)
 
-  const passwordHash = await bcryptHash(data.password, 10)
+  const passwordHash = await bcryptHash(data.password, BCRYPT_COST)
 
   const user = await prisma.user.create({
     data: {
@@ -243,7 +244,7 @@ export async function resetEmpresaUserPasswordAction(input: {
   if (!current) throw new Error('Usuario no encontrado')
 
   const temp = randomBytes(12).toString('base64url').slice(0, 16)
-  const passwordHash = await bcryptHash(temp, 10)
+  const passwordHash = await bcryptHash(temp, BCRYPT_COST)
 
   await prisma.user.update({
     where: { id: current.id },

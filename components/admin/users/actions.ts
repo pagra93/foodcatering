@@ -18,6 +18,7 @@ import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { encryptPII } from '@/lib/crypto/pii'
+import { BCRYPT_COST } from '@/lib/auth/password'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 
@@ -82,7 +83,7 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>) 
     throw new Error('Ya existe un usuario con ese email en este tenant')
   }
 
-  const passwordHash = await bcryptHash(data.password, 10)
+  const passwordHash = await bcryptHash(data.password, BCRYPT_COST)
 
   const user = await prisma.user.create({
     data: {
@@ -301,7 +302,7 @@ export async function resetPasswordAction(input: { userId: string }) {
 
   // Password temporal de 16 caracteres aleatorios (letras + números).
   const temp = randomBytes(12).toString('base64url').slice(0, 16)
-  const passwordHash = await bcryptHash(temp, 10)
+  const passwordHash = await bcryptHash(temp, BCRYPT_COST)
 
   await prisma.user.update({
     where: { id: input.userId },
