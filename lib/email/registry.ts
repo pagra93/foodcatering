@@ -22,11 +22,21 @@ import {
 // Base de ejemplo para los enlaces de la previsualización (no se envía a nadie).
 const SAMPLE_BASE = 'https://www.plati.es'
 
+/**
+ * Estado de cada plantilla:
+ * - 'active'  → cableada: el sistema la envía sola en su evento.
+ * - 'pending' → el diseño existe (se puede previsualizar/probar) pero AÚN no se
+ *               dispara sola en ningún evento (falta cablearla).
+ * - 'manual'  → utilidad reutilizable, sin un evento fijo.
+ */
+export type EmailTemplateStatus = 'active' | 'pending' | 'manual'
+
 export type EmailTemplateMeta = {
   id: string
   name: string
   description: string
-  /** Cuándo se envía / estado de cableado, informativo para el admin. */
+  status: EmailTemplateStatus
+  /** Cuándo se envía / dónde está cableada, informativo para el admin. */
   trigger: string
 }
 
@@ -36,37 +46,43 @@ export const EMAIL_TEMPLATES: EmailTemplateMeta[] = [
     id: 'password-reset',
     name: 'Restablecer contraseña',
     description: 'Enlace de un solo uso para fijar una nueva contraseña.',
-    trigger: 'Activo · "Olvidé mi contraseña" y reset desde el panel',
+    status: 'active',
+    trigger: '"Olvidé mi contraseña" y reset de contraseña desde el panel.',
   },
   {
     id: 'welcome',
     name: 'Bienvenida',
     description: 'Se envía al crear una cuenta nueva.',
-    trigger: 'Plantilla lista · pendiente de cablear al alta de usuario',
+    status: 'active',
+    trigger: 'Alta de usuario en admin, empresa y catering.',
   },
   {
     id: 'employee-invitation',
     name: 'Invitación de empleado',
     description: 'Invita a un empleado a unirse a su empresa.',
-    trigger: 'Plantilla lista · pendiente de cablear a las invitaciones',
+    status: 'pending',
+    trigger: 'Pendiente de cablear al flujo de invitaciones.',
   },
   {
     id: 'invoice-issued',
     name: 'Factura emitida',
     description: 'Avisa de una nueva factura con importe y vencimiento.',
-    trigger: 'Plantilla lista · pendiente de cablear a facturación',
+    status: 'pending',
+    trigger: 'Pendiente de cablear a facturación.',
   },
   {
     id: 'incident-reported',
     name: 'Incidencia registrada',
     description: 'Avisa de una incidencia abierta en un pedido.',
-    trigger: 'Plantilla lista · pendiente de cablear a incidencias',
+    status: 'pending',
+    trigger: 'Pendiente de cablear a incidencias.',
   },
   {
     id: 'generic-notification',
     name: 'Notificación genérica',
     description: 'Aviso flexible (título + mensaje + botón opcional).',
-    trigger: 'Reutilizable para avisos varios',
+    status: 'manual',
+    trigger: 'Utilidad reutilizable para avisos puntuales.',
   },
 ]
 

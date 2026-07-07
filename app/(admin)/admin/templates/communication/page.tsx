@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { EMAIL_TEMPLATES, renderSampleEmail } from '@/lib/email/registry'
+import { isEmailConfigured } from '@/lib/email/client'
 import {
   CommunicationTemplates,
   type TemplateView,
 } from '@/components/admin/templates/communication/CommunicationTemplates'
 
 export default function CommunicationPage() {
+  const emailConfigured = isEmailConfigured()
+
   // El HTML se genera en el servidor a partir de las plantillas de código;
   // el cliente solo lo previsualiza y permite enviar un test.
   const templates: TemplateView[] = EMAIL_TEMPLATES.map((t) => {
@@ -16,6 +19,7 @@ export default function CommunicationPage() {
       id: t.id,
       name: t.name,
       description: t.description,
+      status: t.status,
       trigger: t.trigger,
       subject: sample?.subject ?? '',
       html: sample?.html ?? '',
@@ -44,7 +48,10 @@ export default function CommunicationPage() {
         </p>
       </div>
 
-      <CommunicationTemplates templates={templates} />
+      <CommunicationTemplates
+        templates={templates}
+        emailConfigured={emailConfigured}
+      />
     </div>
   )
 }

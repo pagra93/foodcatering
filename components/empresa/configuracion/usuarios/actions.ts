@@ -25,7 +25,7 @@ import { encryptPII, decryptNameSafe } from '@/lib/crypto/pii'
 import { BCRYPT_COST } from '@/lib/auth/password'
 import { createPasswordResetToken, TOKEN_TTL_MINUTES } from '@/lib/auth/password-reset'
 import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
-import { passwordResetEmail } from '@/lib/email/templates'
+import { passwordResetEmail, welcomeEmail } from '@/lib/email/templates'
 
 const CONFIG_USER_ADMIN_ROLES = ['ADMIN_EMPRESA', 'SUPER_ADMIN'] as const
 
@@ -103,6 +103,18 @@ export async function createEmpresaUserAction(
       before: null,
       after: { email: user.email, role: user.role },
     },
+  })
+
+  // Email de bienvenida (no bloquea el alta si el envío falla).
+  const welcome = welcomeEmail({
+    name: data.name,
+    loginUrl: `${getAppBaseUrl()}/login`,
+  })
+  await sendEmail({
+    to: user.email,
+    subject: welcome.subject,
+    html: welcome.html,
+    text: welcome.text,
   })
 
   revalidatePath('/empresa/configuracion/usuarios')
