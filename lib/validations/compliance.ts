@@ -8,7 +8,6 @@ export const retentionEntityEnum = z.enum([
   'Invoice',
   'User',
   'Notification',
-  'DailySnapshot',
   'Incident',
   'OrderHistory',
   'DeliveryProof',

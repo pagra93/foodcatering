@@ -17,7 +17,12 @@ export const metadata: Metadata = {
   description: 'Solicita un enlace para restablecer tu contraseña',
 }
 
-export default function ForgotPasswordPage() {
+export default function ForgotPasswordPage({
+  searchParams,
+}: {
+  searchParams: { sent?: string }
+}) {
+  const sent = searchParams.sent === '1'
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
@@ -45,33 +50,45 @@ export default function ForgotPasswordPage() {
           </CardHeader>
 
           <CardContent>
-            {/* Form con shadcn */}
-            <form action="/api/auth/forgot-password" method="POST" className="space-y-5">
-              {/* Email con shadcn Input + Label */}
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  type="email"
-                  id="email"
-                  name="email"
-                  required
-                  autoComplete="email"
-                  placeholder="tu@email.com"
-                />
-              </div>
+            {sent ? (
+              <Alert className="bg-success/10 border-success/30">
+                <AlertDescription className="text-success-foreground">
+                  Si tu email está registrado, te hemos enviado un enlace para
+                  restablecer tu contraseña. Revisa tu bandeja de entrada (y la
+                  carpeta de spam). El enlace caduca en 60 minutos.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <>
+                {/* Form con shadcn */}
+                <form action="/api/auth/forgot-password" method="POST" className="space-y-5">
+                  {/* Email con shadcn Input + Label */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      type="email"
+                      id="email"
+                      name="email"
+                      required
+                      autoComplete="email"
+                      placeholder="tu@email.com"
+                    />
+                  </div>
 
-              {/* Submit Button con shadcn Button */}
-              <Button type="submit" className="w-full" size="lg">
-                Enviar enlace de recuperación
-              </Button>
-            </form>
+                  {/* Submit Button con shadcn Button */}
+                  <Button type="submit" className="w-full" size="lg">
+                    Enviar enlace de recuperación
+                  </Button>
+                </form>
 
-            {/* Info con shadcn Alert */}
-            <Alert className="mt-6 bg-primary/10 border-primary/30">
-              <AlertDescription className="text-primary">
-                <strong>Nota:</strong> Si tu email está registrado, recibirás un enlace en los próximos minutos. Revisa también tu carpeta de spam.
-              </AlertDescription>
-            </Alert>
+                {/* Info con shadcn Alert */}
+                <Alert className="mt-6 bg-primary/10 border-primary/30">
+                  <AlertDescription className="text-primary">
+                    <strong>Nota:</strong> Si tu email está registrado, recibirás un enlace en los próximos minutos. Revisa también tu carpeta de spam.
+                  </AlertDescription>
+                </Alert>
+              </>
+            )}
           </CardContent>
         </Card>
 

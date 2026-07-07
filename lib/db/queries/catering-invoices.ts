@@ -20,7 +20,10 @@ import {
   roundToTwoDecimals,
 } from '@/lib/validations/invoice'
 
-const FACTURABLE_TAX_RATE = new Prisma.Decimal(0.21) // 21% IVA
+// IVA por defecto de comida (hostelería) si no hubiera regla activa en el
+// catálogo fiscal. El valor real se lee de TaxRule (categoría 'food'), editable
+// desde /admin/billing/taxes.
+const DEFAULT_FOOD_TAX_PCT = 10
 
 function formatPeriod(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, '0')}`
@@ -209,9 +212,23 @@ export async function generateInvoice(
       totalSubtotal += orderSubtotal
     }
 
-    // 9. Totales
+    // 9. Totales — el IVA se lee del catálogo fiscal editable en admin
+    // (categoría 'food' = hostelería, 10%), no hardcodeado. Fallback al 10%.
+    const now = new Date()
+    const foodTaxRule = await tx.taxRule.findFirst({
+      where: {
+        category: 'food',
+        active: true,
+        validFrom: { lte: now },
+        OR: [{ validTo: null }, { validTo: { gte: now } }],
+      },
+    })
+    const taxRatePct = foodTaxRule
+      ? Number(foodTaxRule.rate)
+      : DEFAULT_FOOD_TAX_PCT
+
     const subtotal = roundToTwoDecimals(totalSubtotal)
-    const taxAmount = roundToTwoDecimals(subtotal * Number(FACTURABLE_TAX_RATE))
+    const taxAmount = roundToTwoDecimals((subtotal * taxRatePct) / 100)
     const totalAmount = roundToTwoDecimals(subtotal + taxAmount)
 
     // 10. Número correlativo por (catering, año-mes)
@@ -245,7 +262,7 @@ export async function generateInvoice(
         startDate,
         endDate,
         subtotal: new Prisma.Decimal(subtotal),
-        taxRate: FACTURABLE_TAX_RATE.mul(100), // almacenado como porcentaje (21.00)
+        taxRate: new Prisma.Decimal(taxRatePct), // porcentaje, p.ej. 10.00
         taxAmount: new Prisma.Decimal(taxAmount),
         total: new Prisma.Decimal(totalAmount),
         status: 'DRAFT',
@@ -267,7 +284,7 @@ export async function generateInvoice(
           totals: {
             orderCount: orders.length,
             subtotal,
-            taxRate: Number(FACTURABLE_TAX_RATE),
+            taxRate: taxRatePct,
             taxAmount,
             totalAmount,
           },
@@ -436,6 +453,32 @@ export async function updateInvoiceStatus(
 
     if (!invoice) {
       throw new Error('Factura no encontrada')
+    }
+
+    // Máquina de estados (M1): 'PAID' solo por la ruta de pago (markInvoiceAsPaid,
+    // que fija paidAt y bloquea el doble pago); no se reabren facturas en estado
+    // terminal (PAID/CANCELLED/VOID). Antes se aceptaba cualquier estado.
+    if (status === 'PAID') {
+      throw new Error(
+        'Para marcar como pagada usa la acción de pago, no el cambio de estado.'
+      )
+    }
+    const allowedNext: Record<string, string[]> = {
+      DRAFT: ['ISSUED', 'SENT', 'CANCELLED', 'VOID'],
+      ISSUED: ['SENT', 'OVERDUE', 'CANCELLED', 'VOID'],
+      SENT: ['OVERDUE', 'CANCELLED', 'VOID'],
+      OVERDUE: ['SENT', 'CANCELLED', 'VOID'],
+      PAID: [],
+      CANCELLED: [],
+      VOID: [],
+    }
+    if (
+      status !== invoice.status &&
+      !(allowedNext[invoice.status] ?? []).includes(status)
+    ) {
+      throw new Error(
+        `Transición de estado no permitida: ${invoice.status} → ${status}`
+      )
     }
 
     const updated = await tx.invoice.update({

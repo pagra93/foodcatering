@@ -120,12 +120,6 @@ export default async function UserDetailPage({
               </div>
             )}
             <div>
-              <p className="text-xs uppercase text-gray-500">MFA</p>
-              <p className="mt-1">
-                {user.mfaEnabled ? 'Habilitado' : 'Deshabilitado'}
-              </p>
-            </div>
-            <div>
               <p className="text-xs uppercase text-gray-500">Creado</p>
               <p className="mt-1">
                 {format(user.createdAt, "dd 'de' MMMM yyyy 'a las' HH:mm", {

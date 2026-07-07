@@ -13,6 +13,7 @@ import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
 import { resolveUserPermissions } from './resolve-permissions'
 import { authRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
+import { BCRYPT_COST } from './password'
 
 /**
  * Schema de validación para login
@@ -85,7 +86,7 @@ export const authConfig = {
           // M7: hash señuelo (mismo coste) para gastar el mismo tiempo cuando el
           // usuario no existe y no filtrar por timing qué emails están dados de alta.
           if (!dummyPasswordHash) {
-            dummyPasswordHash = await hash('timing-guard-placeholder', 10)
+            dummyPasswordHash = await hash('timing-guard-placeholder', BCRYPT_COST)
           }
 
           // Buscar usuario

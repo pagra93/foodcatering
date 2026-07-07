@@ -69,7 +69,9 @@ export function ManagementUsersTable({
   const router = useRouter()
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [tempPassword, setTempPassword] = useState<string | null>(null)
+  const [resetNotice, setResetNotice] = useState<
+    { ok: boolean; text: string } | null
+  >(null)
   const [isPending, startTransition] = useTransition()
 
   // Create form
@@ -122,15 +124,26 @@ export function ManagementUsersTable({
   }
 
   const resetPassword = (u: UserRow) => {
-    if (!confirm(`¿Generar nueva contraseña temporal para ${u.nameEnc}?`))
+    if (
+      !confirm(
+        `¿Enviar a ${u.nameEnc} un enlace por email para restablecer su contraseña?`
+      )
+    )
       return
     startTransition(async () => {
       try {
-        const { temporaryPassword } = await resetEmpresaUserPasswordAction({
+        const { emailed, email } = await resetEmpresaUserPasswordAction({
           userId: u.id,
         })
-        setTempPassword(temporaryPassword)
-        toast.success('Contraseña generada')
+        setResetNotice({
+          ok: emailed,
+          text: emailed
+            ? `Enlace de restablecimiento enviado a ${email}.`
+            : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
+        })
+        toast[emailed ? 'success' : 'error'](
+          emailed ? 'Email enviado' : 'Email no enviado'
+        )
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Error')
       }
@@ -257,29 +270,20 @@ export function ManagementUsersTable({
         </Card>
       )}
 
-      {tempPassword && (
-        <Card className="border-amber-200 bg-amber-50 p-4">
-          <p className="mb-2 text-sm font-semibold text-amber-900">
-            Contraseña temporal generada — cópiala antes de cerrar
-          </p>
-          <div className="flex items-center gap-2">
-            <code className="flex-1 rounded bg-white px-3 py-2 font-mono text-sm">
-              {tempPassword}
-            </code>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={async () => {
-                await navigator.clipboard.writeText(tempPassword)
-                toast.success('Copiada')
-              }}
+      {resetNotice && (
+        <Card
+          className={`p-4 ${resetNotice.ok ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <p
+              className={`text-sm font-medium ${resetNotice.ok ? 'text-emerald-900' : 'text-amber-900'}`}
             >
-              Copiar
-            </Button>
+              {resetNotice.text}
+            </p>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setTempPassword(null)}
+              onClick={() => setResetNotice(null)}
             >
               Cerrar
             </Button>

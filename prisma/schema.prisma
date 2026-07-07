@@ -125,15 +125,33 @@ model User {
   deletedAt    DateTime?  @map("deleted_at")
 
   // Relaciones
-  tenant         Tenant          @relation(fields: [tenantId], references: [id])
-  roleRef        Role?           @relation("UserAssignedRole", fields: [roleId], references: [id])
+  tenant         Tenant               @relation(fields: [tenantId], references: [id])
+  roleRef        Role?                @relation("UserAssignedRole", fields: [roleId], references: [id])
   employees      Employee[]
   deliveryRoutes DeliveryRoute[]
+  passwordResetTokens PasswordResetToken[]
 
   @@unique([tenantId, email])
   @@index([tenantId, status])
   @@index([email])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  // Se guarda solo el hash SHA-256 del token; el valor en claro viaja solo por
+  // email y nunca se persiste.
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }
 
 // ============================================================================
@@ -776,7 +794,6 @@ model Order {
   route          DeliveryRoute?  @relation(fields: [routeId], references: [id])
   invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
   history        OrderHistory[]
-  deliveryEvents DeliveryEvent[]
   incidents      Incident[]
   deliveryProof  DeliveryProof? // Justificante de entrega
   rating         OrderRating? // Valoración del empleado (legacy, por pedido)
@@ -830,66 +847,6 @@ model OrderHistory {
 // ============================================================================
 // CONSOLIDACIÓN Y OPERACIÓN
 // ============================================================================
-
-model KitchenSheet {
-  id             String   @id @default(uuid())
-  tenantCatering String   @map("tenant_catering")
-  serviceDate    DateTime @map("service_date") @db.Date
-  generatedAt    DateTime @default(now()) @map("generated_at")
-
-  // Contenido: lista de platos con cantidades
-  content Json @default("[]")
-
-  // Firma digital
-  signatureHash String @map("signature_hash")
-
-  @@unique([tenantCatering, serviceDate])
-  @@index([serviceDate])
-  @@map("kitchen_sheets")
-}
-
-model PackingSheet {
-  id             String   @id @default(uuid())
-  tenantCatering String   @map("tenant_catering")
-  tenantEmpresa  String   @map("tenant_empresa")
-  serviceDate    DateTime @map("service_date") @db.Date
-  generatedAt    DateTime @default(now()) @map("generated_at")
-
-  // Contenido: lista de pedidos por empleado
-  content Json @default("[]")
-
-  // Firma digital
-  signatureHash String @map("signature_hash")
-
-  @@unique([tenantCatering, tenantEmpresa, serviceDate])
-  @@index([serviceDate])
-  @@map("packing_sheets")
-}
-
-enum DeliveryEventType {
-  PACKED           @map("packed")
-  OUT_FOR_DELIVERY @map("out_for_delivery")
-  DELIVERED        @map("delivered")
-  FAILED           @map("failed")
-
-  @@map("delivery_event_type")
-}
-
-model DeliveryEvent {
-  id        String            @id @default(uuid())
-  orderId   String            @map("order_id")
-  timestamp DateTime          @default(now())
-  markedBy  String            @map("marked_by")
-  event     DeliveryEventType
-  notes     String?
-
-  // Relación
-  order Order @relation(fields: [orderId], references: [id])
-
-  @@index([orderId])
-  @@index([timestamp])
-  @@map("delivery_events")
-}
 
 // ============================================================================
 // FACTURACIÓN
@@ -985,26 +942,6 @@ model InvoiceLine {
   @@map("invoice_lines")
 }
 
-enum ExportType {
-  ERP_CSV     @map("erp_csv")
-  PAYROLL_CSV @map("payroll_csv")
-  SUMMARY_PDF @map("summary_pdf")
-
-  @@map("export_type")
-}
-
-model CompanyExport {
-  id            String     @id @default(uuid())
-  tenantEmpresa String     @map("tenant_empresa")
-  period        String // "YYYY-MM"
-  type          ExportType
-  fileUrl       String     @map("file_url")
-  createdAt     DateTime   @default(now()) @map("created_at")
-
-  @@index([tenantEmpresa, period])
-  @@map("company_exports")
-}
-
 // ============================================================================
 // INCIDENCIAS Y CALIDAD
 // ============================================================================
@@ -1089,95 +1026,6 @@ model RestaurantAudit {
 // ============================================================================
 // SNAPSHOTS DIARIOS (Compliance Fiscal)
 // ============================================================================
-
-model DailySnapshot {
-  id             String   @id @default(uuid())
-  tenantEmpresa  String   @map("tenant_empresa")
-  tenantCatering String   @map("tenant_catering")
-  serviceDate    DateTime @map("service_date") @db.Date
-  generatedAt    DateTime @default(now()) @map("generated_at")
-
-  // Resumen agregado
-  ordersSummary Json @map("orders_summary")
-
-  // Firma digital para compliance
-  signHash String @map("sign_hash")
-
-  // Archivo PDF/CSV
-  fileUrl String @map("file_url")
-
-  @@unique([tenantEmpresa, tenantCatering, serviceDate])
-  @@index([serviceDate])
-  @@map("daily_snapshots")
-}
-
-// ============================================================================
-// INTEGRACIONES Y WEBHOOKS
-// ============================================================================
-
-enum IntegrationType {
-  ERP       @map("erp")
-  SSO       @map("sso")
-  PAYMENTS  @map("payments")
-  MESSAGING @map("messaging")
-
-  @@map("integration_type")
-}
-
-enum IntegrationStatus {
-  ACTIVE   @map("active")
-  INACTIVE @map("inactive")
-  ERROR    @map("error")
-
-  @@map("integration_status")
-}
-
-model Integration {
-  id        String            @id @default(uuid())
-  tenantId  String            @map("tenant_id")
-  type      IntegrationType
-  config    Json              @default("{}")
-  status    IntegrationStatus @default(INACTIVE)
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
-
-  @@index([tenantId, type])
-  @@map("integrations")
-}
-
-model Webhook {
-  id        String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
-  event     String // orders.consolidated, delivery.marked, etc.
-  targetUrl String   @map("target_url")
-  secret    String
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @map("created_at")
-
-  // Relaciones
-  deliveries WebhookDelivery[]
-
-  @@index([tenantId, event])
-  @@map("webhooks")
-}
-
-model WebhookDelivery {
-  id            String   @id @default(uuid())
-  webhookId     String   @map("webhook_id")
-  eventId       String   @map("event_id")
-  status        Int // HTTP status code
-  retries       Int      @default(0)
-  lastAttemptAt DateTime @map("last_attempt_at")
-  payload       Json
-  response      Json?
-
-  // Relación
-  webhook Webhook @relation(fields: [webhookId], references: [id])
-
-  @@index([webhookId])
-  @@index([eventId])
-  @@map("webhook_deliveries")
-}
 
 // ============================================================================
 // PORTAL DE EMPRESA - Módulos adicionales
@@ -1655,7 +1503,6 @@ enum RetentionEntity {
   Invoice
   User
   Notification
-  DailySnapshot
   Incident
   OrderHistory
   DeliveryProof

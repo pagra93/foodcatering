@@ -125,7 +125,14 @@
       "Bash(perl -i -pe 's/Solicitar demo/Pedir demo/g' 'app/\\(landing\\)/producto/page.tsx' 'app/\\(landing\\)/precios/page.tsx' 'app/\\(landing\\)/compliance/page.tsx' components/marketing/ComingSoon.tsx lib/landing/content.ts)",
       "Bash(perl -i -pe \"s/'Reservar demo'/'Pedir demo'/g\" \"components/marketing/DemoForm.tsx\")",
       "Bash(perl -i -pe \"s/Solicitar propuesta con este caso/Pedir demo con este caso/g\" \"components/marketing/IRPFCalculator.tsx\")",
-      "Bash(perl -i -pe \"s/label: 'Solicitar propuesta'/label: 'Pedir demo'/g\" \"app/\\(landing\\)/calculadora/page.tsx\")"
+      "Bash(perl -i -pe \"s/label: 'Solicitar propuesta'/label: 'Pedir demo'/g\" \"app/\\(landing\\)/calculadora/page.tsx\")",
+      "Bash(python3 -c \"import json;d=json.load\\(open\\('pm/tasks.json'\\)\\);print\\('OK valido. tasks=',len\\(d['tasks']\\),'epics=',len\\(d['epics']\\)\\)\")",
+      "Bash(awk '/^model Employee /,/^}/' prisma/schema.prisma)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const u=\\(fs.readFileSync\\('.env','utf8'\\).match\\(/DATABASE_URL=\\\\\"?\\([^\\\\\"\\\\n]+\\)/\\)||[]\\)[1]||''; const db=\\(u.split\\('/'\\).pop\\(\\)||''\\).split\\('?'\\)[0]; console.log\\('DB:',db\\); if\\(/prod/i.test\\(db\\)\\){console.error\\('PROD! abort'\\);process.exit\\(1\\)}\")",
+      "Bash(pnpm tsx *)",
+      "Bash(grep -vE \"Environment|Prisma schema|Datasource|tenant-check|^\\\\s*$\")",
+      "Bash(node -e \"const fs=require\\('fs'\\);const u=\\(fs.readFileSync\\('.env','utf8'\\).match\\(/DATABASE_URL=\\\\\"?\\([^\\\\\"\\\\n]+\\)/\\)||[]\\)[1]||''; const db=\\(u.split\\('/'\\).pop\\(\\)||''\\).split\\('?'\\)[0]; if\\(/prod/i.test\\(db\\)\\){console.error\\('PROD!'\\);process.exit\\(1\\)} console.log\\('DB:',db\\)\")",
+      "Bash(git checkout *)"
     ]
   }
 }

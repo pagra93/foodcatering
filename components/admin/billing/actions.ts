@@ -3,7 +3,7 @@
 import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
-import { Prisma } from '@prisma/client'
+import { Prisma, type InvoiceStatus } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
@@ -76,8 +76,12 @@ export async function generateMonthBillingAction(input: {
 
     // La comisión se calcula sobre la BASE IMPONIBLE (subtotal, sin IVA): el IVA
     // lo recauda el catering para Hacienda, no forma parte de su facturación.
+    // Base de la comisión: SOLO facturas realmente emitidas. Excluir borradores
+    // (DRAFT) y anuladas (CANCELLED/VOID) — antes se sumaban y el catering pagaba
+    // comisión de más.
+    const invoiceBilled: InvoiceStatus[] = ['ISSUED', 'SENT', 'PAID', 'OVERDUE']
     const invoicesAgg = await prisma.invoice.aggregate({
-      where: { tenantCatering: c.id, period },
+      where: { tenantCatering: c.id, period, status: { in: invoiceBilled } },
       _sum: { subtotal: true },
     })
     const gross = Number(invoicesAgg._sum.subtotal ?? 0)
@@ -208,6 +212,14 @@ export async function generateMonthBillingAction(input: {
     }
 
     const subtotal = Number(plan.monthlyPrice)
+    // M3: no emitir facturas de 0€ (p.ej. un plan con precio anual y monthlyPrice=0).
+    // La facturación de planes ANUALES por mes de aniversario (opción elegida) se
+    // implementará como feature cuando se ofrezcan planes anuales — hoy todos los
+    // planes en uso son mensuales, así que no hay nada mal facturado por esto.
+    if (subtotal <= 0) {
+      saasSkipped++
+      continue
+    }
     const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
     const total = subtotal + taxAmount
 

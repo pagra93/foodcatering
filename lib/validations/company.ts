@@ -36,7 +36,10 @@ export const createCompanySchema = z.object({
       'CIF inválido (debe ser letra mayúscula seguida de 8 dígitos)'
     ),
   billingAddress: z.string().min(5, 'La dirección de facturación es requerida'),
-  saasPlanId: z.string().uuid('Selecciona un plan').optional().nullable(),
+  // M4: el plan es OBLIGATORIO al crear una empresa (no más empresas "sin plan"
+  // con cuotas ilimitadas y sin facturar). En edición (updateCompanySchema =
+  // .partial()) sigue siendo opcional, así que editar otros campos no lo exige.
+  saasPlanId: z.string().uuid('Selecciona un plan'),
 
   // ===== POLÍTICA DE SERVICIO (CompanyPolicy) =====
   policy: z.object({

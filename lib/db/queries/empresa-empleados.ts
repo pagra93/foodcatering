@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { encryptPII } from '@/lib/crypto/pii'
+import { BCRYPT_COST } from '@/lib/auth/password'
 import { subDays } from 'date-fns'
 import bcrypt from 'bcryptjs'
 import { nanoid } from 'nanoid'
@@ -424,7 +425,7 @@ export async function createEmployee(
         email: data.email,
         nameEnc: encryptPII(data.name),
         phoneEnc: data.phone ? encryptPII(data.phone) : null,
-        passwordHash: await bcrypt.hash(nanoid(16), 10), // Password temporal
+        passwordHash: await bcrypt.hash(nanoid(16), BCRYPT_COST), // Password temporal
         role: 'EMPLEADO',
         status: 'ACTIVE',
       },

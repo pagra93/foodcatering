@@ -18,38 +18,43 @@ export async function getCateringOwnRatingStats(tenantCatering: string) {
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
   const sevenDaysAgo = new Date()
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+  const fourteenDaysAgo = new Date(sevenDaysAgo.getTime() - 7 * 24 * 60 * 60 * 1000)
 
-  // Reputación por plato (DishRating). Las dimensiones sabor/porción/presentación
-  // del antiguo OrderRating ya no existen a nivel de plato → null.
-  const all = await prisma.dishRating.findMany({
-    where: { tenantCatering },
-    select: { rating: true, createdAt: true },
-  })
+  const round1 = (v: number | null): number | null =>
+    v == null ? null : Math.round(v * 10) / 10
 
-  const total = all.length
-  const avg = (values: number[]): number | null => {
-    if (values.length === 0) return null
-    return Math.round((values.reduce((s, v) => s + v, 0) / values.length) * 10) / 10
-  }
-
-  const recent = all.filter((r) => r.createdAt >= thirtyDaysAgo)
-  const weekly = all.filter((r) => r.createdAt >= sevenDaysAgo)
-  const prevWeek = all.filter(
-    (r) =>
-      r.createdAt < sevenDaysAgo &&
-      r.createdAt >= new Date(sevenDaysAgo.getTime() - 7 * 24 * 60 * 60 * 1000)
-  )
+  // Reputación por plato (DishRating). Se agrega en BD por ventana temporal
+  // (L12: antes se traían todas las filas y se filtraban en memoria). Las
+  // dimensiones sabor/porción/presentación del antiguo OrderRating ya no
+  // existen a nivel de plato → null.
+  const where = { tenantCatering }
+  const [overall, last30, thisWeek, prevWeek] = await Promise.all([
+    prisma.dishRating.aggregate({ where, _avg: { rating: true }, _count: true }),
+    prisma.dishRating.aggregate({
+      where: { ...where, createdAt: { gte: thirtyDaysAgo } },
+      _avg: { rating: true },
+      _count: true,
+    }),
+    prisma.dishRating.aggregate({
+      where: { ...where, createdAt: { gte: sevenDaysAgo } },
+      _avg: { rating: true },
+    }),
+    prisma.dishRating.aggregate({
+      where: { ...where, createdAt: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+      _avg: { rating: true },
+    }),
+  ])
 
   return {
-    total,
-    averageRating: avg(all.map((r) => r.rating)),
+    total: overall._count,
+    averageRating: round1(overall._avg.rating),
     averageTaste: null,
     averagePortion: null,
     averagePresentation: null,
-    ratings30d: recent.length,
-    avg30d: avg(recent.map((r) => r.rating)),
-    avgThisWeek: avg(weekly.map((r) => r.rating)),
-    avgPrevWeek: avg(prevWeek.map((r) => r.rating)),
+    ratings30d: last30._count,
+    avg30d: round1(last30._avg.rating),
+    avgThisWeek: round1(thisWeek._avg.rating),
+    avgPrevWeek: round1(prevWeek._avg.rating),
   }
 }
 

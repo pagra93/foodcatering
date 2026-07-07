@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
+import { BCRYPT_COST } from '@/lib/auth/password'
 
 // ============================================================================
 // Schema de Validación
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Hash de la nueva contraseña
-    const hashedPassword = await bcrypt.hash(validated.newPassword, 10)
+    const hashedPassword = await bcrypt.hash(validated.newPassword, BCRYPT_COST)
 
     // Actualizar contraseña
     await prisma.user.update({
