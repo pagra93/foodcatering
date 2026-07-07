@@ -37,11 +37,11 @@ export default function TemplatesPage() {
         <SubModule
           href="/admin/templates/communication"
           icon={MessageSquare}
-          iconColor="text-gray-500"
+          iconColor="text-primary"
           title="Plantillas de comunicación"
-          description="Email/SMS/WhatsApp con variables. Feature planificada."
-          badge="Próximamente"
-          badgeVariant="secondary"
+          description="Emails del sistema: vista previa y envío de test."
+          badge="Activo"
+          badgeVariant="default"
         />
       </div>
     </div>

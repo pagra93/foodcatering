@@ -71,6 +71,11 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
   }
 }
 
+/** True si el envío real está configurado (hay RESEND_API_KEY). Solo servidor. */
+export function isEmailConfigured(): boolean {
+  return !!process.env['RESEND_API_KEY']
+}
+
 /** URL base pública de la app para construir enlaces en emails. */
 export function getAppBaseUrl(): string {
   return (

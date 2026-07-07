@@ -12,6 +12,8 @@ import {
   computeOrderIntegrityHash,
   recordOrderHistory,
 } from '@/lib/db/queries/order-history'
+import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
+import { incidentReportedEmail } from '@/lib/email/templates'
 
 function computeProofHash(orderId: string, deliveredAt: Date, proofType: string): string {
   return createHash('sha256')
@@ -118,7 +120,8 @@ export async function reportDeliveryIncident(
   data: ReportIncidentInput,
   reportedByUserId?: string
 ) {
-  return prisma.$transaction(async (tx) => {
+  const { incident, tenantEmpresa, orderId } = await prisma.$transaction(
+    async (tx) => {
     const order = await tx.order.findFirst({
       where: {
         id: data.orderId,
@@ -203,8 +206,36 @@ export async function reportDeliveryIncident(
       })
     }
 
-    return incident
+      return {
+        incident,
+        tenantEmpresa: order.tenantEmpresa,
+        orderId: order.id,
+      }
+    }
+  )
+
+  // Aviso de incidencia a la empresa (fuera de la tx; no bloquea el reporte si
+  // el envío falla).
+  const company = await prisma.company.findFirst({
+    where: { tenantId: tenantEmpresa },
+    select: { contactRrhhEmail: true, contactFinanceEmail: true },
   })
+  const to = company?.contactRrhhEmail ?? company?.contactFinanceEmail
+  if (to) {
+    const email = incidentReportedEmail({
+      orderRef: `PED-${orderId.slice(0, 8)}`,
+      description: data.description,
+      url: `${getAppBaseUrl()}/empresa/incidencias`,
+    })
+    await sendEmail({
+      to,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    })
+  }
+
+  return incident
 }
 
 /**
