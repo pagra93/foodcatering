@@ -20,13 +20,15 @@ WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
-# Instalar SOLO dependencies (sin devDependencies) — se copia al runner.
-# Así evitamos arrastrar TypeScript, Vitest, Playwright, etc. a la imagen final.
-FROM base AS prod-deps
+# node_modules SOLO de producción (sin devDependencies) — se copia al runner.
+# IMPORTANTE: se deriva de `deps`, NO hace un SEGUNDO `pnpm install`. BuildKit
+# corre los stages en paralelo; tener dos `pnpm install` a la vez (este + el de
+# `deps`) duplicaba el pico de RAM/CPU/disco y tumbaba el build en servidores
+# pequeños (síntoma: "pillado" en el paso de install). Al derivar de `deps` y
+# solo PODAR devDependencies, este stage es ligero y corre DESPUÉS de `deps`.
+FROM deps AS prod-deps
 WORKDIR /app
-
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --prod --frozen-lockfile
+RUN pnpm prune --prod
 
 # Build stage: genera .next/standalone usando TODAS las deps
 FROM base AS builder
