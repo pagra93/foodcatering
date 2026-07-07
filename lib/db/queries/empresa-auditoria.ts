@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db/prisma'
 import { endOfMonth } from 'date-fns'
 import crypto from 'crypto'
 import { getEffectiveHolidays } from '@/lib/db/queries/catalogs'
+import { IRPF_LIMIT_PER_DAY } from '@/lib/landing/irpf'
 
 // ============================================================================
 // OBTENER O GENERAR REPORTE FISCAL MENSUAL
@@ -83,10 +84,11 @@ async function generateFiscalReport(
   const totalOrders = orders.length
   const totalAmount = orders.reduce((sum, o) => sum + Number(o.price), 0)
 
-  // Calcular deducibilidad (≤11€ según Art. 45 RIRPF)
-  const deductibleOrders = orders.filter((o) => Number(o.price) <= 11)
-  const deductibleAmount = deductibleOrders.reduce(
-    (sum, o) => sum + Number(o.price),
+  // Deducibilidad IRPF (Art. 42.3 LIRPF): exentos los primeros 11€/día; el
+  // exceso SÍ tributa. Se topa cada día en 11€ (no se descarta el día entero).
+  // Un pedido = un día por empleado (@@unique tenantEmpresa+employeeId+serviceDate).
+  const deductibleAmount = orders.reduce(
+    (sum, o) => sum + Math.min(Number(o.price), IRPF_LIMIT_PER_DAY),
     0
   )
 
@@ -123,9 +125,7 @@ async function generateFiscalReport(
     }
     acc[empId].orders++
     acc[empId].amount += Number(order.price)
-    if (Number(order.price) <= 11) {
-      acc[empId].deductible += Number(order.price)
-    }
+    acc[empId].deductible += Math.min(Number(order.price), IRPF_LIMIT_PER_DAY)
     return acc
   }, {} as Record<string, any>)
 
