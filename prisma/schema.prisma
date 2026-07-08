@@ -233,6 +233,10 @@ model Company {
   cif            String      @unique
   billingAddress String      @map("billing_address")
   saasPlanId     String?     @map("saas_plan_id") // FK dinámica al catálogo SaasPlan
+  // Ciclo de cobro del plan SaaS. YEARLY factura el precio anual una vez al año,
+  // en el mes de aniversario (subscriptionStartedAt). Ver F3.
+  billingCycle         SaasBillingCycle @default(MONTHLY) @map("billing_cycle")
+  subscriptionStartedAt DateTime?       @map("subscription_started_at")
 
   // ===== CONTACTOS =====
   contactRrhhName     String? @map("contact_rrhh_name")
@@ -1804,6 +1808,14 @@ enum SaasInvoiceStatus {
   @@map("saas_invoice_status")
 }
 
+/// Ciclo de cobro del plan SaaS de una empresa (F3).
+enum SaasBillingCycle {
+  MONTHLY
+  YEARLY
+
+  @@map("saas_billing_cycle")
+}
+
 /// Factura SaaS mensual emitida por Plati a una empresa por su plan.
 /// Flujo independiente de las facturas que recibe del catering.
 model SaasInvoice {
@@ -1813,6 +1825,7 @@ model SaasInvoice {
   planCode      String            @map("plan_code") // snapshot del código del plan al emitir
   planName      String            @map("plan_name") // snapshot del nombre al emitir
   number        String // correlativo tipo SAAS-2026-0001
+  cycle         SaasBillingCycle  @default(MONTHLY) // ciclo facturado (snapshot)
   subtotal      Decimal           @db.Decimal(10, 2)
   taxRate       Decimal           @db.Decimal(5, 2) @map("tax_rate")
   taxAmount     Decimal           @db.Decimal(10, 2) @map("tax_amount")

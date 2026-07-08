@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
+import { isAnnualBillingDue } from '@/lib/billing/cycle'
 import {
   DEFAULT_DUE_DAYS,
   generateMonthSchema,
@@ -172,8 +173,15 @@ export async function generateMonthBillingAction(input: {
     where: {
       tenant: { status: 'ACTIVE', deletedAt: null },
     },
-    select: { tenantId: true, legalName: true, saasPlanId: true },
+    select: {
+      tenantId: true,
+      legalName: true,
+      saasPlanId: true,
+      billingCycle: true,
+      subscriptionStartedAt: true,
+    },
   })
+
 
   const plans = await prisma.saasPlan.findMany({ where: { active: true } })
   const planById = new Map(plans.map((p) => [p.id, p]))
@@ -211,11 +219,19 @@ export async function generateMonthBillingAction(input: {
       continue
     }
 
-    const subtotal = Number(plan.monthlyPrice)
-    // M3: no emitir facturas de 0€ (p.ej. un plan con precio anual y monthlyPrice=0).
-    // La facturación de planes ANUALES por mes de aniversario (opción elegida) se
-    // implementará como feature cuando se ofrezcan planes anuales — hoy todos los
-    // planes en uso son mensuales, así que no hay nada mal facturado por esto.
+    // F3: ciclo de cobro. YEARLY cobra el precio anual UNA vez al año, en el mes
+    // de aniversario del alta (subscriptionStartedAt); el resto de meses se salta.
+    let subtotal: number
+    if (c.billingCycle === 'YEARLY') {
+      if (!isAnnualBillingDue(period, c.subscriptionStartedAt)) {
+        saasSkipped++
+        continue
+      }
+      subtotal = plan.yearlyPrice ? Number(plan.yearlyPrice) : 0
+    } else {
+      subtotal = Number(plan.monthlyPrice)
+    }
+    // No emitir facturas de 0€ (plan sin precio para el ciclo elegido).
     if (subtotal <= 0) {
       saasSkipped++
       continue
@@ -243,6 +259,7 @@ export async function generateMonthBillingAction(input: {
             planCode: plan.code,
             planName: plan.name,
             number,
+            cycle: c.billingCycle,
             subtotal,
             taxRate,
             taxAmount,

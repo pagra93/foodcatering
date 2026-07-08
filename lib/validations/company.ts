@@ -40,6 +40,8 @@ export const createCompanySchema = z.object({
   // con cuotas ilimitadas y sin facturar). En edición (updateCompanySchema =
   // .partial()) sigue siendo opcional, así que editar otros campos no lo exige.
   saasPlanId: z.string().uuid('Selecciona un plan'),
+  // F3: ciclo de cobro del plan. YEARLY factura el precio anual en el aniversario.
+  billingCycle: z.enum(['MONTHLY', 'YEARLY']).default('MONTHLY'),
 
   // ===== POLÍTICA DE SERVICIO (CompanyPolicy) =====
   policy: z.object({

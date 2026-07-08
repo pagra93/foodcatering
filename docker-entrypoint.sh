@@ -86,6 +86,19 @@ else
   fi
 fi
 
+# Seed idempotente del RBAC (roles + permisos + backfill de User.roleId).
+# La migración `add_rbac_dynamic` crea las tablas VACÍAS; esto las rellena con el
+# catálogo (scripts/rbac-catalog.json). Es un upsert, seguro de repetir en cada
+# arranque. No bloquea el inicio del servidor si falla.
+if [ "$MIGRATION_SUCCESS" = true ] && [ -f "scripts/seed-rbac-prod.mjs" ]; then
+  echo "🌱 Sembrando RBAC (roles y permisos, idempotente)..."
+  if ALLOW_PROD=1 node scripts/seed-rbac-prod.mjs 2>&1; then
+    echo "✅ RBAC sembrado"
+  else
+    echo "⚠️  Falló el seed de RBAC (continuando con el arranque; revisa logs)"
+  fi
+fi
+
 # Verificar que server.js existe
 echo "🔍 Verificando archivos del servidor..."
 if [ ! -f "server.js" ]; then

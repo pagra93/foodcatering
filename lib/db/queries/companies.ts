@@ -893,6 +893,7 @@ export async function getCompanyById(tenantId: string) {
       billingAddress: company.billingAddress,
       plan: company.saasPlan?.name ?? '—',
       saasPlanId: company.saasPlanId,
+      billingCycle: company.billingCycle,
       // Política de servicio incluida en company
       policy: company.policy,
     },
@@ -972,6 +973,7 @@ export async function createCompany(data: {
   cif: string
   billingAddress: string
   saasPlanId?: string | null
+  billingCycle?: 'MONTHLY' | 'YEARLY'
   policy: {
     cutoffTime: string
     daysActive: string[]
@@ -1016,6 +1018,9 @@ export async function createCompany(data: {
         cif: data.cif,
         billingAddress: data.billingAddress,
         saasPlanId: data.saasPlanId ?? null,
+        billingCycle: data.billingCycle ?? 'MONTHLY',
+        // Ancla de aniversario: al asignar plan, arranca la suscripción hoy (F3).
+        subscriptionStartedAt: data.saasPlanId ? new Date() : null,
       },
     })
 
@@ -1071,6 +1076,7 @@ export async function updateCompany(
     legalName: string
     billingAddress: string
     saasPlanId: string | null
+    billingCycle: 'MONTHLY' | 'YEARLY'
     policy: {
       cutoffTime: string
       daysActive: string[]
@@ -1095,18 +1101,29 @@ export async function updateCompany(
     })
 
     // 2. Si hay datos de company, actualizar
-    if (data.legalName || data.billingAddress || data.saasPlanId) {
+    if (
+      data.legalName ||
+      data.billingAddress ||
+      data.saasPlanId ||
+      data.billingCycle
+    ) {
       const company = await tx.company.findFirst({
         where: { tenantId },
       })
 
       if (company) {
+        // Si aún no tiene ancla de aniversario y (ya) tiene plan, arrancarla (F3).
+        const startsSubscription =
+          !company.subscriptionStartedAt &&
+          (data.saasPlanId || company.saasPlanId)
         await tx.company.update({
           where: { id: company.id },
           data: {
             legalName: data.legalName,
             billingAddress: data.billingAddress,
             ...(data.saasPlanId ? { saasPlanId: data.saasPlanId } : {}),
+            ...(data.billingCycle ? { billingCycle: data.billingCycle } : {}),
+            ...(startsSubscription ? { subscriptionStartedAt: new Date() } : {}),
           },
         })
       }

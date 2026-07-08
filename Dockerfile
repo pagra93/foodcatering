@@ -78,6 +78,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 # desde la terminal de Coolify: `ALLOW_PROD=1 node scripts/prod-seguridad-migracion.mjs`)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/prod-seguridad-migracion.mjs ./scripts/prod-seguridad-migracion.mjs
 
+# Seed RBAC prod (JS puro + catálogo JSON). Lo ejecuta el entrypoint tras
+# `migrate deploy` (idempotente) para rellenar roles/permisos, que la migración
+# crea vacíos. También corrible a mano: `ALLOW_PROD=1 node scripts/seed-rbac-prod.mjs`.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed-rbac-prod.mjs ./scripts/seed-rbac-prod.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/rbac-catalog.json ./scripts/rbac-catalog.json
+
 # node_modules solo con prod deps (incluye CLI de `prisma` porque lo movimos
 # a dependencies). Reemplaza el node_modules que trae el standalone por uno
 # completo de prod — así `prisma migrate deploy` encuentra el binario.

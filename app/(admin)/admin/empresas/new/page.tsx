@@ -36,6 +36,8 @@ async function createCompanyAction(formData: FormData) {
     cif: formData.get('cif') as string,
     billingAddress: formData.get('billingAddress') as string,
     saasPlanId: (formData.get('saasPlanId') as string) || undefined,
+    billingCycle:
+      (formData.get('billingCycle') as 'MONTHLY' | 'YEARLY') || 'MONTHLY',
 
     // Política de servicio
     policy: {

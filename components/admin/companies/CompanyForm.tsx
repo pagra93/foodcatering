@@ -240,6 +240,26 @@ export function CompanyForm({ action, initialData, plans = [] }: CompanyFormProp
               Define precio, límites y funcionalidades de la empresa.
             </p>
           </div>
+
+          <div>
+            <Label htmlFor="billingCycle">Ciclo de cobro</Label>
+            <Select
+              name="billingCycle"
+              defaultValue={initialData?.company?.billingCycle ?? 'MONTHLY'}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Mensual" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="MONTHLY">Mensual</SelectItem>
+                <SelectItem value="YEARLY">Anual (precio anual del plan)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="mt-1 text-xs text-gray-500">
+              Anual factura el precio anual una vez al año, en el mes de alta.
+              Requiere que el plan tenga precio anual.
+            </p>
+          </div>
         </div>
       </div>
 

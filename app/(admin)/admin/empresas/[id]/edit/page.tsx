@@ -33,6 +33,8 @@ async function updateCompanyAction(id: string, formData: FormData) {
     legalName: formData.get('legalName') as string,
     billingAddress: formData.get('billingAddress') as string,
     saasPlanId: (formData.get('saasPlanId') as string) || undefined,
+    billingCycle:
+      (formData.get('billingCycle') as 'MONTHLY' | 'YEARLY') || undefined,
 
     // Política de servicio
     policy: {

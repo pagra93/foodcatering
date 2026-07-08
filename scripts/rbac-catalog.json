@@ -1,0 +1,2094 @@
+{
+  "generatedFrom": "comidas_dev",
+  "permissions": [
+    {
+      "key": "admin-invoice:view",
+      "resource": "admin-invoice",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver todas las facturas de comida"
+    },
+    {
+      "key": "allergen:create",
+      "resource": "allergen",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear alérgenos"
+    },
+    {
+      "key": "allergen:delete",
+      "resource": "allergen",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar alérgenos"
+    },
+    {
+      "key": "allergen:edit",
+      "resource": "allergen",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar alérgenos"
+    },
+    {
+      "key": "allergen:view",
+      "resource": "allergen",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver alérgenos"
+    },
+    {
+      "key": "announcement:create",
+      "resource": "announcement",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear aviso"
+    },
+    {
+      "key": "announcement:edit",
+      "resource": "announcement",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar aviso"
+    },
+    {
+      "key": "announcement:publish",
+      "resource": "announcement",
+      "action": "publish",
+      "portal": "ADMIN",
+      "description": "Publicar aviso"
+    },
+    {
+      "key": "announcement:view",
+      "resource": "announcement",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver avisos"
+    },
+    {
+      "key": "api-key:create",
+      "resource": "api-key",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Generar API key"
+    },
+    {
+      "key": "api-key:delete",
+      "resource": "api-key",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Revocar API key"
+    },
+    {
+      "key": "api-key:view",
+      "resource": "api-key",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver API keys"
+    },
+    {
+      "key": "audit-log:view",
+      "resource": "audit-log",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver la traza de auditoría"
+    },
+    {
+      "key": "audit:create",
+      "resource": "audit",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear auditoría"
+    },
+    {
+      "key": "audit:edit",
+      "resource": "audit",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar auditoría"
+    },
+    {
+      "key": "audit:export",
+      "resource": "audit",
+      "action": "export",
+      "portal": "ADMIN",
+      "description": "Exportar auditoría"
+    },
+    {
+      "key": "audit:view",
+      "resource": "audit",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver auditorías"
+    },
+    {
+      "key": "backup:create",
+      "resource": "backup",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear backup"
+    },
+    {
+      "key": "backup:download",
+      "resource": "backup",
+      "action": "download",
+      "portal": "ADMIN",
+      "description": "Descargar backup"
+    },
+    {
+      "key": "backup:restore",
+      "resource": "backup",
+      "action": "restore",
+      "portal": "ADMIN",
+      "description": "Restaurar backup"
+    },
+    {
+      "key": "backup:view",
+      "resource": "backup",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver backups"
+    },
+    {
+      "key": "calendar:create",
+      "resource": "calendar",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear calendarios"
+    },
+    {
+      "key": "calendar:delete",
+      "resource": "calendar",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar calendarios"
+    },
+    {
+      "key": "calendar:edit",
+      "resource": "calendar",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar calendarios"
+    },
+    {
+      "key": "calendar:view",
+      "resource": "calendar",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver calendarios"
+    },
+    {
+      "key": "cat-audit:export",
+      "resource": "cat-audit",
+      "action": "export",
+      "portal": "CATERING",
+      "description": "Exportar auditoría"
+    },
+    {
+      "key": "cat-audit:view",
+      "resource": "cat-audit",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver auditoría"
+    },
+    {
+      "key": "cat-billing:view",
+      "resource": "cat-billing",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver facturación"
+    },
+    {
+      "key": "cat-config-branding:edit",
+      "resource": "cat-config-branding",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar branding"
+    },
+    {
+      "key": "cat-config-branding:view",
+      "resource": "cat-config-branding",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver branding"
+    },
+    {
+      "key": "cat-config-holidays:create",
+      "resource": "cat-config-holidays",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear festivos"
+    },
+    {
+      "key": "cat-config-holidays:delete",
+      "resource": "cat-config-holidays",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar festivos"
+    },
+    {
+      "key": "cat-config-holidays:edit",
+      "resource": "cat-config-holidays",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar festivos"
+    },
+    {
+      "key": "cat-config-holidays:view",
+      "resource": "cat-config-holidays",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver festivos"
+    },
+    {
+      "key": "cat-config-role:create",
+      "resource": "cat-config-role",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear roles del catering"
+    },
+    {
+      "key": "cat-config-role:delete",
+      "resource": "cat-config-role",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar roles del catering"
+    },
+    {
+      "key": "cat-config-role:edit",
+      "resource": "cat-config-role",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar roles del catering"
+    },
+    {
+      "key": "cat-config-role:view",
+      "resource": "cat-config-role",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver roles del catering"
+    },
+    {
+      "key": "cat-config-template:create",
+      "resource": "cat-config-template",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear plantillas de menú"
+    },
+    {
+      "key": "cat-config-template:delete",
+      "resource": "cat-config-template",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar plantillas de menú"
+    },
+    {
+      "key": "cat-config-template:edit",
+      "resource": "cat-config-template",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar plantillas de menú"
+    },
+    {
+      "key": "cat-config-template:view",
+      "resource": "cat-config-template",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver plantillas de menú"
+    },
+    {
+      "key": "cat-config-user:create",
+      "resource": "cat-config-user",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear usuarios del catering"
+    },
+    {
+      "key": "cat-config-user:delete",
+      "resource": "cat-config-user",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar usuarios del catering"
+    },
+    {
+      "key": "cat-config-user:edit",
+      "resource": "cat-config-user",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar usuarios del catering"
+    },
+    {
+      "key": "cat-config-user:view",
+      "resource": "cat-config-user",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver usuarios del catering"
+    },
+    {
+      "key": "cat-config-zone:create",
+      "resource": "cat-config-zone",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear zonas"
+    },
+    {
+      "key": "cat-config-zone:delete",
+      "resource": "cat-config-zone",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar zonas"
+    },
+    {
+      "key": "cat-config-zone:edit",
+      "resource": "cat-config-zone",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar zonas"
+    },
+    {
+      "key": "cat-config-zone:view",
+      "resource": "cat-config-zone",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver zonas"
+    },
+    {
+      "key": "cat-dashboard:view",
+      "resource": "cat-dashboard",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver el dashboard"
+    },
+    {
+      "key": "cat-incident:resolve",
+      "resource": "cat-incident",
+      "action": "resolve",
+      "portal": "CATERING",
+      "description": "Resolver incidencia"
+    },
+    {
+      "key": "cat-incident:view",
+      "resource": "cat-incident",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver incidencias"
+    },
+    {
+      "key": "catering:add-document",
+      "resource": "catering",
+      "action": "add-document",
+      "portal": "ADMIN",
+      "description": "Añadir documentos del catering"
+    },
+    {
+      "key": "catering:create",
+      "resource": "catering",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear catering"
+    },
+    {
+      "key": "catering:edit",
+      "resource": "catering",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar catering"
+    },
+    {
+      "key": "catering:edit-status",
+      "resource": "catering",
+      "action": "edit-status",
+      "portal": "ADMIN",
+      "description": "Suspender/activar catering"
+    },
+    {
+      "key": "catering:impersonate",
+      "resource": "catering",
+      "action": "impersonate",
+      "portal": "ADMIN",
+      "description": "Impersonar usuarios del catering"
+    },
+    {
+      "key": "catering:view",
+      "resource": "catering",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver caterings"
+    },
+    {
+      "key": "client-company:view",
+      "resource": "client-company",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver empresas clientes"
+    },
+    {
+      "key": "client-company:view-detail",
+      "resource": "client-company",
+      "action": "view-detail",
+      "portal": "CATERING",
+      "description": "Ver detalle de empresa cliente"
+    },
+    {
+      "key": "commission:edit",
+      "resource": "commission",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar comisiones"
+    },
+    {
+      "key": "commission:view",
+      "resource": "commission",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver comisiones"
+    },
+    {
+      "key": "dashboard:view",
+      "resource": "dashboard",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver el dashboard"
+    },
+    {
+      "key": "dish:clone",
+      "resource": "dish",
+      "action": "clone",
+      "portal": "CATERING",
+      "description": "Clonar plato"
+    },
+    {
+      "key": "dish:create",
+      "resource": "dish",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear platos"
+    },
+    {
+      "key": "dish:delete",
+      "resource": "dish",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar platos"
+    },
+    {
+      "key": "dish:edit",
+      "resource": "dish",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar platos"
+    },
+    {
+      "key": "dish:toggle-active",
+      "resource": "dish",
+      "action": "toggle-active",
+      "portal": "CATERING",
+      "description": "Activar/desactivar plato"
+    },
+    {
+      "key": "dish:view",
+      "resource": "dish",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver platos"
+    },
+    {
+      "key": "dpa:create",
+      "resource": "dpa",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear DPA"
+    },
+    {
+      "key": "dpa:edit",
+      "resource": "dpa",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar DPA"
+    },
+    {
+      "key": "dpa:view",
+      "resource": "dpa",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver DPA"
+    },
+    {
+      "key": "emp-activity:view",
+      "resource": "emp-activity",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver actividad"
+    },
+    {
+      "key": "emp-billing:export",
+      "resource": "emp-billing",
+      "action": "export",
+      "portal": "EMPRESA",
+      "description": "Exportar facturas"
+    },
+    {
+      "key": "emp-billing:view",
+      "resource": "emp-billing",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver facturación"
+    },
+    {
+      "key": "emp-catering:rate",
+      "resource": "emp-catering",
+      "action": "rate",
+      "portal": "EMPRESA",
+      "description": "Calificar al catering"
+    },
+    {
+      "key": "emp-catering:view",
+      "resource": "emp-catering",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver el catering"
+    },
+    {
+      "key": "emp-config-branding:edit",
+      "resource": "emp-config-branding",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar branding"
+    },
+    {
+      "key": "emp-config-branding:view",
+      "resource": "emp-config-branding",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver branding"
+    },
+    {
+      "key": "emp-config-document:upload",
+      "resource": "emp-config-document",
+      "action": "upload",
+      "portal": "EMPRESA",
+      "description": "Subir documentos"
+    },
+    {
+      "key": "emp-config-document:view",
+      "resource": "emp-config-document",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver documentos"
+    },
+    {
+      "key": "emp-config-holidays:create",
+      "resource": "emp-config-holidays",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Crear festivos"
+    },
+    {
+      "key": "emp-config-holidays:delete",
+      "resource": "emp-config-holidays",
+      "action": "delete",
+      "portal": "EMPRESA",
+      "description": "Eliminar festivos"
+    },
+    {
+      "key": "emp-config-holidays:edit",
+      "resource": "emp-config-holidays",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar festivos"
+    },
+    {
+      "key": "emp-config-holidays:view",
+      "resource": "emp-config-holidays",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver festivos"
+    },
+    {
+      "key": "emp-config-role:create",
+      "resource": "emp-config-role",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Crear roles de la empresa"
+    },
+    {
+      "key": "emp-config-role:delete",
+      "resource": "emp-config-role",
+      "action": "delete",
+      "portal": "EMPRESA",
+      "description": "Eliminar roles de la empresa"
+    },
+    {
+      "key": "emp-config-role:edit",
+      "resource": "emp-config-role",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar roles de la empresa"
+    },
+    {
+      "key": "emp-config-role:view",
+      "resource": "emp-config-role",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver roles de la empresa"
+    },
+    {
+      "key": "emp-config-site:create",
+      "resource": "emp-config-site",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Crear sedes"
+    },
+    {
+      "key": "emp-config-site:delete",
+      "resource": "emp-config-site",
+      "action": "delete",
+      "portal": "EMPRESA",
+      "description": "Eliminar sedes"
+    },
+    {
+      "key": "emp-config-site:edit",
+      "resource": "emp-config-site",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar sedes"
+    },
+    {
+      "key": "emp-config-site:view",
+      "resource": "emp-config-site",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver sedes"
+    },
+    {
+      "key": "emp-config-user:create",
+      "resource": "emp-config-user",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Crear usuarios de la empresa"
+    },
+    {
+      "key": "emp-config-user:delete",
+      "resource": "emp-config-user",
+      "action": "delete",
+      "portal": "EMPRESA",
+      "description": "Eliminar usuarios de la empresa"
+    },
+    {
+      "key": "emp-config-user:edit",
+      "resource": "emp-config-user",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar usuarios de la empresa"
+    },
+    {
+      "key": "emp-config-user:view",
+      "resource": "emp-config-user",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver usuarios de la empresa"
+    },
+    {
+      "key": "emp-config:edit",
+      "resource": "emp-config",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar datos de empresa"
+    },
+    {
+      "key": "emp-config:edit-plan",
+      "resource": "emp-config",
+      "action": "edit-plan",
+      "portal": "EMPRESA",
+      "description": "Cambiar el plan"
+    },
+    {
+      "key": "emp-config:view",
+      "resource": "emp-config",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver configuración"
+    },
+    {
+      "key": "emp-dashboard:view",
+      "resource": "emp-dashboard",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver el dashboard"
+    },
+    {
+      "key": "emp-fiscal:export",
+      "resource": "emp-fiscal",
+      "action": "export",
+      "portal": "EMPRESA",
+      "description": "Exportar auditoría fiscal"
+    },
+    {
+      "key": "emp-fiscal:view",
+      "resource": "emp-fiscal",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver auditoría fiscal"
+    },
+    {
+      "key": "emp-incident-own:create",
+      "resource": "emp-incident-own",
+      "action": "create",
+      "portal": "EMPLEADO",
+      "description": "Reportar incidencia"
+    },
+    {
+      "key": "emp-incident-own:view",
+      "resource": "emp-incident-own",
+      "action": "view",
+      "portal": "EMPLEADO",
+      "description": "Ver incidencias propias"
+    },
+    {
+      "key": "emp-incident:close",
+      "resource": "emp-incident",
+      "action": "close",
+      "portal": "EMPRESA",
+      "description": "Cerrar incidencia"
+    },
+    {
+      "key": "emp-incident:create",
+      "resource": "emp-incident",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Reportar incidencia"
+    },
+    {
+      "key": "emp-incident:escalate",
+      "resource": "emp-incident",
+      "action": "escalate",
+      "portal": "EMPRESA",
+      "description": "Escalar a catering"
+    },
+    {
+      "key": "emp-incident:view",
+      "resource": "emp-incident",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver incidencias"
+    },
+    {
+      "key": "emp-order:export",
+      "resource": "emp-order",
+      "action": "export",
+      "portal": "EMPRESA",
+      "description": "Exportar pedidos"
+    },
+    {
+      "key": "emp-order:view",
+      "resource": "emp-order",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver pedidos"
+    },
+    {
+      "key": "emp-rating-own:create",
+      "resource": "emp-rating-own",
+      "action": "create",
+      "portal": "EMPLEADO",
+      "description": "Valorar platos"
+    },
+    {
+      "key": "emp-rating-own:view",
+      "resource": "emp-rating-own",
+      "action": "view",
+      "portal": "EMPLEADO",
+      "description": "Ver valoraciones propias"
+    },
+    {
+      "key": "employee:create",
+      "resource": "employee",
+      "action": "create",
+      "portal": "EMPRESA",
+      "description": "Crear empleados"
+    },
+    {
+      "key": "employee:delete",
+      "resource": "employee",
+      "action": "delete",
+      "portal": "EMPRESA",
+      "description": "Eliminar empleados"
+    },
+    {
+      "key": "employee:edit",
+      "resource": "employee",
+      "action": "edit",
+      "portal": "EMPRESA",
+      "description": "Editar empleados"
+    },
+    {
+      "key": "employee:edit-status",
+      "resource": "employee",
+      "action": "edit-status",
+      "portal": "EMPRESA",
+      "description": "Activar/suspender empleado"
+    },
+    {
+      "key": "employee:export",
+      "resource": "employee",
+      "action": "export",
+      "portal": "EMPRESA",
+      "description": "Exportar empleados"
+    },
+    {
+      "key": "employee:gdpr",
+      "resource": "employee",
+      "action": "gdpr",
+      "portal": "EMPRESA",
+      "description": "Exportar/eliminar datos personales (RGPD)"
+    },
+    {
+      "key": "employee:view",
+      "resource": "employee",
+      "action": "view",
+      "portal": "EMPRESA",
+      "description": "Ver empleados"
+    },
+    {
+      "key": "empresa:assign-catering",
+      "resource": "empresa",
+      "action": "assign-catering",
+      "portal": "ADMIN",
+      "description": "Asignar/quitar caterings a una empresa"
+    },
+    {
+      "key": "empresa:create",
+      "resource": "empresa",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear empresa"
+    },
+    {
+      "key": "empresa:edit",
+      "resource": "empresa",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar empresa"
+    },
+    {
+      "key": "empresa:edit-status",
+      "resource": "empresa",
+      "action": "edit-status",
+      "portal": "ADMIN",
+      "description": "Suspender/activar empresa"
+    },
+    {
+      "key": "empresa:view",
+      "resource": "empresa",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver empresas"
+    },
+    {
+      "key": "empresa:view-alerts",
+      "resource": "empresa",
+      "action": "view-alerts",
+      "portal": "ADMIN",
+      "description": "Ver alertas de empresas"
+    },
+    {
+      "key": "empresa:view-reports",
+      "resource": "empresa",
+      "action": "view-reports",
+      "portal": "ADMIN",
+      "description": "Ver reportes de empresas"
+    },
+    {
+      "key": "fiscal-audit:export",
+      "resource": "fiscal-audit",
+      "action": "export",
+      "portal": "ADMIN",
+      "description": "Exportar auditoría fiscal"
+    },
+    {
+      "key": "fiscal-audit:view",
+      "resource": "fiscal-audit",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver auditoría fiscal"
+    },
+    {
+      "key": "gdpr:process",
+      "resource": "gdpr",
+      "action": "process",
+      "portal": "ADMIN",
+      "description": "Procesar solicitud RGPD"
+    },
+    {
+      "key": "gdpr:view",
+      "resource": "gdpr",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver solicitudes RGPD"
+    },
+    {
+      "key": "health:view",
+      "resource": "health",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver health checks"
+    },
+    {
+      "key": "history:export",
+      "resource": "history",
+      "action": "export",
+      "portal": "EMPLEADO",
+      "description": "Exportar historial"
+    },
+    {
+      "key": "history:view",
+      "resource": "history",
+      "action": "view",
+      "portal": "EMPLEADO",
+      "description": "Ver el historial"
+    },
+    {
+      "key": "impersonate:start",
+      "resource": "impersonate",
+      "action": "start",
+      "portal": "ADMIN",
+      "description": "Iniciar impersonación"
+    },
+    {
+      "key": "impersonate:stop",
+      "resource": "impersonate",
+      "action": "stop",
+      "portal": "ADMIN",
+      "description": "Finalizar impersonación"
+    },
+    {
+      "key": "impersonate:view",
+      "resource": "impersonate",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver impersonación"
+    },
+    {
+      "key": "incident-reason:create",
+      "resource": "incident-reason",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear motivos de incidencia"
+    },
+    {
+      "key": "incident-reason:delete",
+      "resource": "incident-reason",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar motivos de incidencia"
+    },
+    {
+      "key": "incident-reason:edit",
+      "resource": "incident-reason",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar motivos de incidencia"
+    },
+    {
+      "key": "incident-reason:view",
+      "resource": "incident-reason",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver motivos de incidencia"
+    },
+    {
+      "key": "incident:assign",
+      "resource": "incident",
+      "action": "assign",
+      "portal": "ADMIN",
+      "description": "Asignar incidencia"
+    },
+    {
+      "key": "incident:close",
+      "resource": "incident",
+      "action": "close",
+      "portal": "ADMIN",
+      "description": "Cerrar incidencia"
+    },
+    {
+      "key": "incident:view",
+      "resource": "incident",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver incidencias"
+    },
+    {
+      "key": "integration:configure",
+      "resource": "integration",
+      "action": "configure",
+      "portal": "ADMIN",
+      "description": "Configurar integraciones"
+    },
+    {
+      "key": "integration:view",
+      "resource": "integration",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver integraciones"
+    },
+    {
+      "key": "invoice:download",
+      "resource": "invoice",
+      "action": "download",
+      "portal": "CATERING",
+      "description": "Descargar factura"
+    },
+    {
+      "key": "invoice:generate",
+      "resource": "invoice",
+      "action": "generate",
+      "portal": "CATERING",
+      "description": "Generar factura"
+    },
+    {
+      "key": "invoice:pay",
+      "resource": "invoice",
+      "action": "pay",
+      "portal": "CATERING",
+      "description": "Marcar factura como pagada"
+    },
+    {
+      "key": "invoice:view",
+      "resource": "invoice",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver facturas"
+    },
+    {
+      "key": "maintenance:run",
+      "resource": "maintenance",
+      "action": "run",
+      "portal": "ADMIN",
+      "description": "Ejecutar mantenimiento"
+    },
+    {
+      "key": "maintenance:view",
+      "resource": "maintenance",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver mantenimiento"
+    },
+    {
+      "key": "menu-select:select",
+      "resource": "menu-select",
+      "action": "select",
+      "portal": "EMPLEADO",
+      "description": "Seleccionar menú"
+    },
+    {
+      "key": "menu-select:view",
+      "resource": "menu-select",
+      "action": "view",
+      "portal": "EMPLEADO",
+      "description": "Ver menús disponibles"
+    },
+    {
+      "key": "menu:edit-day",
+      "resource": "menu",
+      "action": "edit-day",
+      "portal": "CATERING",
+      "description": "Editar el menú de un día"
+    },
+    {
+      "key": "menu:publish",
+      "resource": "menu",
+      "action": "publish",
+      "portal": "CATERING",
+      "description": "Publicar menú"
+    },
+    {
+      "key": "menu:view",
+      "resource": "menu",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver menús"
+    },
+    {
+      "key": "metric:view",
+      "resource": "metric",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver métricas"
+    },
+    {
+      "key": "migration:cancel",
+      "resource": "migration",
+      "action": "cancel",
+      "portal": "ADMIN",
+      "description": "Cancelar migración"
+    },
+    {
+      "key": "migration:start",
+      "resource": "migration",
+      "action": "start",
+      "portal": "ADMIN",
+      "description": "Iniciar migración"
+    },
+    {
+      "key": "migration:view",
+      "resource": "migration",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver migraciones"
+    },
+    {
+      "key": "penalty:create",
+      "resource": "penalty",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear penalización"
+    },
+    {
+      "key": "penalty:edit",
+      "resource": "penalty",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar penalización"
+    },
+    {
+      "key": "penalty:view",
+      "resource": "penalty",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver penalizaciones"
+    },
+    {
+      "key": "plan:create",
+      "resource": "plan",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear plan"
+    },
+    {
+      "key": "plan:delete",
+      "resource": "plan",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar plan"
+    },
+    {
+      "key": "plan:edit",
+      "resource": "plan",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar plan"
+    },
+    {
+      "key": "plan:view",
+      "resource": "plan",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver planes SaaS"
+    },
+    {
+      "key": "production:mark-packed",
+      "resource": "production",
+      "action": "mark-packed",
+      "portal": "CATERING",
+      "description": "Marcar como empaquetado"
+    },
+    {
+      "key": "production:mark-ready",
+      "resource": "production",
+      "action": "mark-ready",
+      "portal": "CATERING",
+      "description": "Marcar como listo"
+    },
+    {
+      "key": "production:print-labels",
+      "resource": "production",
+      "action": "print-labels",
+      "portal": "CATERING",
+      "description": "Generar/imprimir etiquetas"
+    },
+    {
+      "key": "production:view",
+      "resource": "production",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver producción"
+    },
+    {
+      "key": "profile:change-password",
+      "resource": "profile",
+      "action": "change-password",
+      "portal": "EMPLEADO",
+      "description": "Cambiar contraseña"
+    },
+    {
+      "key": "profile:edit",
+      "resource": "profile",
+      "action": "edit",
+      "portal": "EMPLEADO",
+      "description": "Editar datos personales"
+    },
+    {
+      "key": "profile:view",
+      "resource": "profile",
+      "action": "view",
+      "portal": "EMPLEADO",
+      "description": "Ver el perfil"
+    },
+    {
+      "key": "quality:dispute-penalty",
+      "resource": "quality",
+      "action": "dispute-penalty",
+      "portal": "CATERING",
+      "description": "Impugnar penalización"
+    },
+    {
+      "key": "quality:view",
+      "resource": "quality",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver calidad"
+    },
+    {
+      "key": "rate-limit:edit",
+      "resource": "rate-limit",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar rate limiting"
+    },
+    {
+      "key": "rate-limit:view",
+      "resource": "rate-limit",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver rate limiting"
+    },
+    {
+      "key": "rating:view",
+      "resource": "rating",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver ratings"
+    },
+    {
+      "key": "retention:edit",
+      "resource": "retention",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar retención"
+    },
+    {
+      "key": "retention:view",
+      "resource": "retention",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver retención"
+    },
+    {
+      "key": "role:create",
+      "resource": "role",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear rol"
+    },
+    {
+      "key": "role:delete",
+      "resource": "role",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar rol personalizado"
+    },
+    {
+      "key": "role:edit",
+      "resource": "role",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar rol y sus permisos"
+    },
+    {
+      "key": "role:view",
+      "resource": "role",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver roles"
+    },
+    {
+      "key": "route:complete",
+      "resource": "route",
+      "action": "complete",
+      "portal": "CATERING",
+      "description": "Completar ruta"
+    },
+    {
+      "key": "route:confirm-delivery",
+      "resource": "route",
+      "action": "confirm-delivery",
+      "portal": "CATERING",
+      "description": "Confirmar entrega"
+    },
+    {
+      "key": "route:create",
+      "resource": "route",
+      "action": "create",
+      "portal": "CATERING",
+      "description": "Crear rutas"
+    },
+    {
+      "key": "route:delete",
+      "resource": "route",
+      "action": "delete",
+      "portal": "CATERING",
+      "description": "Eliminar rutas"
+    },
+    {
+      "key": "route:edit",
+      "resource": "route",
+      "action": "edit",
+      "portal": "CATERING",
+      "description": "Editar rutas"
+    },
+    {
+      "key": "route:start",
+      "resource": "route",
+      "action": "start",
+      "portal": "CATERING",
+      "description": "Iniciar ruta"
+    },
+    {
+      "key": "route:view",
+      "resource": "route",
+      "action": "view",
+      "portal": "CATERING",
+      "description": "Ver rutas"
+    },
+    {
+      "key": "saas-invoice:view",
+      "resource": "saas-invoice",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver facturas SaaS"
+    },
+    {
+      "key": "security:run-test",
+      "resource": "security",
+      "action": "run-test",
+      "portal": "ADMIN",
+      "description": "Ejecutar pentest"
+    },
+    {
+      "key": "security:view",
+      "resource": "security",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver seguridad"
+    },
+    {
+      "key": "settlement:create",
+      "resource": "settlement",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Generar liquidación"
+    },
+    {
+      "key": "settlement:view",
+      "resource": "settlement",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver liquidaciones"
+    },
+    {
+      "key": "tax:edit",
+      "resource": "tax",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar impuestos"
+    },
+    {
+      "key": "tax:view",
+      "resource": "tax",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver impuestos"
+    },
+    {
+      "key": "template-branding:create",
+      "resource": "template-branding",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear tema"
+    },
+    {
+      "key": "template-branding:edit",
+      "resource": "template-branding",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar tema"
+    },
+    {
+      "key": "template-branding:view",
+      "resource": "template-branding",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver branding"
+    },
+    {
+      "key": "template-communication:create",
+      "resource": "template-communication",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear plantilla"
+    },
+    {
+      "key": "template-communication:edit",
+      "resource": "template-communication",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar plantilla"
+    },
+    {
+      "key": "template-communication:view",
+      "resource": "template-communication",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver plantillas"
+    },
+    {
+      "key": "user:create",
+      "resource": "user",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear usuario"
+    },
+    {
+      "key": "user:delete",
+      "resource": "user",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar usuario"
+    },
+    {
+      "key": "user:edit",
+      "resource": "user",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar usuario"
+    },
+    {
+      "key": "user:edit-role",
+      "resource": "user",
+      "action": "edit-role",
+      "portal": "ADMIN",
+      "description": "Cambiar el rol de un usuario"
+    },
+    {
+      "key": "user:edit-status",
+      "resource": "user",
+      "action": "edit-status",
+      "portal": "ADMIN",
+      "description": "Suspender/reactivar usuario"
+    },
+    {
+      "key": "user:reset-password",
+      "resource": "user",
+      "action": "reset-password",
+      "portal": "ADMIN",
+      "description": "Resetear contraseña"
+    },
+    {
+      "key": "user:view",
+      "resource": "user",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver usuarios"
+    },
+    {
+      "key": "webhook:create",
+      "resource": "webhook",
+      "action": "create",
+      "portal": "ADMIN",
+      "description": "Crear webhooks"
+    },
+    {
+      "key": "webhook:delete",
+      "resource": "webhook",
+      "action": "delete",
+      "portal": "ADMIN",
+      "description": "Eliminar webhooks"
+    },
+    {
+      "key": "webhook:edit",
+      "resource": "webhook",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar webhooks"
+    },
+    {
+      "key": "webhook:view",
+      "resource": "webhook",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver webhooks"
+    }
+  ],
+  "roles": [
+    {
+      "key": "admin_catering",
+      "name": "Admin Catering",
+      "description": "Responsable del portal catering. Platos, menús, rutas, facturación y equipo.",
+      "category": "CATERING",
+      "baseRole": "ADMIN_CATERING",
+      "permissionKeys": [
+        "cat-audit:export",
+        "cat-audit:view",
+        "cat-billing:view",
+        "cat-config-branding:edit",
+        "cat-config-branding:view",
+        "cat-config-holidays:create",
+        "cat-config-holidays:delete",
+        "cat-config-holidays:edit",
+        "cat-config-holidays:view",
+        "cat-config-role:create",
+        "cat-config-role:delete",
+        "cat-config-role:edit",
+        "cat-config-role:view",
+        "cat-config-template:create",
+        "cat-config-template:delete",
+        "cat-config-template:edit",
+        "cat-config-template:view",
+        "cat-config-user:create",
+        "cat-config-user:delete",
+        "cat-config-user:edit",
+        "cat-config-user:view",
+        "cat-config-zone:create",
+        "cat-config-zone:delete",
+        "cat-config-zone:edit",
+        "cat-config-zone:view",
+        "cat-dashboard:view",
+        "cat-incident:resolve",
+        "cat-incident:view",
+        "client-company:view",
+        "client-company:view-detail",
+        "dish:clone",
+        "dish:create",
+        "dish:delete",
+        "dish:edit",
+        "dish:toggle-active",
+        "dish:view",
+        "invoice:download",
+        "invoice:generate",
+        "invoice:pay",
+        "invoice:view",
+        "menu:edit-day",
+        "menu:publish",
+        "menu:view",
+        "production:mark-packed",
+        "production:mark-ready",
+        "production:print-labels",
+        "production:view",
+        "quality:dispute-penalty",
+        "quality:view",
+        "route:complete",
+        "route:confirm-delivery",
+        "route:create",
+        "route:delete",
+        "route:edit",
+        "route:start",
+        "route:view"
+      ]
+    },
+    {
+      "key": "admin_empresa",
+      "name": "Admin Empresa",
+      "description": "Responsable del portal empresa. Gestiona usuarios, política, contratos y facturación.",
+      "category": "EMPRESA",
+      "baseRole": "ADMIN_EMPRESA",
+      "permissionKeys": [
+        "emp-activity:view",
+        "emp-billing:export",
+        "emp-billing:view",
+        "emp-catering:rate",
+        "emp-catering:view",
+        "emp-config-branding:edit",
+        "emp-config-branding:view",
+        "emp-config-document:upload",
+        "emp-config-document:view",
+        "emp-config-holidays:create",
+        "emp-config-holidays:delete",
+        "emp-config-holidays:edit",
+        "emp-config-holidays:view",
+        "emp-config-role:create",
+        "emp-config-role:delete",
+        "emp-config-role:edit",
+        "emp-config-role:view",
+        "emp-config-site:create",
+        "emp-config-site:delete",
+        "emp-config-site:edit",
+        "emp-config-site:view",
+        "emp-config-user:create",
+        "emp-config-user:delete",
+        "emp-config-user:edit",
+        "emp-config-user:view",
+        "emp-config:edit",
+        "emp-config:edit-plan",
+        "emp-config:view",
+        "emp-dashboard:view",
+        "emp-fiscal:export",
+        "emp-fiscal:view",
+        "emp-incident:close",
+        "emp-incident:create",
+        "emp-incident:escalate",
+        "emp-incident:view",
+        "emp-order:export",
+        "emp-order:view",
+        "employee:create",
+        "employee:delete",
+        "employee:edit",
+        "employee:edit-status",
+        "employee:export",
+        "employee:gdpr",
+        "employee:view"
+      ]
+    },
+    {
+      "key": "auditor",
+      "name": "Auditor",
+      "description": "Acceso de solo lectura a todos los tenants. No modifica datos.",
+      "category": "ROOT",
+      "baseRole": "AUDITOR",
+      "permissionKeys": [
+        "admin-invoice:view",
+        "allergen:view",
+        "announcement:view",
+        "api-key:view",
+        "audit-log:view",
+        "audit:view",
+        "backup:view",
+        "calendar:view",
+        "cat-audit:view",
+        "cat-billing:view",
+        "cat-config-branding:view",
+        "cat-config-holidays:view",
+        "cat-config-role:view",
+        "cat-config-template:view",
+        "cat-config-user:view",
+        "cat-config-zone:view",
+        "cat-dashboard:view",
+        "cat-incident:view",
+        "catering:view",
+        "client-company:view",
+        "commission:view",
+        "dashboard:view",
+        "dish:view",
+        "dpa:view",
+        "emp-activity:view",
+        "emp-billing:view",
+        "emp-catering:view",
+        "emp-config-branding:view",
+        "emp-config-document:view",
+        "emp-config-holidays:view",
+        "emp-config-role:view",
+        "emp-config-site:view",
+        "emp-config-user:view",
+        "emp-config:view",
+        "emp-dashboard:view",
+        "emp-fiscal:view",
+        "emp-incident-own:view",
+        "emp-incident:view",
+        "emp-order:view",
+        "emp-rating-own:view",
+        "employee:view",
+        "empresa:view",
+        "fiscal-audit:view",
+        "gdpr:view",
+        "health:view",
+        "history:view",
+        "impersonate:view",
+        "incident-reason:view",
+        "incident:view",
+        "integration:view",
+        "invoice:view",
+        "maintenance:view",
+        "menu-select:view",
+        "menu:view",
+        "metric:view",
+        "migration:view",
+        "penalty:view",
+        "plan:view",
+        "production:view",
+        "profile:view",
+        "quality:view",
+        "rate-limit:view",
+        "rating:view",
+        "retention:view",
+        "role:view",
+        "route:view",
+        "saas-invoice:view",
+        "security:view",
+        "settlement:view",
+        "tax:view",
+        "template-branding:view",
+        "template-communication:view",
+        "user:view",
+        "webhook:view"
+      ]
+    },
+    {
+      "key": "chef",
+      "name": "Chef",
+      "description": "Jefe de cocina. Publica menús, gestiona platos y supervisa producción.",
+      "category": "CATERING",
+      "baseRole": "CHEF",
+      "permissionKeys": [
+        "cat-dashboard:view",
+        "dish:clone",
+        "dish:create",
+        "dish:delete",
+        "dish:edit",
+        "dish:toggle-active",
+        "dish:view",
+        "menu:edit-day",
+        "menu:publish",
+        "menu:view",
+        "production:mark-packed",
+        "production:mark-ready",
+        "production:view"
+      ]
+    },
+    {
+      "key": "cocinero",
+      "name": "Cocinero",
+      "description": "Cocinero de línea. Solo lectura del Kitchen Display.",
+      "category": "CATERING",
+      "baseRole": "COCINERO",
+      "permissionKeys": [
+        "cat-dashboard:view",
+        "menu:view",
+        "production:view"
+      ]
+    },
+    {
+      "key": "empleado",
+      "name": "Empleado",
+      "description": "Usuario final. Elige menú, valora y reporta incidencias.",
+      "category": "EMPRESA",
+      "baseRole": "EMPLEADO",
+      "permissionKeys": [
+        "emp-incident-own:create",
+        "emp-incident-own:view",
+        "emp-rating-own:create",
+        "emp-rating-own:view",
+        "history:export",
+        "history:view",
+        "menu-select:select",
+        "menu-select:view",
+        "profile:change-password",
+        "profile:edit",
+        "profile:view"
+      ]
+    },
+    {
+      "key": "finanzas",
+      "name": "Finanzas (Empresa)",
+      "description": "Contabilidad de la empresa. Facturación y reportes fiscales.",
+      "category": "EMPRESA",
+      "baseRole": "FINANZAS",
+      "permissionKeys": [
+        "emp-billing:export",
+        "emp-billing:view",
+        "emp-dashboard:view",
+        "emp-fiscal:export",
+        "emp-fiscal:view",
+        "emp-order:view"
+      ]
+    },
+    {
+      "key": "finanzas_catering",
+      "name": "Finanzas (Catering)",
+      "description": "Contabilidad del catering. Genera facturas y registra cobros.",
+      "category": "CATERING",
+      "baseRole": "FINANZAS_CATERING",
+      "permissionKeys": [
+        "cat-billing:view",
+        "cat-dashboard:view",
+        "invoice:download",
+        "invoice:generate",
+        "invoice:pay",
+        "invoice:view"
+      ]
+    },
+    {
+      "key": "manager_sede",
+      "name": "Manager de Sede",
+      "description": "Responsable de una sede. Ve empleados y pedidos de su sede.",
+      "category": "EMPRESA",
+      "baseRole": "MANAGER_SEDE",
+      "permissionKeys": [
+        "emp-dashboard:view",
+        "emp-incident:create",
+        "emp-incident:view",
+        "emp-order:view",
+        "employee:view"
+      ]
+    },
+    {
+      "key": "repartidor",
+      "name": "Repartidor",
+      "description": "Reparto. Ve su ruta, confirma entregas y reporta incidencias.",
+      "category": "CATERING",
+      "baseRole": "REPARTIDOR",
+      "permissionKeys": [
+        "cat-incident:view",
+        "route:complete",
+        "route:confirm-delivery",
+        "route:start",
+        "route:view"
+      ]
+    },
+    {
+      "key": "rrhh",
+      "name": "RRHH",
+      "description": "Recursos Humanos. Gestiona empleados, invitaciones y preferencias.",
+      "category": "EMPRESA",
+      "baseRole": "RRHH",
+      "permissionKeys": [
+        "emp-activity:view",
+        "emp-config-user:view",
+        "emp-dashboard:view",
+        "emp-incident:create",
+        "emp-incident:view",
+        "emp-order:view",
+        "employee:create",
+        "employee:edit",
+        "employee:edit-status",
+        "employee:export",
+        "employee:gdpr",
+        "employee:view"
+      ]
+    },
+    {
+      "key": "super_admin",
+      "name": "Super Admin",
+      "description": "Administrador total del sistema Plati. Acceso cross-tenant y operativo.",
+      "category": "ROOT",
+      "baseRole": "SUPER_ADMIN",
+      "permissionKeys": [
+        "admin-invoice:view",
+        "allergen:create",
+        "allergen:delete",
+        "allergen:edit",
+        "allergen:view",
+        "announcement:create",
+        "announcement:edit",
+        "announcement:publish",
+        "announcement:view",
+        "api-key:create",
+        "api-key:delete",
+        "api-key:view",
+        "audit-log:view",
+        "audit:create",
+        "audit:edit",
+        "audit:export",
+        "audit:view",
+        "backup:create",
+        "backup:download",
+        "backup:restore",
+        "backup:view",
+        "calendar:create",
+        "calendar:delete",
+        "calendar:edit",
+        "calendar:view",
+        "cat-audit:export",
+        "cat-audit:view",
+        "cat-billing:view",
+        "cat-config-branding:edit",
+        "cat-config-branding:view",
+        "cat-config-holidays:create",
+        "cat-config-holidays:delete",
+        "cat-config-holidays:edit",
+        "cat-config-holidays:view",
+        "cat-config-role:create",
+        "cat-config-role:delete",
+        "cat-config-role:edit",
+        "cat-config-role:view",
+        "cat-config-template:create",
+        "cat-config-template:delete",
+        "cat-config-template:edit",
+        "cat-config-template:view",
+        "cat-config-user:create",
+        "cat-config-user:delete",
+        "cat-config-user:edit",
+        "cat-config-user:view",
+        "cat-config-zone:create",
+        "cat-config-zone:delete",
+        "cat-config-zone:edit",
+        "cat-config-zone:view",
+        "cat-dashboard:view",
+        "cat-incident:resolve",
+        "cat-incident:view",
+        "catering:add-document",
+        "catering:create",
+        "catering:edit",
+        "catering:edit-status",
+        "catering:impersonate",
+        "catering:view",
+        "client-company:view",
+        "client-company:view-detail",
+        "commission:edit",
+        "commission:view",
+        "dashboard:view",
+        "dish:clone",
+        "dish:create",
+        "dish:delete",
+        "dish:edit",
+        "dish:toggle-active",
+        "dish:view",
+        "dpa:create",
+        "dpa:edit",
+        "dpa:view",
+        "emp-activity:view",
+        "emp-billing:export",
+        "emp-billing:view",
+        "emp-catering:rate",
+        "emp-catering:view",
+        "emp-config-branding:edit",
+        "emp-config-branding:view",
+        "emp-config-document:upload",
+        "emp-config-document:view",
+        "emp-config-holidays:create",
+        "emp-config-holidays:delete",
+        "emp-config-holidays:edit",
+        "emp-config-holidays:view",
+        "emp-config-role:create",
+        "emp-config-role:delete",
+        "emp-config-role:edit",
+        "emp-config-role:view",
+        "emp-config-site:create",
+        "emp-config-site:delete",
+        "emp-config-site:edit",
+        "emp-config-site:view",
+        "emp-config-user:create",
+        "emp-config-user:delete",
+        "emp-config-user:edit",
+        "emp-config-user:view",
+        "emp-config:edit",
+        "emp-config:edit-plan",
+        "emp-config:view",
+        "emp-dashboard:view",
+        "emp-fiscal:export",
+        "emp-fiscal:view",
+        "emp-incident-own:create",
+        "emp-incident-own:view",
+        "emp-incident:close",
+        "emp-incident:create",
+        "emp-incident:escalate",
+        "emp-incident:view",
+        "emp-order:export",
+        "emp-order:view",
+        "emp-rating-own:create",
+        "emp-rating-own:view",
+        "employee:create",
+        "employee:delete",
+        "employee:edit",
+        "employee:edit-status",
+        "employee:export",
+        "employee:gdpr",
+        "employee:view",
+        "empresa:assign-catering",
+        "empresa:create",
+        "empresa:edit",
+        "empresa:edit-status",
+        "empresa:view",
+        "empresa:view-alerts",
+        "empresa:view-reports",
+        "fiscal-audit:export",
+        "fiscal-audit:view",
+        "gdpr:process",
+        "gdpr:view",
+        "health:view",
+        "history:export",
+        "history:view",
+        "impersonate:start",
+        "impersonate:stop",
+        "impersonate:view",
+        "incident-reason:create",
+        "incident-reason:delete",
+        "incident-reason:edit",
+        "incident-reason:view",
+        "incident:assign",
+        "incident:close",
+        "incident:view",
+        "integration:configure",
+        "integration:view",
+        "invoice:download",
+        "invoice:generate",
+        "invoice:pay",
+        "invoice:view",
+        "maintenance:run",
+        "maintenance:view",
+        "menu-select:select",
+        "menu-select:view",
+        "menu:edit-day",
+        "menu:publish",
+        "menu:view",
+        "metric:view",
+        "migration:cancel",
+        "migration:start",
+        "migration:view",
+        "penalty:create",
+        "penalty:edit",
+        "penalty:view",
+        "plan:create",
+        "plan:delete",
+        "plan:edit",
+        "plan:view",
+        "production:mark-packed",
+        "production:mark-ready",
+        "production:print-labels",
+        "production:view",
+        "profile:change-password",
+        "profile:edit",
+        "profile:view",
+        "quality:dispute-penalty",
+        "quality:view",
+        "rate-limit:edit",
+        "rate-limit:view",
+        "rating:view",
+        "retention:edit",
+        "retention:view",
+        "role:create",
+        "role:delete",
+        "role:edit",
+        "role:view",
+        "route:complete",
+        "route:confirm-delivery",
+        "route:create",
+        "route:delete",
+        "route:edit",
+        "route:start",
+        "route:view",
+        "saas-invoice:view",
+        "security:run-test",
+        "security:view",
+        "settlement:create",
+        "settlement:view",
+        "tax:edit",
+        "tax:view",
+        "template-branding:create",
+        "template-branding:edit",
+        "template-branding:view",
+        "template-communication:create",
+        "template-communication:edit",
+        "template-communication:view",
+        "user:create",
+        "user:delete",
+        "user:edit",
+        "user:edit-role",
+        "user:edit-status",
+        "user:reset-password",
+        "user:view",
+        "webhook:create",
+        "webhook:delete",
+        "webhook:edit",
+        "webhook:view"
+      ]
+    }
+  ]
+}
