@@ -15,6 +15,8 @@ import {
   withinLimit,
   PlanLimitError,
 } from '@/lib/plans/entitlements'
+import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
+import { employeeInvitationEmail } from '@/lib/email/templates'
 
 // ============================================================================
 // LISTADO DE EMPLEADOS CON FILTROS
@@ -416,6 +418,14 @@ export async function createEmployee(
     throw new Error('Ya existe un usuario con ese email')
   }
 
+  // Resolver la company (para guardar el companyId correcto) y el nombre del
+  // tenant (para el email de invitación).
+  const [company, tenant] = await Promise.all([
+    prisma.company.findFirst({ where: { tenantId }, select: { id: true } }),
+    prisma.tenant.findUnique({ where: { id: tenantId }, select: { name: true } }),
+  ])
+  const companyName = tenant?.name ?? 'tu empresa'
+
   // Crear en transacción
   const result = await prisma.$transaction(async (tx) => {
     // Crear usuario
@@ -451,6 +461,7 @@ export async function createEmployee(
     })
 
     // Crear invitación si se solicita
+    let invitationToken: string | null = null
     if (data.sendInvitation) {
       const token = nanoid(32)
       const expiresAt = new Date()
@@ -459,7 +470,7 @@ export async function createEmployee(
       await tx.userInvitation.create({
         data: {
           tenantId,
-          companyId: tenantId, // TODO: obtener companyId correcto
+          companyId: company?.id ?? null,
           email: data.email,
           name: data.name,
           department: data.department,
@@ -467,16 +478,32 @@ export async function createEmployee(
           role: 'EMPLEADO',
           token,
           expiresAt,
-          createdBy: user.id, // TODO: obtener userId del creador
+          createdBy: user.id,
           employeeId: employee.id,
         },
       })
-
-      // TODO: Enviar email de invitación
+      invitationToken = token
     }
 
-    return { user, employee }
+    return { user, employee, invitationToken }
   })
+
+  // Email de invitación (fuera de la tx; no bloquea el alta si el envío falla).
+  if (result.invitationToken) {
+    const inviteUrl = `${getAppBaseUrl()}/invitacion?token=${encodeURIComponent(result.invitationToken)}`
+    const email = employeeInvitationEmail({
+      name: data.name,
+      companyName,
+      inviteUrl,
+      expiresDays: 7,
+    })
+    await sendEmail({
+      to: data.email,
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
+    })
+  }
 
   return result.employee
 }

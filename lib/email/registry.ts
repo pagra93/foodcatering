@@ -60,9 +60,9 @@ export const EMAIL_TEMPLATES: EmailTemplateMeta[] = [
     id: 'employee-invitation',
     name: 'Invitación de empleado',
     description: 'Invita a un empleado a unirse a su empresa.',
-    status: 'pending',
+    status: 'active',
     trigger:
-      'Bloqueada: falta la página de aceptación de invitación (consumir el token y fijar contraseña). El diseño está listo.',
+      'Al dar de alta un empleado con "enviar invitación". El enlace lleva a /invitacion para fijar contraseña.',
   },
   {
     id: 'invoice-issued',
@@ -104,7 +104,7 @@ export function renderSampleEmail(id: string): EmailContent | null {
       return employeeInvitationEmail({
         name: 'María López',
         companyName: 'Grupo Cuerva',
-        inviteUrl: `${SAMPLE_BASE}/verify?token=ejemplo-invitacion`,
+        inviteUrl: `${SAMPLE_BASE}/invitacion?token=ejemplo-invitacion`,
         expiresDays: 7,
       })
     case 'invoice-issued':
