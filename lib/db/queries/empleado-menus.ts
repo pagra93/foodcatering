@@ -75,6 +75,7 @@ export async function getWeekMenusForEmployee(
   // Obtener pedidos existentes del empleado en esta semana
   const orders = await prisma.order.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       employeeId,
       serviceDate: {
         gte: startDate,

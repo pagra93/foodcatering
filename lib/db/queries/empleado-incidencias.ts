@@ -67,9 +67,18 @@ export const INCIDENT_STATUS_MAP = {
 // ============================================================================
 
 export async function getEmployeeIncidents(employeeId: string) {
+  // Tenant del empleado (findUnique por id → exento del guard) para acotar las
+  // lecturas de pedidos/incidencias a su empresa (defensa en profundidad, F5).
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { tenantId: true },
+  })
+  if (!employee) return []
+
   // Obtener todos los pedidos del empleado
   const orders = await prisma.order.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       employeeId,
     },
     select: {
@@ -82,6 +91,7 @@ export async function getEmployeeIncidents(employeeId: string) {
   // Obtener incidencias asociadas a esos pedidos
   const incidents = await prisma.incident.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       orderId: {
         in: orderIds,
       },
@@ -241,9 +251,17 @@ export async function createIncident(
 // ============================================================================
 
 export async function getEmployeeIncidentStats(employeeId: string) {
+  // Tenant del empleado (findUnique por id → exento) para acotar por empresa (F5).
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { tenantId: true },
+  })
+  if (!employee) return { total: 0, open: 0, resolved: 0 }
+
   // Obtener todos los pedidos del empleado
   const orders = await prisma.order.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       employeeId,
     },
     select: {
@@ -256,6 +274,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
   const [total, open, resolved] = await Promise.all([
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },
@@ -263,6 +282,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
     }),
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },
@@ -271,6 +291,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
     }),
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },

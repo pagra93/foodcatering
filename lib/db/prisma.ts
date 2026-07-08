@@ -137,6 +137,17 @@ export function hasTenantFilter(where: unknown): boolean {
  */
 const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] === 'true'
 
+/**
+ * Lectura acotada por clave primaria `id` (escalar o `{ in: [...] }`). Se EXIME
+ * del guard igual que `findUnique`: devuelve solo las filas de esos ids, que el
+ * llamante ya obtuvo de una consulta scoped previa (patrón de hidratación por id
+ * muy extendido: `dish.findMany({ where: { id: { in } } })`). El riesgo de fuga
+ * está en listados/agregados por atributo sin acotar, no en un lookup por id.
+ */
+function isByIdLookup(where: unknown): boolean {
+  return Boolean(where && typeof where === 'object' && 'id' in (where as object))
+}
+
 prisma.$use(async (params, next) => {
   if (
     params.model &&
@@ -145,7 +156,7 @@ prisma.$use(async (params, next) => {
     READ_ACTIONS.has(params.action)
   ) {
     const args = params.args as { where?: unknown } | undefined
-    if (!hasTenantFilter(args?.where)) {
+    if (!hasTenantFilter(args?.where) && !isByIdLookup(args?.where)) {
       const msg = `[prisma:tenant-guard] ${params.model}.${params.action} sin filtro de tenant.`
       if (TENANT_GUARD_ENFORCE) {
         throw new Error(`${msg} Bloqueado por TENANT_GUARD_ENFORCE.`)
