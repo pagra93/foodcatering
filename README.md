@@ -8,7 +8,7 @@ Plataforma SaaS multi-tenant para gestionar el beneficio de comida diaria entre 
 - **Compliance Fiscal**: Trazabilidad nominativa, diaria y ≤11€/día para exención IRPF
 - **Workflow Automatizado**: Desde selección de menú hasta factura y export ERP
 - **Modelo Modular**: Los empleados eligen platos (1º+2º+postre) en lugar de menú cerrado
-- **Trazabilidad Total**: Versionado de pedidos y snapshots diarios firmados
+- **Trazabilidad Total**: Versionado de pedidos (`OrderHistory`) con hash de integridad SHA-256
 
 ## 🏗️ Arquitectura
 
@@ -27,21 +27,28 @@ Plataforma SaaS multi-tenant para gestionar el beneficio de comida diaria entre 
 ```
 .
 ├── app/                    # Next.js App Router
-│   ├── (auth)/            # Rutas de autenticación
-│   ├── (tenant)/          # Rutas multi-tenant
-│   ├── api/               # API Routes
-│   └── globals.css        # Estilos globales
+│   ├── (admin)/           # Portal super admin
+│   ├── (auth)/            # Login, reset/olvido de contraseña, invitación
+│   ├── (empresa)/         # Portal empresa
+│   ├── (catering)/        # Portal catering
+│   ├── (empleado)/        # Portal empleado
+│   ├── (landing)/         # Marketing público
+│   └── api/               # API Routes (callers externos)
 ├── components/            # Componentes React
-│   ├── ui/               # Componentes shadcn/ui
-│   ├── features/         # Componentes por feature
-│   └── layouts/          # Layouts
+│   ├── ui/               # shadcn/ui
+│   ├── admin/ empresa/ catering/ empleado/  # por portal
+│   ├── marketing/ shared/                   # transversales
 ├── lib/                  # Librerías y utilidades
-│   ├── db/              # Prisma client
-│   ├── auth/            # NextAuth config
+│   ├── db/              # Prisma client + queries
+│   ├── auth/            # NextAuth, RBAC, MFA, reset de contraseña
+│   ├── crypto/          # Cifrado de PII (AES-256-GCM)
+│   ├── email/          # Envío (Resend) + plantillas
+│   ├── guards/ middleware/ tenant/          # scoping y permisos
 │   ├── validations/     # Schemas Zod
+│   ├── types/          # Tipos compartidos
 │   └── utils.ts         # Utilidades generales
 ├── prisma/              # Prisma schema y migraciones
-├── types/               # TypeScript types
+├── types/               # Tipos globales (next-auth, etc.)
 └── hooks/               # Custom hooks
 ```
 
@@ -76,12 +83,12 @@ Edita `.env.local` con tus valores:
 DATABASE_URL="postgresql://user:pass@localhost:5432/comidas_dev"
 NEXTAUTH_SECRET="<genera-con-openssl-rand-base64-32>"
 NEXTAUTH_URL="http://localhost:3000"
-WILDCARD_DOMAIN=".comida.localhost"
+WILDCARD_DOMAIN=".localhost:3000"   # en producción: ".plati.es"
 ```
 
-4. **Configurar base de datos**
+4. **Configurar base de datos** (aplica las migraciones; nunca `db push` en prod)
 ```bash
-pnpm db:push
+pnpm db:migrate
 ```
 
 5. **Iniciar servidor de desarrollo**
@@ -107,31 +114,35 @@ Todas las tablas incluyen `tenant_id` para aislamiento de datos:
 # Generar Prisma Client
 pnpm db:generate
 
-# Push schema (dev)
-pnpm db:push
+# Aplicar migraciones (dev/prod; no destructivo)
+pnpm db:migrate
+
+# Crear una nueva migración en dev
+pnpm db:migrate:dev
 
 # Abrir Prisma Studio
 pnpm db:studio
 
-# Seed inicial (TODO)
+# Seed idempotente (datos base) / datos demo
 pnpm db:seed
+pnpm db:seed:demo
 ```
 
 ## 🔐 Seguridad
 
 ### Multi-Tenancy
 
-- ✅ Middleware inyecta `tenant_id` en contexto
-- ✅ Validación en cada query
-- ✅ Tests E2E de aislamiento
-- ✅ Cifrado columnar para PII
+- ✅ Scoping por `tenant_id` en las queries (`getScopedTenantId`)
+- ✅ Guardián de aislamiento en Prisma (avisa/bloquea lecturas sin filtro de tenant)
+- ✅ Cifrado columnar de PII (AES-256-GCM, nombre y teléfono)
+- ✅ Revocación de sesión (`tokenVersion`), rate-limit de login, MFA (TOTP) opcional
 
 ### Compliance
 
-- ✅ Logs inmutables (append-only)
-- ✅ Hash de integridad en pedidos
-- ✅ Snapshots diarios firmados
-- ✅ Retención 4 años (fiscal)
+- ✅ Logs de auditoría inmutables (con hash de integridad + `impersonatorId`)
+- ✅ Hash de integridad real (SHA-256) e historial versionado de pedidos
+- ✅ Informe fiscal IRPF (exención ≤11€/día) y catálogo de IVA configurable
+- 🟡 Políticas de retención (modelo `RetentionPolicy`; purga automática pendiente)
 
 ## 🧪 Testing
 
@@ -168,7 +179,6 @@ pnpm type-check   # TypeScript check
 11:00 → CUTOFF (cierre pedidos)
 11:05 → Consolidación automática
 13:00 → Ventana de entrega
-23:59 → Snapshot diario
 ```
 
 ### Estados del Pedido
@@ -210,7 +220,7 @@ Estado vivo detallado → [`docs/general/ESTADO.md`](./docs/general/ESTADO.md).
 Diagnóstico técnico y plan de sprints → [`docs/general/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md`](./docs/general/diagnostico/DIAGNOSTICO-EXHAUSTIVO-2026-04.md).
 
 Resumen rápido:
-- **Fase 0 · Base**: ✅ 100% (TS estricto, schema Prisma con 34 modelos, auth, guards, RBAC, impersonación auditada)
+- **Fase 0 · Base**: ✅ 100% (TS estricto, schema Prisma con 56 modelos, auth, guards, RBAC, impersonación auditada)
 - **Fase 1 · Súper Admin**: 🟡 portales funcionales, estabilización en curso
 - **Fase 2 · Catering**: 🟡 platos, menús, rutas, facturación reescritos contra schema real
 - **Fase 3 · Empresa**: 🟡 dashboard, empleados, facturación, incidencias, auditoría
@@ -229,5 +239,5 @@ Privado - Todos los derechos reservados
 ---
 
 **Versión**: 0.1.0 (MVP en estabilización)
-**Última actualización**: 2026-04-18
+**Última actualización**: 2026-07-08 (auditoría de seguridad Fases 0–3 desplegada; emails, MFA y facturación anual en curso)
 

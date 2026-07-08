@@ -139,8 +139,8 @@ pnpm test:e2e             # Playwright
 ```
 
 ### Estado
-6 suites, 51 tests, todas verdes. Objetivo de cobertura en `vitest.config.ts`
-al 70% (aspirational, no bloqueante).
+18 ficheros de test, ~160 tests, todas verdes. Objetivo de cobertura en
+`vitest.config.ts` al 70% (aspirational, no bloqueante).
 
 ## Comandos que uso habitualmente
 
