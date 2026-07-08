@@ -11,11 +11,13 @@ import {
   PlayCircle,
   Trash2,
   UserCog,
+  ShieldOff,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   deleteUserAction,
   resetPasswordAction,
+  resetMfaAction,
   setUserStatusAction,
 } from './actions'
 
@@ -74,6 +76,25 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
     })
   }
 
+  const resetMfa = () => {
+    if (
+      !confirm(
+        '¿Desactivar la verificación en dos pasos de este usuario? Úsalo si perdió el móvil y sus códigos de recuperación.'
+      )
+    )
+      return
+
+    startTransition(async () => {
+      try {
+        await resetMfaAction({ userId })
+        toast.success('MFA reseteado')
+        router.refresh()
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Error')
+      }
+    })
+  }
+
   const deleteUser = () => {
     if (
       !confirm(
@@ -112,6 +133,17 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
         >
           <KeyRound className="mr-2 h-4 w-4" />
           Resetear contraseña
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={resetMfa}
+          disabled={isPending}
+          title="Desactiva el MFA del usuario (recuperación de bloqueo)"
+        >
+          <ShieldOff className="mr-2 h-4 w-4" />
+          Resetear MFA
         </Button>
 
         <Button

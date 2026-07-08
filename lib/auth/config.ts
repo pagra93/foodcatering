@@ -22,6 +22,7 @@ const loginSchema = z.object({
   email: z.string().email('Email inválido'),
   password: z.string().min(6, 'La contraseña debe tener al menos 6 caracteres'),
   tenantSubdomain: z.string().optional(), // Para multi-tenant
+  otp: z.string().optional(), // Código MFA (TOTP o recuperación), si aplica
 })
 
 // Duplicado deliberado de impersonation.ts#IMPERSONATION_DURATION_MINUTES:
@@ -68,7 +69,7 @@ export const authConfig = {
       async authorize(credentials, request) {
         try {
           // Validar input
-          const { email, password, tenantSubdomain } = loginSchema.parse(
+          const { email, password, tenantSubdomain, otp } = loginSchema.parse(
             credentials
           )
 
@@ -118,6 +119,46 @@ export const authConfig = {
             return null
           }
 
+          // Segundo factor (MFA/TOTP) si el usuario lo tiene activado (F2).
+          if (user.mfaEnabled && user.mfaSecret) {
+            // CredentialsSignin se importa aquí (no a nivel de módulo) para no
+            // arrastrar `next/server` al cargar config.ts en tests. Su subclase
+            // hace que el `code` llegue al cliente (SignInResponse.code).
+            const { CredentialsSignin } = await import('next-auth')
+            class MfaError extends CredentialsSignin {
+              constructor(c: string) {
+                super()
+                this.code = c
+              }
+            }
+
+            if (!otp) throw new MfaError('mfa_required')
+
+            const { verifyTotp, hashBackupCode } = await import('./mfa')
+            const { decryptPII } = await import('@/lib/crypto/pii')
+
+            const secret = decryptPII(user.mfaSecret)
+            let ok = verifyTotp(secret, otp)
+
+            // Si el TOTP no valida, probar código de recuperación (un solo uso).
+            if (!ok) {
+              const codeHash = hashBackupCode(otp)
+              if (user.mfaBackupCodes.includes(codeHash)) {
+                ok = true
+                await prisma.user.update({
+                  where: { id: user.id },
+                  data: {
+                    mfaBackupCodes: user.mfaBackupCodes.filter(
+                      (c) => c !== codeHash
+                    ),
+                  },
+                })
+              }
+            }
+
+            if (!ok) throw new MfaError('mfa_invalid')
+          }
+
           // Retornar user info (se pasará al JWT)
           // Normalizar role y tenantType a mayúsculas (BD guarda en minúscula, enum es mayúscula)
           const normalizedRole = user.role.toUpperCase() as UserRole
@@ -140,6 +181,10 @@ export const authConfig = {
             tokenVersion: user.tokenVersion,
           }
         } catch (error) {
+          // Los errores MFA deben propagarse para que su `code` llegue al
+          // cliente (mfa_required / mfa_invalid); el resto → login genérico.
+          const code = (error as { code?: unknown })?.code
+          if (typeof code === 'string' && code.startsWith('mfa_')) throw error
           console.error('Error en authorize:', error)
           return null
         }

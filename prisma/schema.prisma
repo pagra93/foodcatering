@@ -118,6 +118,10 @@ model User {
   /// compat con los checks por rol; `roleId` apunta al rol editable en BD.
   roleId       String?    @map("role_id")
   mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
+  // MFA (TOTP): secreto cifrado con encryptPII (AES-256-GCM) y códigos de
+  // recuperación de un solo uso guardados como hash SHA-256. Ver lib/auth/mfa.ts.
+  mfaSecret      String?  @map("mfa_secret")
+  mfaBackupCodes String[] @default([]) @map("mfa_backup_codes")
   status       UserStatus @default(ACTIVE)
   tokenVersion Int        @default(0) @map("token_version") // se incrementa para invalidar sesiones activas (H7)
   createdAt    DateTime   @default(now()) @map("created_at")

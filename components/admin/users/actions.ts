@@ -343,3 +343,37 @@ export async function resetPasswordAction(input: { userId: string }) {
 
   return { emailed: result.ok, email: current.email }
 }
+
+/**
+ * Reset de MFA (F2): desactiva el segundo factor de un usuario y borra su
+ * secreto y códigos de recuperación. Recuperación de bloqueo cuando el usuario
+ * pierde el móvil y sus códigos.
+ */
+export async function resetMfaAction(input: { userId: string }) {
+  const session = (await auth()) as Session | null
+  const actor = requireActor(session, 'user:edit')
+
+  const current = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { id: true, tenantId: true, mfaEnabled: true },
+  })
+  if (!current) throw new Error('Usuario no encontrado')
+
+  await prisma.user.update({
+    where: { id: current.id },
+    data: { mfaEnabled: false, mfaSecret: null, mfaBackupCodes: [] },
+  })
+
+  await logAudit({
+    tenantId: current.tenantId,
+    actorId: actor.id,
+    action: 'UPDATE',
+    entity: 'User',
+    entityId: current.id,
+    diff: { before: { mfaEnabled: current.mfaEnabled }, after: { mfaEnabled: false } },
+    ...AUDIT_HEADERS,
+  })
+
+  revalidatePath(`/admin/users/${current.id}`)
+  return { ok: true }
+}
