@@ -143,6 +143,7 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
       const [ordersLast30Days, totalSpent, lastOrder] = await Promise.all([
         prisma.order.count({
           where: {
+            tenantEmpresa: tenantId,
             employeeId: emp.id,
             serviceDate: { gte: thirtyDaysAgo },
             deletedAt: null,
@@ -150,6 +151,7 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
         }),
         prisma.order.aggregate({
           where: {
+            tenantEmpresa: tenantId,
             employeeId: emp.id,
             deletedAt: null,
           },
@@ -157,6 +159,7 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
         }).then((result) => result._sum.price || 0),
         prisma.order.findFirst({
           where: {
+            tenantEmpresa: tenantId,
             employeeId: emp.id,
             deletedAt: null,
           },

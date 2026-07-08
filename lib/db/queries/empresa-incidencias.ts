@@ -12,30 +12,12 @@ import {
 } from '@/lib/incidents/notify'
 
 // ♻️ REUTILIZAR mapeo de tipos (mismo que en admin)
-export const INCIDENT_TYPES: Record<string, { label: string; color: string }> = {
-  DELAYED_DELIVERY: { label: '⏰ Entrega Retrasada', color: 'bg-yellow-100 text-yellow-800' },
-  MISSING_ITEM: { label: '📦 Producto Faltante', color: 'bg-orange-100 text-orange-800' },
-  WRONG_ORDER: { label: '❌ Pedido Incorrecto', color: 'bg-blue-100 text-blue-800' },
-  QUALITY_ISSUE: { label: '⚠️ Problema de Calidad', color: 'bg-red-100 text-red-800' },
-  ALLERGEN_ISSUE: { label: '🚨 Alérgeno No Declarado', color: 'bg-red-100 text-red-800' },
-  DAMAGED_PACKAGING: { label: '📦 Empaquetado Dañado', color: 'bg-gray-100 text-gray-800' },
-  OTHER: { label: '❓ Otro', color: 'bg-gray-100 text-gray-800' },
-}
-
-// ♻️ REUTILIZAR mapeo de severidad
-export const SEVERITY_MAP = {
-  LOW: { label: 'Baja', variant: 'outline' as const, color: 'bg-gray-100' },
-  MEDIUM: { label: 'Media', variant: 'default' as const, color: 'bg-yellow-100' },
-  HIGH: { label: 'Alta', variant: 'destructive' as const, color: 'bg-red-100' },
-}
-
-// ♻️ REUTILIZAR mapeo de estados
-export const INCIDENT_STATUS_MAP = {
-  OPEN: { label: 'Abierta', variant: 'destructive' as const },
-  IN_PROGRESS: { label: 'En Progreso', variant: 'default' as const },
-  RESOLVED: { label: 'Resuelta', variant: 'success' as const },
-  CLOSED: { label: 'Cerrada', variant: 'outline' as const },
-}
+import {
+  INCIDENT_TYPES,
+  SEVERITY_MAP,
+  INCIDENT_STATUS_MAP,
+} from '@/lib/incidents/empresa-ui'
+export { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP }
 
 // ============================================================================
 // OBTENER KPIs DE INCIDENCIAS

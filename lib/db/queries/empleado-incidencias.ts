@@ -11,65 +11,30 @@ import { incidentTypeLabel } from '@/lib/incidents/constants'
 // MAPEO DE TIPOS Y ESTADOS
 // ============================================================================
 
-export const INCIDENT_TYPES: Record<string, { label: string; description: string; icon: string }> = {
-  DELAYED_DELIVERY: { 
-    label: 'Entrega Retrasada', 
-    description: 'El pedido llegó más tarde de lo esperado',
-    icon: '⏰'
-  },
-  MISSING_ITEM: { 
-    label: 'Producto Faltante', 
-    description: 'Falta algún plato o componente del menú',
-    icon: '📦'
-  },
-  WRONG_ORDER: { 
-    label: 'Pedido Incorrecto', 
-    description: 'El pedido recibido no es el que solicité',
-    icon: '❌'
-  },
-  QUALITY_ISSUE: { 
-    label: 'Problema de Calidad', 
-    description: 'La comida no está en buen estado o tiene mal sabor',
-    icon: '⚠️'
-  },
-  ALLERGEN_ISSUE: { 
-    label: 'Alérgeno No Declarado', 
-    description: 'El plato contiene un alérgeno no indicado',
-    icon: '🚨'
-  },
-  DAMAGED_PACKAGING: { 
-    label: 'Empaquetado Dañado', 
-    description: 'El empaque llegó dañado o abierto',
-    icon: '📦'
-  },
-  OTHER: { 
-    label: 'Otro', 
-    description: 'Otro tipo de problema',
-    icon: '❓'
-  },
-}
-
-export const SEVERITY_MAP = {
-  LOW: { label: 'Baja', color: 'bg-gray-100 text-gray-700' },
-  MEDIUM: { label: 'Media', color: 'bg-yellow-100 text-yellow-700' },
-  HIGH: { label: 'Alta', color: 'bg-red-100 text-red-700' },
-}
-
-export const INCIDENT_STATUS_MAP = {
-  OPEN: { label: 'Abierta', color: 'bg-red-100 text-red-700' },
-  IN_PROGRESS: { label: 'En Revisión', color: 'bg-blue-100 text-blue-700' },
-  RESOLVED: { label: 'Resuelta', color: 'bg-green-100 text-green-700' },
-  COMPENSATED: { label: 'Compensada', color: 'bg-purple-100 text-purple-700' },
-}
+import {
+  INCIDENT_TYPES,
+  SEVERITY_MAP,
+  INCIDENT_STATUS_MAP,
+} from '@/lib/incidents/empleado-ui'
+export { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP }
 
 // ============================================================================
 // OBTENER INCIDENCIAS DEL EMPLEADO
 // ============================================================================
 
 export async function getEmployeeIncidents(employeeId: string) {
+  // Tenant del empleado (findUnique por id → exento del guard) para acotar las
+  // lecturas de pedidos/incidencias a su empresa (defensa en profundidad, F5).
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { tenantId: true },
+  })
+  if (!employee) return []
+
   // Obtener todos los pedidos del empleado
   const orders = await prisma.order.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       employeeId,
     },
     select: {
@@ -82,6 +47,7 @@ export async function getEmployeeIncidents(employeeId: string) {
   // Obtener incidencias asociadas a esos pedidos
   const incidents = await prisma.incident.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       orderId: {
         in: orderIds,
       },
@@ -241,9 +207,17 @@ export async function createIncident(
 // ============================================================================
 
 export async function getEmployeeIncidentStats(employeeId: string) {
+  // Tenant del empleado (findUnique por id → exento) para acotar por empresa (F5).
+  const employee = await prisma.employee.findUnique({
+    where: { id: employeeId },
+    select: { tenantId: true },
+  })
+  if (!employee) return { total: 0, open: 0, resolved: 0 }
+
   // Obtener todos los pedidos del empleado
   const orders = await prisma.order.findMany({
     where: {
+      tenantEmpresa: employee.tenantId,
       employeeId,
     },
     select: {
@@ -256,6 +230,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
   const [total, open, resolved] = await Promise.all([
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },
@@ -263,6 +238,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
     }),
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },
@@ -271,6 +247,7 @@ export async function getEmployeeIncidentStats(employeeId: string) {
     }),
     prisma.incident.count({
       where: {
+        tenantEmpresa: employee.tenantId,
         orderId: {
           in: orderIds,
         },

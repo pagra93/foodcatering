@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   RETENTION_DEFAULTS,
   RETENTION_ENTITY_LABEL,
-} from '@/lib/db/queries/admin-retention'
+} from '@/lib/retention/constants'
 import {
   seedRetentionDefaultsAction,
   upsertRetentionPolicyAction,
