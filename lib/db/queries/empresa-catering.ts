@@ -24,7 +24,8 @@ export async function getAssignedCatering(tenantId: string) {
   // Obtener asignación activa principal
   const assignment = await prisma.companyCateringAssignment.findFirst({
     where: {
-      companyId: company.id,  // Usar company.id, NO tenantId
+      tenantEmpresa: tenantId, // filtro de tenant (F5)
+      companyId: company.id,
       active: true,
       type: 'PRIMARY',
     },

@@ -3,7 +3,8 @@
  * Incluye: Tenant, Restaurant, Documents, Dishes, Orders, Incidents, Users
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: listado/KPIs globales de caterings = admin cross-tenant → sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import { subDays, addDays, startOfDay, endOfDay } from 'date-fns'
 import { getCateringQualityMetrics } from '@/lib/db/queries/catering-metrics'
 

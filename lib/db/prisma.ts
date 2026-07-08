@@ -44,7 +44,6 @@ const MULTI_TENANT_MODELS = new Set([
   'Company',
   'CompanySite',
   'CompanyPolicy',
-  'CompanyPolicyHistory',
   'CompanySettings',
   'CompanyCateringAssignment',
   'Restaurant',
@@ -53,18 +52,11 @@ const MULTI_TENANT_MODELS = new Set([
   'Dish',
   'DishSchedule',
   'Order',
-  'OrderHistory',
-  'OrderRating',
-  'DeliveryProof',
   'Invoice',
-  'InvoiceLine',
   'Incident',
   'Notification',
   'FiscalReport',
   'DeliveryRoute',
-  'DeliveryRouteSite',
-  // Añadidos (H9): faltaban en la lista original; 'EmployeeInvitation' se retiró
-  // (el modelo pasó a llamarse 'UserInvitation').
   'UserInvitation',
   'DishRating',
   'Penalty',
@@ -74,8 +66,12 @@ const MULTI_TENANT_MODELS = new Set([
   'DeliveryZone',
   'GdprRequest',
   'DpaAgreement',
-  'ActivityMessage',
   'HolidayOverride',
+  // NOTA: los modelos SIN columna de tenant propia (OrderHistory, OrderRating,
+  // DeliveryProof, InvoiceLine, DeliveryRouteSite, ActivityMessage,
+  // CompanyPolicyHistory) NO van aquí: el guard de app no puede exigirles un
+  // filtro de tenant (no lo tienen). Su aislamiento va por la tabla padre
+  // (order/invoice/route), que sí se filtra, o por RLS a nivel BD (EXISTS).
 ])
 
 // El guard vigila lecturas que pueden devolver filas de VARIOS tenants sin
@@ -119,34 +115,40 @@ export function hasTenantFilter(where: unknown): boolean {
 }
 
 /**
- * Guard de aislamiento por tenant (H9, opción B).
+ * Guard de aislamiento por tenant (H9, opción A — enforced).
  *
- * - Loguea SIEMPRE (todos los entornos) cuando una LECTURA sobre un modelo
- *   multi-tenant no lleva filtro de tenant → visibilidad de olvidos en prod.
- * - BLOQUEA (lanza) sólo si `TENANT_GUARD_ENFORCE=true`, para poder activarlo
- *   tras validar en logs que no hay falsos positivos.
+ * BLOQUEA (lanza) las LECTURAS de lista/agregado sobre un modelo multi-tenant que
+ * no lleven filtro de tenant ni acotación por entidad (id/employeeId). Está
+ * ACTIVO por defecto; válvula de escape sin redeploy: `TENANT_GUARD_ENFORCE=false`.
  *
- * Cubre sólo LECTURAS: las escrituras siguen el patrón seguro
- * findFirst({id, tenantId}) → update({ where: { id } }), que deja el update sin
- * filtro a propósito, así que vigilarlas daría falsos positivos.
+ * Cubre sólo LECTURAS de lista/agregado (findMany/findFirst/count/aggregate/
+ * groupBy). `findUnique` y las lecturas acotadas por entidad se eximen
+ * (ver isBoundedLookup). Las escrituras siguen el patrón seguro
+ * findFirst({id, tenantId}) → update({ where: { id } }).
  *
- * Nota: el portal root/admin lee cross-tenant a propósito; hoy esas lecturas
- * salen como AVISO. Antes de poner `TENANT_GUARD_ENFORCE=true` en prod hay que
- * acotarlas (revisar logs y añadir el escape correspondiente) — ver runbook. No
- * se usa AsyncLocalStorage aquí para mantener este módulo apto para el bundle de
- * cliente (algún componente cliente lo arrastra vía queries).
+ * El portal admin lee cross-tenant a propósito → usa `prismaAdmin` (cliente sin
+ * guard, ver lib/db/prisma-admin.ts). Barrido de ~75 funciones de lectura de los
+ * 4 portales: 0 disparos. No se usa AsyncLocalStorage aquí (se mantiene el módulo
+ * server-only + apto para su cadena de imports).
  */
-const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] === 'true'
+const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] !== 'false'
 
 /**
- * Lectura acotada por clave primaria `id` (escalar o `{ in: [...] }`). Se EXIME
- * del guard igual que `findUnique`: devuelve solo las filas de esos ids, que el
- * llamante ya obtuvo de una consulta scoped previa (patrón de hidratación por id
- * muy extendido: `dish.findMany({ where: { id: { in } } })`). El riesgo de fuga
- * está en listados/agregados por atributo sin acotar, no en un lookup por id.
+ * Lectura ACOTADA a las filas de una entidad concreta → se exime del guard igual
+ * que `findUnique`, porque no puede devolver filas de "muchos" tenants a ciegas:
+ *  - `id` (escalar o `{ in: [...] }`): hidratación por clave primaria; los ids ya
+ *    vienen de una consulta scoped previa (`dish.findMany({ where: { id: { in } } })`).
+ *  - `employeeId`: acota a los datos de UN empleado (que pertenece a un tenant);
+ *    es el patrón del portal empleado (ve SUS pedidos/incidencias/historial).
+ *  - `token`: campo único secreto (p. ej. aceptar invitación por enlace, flujo
+ *    público sin sesión) → devuelve una sola fila por un secreto de alta entropía.
+ * El riesgo real de fuga está en listados/agregados por atributo (status, fecha…)
+ * sin acotar, no en estos lookups por entidad.
  */
-function isByIdLookup(where: unknown): boolean {
-  return Boolean(where && typeof where === 'object' && 'id' in (where as object))
+function isBoundedLookup(where: unknown): boolean {
+  if (!where || typeof where !== 'object') return false
+  const w = where as object
+  return 'id' in w || 'employeeId' in w || 'token' in w
 }
 
 prisma.$use(async (params, next) => {
@@ -157,7 +159,7 @@ prisma.$use(async (params, next) => {
     READ_ACTIONS.has(params.action)
   ) {
     const args = params.args as { where?: unknown } | undefined
-    if (!hasTenantFilter(args?.where) && !isByIdLookup(args?.where)) {
+    if (!hasTenantFilter(args?.where) && !isBoundedLookup(args?.where)) {
       const msg = `[prisma:tenant-guard] ${params.model}.${params.action} sin filtro de tenant.`
       if (TENANT_GUARD_ENFORCE) {
         throw new Error(`${msg} Bloqueado por TENANT_GUARD_ENFORCE.`)

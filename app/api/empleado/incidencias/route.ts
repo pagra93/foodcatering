@@ -32,6 +32,7 @@ export async function POST(request: NextRequest) {
     const { prisma } = await import('@/lib/db/prisma')
     const employee = await prisma.employee.findFirst({
       where: {
+        tenantId: session.user.tenantId,
         userId: session.user.id,
         status: 'ACTIVE',
       },

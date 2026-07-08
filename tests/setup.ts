@@ -7,6 +7,9 @@ import { afterEach, vi } from 'vitest'
 import { cleanup } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
+// El guard de tenant no bloquea en tests (se validó aparte con el harness).
+process.env['TENANT_GUARD_ENFORCE'] = 'false'
+
 // Cleanup después de cada test
 afterEach(() => {
   cleanup()

@@ -4,7 +4,9 @@
  * catering vive en su plan (`maxCompanies`) — ver lib/plans/entitlements.ts.
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: usado solo desde el panel admin (gestión de asignaciones cross-company)
+// → cliente sin guard de tenant.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 
 type PlanPricing = {
   name: string | null

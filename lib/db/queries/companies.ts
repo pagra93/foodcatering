@@ -3,7 +3,8 @@
  * Incluye: Tenant, Company, Policy, Sites, Users, Orders, Incidents
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: listado/KPIs globales de empresas = admin cross-tenant → sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import { subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns'
 import { decryptNameSafe } from '@/lib/crypto/pii'
 import { getCompanyAdoption } from '@/lib/db/queries/company-metrics'
