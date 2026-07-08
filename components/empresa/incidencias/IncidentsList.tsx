@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/db/queries/empresa-incidencias'
+import { INCIDENT_TYPES, SEVERITY_MAP, INCIDENT_STATUS_MAP } from '@/lib/incidents/empresa-ui'
 import { incidentDisplayName, incidentTypeLabel } from '@/lib/incidents/constants'
 
 type IncidentsListProps = {

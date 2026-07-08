@@ -33,6 +33,10 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // En tests (node/jsdom, no RSC) `server-only`/`client-only` lanzarían;
+      // se neutralizan con un stub vacío.
+      'server-only': path.resolve(__dirname, './tests/stubs/empty.ts'),
+      'client-only': path.resolve(__dirname, './tests/stubs/empty.ts'),
       '@': path.resolve(__dirname, './'),
       '@/components': path.resolve(__dirname, './components'),
       '@/app': path.resolve(__dirname, './app'),

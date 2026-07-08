@@ -12,6 +12,7 @@
  *     Lo consumen las policies RLS de Postgres (ver la migración SQL).
  */
 
+import 'server-only' // RLS: este módulo (y el contexto de tenant) nunca en cliente
 import { PrismaClient } from '@prisma/client'
 import { env } from '@/lib/env'
 import { decryptPII, looksEncrypted } from '@/lib/crypto/pii'
