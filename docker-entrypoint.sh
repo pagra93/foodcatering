@@ -99,6 +99,18 @@ if [ "$MIGRATION_SUCCESS" = true ] && [ -f "scripts/seed-rbac-prod.mjs" ]; then
   fi
 fi
 
+# Seed idempotente del CATÁLOGO de referencia (planes SaaS, reglas fiscales,
+# alérgenos, festivos, motivos de incidencia, OWASP, defaults de branding). Datos
+# de configuración, NO datos ficticios. Upsert desde scripts/catalog-data.json.
+if [ "$MIGRATION_SUCCESS" = true ] && [ -f "scripts/seed-catalog-prod.mjs" ]; then
+  echo "🌱 Sembrando catálogo de referencia (idempotente)..."
+  if ALLOW_PROD=1 node scripts/seed-catalog-prod.mjs 2>&1; then
+    echo "✅ Catálogo sembrado"
+  else
+    echo "⚠️  Falló el seed de catálogo (continuando con el arranque; revisa logs)"
+  fi
+fi
+
 # Verificar que server.js existe
 echo "🔍 Verificando archivos del servidor..."
 if [ ! -f "server.js" ]; then

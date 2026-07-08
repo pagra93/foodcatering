@@ -84,6 +84,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts/prod-seguridad-migracion.
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed-rbac-prod.mjs ./scripts/seed-rbac-prod.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/rbac-catalog.json ./scripts/rbac-catalog.json
 
+# Seed catálogo prod (planes, impuestos, alérgenos, festivos, motivos, OWASP,
+# branding). Lo ejecuta el entrypoint tras `migrate deploy` (idempotente).
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed-catalog-prod.mjs ./scripts/seed-catalog-prod.mjs
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/catalog-data.json ./scripts/catalog-data.json
+
 # node_modules solo con prod deps (incluye CLI de `prisma` porque lo movimos
 # a dependencies). Reemplaza el node_modules que trae el standalone por uno
 # completo de prod — así `prisma migrate deploy` encuentra el binario.

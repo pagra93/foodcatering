@@ -1,0 +1,709 @@
+{
+  "generatedFrom": "comidas_dev",
+  "saasPlans": [
+    {
+      "code": "cat-basico",
+      "name": "Catering Básico",
+      "description": "Para caterings que empiezan: comisión estándar, hasta 3 empresas.",
+      "planType": "CATERING",
+      "scope": "SYSTEM",
+      "monthlyPrice": 0,
+      "yearlyPrice": null,
+      "maxEmployees": null,
+      "maxSites": null,
+      "maxCaterings": null,
+      "maxOrdersMonth": null,
+      "pricingModel": "COMMISSION",
+      "commissionPct": 0.08,
+      "flatMonthlyFee": null,
+      "maxCompanies": 3,
+      "supportLevel": "BASIC",
+      "active": true,
+      "featureKeys": []
+    },
+    {
+      "code": "cat-cuota-fija",
+      "name": "Catering Cuota Fija",
+      "description": "Precio fijo mensual (sin comisión sobre facturación), todo incluido.",
+      "planType": "CATERING",
+      "scope": "SYSTEM",
+      "monthlyPrice": 0,
+      "yearlyPrice": null,
+      "maxEmployees": null,
+      "maxSites": null,
+      "maxCaterings": null,
+      "maxOrdersMonth": null,
+      "pricingModel": "FIXED",
+      "commissionPct": null,
+      "flatMonthlyFee": 299,
+      "maxCompanies": null,
+      "supportLevel": "DEDICATED",
+      "active": true,
+      "featureKeys": [
+        "cat-analytics",
+        "cat-production",
+        "cat-quality",
+        "cat-routes"
+      ]
+    },
+    {
+      "code": "cat-estandar",
+      "name": "Catering Estándar",
+      "description": "Comisión del 5% (la de hoy), producción, rutas y calidad, hasta 10 empresas.",
+      "planType": "CATERING",
+      "scope": "SYSTEM",
+      "monthlyPrice": 0,
+      "yearlyPrice": null,
+      "maxEmployees": null,
+      "maxSites": null,
+      "maxCaterings": null,
+      "maxOrdersMonth": null,
+      "pricingModel": "COMMISSION",
+      "commissionPct": 0.05,
+      "flatMonthlyFee": null,
+      "maxCompanies": 10,
+      "supportLevel": "PRIORITY",
+      "active": true,
+      "featureKeys": [
+        "cat-production",
+        "cat-quality",
+        "cat-routes"
+      ]
+    },
+    {
+      "code": "cat-premium",
+      "name": "Catering Premium",
+      "description": "Comisión reducida del 3%, sin límite de empresas, todo incluido.",
+      "planType": "CATERING",
+      "scope": "SYSTEM",
+      "monthlyPrice": 0,
+      "yearlyPrice": null,
+      "maxEmployees": null,
+      "maxSites": null,
+      "maxCaterings": null,
+      "maxOrdersMonth": null,
+      "pricingModel": "COMMISSION",
+      "commissionPct": 0.03,
+      "flatMonthlyFee": null,
+      "maxCompanies": null,
+      "supportLevel": "DEDICATED",
+      "active": true,
+      "featureKeys": [
+        "cat-analytics",
+        "cat-api",
+        "cat-billing",
+        "cat-branding",
+        "cat-companies",
+        "cat-dashboard",
+        "cat-dishes",
+        "cat-incidents",
+        "cat-menus",
+        "cat-production",
+        "cat-quality",
+        "cat-routes"
+      ]
+    },
+    {
+      "code": "enterprise",
+      "name": "Enterprise",
+      "description": "Todo incluido, sin límites, con soporte dedicado e integraciones.",
+      "planType": "EMPRESA",
+      "scope": "SYSTEM",
+      "monthlyPrice": 499,
+      "yearlyPrice": 4990,
+      "maxEmployees": null,
+      "maxSites": null,
+      "maxCaterings": null,
+      "maxOrdersMonth": null,
+      "pricingModel": null,
+      "commissionPct": null,
+      "flatMonthlyFee": null,
+      "maxCompanies": null,
+      "supportLevel": "DEDICATED",
+      "active": true,
+      "featureKeys": [
+        "activity-log",
+        "advanced-analytics",
+        "api-access",
+        "billing",
+        "catering",
+        "custom-branding",
+        "dashboard",
+        "data-export",
+        "employees",
+        "fiscal-audit",
+        "incidents",
+        "multi-site",
+        "orders",
+        "reputation",
+        "roles-management",
+        "user-management"
+      ]
+    },
+    {
+      "code": "growth",
+      "name": "Growth",
+      "description": "Para empresas en crecimiento con varias sedes y necesidades fiscales.",
+      "planType": "EMPRESA",
+      "scope": "SYSTEM",
+      "monthlyPrice": 149,
+      "yearlyPrice": 1490,
+      "maxEmployees": 100,
+      "maxSites": 5,
+      "maxCaterings": 3,
+      "maxOrdersMonth": 3000,
+      "pricingModel": null,
+      "commissionPct": null,
+      "flatMonthlyFee": null,
+      "maxCompanies": null,
+      "supportLevel": "PRIORITY",
+      "active": true,
+      "featureKeys": [
+        "activity-log",
+        "advanced-analytics",
+        "data-export",
+        "fiscal-audit",
+        "multi-site",
+        "reputation",
+        "user-management"
+      ]
+    },
+    {
+      "code": "starter",
+      "name": "Starter",
+      "description": "Para equipos pequeños que empiezan con el beneficio de comida.",
+      "planType": "EMPRESA",
+      "scope": "SYSTEM",
+      "monthlyPrice": 49,
+      "yearlyPrice": 490,
+      "maxEmployees": 20,
+      "maxSites": 1,
+      "maxCaterings": 1,
+      "maxOrdersMonth": 500,
+      "pricingModel": null,
+      "commissionPct": null,
+      "flatMonthlyFee": null,
+      "maxCompanies": null,
+      "supportLevel": "BASIC",
+      "active": true,
+      "featureKeys": []
+    }
+  ],
+  "taxRules": [
+    {
+      "code": "EXENTO",
+      "name": "Exento",
+      "rate": 0,
+      "category": "service",
+      "region": null,
+      "validFrom": "2026-04-19T05:08:54.090Z",
+      "validTo": null,
+      "active": true
+    },
+    {
+      "code": "IGIC_CANARIAS",
+      "name": "IGIC Canarias",
+      "rate": 7,
+      "category": "food",
+      "region": "ES-CN",
+      "validFrom": "2026-04-19T05:08:53.200Z",
+      "validTo": null,
+      "active": true
+    },
+    {
+      "code": "IVA_COMIDA",
+      "name": "IVA reducido comida",
+      "rate": 10,
+      "category": "food",
+      "region": null,
+      "validFrom": "2026-04-19T05:08:50.880Z",
+      "validTo": null,
+      "active": true
+    },
+    {
+      "code": "IVA_GENERAL",
+      "name": "IVA general servicios",
+      "rate": 21,
+      "category": "service",
+      "region": null,
+      "validFrom": "2026-04-19T05:08:52.310Z",
+      "validTo": null,
+      "active": true
+    }
+  ],
+  "allergens": [
+    {
+      "code": "altramuces",
+      "name": "Altramuces",
+      "category": "LUPIN",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "apio",
+      "name": "Apio",
+      "category": "CELERY",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "cacahuetes",
+      "name": "Cacahuetes",
+      "category": "PEANUTS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "crustaceos",
+      "name": "Crustáceos",
+      "category": "CRUSTACEANS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "frutos_secos",
+      "name": "Frutos Secos",
+      "category": "TREE_NUTS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "gluten",
+      "name": "Gluten",
+      "category": "CEREALS_WITH_GLUTEN",
+      "description": "Trigo, centeno, cebada, avena, espelta, kamut",
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "huevos",
+      "name": "Huevos",
+      "category": "EGGS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "lactosa",
+      "name": "Lácteos",
+      "category": "MILK",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "moluscos",
+      "name": "Moluscos",
+      "category": "MOLLUSCS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "mostaza",
+      "name": "Mostaza",
+      "category": "MUSTARD",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "pescado",
+      "name": "Pescado",
+      "category": "FISH",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "sesamo",
+      "name": "Sésamo",
+      "category": "SESAME",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "soja",
+      "name": "Soja",
+      "category": "SOYBEANS",
+      "description": null,
+      "icon": null,
+      "active": true
+    },
+    {
+      "code": "sulfitos",
+      "name": "Sulfitos",
+      "category": "SULPHITES",
+      "description": null,
+      "icon": null,
+      "active": true
+    }
+  ],
+  "holidays": [
+    {
+      "date": "2025-12-31",
+      "name": "Año Nuevo",
+      "regionCode": null,
+      "description": null
+    },
+    {
+      "date": "2026-01-01",
+      "name": "Año Nuevo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-01-06",
+      "name": "Reyes Magos",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-04-03",
+      "name": "Viernes Santo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-04-30",
+      "name": "Día del Trabajador",
+      "regionCode": null,
+      "description": null
+    },
+    {
+      "date": "2026-05-01",
+      "name": "Día del Trabajo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-08-15",
+      "name": "Asunción de la Virgen",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-10-12",
+      "name": "Fiesta Nacional de España",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-11-02",
+      "name": "Todos los Santos (trasladado)",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-12-07",
+      "name": "Constitución (trasladado)",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-12-08",
+      "name": "Inmaculada Concepción",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2026-12-24",
+      "name": "Navidad",
+      "regionCode": null,
+      "description": null
+    },
+    {
+      "date": "2026-12-25",
+      "name": "Navidad",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-01-01",
+      "name": "Año Nuevo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-01-06",
+      "name": "Reyes Magos",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-03-26",
+      "name": "Viernes Santo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-05-01",
+      "name": "Día del Trabajo",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-08-15",
+      "name": "Asunción de la Virgen",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-10-12",
+      "name": "Fiesta Nacional de España",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-11-01",
+      "name": "Todos los Santos",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-12-06",
+      "name": "Día de la Constitución",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-12-08",
+      "name": "Inmaculada Concepción",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    },
+    {
+      "date": "2027-12-25",
+      "name": "Navidad",
+      "regionCode": null,
+      "description": "Festivo nacional España"
+    }
+  ],
+  "incidentReasons": [
+    {
+      "code": "LATE_DELIVERY",
+      "name": "Entrega tardía",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "DELIVERY",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "MISSING_ITEM",
+      "name": "Plato faltante",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "DELIVERY",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "QUALITY_ISSUE",
+      "name": "Problema de calidad",
+      "description": null,
+      "defaultSeverity": "HIGH",
+      "category": "QUALITY",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "TEMPERATURE",
+      "name": "Temperatura incorrecta",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "QUALITY",
+      "requiresCompensation": false,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "WRONG_ORDER",
+      "name": "Pedido erróneo",
+      "description": null,
+      "defaultSeverity": "HIGH",
+      "category": "QUALITY",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "allergen_violation",
+      "name": "Violación de alérgenos",
+      "description": null,
+      "defaultSeverity": "HIGH",
+      "category": "safety",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "cold_food",
+      "name": "Comida fría",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "quality",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "damaged_packaging",
+      "name": "Embalaje dañado",
+      "description": null,
+      "defaultSeverity": "LOW",
+      "category": "delivery",
+      "requiresCompensation": false,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "hygiene_issue",
+      "name": "Problema de higiene",
+      "description": null,
+      "defaultSeverity": "HIGH",
+      "category": "safety",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "late_delivery",
+      "name": "Entrega tardía",
+      "description": null,
+      "defaultSeverity": "LOW",
+      "category": "delivery",
+      "requiresCompensation": false,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "missing_items",
+      "name": "Artículos faltantes",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "delivery",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "other",
+      "name": "Otro motivo",
+      "description": null,
+      "defaultSeverity": "LOW",
+      "category": "other",
+      "requiresCompensation": false,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "quality_low",
+      "name": "Calidad deficiente",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "quality",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "undelivered",
+      "name": "Pedido no entregado",
+      "description": null,
+      "defaultSeverity": "HIGH",
+      "category": "delivery",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    },
+    {
+      "code": "wrong_dish",
+      "name": "Plato equivocado",
+      "description": null,
+      "defaultSeverity": "MEDIUM",
+      "category": "delivery",
+      "requiresCompensation": true,
+      "scope": "SYSTEM",
+      "active": true
+    }
+  ],
+  "securityChecks": [
+    {
+      "category": "OWASP_A01_ACCESS_CONTROL",
+      "item": "Autorización por tenant y por permiso (RBAC) en cada ruta/acción; sin acceso cross-tenant.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A02_CRYPTO_FAILURES",
+      "item": "PII cifrada en reposo (email/nombre/teléfono) y tráfico solo por HTTPS/TLS.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A03_INJECTION",
+      "item": "Acceso a datos vía Prisma (consultas parametrizadas); validación de entrada con Zod.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A04_INSECURE_DESIGN",
+      "item": "Límites de negocio en backend (p. ej. ≤11€/día); Server Actions para mutaciones.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A05_SECURITY_MISCONFIG",
+      "item": "Cabeceras de seguridad, cookies httpOnly/secure y variables de entorno separadas dev/prod.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A06_VULNERABLE_COMPONENTS",
+      "item": "Auditoría periódica de dependencias (pnpm audit) y actualización de CVEs críticos.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A07_AUTH_FAILURES",
+      "item": "NextAuth con contraseñas hasheadas (bcrypt), MFA disponible y rate-limit en login.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A08_DATA_INTEGRITY",
+      "item": "Facturas/liquidaciones/auditorías con hash de integridad SHA-256 (tamper-evident).",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A09_LOGGING_MONITORING",
+      "item": "AuditLog de acciones sensibles con actor, entidad y hash; trazabilidad de impersonación.",
+      "status": "PENDING",
+      "evidence": null
+    },
+    {
+      "category": "OWASP_A10_SSRF",
+      "item": "Sin fetch de URLs controladas por el usuario desde el servidor; allowlist de destinos.",
+      "status": "PENDING",
+      "evidence": null
+    }
+  ],
+  "systemSettings": {
+    "defaultPrimaryColor": "#E0492A",
+    "defaultSecondaryColor": null,
+    "defaultLogoUrl": null,
+    "defaultFaviconUrl": null,
+    "brandName": "Plati"
+  }
+}
