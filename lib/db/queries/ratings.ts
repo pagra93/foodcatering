@@ -11,8 +11,14 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
-import { Prisma, type DishCourse } from '@prisma/client'
+import { prismaAdmin } from '@/lib/db/prisma-admin'
+import { Prisma, PrismaClient, type DishCourse } from '@prisma/client'
 import { subDays, startOfDay } from 'date-fns'
+
+// Las funciones GLOBALES (admin, cross-tenant) leen sin filtro de tenant a
+// propósito → usan el cliente sin guard (F5). Los helpers aceptan `db` para
+// poder reutilizarlos tanto en modo scoped (prisma) como global (prismaAdmin).
+type Db = PrismaClient
 import { dishesFromSelection } from '@/lib/ratings/selection'
 
 export { dishesFromSelection } from '@/lib/ratings/selection'
@@ -63,11 +69,12 @@ function emptyDistribution(): Record<1 | 2 | 3 | 4 | 5, number> {
 
 /** Resumen (media + nº + histograma) para un `where` dado. */
 async function summaryFor(
-  where: Prisma.DishRatingWhereInput
+  where: Prisma.DishRatingWhereInput,
+  db: Db = prisma
 ): Promise<ReputationSummary> {
   const [agg, byStar] = await Promise.all([
-    prisma.dishRating.aggregate({ where, _avg: { rating: true }, _count: true }),
-    prisma.dishRating.groupBy({ by: ['rating'], where, _count: true }),
+    db.dishRating.aggregate({ where, _avg: { rating: true }, _count: true }),
+    db.dishRating.groupBy({ by: ['rating'], where, _count: true }),
   ])
   const distribution = emptyDistribution()
   for (const row of byStar) {
@@ -108,10 +115,11 @@ function scopeConds(scope: RatingScope, from: Date): Prisma.Sql[] {
  */
 async function trendByMonth(
   scope: RatingScope,
-  months = 6
+  months = 6,
+  db: Db = prisma
 ): Promise<TrendPoint[]> {
   const from = startOfDay(subDays(new Date(), months * 31))
-  const rows = await prisma.$queryRaw<
+  const rows = await db.$queryRaw<
     { period: string; average: number; count: bigint }[]
   >(Prisma.sql`
     SELECT to_char(date_trunc('month', service_date), 'YYYY-MM') AS period,
@@ -137,11 +145,12 @@ async function trendByMonth(
 async function monthlyBucketsBy(
   groupCol: 'dish_id' | 'tenant_catering',
   sinceDays: number,
-  scope: RatingScope = {}
+  scope: RatingScope = {},
+  db: Db = prisma
 ): Promise<Map<string, RawMonthPoint[]>> {
   const from = startOfDay(subDays(new Date(), sinceDays))
   const col = Prisma.raw(groupCol) // literal del allowlist, sin input externo
-  const rows = await prisma.$queryRaw<
+  const rows = await db.$queryRaw<
     { key: string; period: string; average: number; count: bigint }[]
   >(Prisma.sql`
     SELECT ${col} AS key,
@@ -175,9 +184,10 @@ function trendDeltaOf(points: RawMonthPoint[] | undefined): number | null {
 async function dishLeaderboard(
   where: Prisma.DishRatingWhereInput,
   limit = 10,
-  minCount = 1
+  minCount = 1,
+  db: Db = prisma
 ): Promise<{ top: DishScore[]; bottom: DishScore[] }> {
-  const grouped = await prisma.dishRating.groupBy({
+  const grouped = await db.dishRating.groupBy({
     by: ['dishId', 'course'],
     where,
     _avg: { rating: true },
@@ -186,7 +196,7 @@ async function dishLeaderboard(
   const eligible = grouped.filter((g) => g._count >= minCount)
   if (eligible.length === 0) return { top: [], bottom: [] }
 
-  const dishes = await prisma.dish.findMany({
+  const dishes = await db.dish.findMany({
     where: { id: { in: eligible.map((g) => g.dishId) } },
     select: { id: true, name: true },
   })
@@ -210,9 +220,10 @@ type CommentRow = RatingComment & { tenantCatering: string; tenantEmpresa: strin
 /** Comentarios recientes para un `where` dado (con nombre del plato + tenants). */
 async function commentsFor(
   where: Prisma.DishRatingWhereInput,
-  limit = 20
+  limit = 20,
+  db: Db = prisma
 ): Promise<CommentRow[]> {
-  const rows = await prisma.dishRating.findMany({
+  const rows = await db.dishRating.findMany({
     where: { ...where, comment: { not: null } },
     orderBy: { createdAt: 'desc' },
     take: limit,
@@ -238,10 +249,13 @@ async function commentsFor(
 }
 
 /** Resuelve nombres de tenants (empresa/catering) en lote. */
-async function tenantNames(ids: string[]): Promise<Map<string, string>> {
+async function tenantNames(
+  ids: string[],
+  db: Db = prisma
+): Promise<Map<string, string>> {
   const unique = [...new Set(ids)]
   if (unique.length === 0) return new Map()
-  const tenants = await prisma.tenant.findMany({
+  const tenants = await db.tenant.findMany({
     where: { id: { in: unique } },
     select: { id: true, name: true },
   })
@@ -455,7 +469,7 @@ export async function getCompanyCateringReputation(tenantEmpresa: string): Promi
 // ── Admin (global) ───────────────────────────────────────────────────────────
 
 export function getGlobalReputation() {
-  return summaryFor({})
+  return summaryFor({}, prismaAdmin)
 }
 
 export type CateringReputationRow = {
@@ -487,41 +501,41 @@ export async function getReputationOverview(): Promise<{
 
   const [global, base, dist, byCompany, byDish, base30, trendByCat] =
     await Promise.all([
-      summaryFor({}),
-      prisma.dishRating.groupBy({
+      summaryFor({}, prismaAdmin),
+      prismaAdmin.dishRating.groupBy({
         by: ['tenantCatering'],
         _avg: { rating: true },
         _count: true,
       }),
-      prisma.dishRating.groupBy({
+      prismaAdmin.dishRating.groupBy({
         by: ['tenantCatering', 'rating'],
         _count: true,
       }),
-      prisma.dishRating.groupBy({
+      prismaAdmin.dishRating.groupBy({
         by: ['tenantCatering', 'tenantEmpresa'],
         _avg: { rating: true },
         _count: true,
       }),
-      prisma.dishRating.groupBy({
+      prismaAdmin.dishRating.groupBy({
         by: ['tenantCatering', 'dishId', 'course'],
         _avg: { rating: true },
         _count: true,
       }),
-      prisma.dishRating.groupBy({
+      prismaAdmin.dishRating.groupBy({
         by: ['tenantCatering'],
         _avg: { rating: true },
         _count: true,
         where: { serviceDate: { gte: from30 } },
       }),
-      monthlyBucketsBy('tenant_catering', 62),
+      monthlyBucketsBy('tenant_catering', 62, {}, prismaAdmin),
     ])
 
   // Nombres de tenants (caterings + empresas) y platos, en lote.
-  const names = await tenantNames([
-    ...base.map((b) => b.tenantCatering),
-    ...byCompany.map((c) => c.tenantEmpresa),
-  ])
-  const dishRows = await prisma.dish.findMany({
+  const names = await tenantNames(
+    [...base.map((b) => b.tenantCatering), ...byCompany.map((c) => c.tenantEmpresa)],
+    prismaAdmin
+  )
+  const dishRows = await prismaAdmin.dish.findMany({
     where: { id: { in: [...new Set(byDish.map((d) => d.dishId))] } },
     select: { id: true, name: true },
   })
@@ -598,12 +612,15 @@ export async function getReputationOverview(): Promise<{
 }
 
 export async function getReputationByCatering(limit = 50): Promise<EntityScore[]> {
-  const grouped = await prisma.dishRating.groupBy({
+  const grouped = await prismaAdmin.dishRating.groupBy({
     by: ['tenantCatering'],
     _avg: { rating: true },
     _count: true,
   })
-  const names = await tenantNames(grouped.map((g) => g.tenantCatering))
+  const names = await tenantNames(
+    grouped.map((g) => g.tenantCatering),
+    prismaAdmin
+  )
   return grouped
     .map((g) => ({
       tenantId: g.tenantCatering,
@@ -628,15 +645,15 @@ export async function getReputationCompanyMatrix(): Promise<{
   empresas: { id: string; name: string }[]
   cells: MatrixCell[]
 }> {
-  const grouped = await prisma.dishRating.groupBy({
+  const grouped = await prismaAdmin.dishRating.groupBy({
     by: ['tenantCatering', 'tenantEmpresa'],
     _avg: { rating: true },
     _count: true,
   })
-  const names = await tenantNames([
-    ...grouped.map((g) => g.tenantCatering),
-    ...grouped.map((g) => g.tenantEmpresa),
-  ])
+  const names = await tenantNames(
+    [...grouped.map((g) => g.tenantCatering), ...grouped.map((g) => g.tenantEmpresa)],
+    prismaAdmin
+  )
   const cells: MatrixCell[] = grouped.map((g) => ({
     tenantCatering: g.tenantCatering,
     tenantEmpresa: g.tenantEmpresa,
@@ -655,13 +672,16 @@ export async function getReputationCompanyMatrix(): Promise<{
 }
 
 export async function getGlobalDishLeaderboard(limit = 10) {
-  return dishLeaderboard({}, limit, 2)
+  return dishLeaderboard({}, limit, 2, prismaAdmin)
 }
 
 export async function getGlobalRatingComments(limit = 20): Promise<RatingComment[]> {
-  const comments = await commentsFor({}, limit)
+  const comments = await commentsFor({}, limit, prismaAdmin)
   // Enriquecer con el nombre del catering para el stream global.
-  const names = await tenantNames(comments.map((c) => c.tenantCatering))
+  const names = await tenantNames(
+    comments.map((c) => c.tenantCatering),
+    prismaAdmin
+  )
   return comments.map((c) => ({
     id: c.id,
     rating: c.rating,

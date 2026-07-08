@@ -77,9 +77,12 @@ const MULTI_TENANT_MODELS = new Set([
   'HolidayOverride',
 ])
 
+// El guard vigila lecturas que pueden devolver filas de VARIOS tenants sin
+// filtro. `findUnique`/`findUniqueOrThrow` se EXIMEN: devuelven una sola fila por
+// clave única (normalmente el id) y el patrón `findUnique({ id })` está muy
+// extendido en toda la app (el llamante valida la propiedad sobre la fila). El
+// riesgo real de fuga está en listados/agregados sin filtro de tenant.
 const READ_ACTIONS = new Set([
-  'findUnique',
-  'findUniqueOrThrow',
   'findFirst',
   'findFirstOrThrow',
   'findMany',
@@ -88,16 +91,30 @@ const READ_ACTIONS = new Set([
   'groupBy',
 ])
 
-function hasTenantFilter(where: unknown): boolean {
+export function hasTenantFilter(where: unknown): boolean {
   if (!where || typeof where !== 'object') return false
   const obj = where as Record<string, unknown>
-  return Boolean(
+  if (
     obj['tenantId'] ||
-      obj['tenantEmpresa'] ||
-      obj['tenantCatering'] ||
-      obj['tenant'] || // filter vía relación
-      obj['company'] // algunas queries filtran vía company.tenantId
-  )
+    obj['tenantEmpresa'] ||
+    obj['tenantCatering'] ||
+    obj['tenant'] || // filter vía relación
+    obj['company'] // algunas queries filtran vía company.tenantId
+  ) {
+    return true
+  }
+  // Descender en combinadores AND/OR (objeto o array anidado) para no marcar
+  // como "sin filtro" una query que sí lo lleva anidado (evita falsos positivos
+  // al activar el enforcement).
+  for (const key of ['AND', 'OR'] as const) {
+    const branch = obj[key]
+    if (Array.isArray(branch)) {
+      if (branch.some((b) => hasTenantFilter(b))) return true
+    } else if (branch && hasTenantFilter(branch)) {
+      return true
+    }
+  }
+  return false
 }
 
 /**

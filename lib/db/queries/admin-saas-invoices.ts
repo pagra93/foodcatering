@@ -2,7 +2,8 @@
  * Queries CRUD sobre SaasInvoice (Plati → Empresa por plan SaaS).
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: panel admin = lecturas cross-tenant a propósito → cliente sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import type { Prisma, SaasInvoiceStatus } from '@prisma/client'
 
 export type SaasInvoiceFilters = {

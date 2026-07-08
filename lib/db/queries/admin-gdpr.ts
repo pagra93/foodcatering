@@ -2,7 +2,8 @@
  * Queries para gestión de solicitudes RGPD.
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: panel admin = lecturas cross-tenant a propósito → cliente sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import type { GdprRequestStatus, GdprRequestType, Prisma } from '@prisma/client'
 
 export const GDPR_DUE_WARNING_DAYS = 5

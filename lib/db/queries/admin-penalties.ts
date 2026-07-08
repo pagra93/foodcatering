@@ -3,7 +3,8 @@
  * Scope: SUPER_ADMIN ve TODAS las penalizaciones cross-tenant.
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: panel admin = lecturas cross-tenant a propósito → cliente sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import type { PenaltyStatus, PenaltyType, Prisma } from '@prisma/client'
 
 export type PenaltyFilters = {

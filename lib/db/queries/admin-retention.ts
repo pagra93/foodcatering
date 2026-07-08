@@ -2,7 +2,8 @@
  * Queries para políticas de retención.
  */
 
-import { prisma } from '@/lib/db/prisma'
+// F5: panel admin = lecturas cross-tenant a propósito → cliente sin guard.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import type { RetentionEntity } from '@prisma/client'
 
 export const RETENTION_ENTITY_LABEL: Record<RetentionEntity, string> = {
