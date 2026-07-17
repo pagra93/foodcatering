@@ -77,9 +77,10 @@ export function ScenariosTab({
       </Card>
 
       <Card className="p-5">
-        <h3 className="mb-1 text-sm font-semibold">Sensibilidad — impacto en el ARR final (±20%)</h3>
+        <h3 className="mb-1 text-sm font-semibold">Sensibilidad — impacto en los ingresos del último mes (±20%)</h3>
         <p className="mb-3 text-xs text-gray-500">
-          Qué palancas mueven más el negocio en el escenario actual. Base: ARR final {formatPrice(sens.base)}.
+          Qué palancas mueven más el negocio en el escenario actual. Objetivo: ingresos totales del último mes
+          (SaaS + comisión), base {formatPrice(sens.base)}.
           Runway del escenario base: {formatMonths(comparison.find((c) => c.key === workingKey)?.summary.runwayMonths ?? null)}.
         </p>
         <SensitivityChart bars={sens.bars} />

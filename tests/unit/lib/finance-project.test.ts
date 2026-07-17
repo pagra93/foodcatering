@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { projectMonthly, addMonths, weightedPlanPrice, runModel } from '@/lib/finance'
+import { projectMonthly, addMonths, weightedPlanPrice, runModel, cateringPricing } from '@/lib/finance'
 import { DEFAULT_ASSUMPTIONS } from '@/lib/finance/defaults'
 import type { Assumptions } from '@/lib/validations/finance'
 import type { MonthlyProjection } from '@/lib/finance/types'
@@ -29,6 +29,38 @@ describe('weightedPlanPrice', () => {
     const a = structuredClone(base)
     a.growth.planMix = { starter: 0, growth: 0, enterprise: 0 }
     expect(weightedPlanPrice(a)).toBe(0)
+  })
+})
+
+describe('cateringPricing', () => {
+  it('mezcla la comisión por el reparto de planes (cuota fija = 0% sobre GMV)', () => {
+    // mix 20/50/20/10 sobre comisiones 8/5/3 = (20*8 + 50*5 + 20*3)/100 = 4.7%
+    const { blendedCommissionPct, fixedShare } = cateringPricing(base)
+    expect(blendedCommissionPct).toBeCloseTo(4.7, 2)
+    expect(fixedShare).toBeCloseTo(0.1, 4)
+  })
+
+  it('desplazar el mix al plan de mayor comisión sube el % mezclado', () => {
+    const a = structuredClone(base)
+    a.pricing.cateringMix = { basico: 60, estandar: 25, premium: 5, fija: 10 }
+    // (60*8 + 25*5 + 5*3)/100 = (480 + 125 + 15)/100 = 6.2%
+    expect(cateringPricing(a).blendedCommissionPct).toBeCloseTo(6.2, 2)
+  })
+
+  it('reparto a cero → sin comisión ni cuota (no divide por cero)', () => {
+    const a = structuredClone(base)
+    a.pricing.cateringMix = { basico: 0, estandar: 0, premium: 0, fija: 0 }
+    expect(cateringPricing(a)).toEqual({ blendedCommissionPct: 0, fixedShare: 0 })
+  })
+
+  it('la comisión del P&L usa el % mezclado + cuota fija por caterings', () => {
+    const rows = projectMonthly({ assumptions: base, startMonth: '2026-01', horizonMonths: 1 })
+    const p = rows[0]!
+    const { blendedCommissionPct, fixedShare } = cateringPricing(base)
+    const expected =
+      p.gmv * (blendedCommissionPct / 100) +
+      fixedShare * p.activeCaterings * base.pricing.cateringFixedFee
+    expect(p.commissionRevenue).toBeCloseTo(expected, 1)
   })
 })
 

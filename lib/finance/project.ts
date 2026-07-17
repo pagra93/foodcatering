@@ -17,6 +17,27 @@ export function addMonths(period: string, n: number): string {
 
 const r2 = (x: number) => Math.round(x * 100) / 100
 
+/**
+ * Comisión efectiva de catering según el mix de planes: el % ponderado sobre TODO
+ * el GMV (los caterings de cuota fija aportan 0% aquí) + el peso de la cuota fija.
+ * Toma solo el bloque `pricing` para poder reutilizarlo sobre datos reales.
+ */
+export function blendedCateringPricing(
+  pricing: Assumptions['pricing']
+): { blendedCommissionPct: number; fixedShare: number } {
+  const { cateringMix: mix, cateringCommission: comm } = pricing
+  const total = mix.basico + mix.estandar + mix.premium + mix.fija
+  if (total <= 0) return { blendedCommissionPct: 0, fixedShare: 0 }
+  const blendedCommissionPct =
+    (mix.basico * comm.basico + mix.estandar * comm.estandar + mix.premium * comm.premium) / total
+  return { blendedCommissionPct, fixedShare: mix.fija / total }
+}
+
+/** Igual que `blendedCateringPricing` pero desde los supuestos completos. */
+export function cateringPricing(a: Assumptions): { blendedCommissionPct: number; fixedShare: number } {
+  return blendedCateringPricing(a.pricing)
+}
+
 /** Precio mensual medio por empresa según el mix de planes (pesos normalizados). */
 export function weightedPlanPrice(a: Assumptions): number {
   const { planMix } = a.growth
@@ -44,6 +65,7 @@ export function projectMonthly(input: ProjectInput): MonthlyProjection[] {
   const g = a.growth
   const c = a.costs
   const arpu = weightedPlanPrice(a)
+  const { blendedCommissionPct, fixedShare } = cateringPricing(a)
 
   const fundingByMonth = new Map<number, number>()
   for (const round of a.cash.fundingRounds) {
@@ -75,7 +97,10 @@ export function projectMonthly(input: ProjectInput): MonthlyProjection[] {
     const gmv = orders * g.avgTicket
 
     const mrrSaas = companies * arpu
-    const commissionRevenue = gmv * (a.pricing.avgCommissionPct / 100)
+    // Comisión = % mezclado sobre el GMV + cuota fija de los caterings de ese plan.
+    const commissionOnGmv = gmv * (blendedCommissionPct / 100)
+    const fixedFeeRevenue = fixedShare * caterings * a.pricing.cateringFixedFee
+    const commissionRevenue = commissionOnGmv + fixedFeeRevenue
     const totalRevenue = mrrSaas + commissionRevenue
 
     const cogs =

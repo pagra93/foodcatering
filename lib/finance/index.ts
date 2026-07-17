@@ -9,11 +9,13 @@ import { computeMetrics, summarizeModel } from './metrics'
 import type { MonthlyProjection, SaasMetricsPoint, ModelSummary } from './types'
 
 export * from './types'
-export { projectMonthly, addMonths, weightedPlanPrice } from './project'
+export { projectMonthly, addMonths, weightedPlanPrice, cateringPricing, blendedCateringPricing } from './project'
 export { computeMetrics, summarizeModel } from './metrics'
 export { buildPlanVsReal, METRIC_LABEL } from './plan-vs-real'
 export { compareScenarios, sensitivity } from './scenarios'
 export type { ScenarioComparison, SensitivityBar } from './scenarios'
+export { whatIfCommission } from './what-if'
+export type { WhatIfResult, WhatIfRow } from './what-if'
 export { DEFAULT_ASSUMPTIONS, optimisticAssumptions, pessimisticAssumptions } from './defaults'
 
 export type RunModelResult = {

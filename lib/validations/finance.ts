@@ -22,6 +22,21 @@ export const planPricesSchema = z.object({
   enterprise: nonNeg,
 })
 
+/** Comisión (%) por plan de catering con comisión. */
+export const cateringCommissionSchema = z.object({
+  basico: pct,
+  estandar: pct,
+  premium: pct,
+})
+
+/** Reparto (pesos) de caterings por plan; el motor lo normaliza. */
+export const cateringMixSchema = z.object({
+  basico: nonNeg,
+  estandar: nonNeg,
+  premium: nonNeg,
+  fija: nonNeg,
+})
+
 export const assumptionsSchema = z.object({
   growth: z.object({
     startingCompanies: nonNeg,
@@ -39,7 +54,9 @@ export const assumptionsSchema = z.object({
   }),
   pricing: z.object({
     planPrices: planPricesSchema, // €/mes por plan de empresa
-    avgCommissionPct: pct, // % sobre el GMV catering
+    cateringCommission: cateringCommissionSchema, // % por plan de catering con comisión
+    cateringFixedFee: nonNeg, // €/mes del plan de cuota fija
+    cateringMix: cateringMixSchema, // reparto de caterings por plan (pesos)
   }),
   costs: z.object({
     cogs: z.object({

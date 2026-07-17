@@ -23,7 +23,9 @@ export const DEFAULT_ASSUMPTIONS: Assumptions = {
   },
   pricing: {
     planPrices: { starter: 49, growth: 149, enterprise: 499 },
-    avgCommissionPct: 5,
+    cateringCommission: { basico: 8, estandar: 5, premium: 3 },
+    cateringFixedFee: 299,
+    cateringMix: { basico: 20, estandar: 50, premium: 20, fija: 10 },
   },
   costs: {
     cogs: {
@@ -59,7 +61,8 @@ export function optimisticAssumptions(): Assumptions {
   a.growth.companyGrowthRatePct = 18
   a.growth.monthlyChurnRatePct = 1
   a.growth.newCateringsPerMonth = 2
-  a.pricing.avgCommissionPct = 5
+  // Mix desplazado hacia el plan de mayor comisión.
+  a.pricing.cateringMix = { basico: 35, estandar: 45, premium: 10, fija: 10 }
   a.costs.sAndM.cac = 450
   return a
 }

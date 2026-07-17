@@ -103,14 +103,24 @@ export function AssumptionsTab({
         <Num label="Ticket medio" value={g.avgTicket} step={0.5} suffix="€" onChange={(v) => upd((a) => { a.growth.avgTicket = v })} />
       </Group>
 
-      <Group title="Pricing (mix por peso; el modelo lo normaliza)">
+      <Group title="Planes de empresa (SaaS) — precio y mix (pesos)">
         <Num label="Precio Starter" value={p.planPrices.starter} suffix="€/mes" onChange={(v) => upd((a) => { a.pricing.planPrices.starter = v })} />
         <Num label="Precio Growth" value={p.planPrices.growth} suffix="€/mes" onChange={(v) => upd((a) => { a.pricing.planPrices.growth = v })} />
         <Num label="Precio Enterprise" value={p.planPrices.enterprise} suffix="€/mes" onChange={(v) => upd((a) => { a.pricing.planPrices.enterprise = v })} />
         <Num label="Mix Starter" value={g.planMix.starter} onChange={(v) => upd((a) => { a.growth.planMix.starter = v })} />
         <Num label="Mix Growth" value={g.planMix.growth} onChange={(v) => upd((a) => { a.growth.planMix.growth = v })} />
         <Num label="Mix Enterprise" value={g.planMix.enterprise} onChange={(v) => upd((a) => { a.growth.planMix.enterprise = v })} />
-        <Num label="Comisión media" value={p.avgCommissionPct} step={0.5} suffix="% GMV" onChange={(v) => upd((a) => { a.pricing.avgCommissionPct = v })} />
+      </Group>
+
+      <Group title="Planes de catering — comisión por plan y reparto (pesos)">
+        <Num label="Comisión Básico" value={p.cateringCommission.basico} step={0.5} suffix="% GMV" onChange={(v) => upd((a) => { a.pricing.cateringCommission.basico = v })} />
+        <Num label="Comisión Estándar" value={p.cateringCommission.estandar} step={0.5} suffix="% GMV" onChange={(v) => upd((a) => { a.pricing.cateringCommission.estandar = v })} />
+        <Num label="Comisión Premium" value={p.cateringCommission.premium} step={0.5} suffix="% GMV" onChange={(v) => upd((a) => { a.pricing.cateringCommission.premium = v })} />
+        <Num label="Cuota fija" value={p.cateringFixedFee} step={10} suffix="€/mes" onChange={(v) => upd((a) => { a.pricing.cateringFixedFee = v })} />
+        <Num label="Reparto Básico (8%)" value={p.cateringMix.basico} onChange={(v) => upd((a) => { a.pricing.cateringMix.basico = v })} />
+        <Num label="Reparto Estándar (5%)" value={p.cateringMix.estandar} onChange={(v) => upd((a) => { a.pricing.cateringMix.estandar = v })} />
+        <Num label="Reparto Premium (3%)" value={p.cateringMix.premium} onChange={(v) => upd((a) => { a.pricing.cateringMix.premium = v })} />
+        <Num label="Reparto Cuota fija" value={p.cateringMix.fija} onChange={(v) => upd((a) => { a.pricing.cateringMix.fija = v })} />
       </Group>
 
       <Group title="Costes — COGS y OpEx">

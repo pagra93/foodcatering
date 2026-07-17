@@ -24,6 +24,7 @@ import { ProjectionTab } from './ProjectionTab'
 import { MetricsTab } from './MetricsTab'
 import { PlanVsRealTab } from './PlanVsRealTab'
 import { ScenariosTab } from './ScenariosTab'
+import { WhatIfTab } from './WhatIfTab'
 import { saveScenarioAction } from './actions'
 
 type Working = {
@@ -179,6 +180,7 @@ export function BusinessPlanWorkspace({
           <TabsTrigger value="projection">Proyección P&amp;L</TabsTrigger>
           <TabsTrigger value="metrics">Métricas</TabsTrigger>
           <TabsTrigger value="plan-vs-real">Plan vs Real</TabsTrigger>
+          <TabsTrigger value="what-if">¿Y si? comisiones</TabsTrigger>
           <TabsTrigger value="scenarios">Escenarios</TabsTrigger>
           <TabsTrigger value="assumptions">Supuestos</TabsTrigger>
         </TabsList>
@@ -194,6 +196,13 @@ export function BusinessPlanWorkspace({
             projection={model.projection}
             actuals={actuals}
             actualRows={actualRows}
+            currentMonth={currentMonth}
+          />
+        </TabsContent>
+        <TabsContent value="what-if">
+          <WhatIfTab
+            actuals={actuals}
+            initialPricing={working.assumptions.pricing}
             currentMonth={currentMonth}
           />
         </TabsContent>
