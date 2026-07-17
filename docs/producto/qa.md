@@ -107,3 +107,13 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Comunicación (email/SMS/WhatsApp): feature propia (modelo CommunicationTemplate + proveedor de envío).
 - [ ] Revisar contraste de botones cuando un tenant elige un color muy claro (el foreground se calcula, pero conviene QA visual).
 - Doc: `docs/producto/features/admin-launch-audit/branding.md`.
+
+## 2026-07-08 — HU-049 Business Plan / modelo financiero (super admin)
+**Tests**: `pnpm type-check` + `pnpm lint` limpios en mis ficheros; **193 tests verdes** (17 nuevos del motor lib/finance: projectMonthly, plan-vs-real, escenarios/sensibilidad). Migración `20260708150000_business_plan` aplicada a `comidas_dev` + `seed-finance` (3 escenarios) + `seed-rbac` (permiso `business-plan:view/edit`). `scripts/rbac-catalog.json` regenerado (220 permisos) para el seed prod.
+**Code review**: arquitectura "no persistir derivados" — solo inputs (supuestos JSON por escenario, costes reales, snapshots MRR); proyección/métricas/plan-vs-real se recomputan en un motor PURO (sin Prisma), unit-testeado, que corre igual en SSR y cliente (recálculo instantáneo con useMemo). Ingresos/crecimiento reales reutilizan queries existentes (getBillingMonthlySeries/getDashboardCharts); costes = input manual (no hay contabilidad conectada). Mutaciones como Server Actions con gate `business-plan:edit` + logAudit. Import circular evitado (scenarios importa de project/metrics, no del barrel).
+**Audit**: cumple CLAUDE.md — RBAC cableado (catálogo→section-permissions→sidebar→seed), sin `as any`, migración no-destructiva solo en dev. Anclaje del modelo a datos reales (empresas/caterings activos) para que planificado y real compartan base.
+**Evaluator score**: 8.5/10 — Correctness alta (motor testeado, smoke), feature completa (P&L + métricas + plan-vs-real + escenarios + sensibilidad); −puntos por deuda anotada (cron del snapshot MRR, CRUD completo de escenarios, export CSV) y por costes 100% manuales.
+**Action items**:
+- [ ] Cron mensual del snapshot MRR (hoy botón manual) para cerrar la serie histórica real de MRR/empresas.
+- [ ] CRUD completo de escenarios (crear/duplicar/borrar/marcar default) + export CSV/print.
+- Doc: `docs/producto/features/business-plan/README.md`.
