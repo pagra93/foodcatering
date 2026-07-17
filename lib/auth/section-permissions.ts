@@ -46,6 +46,9 @@ export const ADMIN_SECTION_RULES: SectionRule[] = [
   // Resumen (raíz del área): visible con permiso de liquidaciones.
   { prefix: '/admin/billing', permission: 'settlement:view', exact: true },
 
+  // Business Plan / modelo financiero
+  { prefix: '/admin/business-plan', permission: 'business-plan:view' },
+
   // Integraciones
   { prefix: '/admin/integrations/webhooks', permission: 'webhook:view' },
   { prefix: '/admin/integrations/api-keys', permission: 'api-key:view' },

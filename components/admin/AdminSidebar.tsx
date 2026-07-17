@@ -17,6 +17,7 @@ import {
   Star,
   AlertCircle,
   CreditCard,
+  LineChart,
   Plug,
   FileText,
   Palette,
@@ -126,6 +127,13 @@ const navItems: NavItem[] = [
       { title: 'Planes SaaS', href: '/admin/billing/plans', permission: 'plan:view' },
       { title: 'Impuestos', href: '/admin/billing/taxes', permission: 'tax:view' },
     ],
+  },
+  {
+    title: 'Business Plan',
+    href: '/admin/business-plan',
+    icon: LineChart,
+    description: 'Modelo financiero: planificado vs real, rentabilidad, escenarios',
+    permission: 'business-plan:view',
   },
   {
     title: 'Integraciones',
