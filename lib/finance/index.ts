@@ -11,6 +11,7 @@ import type { MonthlyProjection, SaasMetricsPoint, ModelSummary } from './types'
 export * from './types'
 export { projectMonthly, addMonths, weightedPlanPrice } from './project'
 export { computeMetrics, summarizeModel } from './metrics'
+export { buildPlanVsReal, METRIC_LABEL } from './plan-vs-real'
 export { DEFAULT_ASSUMPTIONS, optimisticAssumptions, pessimisticAssumptions } from './defaults'
 
 export type RunModelResult = {

@@ -17,9 +17,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { runModel } from '@/lib/finance'
 import type { Assumptions } from '@/lib/validations/finance'
-import type { ScenarioRow } from '@/lib/db/queries/admin-business-plan'
+import type { ScenarioRow, ActualRow } from '@/lib/db/queries/admin-business-plan'
+import type { ActualsSeriesPoint } from '@/lib/finance/types'
 import { AssumptionsTab } from './AssumptionsTab'
 import { ProjectionTab } from './ProjectionTab'
+import { MetricsTab } from './MetricsTab'
+import { PlanVsRealTab } from './PlanVsRealTab'
 import { saveScenarioAction } from './actions'
 
 type Working = {
@@ -43,9 +46,15 @@ const toWorking = (s: ScenarioRow): Working => ({
 export function BusinessPlanWorkspace({
   scenarios,
   anchor,
+  actuals,
+  actualRows,
+  currentMonth,
 }: {
   scenarios: ScenarioRow[]
   anchor: { companies: number; caterings: number } | null
+  actuals: ActualsSeriesPoint[]
+  actualRows: ActualRow[]
+  currentMonth: string
 }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
@@ -167,11 +176,24 @@ export function BusinessPlanWorkspace({
       <Tabs defaultValue="projection" className="space-y-4">
         <TabsList>
           <TabsTrigger value="projection">Proyección P&amp;L</TabsTrigger>
+          <TabsTrigger value="metrics">Métricas</TabsTrigger>
+          <TabsTrigger value="plan-vs-real">Plan vs Real</TabsTrigger>
           <TabsTrigger value="assumptions">Supuestos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="projection">
           <ProjectionTab projection={model.projection} summary={model.summary} />
+        </TabsContent>
+        <TabsContent value="metrics">
+          <MetricsTab metrics={model.metrics} />
+        </TabsContent>
+        <TabsContent value="plan-vs-real">
+          <PlanVsRealTab
+            projection={model.projection}
+            actuals={actuals}
+            actualRows={actualRows}
+            currentMonth={currentMonth}
+          />
         </TabsContent>
         <TabsContent value="assumptions">
           <AssumptionsTab

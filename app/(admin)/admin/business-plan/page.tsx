@@ -2,14 +2,26 @@ import { getRequiredSession } from '@/lib/auth/session'
 import {
   getFinancialScenarios,
   getAnchor,
+  getBusinessPlanActuals,
+  getFinancialActualRows,
 } from '@/lib/db/queries/admin-business-plan'
 import { BusinessPlanWorkspace } from '@/components/admin/business-plan/BusinessPlanWorkspace'
 
 export const dynamic = 'force-dynamic'
 
+function currentMonth(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
 export default async function BusinessPlanPage() {
   await getRequiredSession()
-  const [scenarios, anchor] = await Promise.all([getFinancialScenarios(), getAnchor()])
+  const [scenarios, anchor, actuals, actualRows] = await Promise.all([
+    getFinancialScenarios(),
+    getAnchor(),
+    getBusinessPlanActuals(),
+    getFinancialActualRows(),
+  ])
 
   return (
     <div className="space-y-6">
@@ -23,7 +35,13 @@ export default async function BusinessPlanPage() {
         </p>
       </div>
 
-      <BusinessPlanWorkspace scenarios={scenarios} anchor={anchor} />
+      <BusinessPlanWorkspace
+        scenarios={scenarios}
+        anchor={anchor}
+        actuals={actuals}
+        actualRows={actualRows}
+        currentMonth={currentMonth()}
+      />
     </div>
   )
 }
