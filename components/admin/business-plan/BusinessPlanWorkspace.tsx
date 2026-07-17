@@ -23,6 +23,7 @@ import { AssumptionsTab } from './AssumptionsTab'
 import { ProjectionTab } from './ProjectionTab'
 import { MetricsTab } from './MetricsTab'
 import { PlanVsRealTab } from './PlanVsRealTab'
+import { ScenariosTab } from './ScenariosTab'
 import { saveScenarioAction } from './actions'
 
 type Working = {
@@ -178,6 +179,7 @@ export function BusinessPlanWorkspace({
           <TabsTrigger value="projection">Proyección P&amp;L</TabsTrigger>
           <TabsTrigger value="metrics">Métricas</TabsTrigger>
           <TabsTrigger value="plan-vs-real">Plan vs Real</TabsTrigger>
+          <TabsTrigger value="scenarios">Escenarios</TabsTrigger>
           <TabsTrigger value="assumptions">Supuestos</TabsTrigger>
         </TabsList>
 
@@ -193,6 +195,15 @@ export function BusinessPlanWorkspace({
             actuals={actuals}
             actualRows={actualRows}
             currentMonth={currentMonth}
+          />
+        </TabsContent>
+        <TabsContent value="scenarios">
+          <ScenariosTab
+            scenarios={scenarios}
+            workingKey={working.key}
+            workingAssumptions={working.assumptions}
+            startMonth={working.startMonth}
+            horizonMonths={working.horizonMonths}
           />
         </TabsContent>
         <TabsContent value="assumptions">
