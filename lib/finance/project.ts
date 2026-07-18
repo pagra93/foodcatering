@@ -93,7 +93,12 @@ export function projectMonthly(input: ProjectInput): MonthlyProjection[] {
     }
 
     const employees = companies * g.employeesPerCompany
-    const orders = employees * g.ordersPerEmployeePerMonth
+    // Volumen de menús: por empresas (empleados×pedidos) o directo (menús/día).
+    const orders =
+      g.volumeMode === 'byMenus'
+        ? g.menusPerDay * g.workingDaysPerMonth * Math.pow(1 + g.menusGrowthRatePct / 100, m)
+        : employees * g.ordersPerEmployeePerMonth
+    const ordersPerDay = g.workingDaysPerMonth > 0 ? orders / g.workingDaysPerMonth : 0
     const gmv = orders * g.avgTicket
 
     const mrrSaas = companies * arpu
@@ -133,6 +138,7 @@ export function projectMonthly(input: ProjectInput): MonthlyProjection[] {
       activeCaterings: r2(caterings),
       employees: r2(employees),
       orders: r2(orders),
+      ordersPerDay: r2(ordersPerDay),
       gmv: r2(gmv),
       mrrSaas: r2(mrrSaas),
       commissionRevenue: r2(commissionRevenue),

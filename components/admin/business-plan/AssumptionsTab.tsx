@@ -98,8 +98,44 @@ export function AssumptionsTab({
         <Num label="Churn empresas" value={g.monthlyChurnRatePct} step={0.5} suffix="%/mes" onChange={(v) => upd((a) => { a.growth.monthlyChurnRatePct = v })} />
         <Num label="Nuevos caterings/mes" value={g.newCateringsPerMonth} step={0.5} onChange={(v) => upd((a) => { a.growth.newCateringsPerMonth = v })} />
         <Num label="Churn caterings" value={g.cateringChurnRatePct} step={0.5} suffix="%/mes" onChange={(v) => upd((a) => { a.growth.cateringChurnRatePct = v })} />
-        <Num label="Empleados/empresa" value={g.employeesPerCompany} onChange={(v) => upd((a) => { a.growth.employeesPerCompany = v })} />
-        <Num label="Pedidos/empleado/mes" value={g.ordersPerEmployeePerMonth} onChange={(v) => upd((a) => { a.growth.ordersPerEmployeePerMonth = v })} />
+      </Group>
+
+      <Group title="Volumen de menús (genera el GMV)">
+        <div className="col-span-2 md:col-span-3">
+          <Label className="text-xs">Cómo se calcula el volumen</Label>
+          <div className="mt-1 flex gap-1">
+            {([
+              ['byCompany', 'Por empresas'],
+              ['byMenus', 'Menús/día'],
+            ] as const).map(([mode, txt]) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => upd((a) => { a.growth.volumeMode = mode })}
+                className={`flex-1 rounded-md border px-2 py-1.5 text-xs ${g.volumeMode === mode ? 'border-primary bg-primary/10 text-primary' : 'border-gray-200 text-gray-500'}`}
+              >
+                {txt}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1 text-[10px] text-gray-400">
+            {g.volumeMode === 'byMenus'
+              ? 'Metes los menús/día directos; el volumen crece cada mes por el % indicado.'
+              : 'Los menús salen de empresas × empleados/empresa × pedidos/empleado.'}
+          </p>
+        </div>
+        {g.volumeMode === 'byMenus' ? (
+          <>
+            <Num label="Menús/día (mes 0)" value={g.menusPerDay} step={50} onChange={(v) => upd((a) => { a.growth.menusPerDay = v })} />
+            <Num label="Días laborables/mes" value={g.workingDaysPerMonth} onChange={(v) => upd((a) => { a.growth.workingDaysPerMonth = v })} />
+            <Num label="Crecimiento menús/mes" value={g.menusGrowthRatePct} step={0.5} suffix="%/mes" onChange={(v) => upd((a) => { a.growth.menusGrowthRatePct = v })} />
+          </>
+        ) : (
+          <>
+            <Num label="Empleados/empresa" value={g.employeesPerCompany} onChange={(v) => upd((a) => { a.growth.employeesPerCompany = v })} />
+            <Num label="Pedidos/empleado/mes" value={g.ordersPerEmployeePerMonth} onChange={(v) => upd((a) => { a.growth.ordersPerEmployeePerMonth = v })} />
+          </>
+        )}
         <Num label="Ticket medio" value={g.avgTicket} step={0.5} suffix="€" onChange={(v) => upd((a) => { a.growth.avgTicket = v })} />
       </Group>
 

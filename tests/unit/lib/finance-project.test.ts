@@ -127,6 +127,52 @@ describe('projectMonthly', () => {
   })
 })
 
+describe('volumeMode byMenus', () => {
+  it('el mes 0 usa menús/día × días laborables y deriva menús/día', () => {
+    const a = structuredClone(base)
+    a.growth.volumeMode = 'byMenus'
+    a.growth.menusPerDay = 1000
+    a.growth.workingDaysPerMonth = 22
+    a.growth.menusGrowthRatePct = 0
+    const rows = projectMonthly({ assumptions: a, startMonth: '2026-01', horizonMonths: 3 })
+    // 1000 × 22 = 22.000 menús/mes; ordersPerDay vuelve a 1000; GMV = 22.000 × 9 = 198.000
+    expect(at(rows, 0).orders).toBeCloseTo(22000, 2)
+    expect(at(rows, 0).ordersPerDay).toBeCloseTo(1000, 2)
+    expect(at(rows, 0).gmv).toBeCloseTo(198000, 2)
+    // sin crecimiento, el mes 2 es igual
+    expect(at(rows, 2).orders).toBeCloseTo(22000, 2)
+  })
+
+  it('crece los menús MoM por menusGrowthRatePct', () => {
+    const a = structuredClone(base)
+    a.growth.volumeMode = 'byMenus'
+    a.growth.menusPerDay = 100
+    a.growth.workingDaysPerMonth = 20
+    a.growth.menusGrowthRatePct = 10
+    const rows = projectMonthly({ assumptions: a, startMonth: '2026-01', horizonMonths: 3 })
+    // base 100×20 = 2000; mes 1 = 2000×1.1 = 2200; mes 2 = 2200×1.1 = 2420
+    expect(at(rows, 0).orders).toBeCloseTo(2000, 2)
+    expect(at(rows, 1).orders).toBeCloseTo(2200, 2)
+    expect(at(rows, 2).orders).toBeCloseTo(2420, 2)
+  })
+
+  it('en byMenus el volumen NO depende de empresas/empleados', () => {
+    const a = structuredClone(base)
+    a.growth.volumeMode = 'byMenus'
+    a.growth.menusPerDay = 500
+    a.growth.workingDaysPerMonth = 22
+    a.growth.menusGrowthRatePct = 0
+    a.growth.startingCompanies = 3
+    const few = projectMonthly({ assumptions: a, startMonth: '2026-01', horizonMonths: 1 })
+    a.growth.startingCompanies = 300
+    const many = projectMonthly({ assumptions: a, startMonth: '2026-01', horizonMonths: 1 })
+    // mismo GMV pese a 100× empresas (el GMV lo fija menús/día)
+    expect(at(few, 0).gmv).toBeCloseTo(at(many, 0).gmv, 2)
+    // pero el MRR SaaS sí escala con empresas (motor de suscripción independiente)
+    expect(at(many, 0).mrrSaas).toBeGreaterThan(at(few, 0).mrrSaas)
+  })
+})
+
 describe('runModel (summary + metrics)', () => {
   it('devuelve proyección, métricas y resumen coherentes', () => {
     const { projection, metrics, summary } = runModel(base, '2026-01', 36)

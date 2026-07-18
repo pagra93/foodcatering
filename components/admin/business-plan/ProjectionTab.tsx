@@ -60,6 +60,7 @@ export function ProjectionTab({
               <tr>
                 <th className="px-3 py-2 text-left">Mes</th>
                 <th className="px-3 py-2">Empresas</th>
+                <th className="px-3 py-2">Menús/día</th>
                 <th className="px-3 py-2">MRR</th>
                 <th className="px-3 py-2">GMV</th>
                 <th className="px-3 py-2">Comisión</th>
@@ -76,6 +77,7 @@ export function ProjectionTab({
                 <tr key={p.period} className="border-b last:border-0 hover:bg-gray-50">
                   <td className="px-3 py-1.5 text-left font-medium">{monthLabel(p.period)}</td>
                   <td className="px-3 py-1.5">{Math.round(p.activeCompanies)}</td>
+                  <td className="px-3 py-1.5 text-gray-500">{Math.round(p.ordersPerDay).toLocaleString('es-ES')}</td>
                   <td className="px-3 py-1.5">{formatMoneyShort(p.mrrSaas)}</td>
                   <td className="px-3 py-1.5 text-gray-500">{formatMoneyShort(p.gmv)}</td>
                   <td className="px-3 py-1.5">{formatMoneyShort(p.commissionRevenue)}</td>

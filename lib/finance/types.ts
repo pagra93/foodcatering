@@ -14,6 +14,7 @@ export type MonthlyProjection = {
   activeCaterings: number
   employees: number
   orders: number
+  ordersPerDay: number
   gmv: number
   // Ingresos de Plati
   mrrSaas: number

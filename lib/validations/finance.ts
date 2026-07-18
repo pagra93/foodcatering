@@ -48,8 +48,14 @@ export const assumptionsSchema = z.object({
     newCateringsPerMonth: nonNeg,
     cateringChurnRatePct: pct,
     planMix: planMixSchema, // pesos, se normalizan
+    // Modo de volumen: 'byCompany' deriva los menús de empresas×empleados×pedidos;
+    // 'byMenus' los mete directos (menús/día × días laborables), creciendo MoM.
+    volumeMode: z.enum(['byCompany', 'byMenus']).default('byCompany'),
     employeesPerCompany: nonNeg,
     ordersPerEmployeePerMonth: nonNeg,
+    menusPerDay: nonNeg.default(1000), // modo 'byMenus': menús/día en el mes 0
+    workingDaysPerMonth: z.number().min(1).max(31).default(22),
+    menusGrowthRatePct: pct.default(5), // modo 'byMenus': crecimiento MoM de menús
     avgTicket: nonNeg, // € por pedido (unidad de GMV)
   }),
   pricing: z.object({

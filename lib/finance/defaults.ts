@@ -17,8 +17,12 @@ export const DEFAULT_ASSUMPTIONS: Assumptions = {
     newCateringsPerMonth: 1,
     cateringChurnRatePct: 1,
     planMix: { starter: 60, growth: 30, enterprise: 10 },
+    volumeMode: 'byCompany',
     employeesPerCompany: 40,
     ordersPerEmployeePerMonth: 18,
+    menusPerDay: 1000,
+    workingDaysPerMonth: 22,
+    menusGrowthRatePct: 8,
     avgTicket: 9,
   },
   pricing: {
