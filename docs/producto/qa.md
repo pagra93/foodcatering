@@ -117,3 +117,12 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Cron mensual del snapshot MRR (hoy botón manual) para cerrar la serie histórica real de MRR/empresas.
 - [ ] CRUD completo de escenarios (crear/duplicar/borrar/marcar default) + export CSV/print.
 - Doc: `docs/producto/features/business-plan/README.md`.
+
+## 2026-07-20 — HU-049 Mejoras: experimentos de comisiones + modo menús/día
+**Tests**: `pnpm type-check` + `pnpm lint` limpios; **204 tests verdes** (+11 sobre 193: `cateringPricing`, `whatIfCommission`, modo `byMenus`). Escenarios de `comidas_dev` re-sembrados (delete+`seed-finance`) para que el JSON use la estructura de pricing/volumen nueva.
+**Alcance**: tres extensiones para experimentar con los números. (1) **Comisión por plan de catering**: `avgCommissionPct` único → `cateringCommission` (básico/estándar/premium %) + `cateringFixedFee` + `cateringMix` (pesos); el motor mezcla el % ponderado sobre el GMV (cuota fija aporta 0% ahí) + cuota fija por su peso. (2) **Calculadora "¿Y si?" sobre datos REALES** (`lib/finance/what-if.ts`): aplica una comisión hipotética al GMV/comisión ya facturados → € de más/menos retroactivo, delta total y anualizado; tab nuevo "¿Y si? comisiones". (3) **Modo de volumen "menús/día"** (`growth.volumeMode='byMenus'`): menús/día × días laborables creciendo MoM, desacoplado del nº de empresas (que sigue moviendo MRR SaaS y costes); columna "Menús/día" en la proyección.
+**Code review**: motor sigue puro y testeado; import del barrel arreglado (`cateringPricing`/`blendedCateringPricing` exportados). El tornado de sensibilidad pasa a medir los ingresos totales del último mes (SaaS+comisión) en vez del ARR — antes la palanca de comisión salía con impacto 0 porque el ARR es solo SaaS. Campos nuevos con `.default()` → escenarios ya guardados siguen parseando (sin pérdida de datos).
+**Audit**: cumple CLAUDE.md — sin `as any`, cambios de datos solo en `comidas_dev` (verificado `DATABASE_URL`), sin migración (los campos viven en el JSON `assumptions`).
+**Action items**:
+- [ ] (Opcional) que los caterings modelen capacidad/volumen de oferta, no solo la cuota fija.
+- Doc: `docs/producto/features/business-plan/README.md` (sección "Mejoras").
