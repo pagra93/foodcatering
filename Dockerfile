@@ -89,6 +89,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/scripts/rbac-catalog.json ./scrip
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed-catalog-prod.mjs ./scripts/seed-catalog-prod.mjs
 COPY --from=builder --chown=nextjs:nodejs /app/scripts/catalog-data.json ./scripts/catalog-data.json
 
+# Seed modelo financiero prod (3 escenarios base/optimista/pesimista, autocontenido).
+# Lo ejecuta el entrypoint tras `migrate deploy` (idempotente). Sin este COPY el
+# archivo no está en el standalone y el entrypoint se salta el seed en silencio.
+COPY --from=builder --chown=nextjs:nodejs /app/scripts/seed-finance-prod.mjs ./scripts/seed-finance-prod.mjs
+
 # node_modules solo con prod deps (incluye CLI de `prisma` porque lo movimos
 # a dependencies). Reemplaza el node_modules que trae el standalone por uno
 # completo de prod — así `prisma migrate deploy` encuentra el binario.
