@@ -2116,3 +2116,71 @@ model TaxRule {
   @@index([active])
   @@map("tax_rules")
 }
+
+// ===== BUSINESS PLAN / MODELO FINANCIERO (super admin) =====
+// Solo se persisten INPUTS: supuestos por escenario, costes reales mensuales y
+// snapshots de MRR. La proyección/métricas/plan-vs-real se recomputan en el
+// motor puro lib/finance/* (nada derivado se guarda).
+
+enum FinancialScenarioKind {
+  BASE        @map("base")
+  OPTIMISTIC  @map("optimistic")
+  PESSIMISTIC @map("pessimistic")
+  CUSTOM      @map("custom")
+
+  @@map("financial_scenario_kind")
+}
+
+/// Escenario del modelo financiero. Los supuestos van en JSON (editable "como
+/// Excel" sin migración por variable; se validan con Zod al guardar).
+model FinancialScenario {
+  id            String                @id @default(uuid())
+  key           String                @unique // base | optimistic | pessimistic | slug
+  name          String
+  description   String?
+  kind          FinancialScenarioKind @default(CUSTOM)
+  isDefault     Boolean               @default(false) @map("is_default")
+  startMonth    String                @map("start_month") // "YYYY-MM" = mes 0
+  horizonMonths Int                   @default(36) @map("horizon_months")
+  assumptions   Json                  @default("{}") // AssumptionsInput (Zod)
+  updatedBy     String?               @map("updated_by")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+
+  @@map("financial_scenarios")
+}
+
+/// Costes reales de Plati introducidos a mano por mes (lo que las queries no
+/// saben). Permite un P&L real, no solo ingresos.
+model FinancialActual {
+  id           String   @id @default(uuid())
+  period       String   @unique // "YYYY-MM"
+  cogsHosting  Decimal? @db.Decimal(12, 2) @map("cogs_hosting")
+  cogsPayments Decimal? @db.Decimal(12, 2) @map("cogs_payments")
+  cogsSupport  Decimal? @db.Decimal(12, 2) @map("cogs_support")
+  opexSales    Decimal? @db.Decimal(12, 2) @map("opex_sales") // S&M (marketing/CAC real)
+  opexRnd      Decimal? @db.Decimal(12, 2) @map("opex_rnd") // ingeniería
+  opexGna      Decimal? @db.Decimal(12, 2) @map("opex_gna") // salarios, alquiler, tools, legal
+  headcount    Int?
+  notes        String?
+  extra        Json     @default("{}") // líneas de coste ad-hoc {label: amount}
+  updatedBy    String?  @map("updated_by")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("financial_actuals")
+}
+
+/// Foto mensual del MRR y de las entidades activas. El sistema no guarda
+/// histórico de suscripciones; esto construye la serie hacia adelante para el
+/// Plan vs Real de MRR/empresas/caterings.
+model MrrSnapshot {
+  id              String   @id @default(uuid())
+  period          String   @unique // "YYYY-MM"
+  mrr             Decimal  @db.Decimal(12, 2)
+  arr             Decimal  @db.Decimal(12, 2)
+  activeCompanies Int      @map("active_companies")
+  activeCaterings Int      @map("active_caterings")
+  capturedAt      DateTime @default(now()) @map("captured_at")
+
+  @@map("mrr_snapshots")
+}

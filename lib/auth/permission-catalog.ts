@@ -101,6 +101,7 @@ const SPEC: Record<PermissionPortal, ResourceSpec[]> = {
     { resource: 'saas-invoice', label: 'facturas SaaS', actions: [VIEW('facturas SaaS')] },
     { resource: 'commission', label: 'comisiones', actions: [VIEW('comisiones'), { action: 'edit', desc: 'Editar comisiones' }] },
     { resource: 'metric', label: 'métricas MRR/ARR', actions: [VIEW('métricas')] },
+    { resource: 'business-plan', label: 'el modelo financiero', actions: [VIEW('el modelo financiero'), { action: 'edit', desc: 'Editar supuestos y escenarios del modelo financiero' }] },
     { resource: 'tax', label: 'impuestos', actions: [VIEW('impuestos'), { action: 'edit', desc: 'Editar impuestos' }] },
     { resource: 'integration', label: 'integraciones', actions: [VIEW('integraciones'), { action: 'configure', desc: 'Configurar integraciones' }] },
     { resource: 'webhook', label: 'webhooks', actions: CRUD('webhooks') },

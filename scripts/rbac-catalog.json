@@ -149,6 +149,20 @@
       "description": "Ver backups"
     },
     {
+      "key": "business-plan:edit",
+      "resource": "business-plan",
+      "action": "edit",
+      "portal": "ADMIN",
+      "description": "Editar supuestos y escenarios del modelo financiero"
+    },
+    {
+      "key": "business-plan:view",
+      "resource": "business-plan",
+      "action": "view",
+      "portal": "ADMIN",
+      "description": "Ver el modelo financiero"
+    },
+    {
       "key": "calendar:create",
       "resource": "calendar",
       "action": "create",
@@ -1661,6 +1675,7 @@
         "audit-log:view",
         "audit:view",
         "backup:view",
+        "business-plan:view",
         "calendar:view",
         "cat-audit:view",
         "cat-billing:view",
@@ -1891,6 +1906,8 @@
         "backup:download",
         "backup:restore",
         "backup:view",
+        "business-plan:edit",
+        "business-plan:view",
         "calendar:create",
         "calendar:delete",
         "calendar:edit",

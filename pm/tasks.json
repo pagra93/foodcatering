@@ -929,7 +929,9 @@
       "criticality": "high",
       "origin": "conversacion",
       "agent_suggested": "age-spe-tech-architect",
-      "depends_on": ["HU-042"],
+      "depends_on": [
+        "HU-042"
+      ],
       "parent_epic": "EPIC-003",
       "feature": "admin-launch-audit",
       "blocked": false,
@@ -951,7 +953,9 @@
       "criticality": "high",
       "origin": "conversacion",
       "agent_suggested": "claude-code",
-      "depends_on": ["HU-043"],
+      "depends_on": [
+        "HU-043"
+      ],
       "parent_epic": "EPIC-003",
       "feature": "admin-launch-audit",
       "blocked": false,
@@ -973,7 +977,9 @@
       "criticality": "high",
       "origin": "conversacion",
       "agent_suggested": "claude-code",
-      "depends_on": ["HU-043"],
+      "depends_on": [
+        "HU-043"
+      ],
       "parent_epic": "EPIC-003",
       "feature": "admin-launch-audit",
       "blocked": false,
@@ -995,7 +1001,9 @@
       "criticality": "medium",
       "origin": "conversacion",
       "agent_suggested": "claude-code",
-      "depends_on": ["HU-045"],
+      "depends_on": [
+        "HU-045"
+      ],
       "parent_epic": "EPIC-003",
       "feature": "admin-launch-audit",
       "blocked": false,
@@ -1051,6 +1059,28 @@
       "activity_count": 3,
       "notes": "Auditoría de 'Plantillas y Branding' (/admin/templates). De 4 páginas solo Branding era real y a medias; índice/Comunicación/Avisos eran placeholders. F1 (a4be91e): white-label REAL — hexToHslTriple + buildBrandingStyle emite las variables del tema shadcn (--primary/--ring/--secondary) desde el color del tenant → tiñe TODO el portal (antes solo la navegación; los botones usaban el tomate fijo de globals.css). F2 (7a0c514): edición por tenant desde admin (TenantBrandingManager cablea overrideTenantBrandingAction huérfana) + índice real (deja de ser placeholder) + fix seed (color en columna primaryColor, no en config.branding JSON que no se lee). F3 (b4fc876): Avisos en-app REALES — modelo Announcement + migración 20260704160000 + CRUD admin (AnnouncementManager) + banner AnnouncementBanner (descartable por localStorage) en los 3 layouts de portal. type-check+lint limpios, 149 tests; migración aplicada a comidas_dev + dev reiniciado. Comunicación (email/SMS) sigue placeholder. Doc: docs/producto/features/admin-launch-audit/branding.md.",
       "updated_at": "2026-07-04T16:00:00Z"
+    },
+    {
+      "id": "HU-049",
+      "title": "Business Plan / modelo financiero en el super admin (planificado vs real)",
+      "type": "task",
+      "status": "hecho",
+      "sub_status": "completado",
+      "criticality": "medium",
+      "origin": "conversacion",
+      "agent_suggested": "claude-code",
+      "depends_on": [],
+      "parent_epic": null,
+      "feature": "business-plan",
+      "blocked": false,
+      "blocked_reason": null,
+      "previous_status": null,
+      "next_action": "Hecho (F1+F2+F3). Deuda: cron del snapshot MRR, CRUD completo de escenarios, export CSV.",
+      "created_at": "2026-07-08T20:00:00Z",
+      "last_activity": "2026-07-08T22:00:00Z",
+      "activity_count": 3,
+      "notes": "Sección /admin/business-plan: modelo financiero SaaS editable (tipo Excel) planificado vs real, pensado como CFO/inversor. Motor puro lib/finance/* (project/metrics/plan-vs-real/scenarios, 17 tests). Prisma: FinancialScenario (supuestos JSON) + FinancialActual (costes reales) + MrrSnapshot + migración 20260708150000. Ingresos/crecimiento reales de la plataforma (getBillingMonthlySeries/getDashboardCharts); costes = input manual (no hay contabilidad). Tabs: Proyección P&L (margen/EBITDA/caja/runway/break-even), Métricas (MRR/ARR/churn/NRR/ARPA/CAC/LTV/LTV-CAC/payback/Rule40/burn-multiple), Plan vs Real (varianza+semáforo+editor costes+snapshot MRR), Escenarios (comparativa base/opt/pes + tornado sensibilidad), Supuestos (edición instantánea + anclar a real). RBAC business-plan:view/edit. Commits c750c63/d9be1f4/9484ffd. 193 tests verdes. Doc: docs/producto/features/business-plan/README.md.",
+      "updated_at": "2026-07-08T22:00:00Z"
     }
   ],
   "epics": [

@@ -107,3 +107,22 @@ Append-only. Cada /review deja una entrada aqui.
 - [ ] Comunicación (email/SMS/WhatsApp): feature propia (modelo CommunicationTemplate + proveedor de envío).
 - [ ] Revisar contraste de botones cuando un tenant elige un color muy claro (el foreground se calcula, pero conviene QA visual).
 - Doc: `docs/producto/features/admin-launch-audit/branding.md`.
+
+## 2026-07-08 — HU-049 Business Plan / modelo financiero (super admin)
+**Tests**: `pnpm type-check` + `pnpm lint` limpios en mis ficheros; **193 tests verdes** (17 nuevos del motor lib/finance: projectMonthly, plan-vs-real, escenarios/sensibilidad). Migración `20260708150000_business_plan` aplicada a `comidas_dev` + `seed-finance` (3 escenarios) + `seed-rbac` (permiso `business-plan:view/edit`). `scripts/rbac-catalog.json` regenerado (220 permisos) para el seed prod.
+**Code review**: arquitectura "no persistir derivados" — solo inputs (supuestos JSON por escenario, costes reales, snapshots MRR); proyección/métricas/plan-vs-real se recomputan en un motor PURO (sin Prisma), unit-testeado, que corre igual en SSR y cliente (recálculo instantáneo con useMemo). Ingresos/crecimiento reales reutilizan queries existentes (getBillingMonthlySeries/getDashboardCharts); costes = input manual (no hay contabilidad conectada). Mutaciones como Server Actions con gate `business-plan:edit` + logAudit. Import circular evitado (scenarios importa de project/metrics, no del barrel).
+**Audit**: cumple CLAUDE.md — RBAC cableado (catálogo→section-permissions→sidebar→seed), sin `as any`, migración no-destructiva solo en dev. Anclaje del modelo a datos reales (empresas/caterings activos) para que planificado y real compartan base.
+**Evaluator score**: 8.5/10 — Correctness alta (motor testeado, smoke), feature completa (P&L + métricas + plan-vs-real + escenarios + sensibilidad); −puntos por deuda anotada (cron del snapshot MRR, CRUD completo de escenarios, export CSV) y por costes 100% manuales.
+**Action items**:
+- [ ] Cron mensual del snapshot MRR (hoy botón manual) para cerrar la serie histórica real de MRR/empresas.
+- [ ] CRUD completo de escenarios (crear/duplicar/borrar/marcar default) + export CSV/print.
+- Doc: `docs/producto/features/business-plan/README.md`.
+
+## 2026-07-20 — HU-049 Mejoras: experimentos de comisiones + modo menús/día
+**Tests**: `pnpm type-check` + `pnpm lint` limpios; **204 tests verdes** (+11 sobre 193: `cateringPricing`, `whatIfCommission`, modo `byMenus`). Escenarios de `comidas_dev` re-sembrados (delete+`seed-finance`) para que el JSON use la estructura de pricing/volumen nueva.
+**Alcance**: tres extensiones para experimentar con los números. (1) **Comisión por plan de catering**: `avgCommissionPct` único → `cateringCommission` (básico/estándar/premium %) + `cateringFixedFee` + `cateringMix` (pesos); el motor mezcla el % ponderado sobre el GMV (cuota fija aporta 0% ahí) + cuota fija por su peso. (2) **Calculadora "¿Y si?" sobre datos REALES** (`lib/finance/what-if.ts`): aplica una comisión hipotética al GMV/comisión ya facturados → € de más/menos retroactivo, delta total y anualizado; tab nuevo "¿Y si? comisiones". (3) **Modo de volumen "menús/día"** (`growth.volumeMode='byMenus'`): menús/día × días laborables creciendo MoM, desacoplado del nº de empresas (que sigue moviendo MRR SaaS y costes); columna "Menús/día" en la proyección.
+**Code review**: motor sigue puro y testeado; import del barrel arreglado (`cateringPricing`/`blendedCateringPricing` exportados). El tornado de sensibilidad pasa a medir los ingresos totales del último mes (SaaS+comisión) en vez del ARR — antes la palanca de comisión salía con impacto 0 porque el ARR es solo SaaS. Campos nuevos con `.default()` → escenarios ya guardados siguen parseando (sin pérdida de datos).
+**Audit**: cumple CLAUDE.md — sin `as any`, cambios de datos solo en `comidas_dev` (verificado `DATABASE_URL`), sin migración (los campos viven en el JSON `assumptions`).
+**Action items**:
+- [ ] (Opcional) que los caterings modelen capacidad/volumen de oferta, no solo la cuota fija.
+- Doc: `docs/producto/features/business-plan/README.md` (sección "Mejoras").
