@@ -9,6 +9,11 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 // Se importará dinámicamente dentro de authorize()
 import { z } from 'zod'
 import { prisma } from '@/lib/db'
+// El login busca al usuario por email SIN conocer aún su tenant (es una lectura
+// inherentemente cross-tenant, previa a la sesión). Debe usar el cliente sin
+// guard de aislamiento; con `prisma` (guardado) el findFirst sin filtro de tenant
+// lanzaría con TENANT_GUARD_ENFORCE=true y rompería el login de todos.
+import { prismaAdmin } from '@/lib/db/prisma-admin'
 import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
 import { resolveUserPermissions } from './resolve-permissions'
@@ -90,8 +95,9 @@ export const authConfig = {
             dummyPasswordHash = await hash('timing-guard-placeholder', BCRYPT_COST)
           }
 
-          // Buscar usuario
-          const user = await prisma.user.findFirst({
+          // Buscar usuario (cross-tenant: aún no hay sesión ni tenant conocido →
+          // cliente sin guard de aislamiento, si no el findFirst por email lanza).
+          const user = await prismaAdmin.user.findFirst({
             where: {
               email,
               status: 'ACTIVE',
