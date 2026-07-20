@@ -111,6 +111,18 @@ if [ "$MIGRATION_SUCCESS" = true ] && [ -f "scripts/seed-catalog-prod.mjs" ]; th
   fi
 fi
 
+# Seed idempotente del MODELO FINANCIERO (Business Plan): 3 escenarios de sistema
+# (base/optimista/pesimista). Sin esto /admin/business-plan sale vacío en prod.
+# Upsert por key; no pisa los supuestos si el usuario ya los editó.
+if [ "$MIGRATION_SUCCESS" = true ] && [ -f "scripts/seed-finance-prod.mjs" ]; then
+  echo "🌱 Sembrando modelo financiero (escenarios, idempotente)..."
+  if ALLOW_PROD=1 node scripts/seed-finance-prod.mjs 2>&1; then
+    echo "✅ Modelo financiero sembrado"
+  else
+    echo "⚠️  Falló el seed del modelo financiero (continuando con el arranque; revisa logs)"
+  fi
+fi
+
 # Verificar que server.js existe
 echo "🔍 Verificando archivos del servidor..."
 if [ ! -f "server.js" ]; then
