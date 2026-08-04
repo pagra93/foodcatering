@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
           name: decryptNameSafe(user.nameEnc, ''),
           expiresMinutes: TOKEN_TTL_MINUTES,
         })
-        await sendEmail({ to: user.email, subject, html, text })
+        await sendEmail({ to: user.email, subject, html, text, template: 'password-reset' })
       }
     } catch (e) {
       // No revelar nada al cliente: log interno y respuesta genérica.

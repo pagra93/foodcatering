@@ -9,7 +9,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getRoutes, createRoute } from '@/lib/db/queries/catering-routes'
 import { createRouteSchema } from '@/lib/validations/delivery'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 /**
  * GET - Listar rutas
@@ -19,13 +19,13 @@ export async function GET(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     const searchParams = request.nextUrl.searchParams
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status')
     const deliveryUserId = searchParams.get('deliveryUserId')
 
-    const filters: any = {}
+    const filters: { date?: Date; status?: string; deliveryUserId?: string } = {}
 
     if (date) {
       filters.date = new Date(date)
@@ -57,15 +57,11 @@ export async function GET(request: NextRequest) {
       data: routes,
     })
   } catch (error) {
-    console.error('[ROUTES_GET]', error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener rutas',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/rutas',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener las rutas',
+    })
   }
 }
 
@@ -77,16 +73,19 @@ export async function POST(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:create', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = createRouteSchema.parse({
       ...body,
@@ -101,36 +100,20 @@ export async function POST(request: NextRequest) {
       message: 'Ruta creada correctamente',
     })
   } catch (error) {
-    console.error('[ROUTES_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-routes.ts#createRoute).
+    if (
+      error instanceof Error &&
+      error.message === 'Alguna sede no pertenece a una empresa cliente de este catering'
+    ) {
+      return apiError(400, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'Repartidor no encontrado') {
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al crear ruta',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/rutas',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear la ruta',
+    })
   }
 }
-

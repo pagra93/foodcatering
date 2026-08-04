@@ -10,7 +10,7 @@ import { permittedAction } from '@/lib/auth/permissions'
 import { prisma } from '@/lib/db/prisma'
 import { getDailyMenu, updateDailyMenu } from '@/lib/db/queries/catering-menus'
 import { dailyMenuSchema, isAfterCutoff } from '@/lib/validations/menu'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -22,7 +22,7 @@ type RouteContext = {
  * GET - Obtener menú de un día
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
   try {
@@ -30,7 +30,7 @@ export async function GET(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos
@@ -43,20 +43,14 @@ export async function GET(
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'menu:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear fecha
     const date = new Date(params.date)
 
     if (isNaN(date.getTime())) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Fecha inválida',
-        },
-        { status: 400 }
-      )
+      return apiError(400, 'Fecha inválida')
     }
 
     // Obtener menú
@@ -67,15 +61,11 @@ export async function GET(
       data: menu,
     })
   } catch (error) {
-    console.error('[DAILY_MENU_GET]', error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener menú',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/menus/dia/[date]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener el menú',
+    })
   }
 }
 
@@ -91,27 +81,21 @@ export async function POST(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'menu:edit-day', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear fecha
     const date = new Date(params.date)
 
     if (isNaN(date.getTime())) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Fecha inválida',
-        },
-        { status: 400 }
-      )
+      return apiError(400, 'Fecha inválida')
     }
 
     // Obtener cutoff del restaurant
@@ -121,28 +105,19 @@ export async function POST(
     })
 
     if (!restaurant) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Restaurant no encontrado',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Restaurant no encontrado')
     }
 
     // Verificar que no está después del cutoff (si es hoy)
     if (isAfterCutoff(date, restaurant.cutoffTime)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'No se puede modificar el menú después del cutoff',
-        },
-        { status: 403 }
-      )
+      return apiError(403, 'No se puede modificar el menú después del cutoff')
     }
 
     // Parsear body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Validar datos
     const validatedData = dailyMenuSchema.parse({
@@ -158,38 +133,14 @@ export async function POST(
       message: 'Menú actualizado correctamente',
     })
   } catch (error) {
-    console.error('[DAILY_MENU_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensaje de negocio conocido (lib/db/queries/catering-menus.ts#updateDailyMenu).
+    if (error instanceof Error && error.message === 'Algunos platos no existen o están inactivos') {
+      return apiError(400, error.message)
     }
-
-    if (error instanceof Error) {
-      if (error.message.includes('no existen o están inactivos')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: error.message,
-          },
-          { status: 400 }
-        )
-      }
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al actualizar menú',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/menus/dia/[date]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar el menú',
+    })
   }
 }
-

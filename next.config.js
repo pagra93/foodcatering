@@ -5,6 +5,9 @@ const nextConfig = {
   // Output mode para Docker
   output: 'standalone',
 
+  // pino se resuelve en runtime de Node (no se bundlea: usa APIs nativas).
+  serverExternalPackages: ['pino'],
+
   // El build en Coolify corre en un server con recursos limitados. Saltarse
   // lint+typecheck durante `next build` reduce RAM y tiempo ~40%. Ambos se
   // ejecutan en CI (GitHub Actions) antes del deploy, así que no perdemos

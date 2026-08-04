@@ -1,7 +1,7 @@
 /**
  * API: Dashboard del Catering
  * GET /api/catering/dashboard
- * 
+ *
  * Retorna KPIs, alertas y actividad reciente para el dashboard del catering
  */
 
@@ -9,17 +9,15 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getCateringDashboard } from '@/lib/db/queries/catering-dashboard'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     // Verificar autenticación
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: 'No autorizado' },
-        { status: 401 }
-      )
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar que el usuario es del catering
@@ -32,18 +30,12 @@ export async function GET() {
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'cat-dashboard:view', cateringRoles)) {
-      return NextResponse.json(
-        { error: 'Acceso denegado' },
-        { status: 403 }
-      )
+      return apiError(403, 'Acceso denegado')
     }
 
     // Verificar que el tenant es de tipo CATERING
     if (session.user.tenantType !== 'CATERING') {
-      return NextResponse.json(
-        { error: 'Tenant inválido' },
-        { status: 403 }
-      )
+      return apiError(403, 'Tenant inválido')
     }
 
     // Obtener datos del dashboard
@@ -54,15 +46,10 @@ export async function GET() {
       data: dashboardData,
     })
   } catch (error) {
-    console.error('[CATERING_DASHBOARD_GET]', error)
-    
-    return NextResponse.json(
-      { 
-        success: false,
-        error: 'Error al cargar el dashboard' 
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/dashboard',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al cargar el dashboard',
+    })
   }
 }
-

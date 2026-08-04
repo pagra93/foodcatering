@@ -1,7 +1,7 @@
 /**
  * API: Publicar Menús
  * POST /api/catering/menus/publicar
- * 
+ *
  * Publica menús de un rango de fechas (los hace visibles a empleados)
  */
 
@@ -10,7 +10,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { publishWeeklyMenu } from '@/lib/db/queries/catering-menus'
 import { publishMenusSchema } from '@/lib/validations/menu'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,18 +18,21 @@ export async function POST(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'menu:publish', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Validar datos
     const validatedData = publishMenusSchema.parse({
@@ -46,38 +49,17 @@ export async function POST(request: NextRequest) {
       data: result,
     })
   } catch (error) {
-    console.error('[PUBLISH_MENUS_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensaje de negocio conocido (lib/db/queries/catering-menus.ts#publishWeeklyMenu).
+    if (
+      error instanceof Error &&
+      error.message.startsWith('Los siguientes días no tienen primeros y segundos')
+    ) {
+      return apiError(400, error.message)
     }
-
-    if (error instanceof Error) {
-      if (error.message.includes('no tienen primeros y segundos')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: error.message,
-          },
-          { status: 400 }
-        )
-      }
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al publicar menús',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/menus/publicar',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al publicar los menús',
+    })
   }
 }
-

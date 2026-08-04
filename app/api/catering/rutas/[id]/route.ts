@@ -14,7 +14,7 @@ import {
   cancelRoute,
 } from '@/lib/db/queries/catering-routes'
 import { updateRouteSchema } from '@/lib/validations/delivery'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -25,29 +25,23 @@ type RouteContext = {
 /**
  * GET - Obtener ruta
  */
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const route = await getRouteById(session.user.tenantId, params.id)
 
     if (!route) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Ruta no encontrada',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Ruta no encontrada')
     }
 
     // Si es repartidor, verificar que es su ruta
     if (session.user.role === 'REPARTIDOR' && route.deliveryUser?.id !== session.user.id) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     return NextResponse.json({
@@ -55,15 +49,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       data: route,
     })
   } catch (error) {
-    console.error('[ROUTE_GET]', error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener ruta',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/rutas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener la ruta',
+    })
   }
 }
 
@@ -75,16 +65,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = updateRouteSchema.parse(body)
 
@@ -96,36 +89,18 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       message: 'Ruta actualizada correctamente',
     })
   } catch (error) {
-    console.error('[ROUTE_PATCH]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-routes.ts#updateRoute).
+    if (error instanceof Error && error.message === 'Ruta no encontrada') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'Repartidor no encontrado') {
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al actualizar ruta',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/catering/rutas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar la ruta',
+    })
   }
 }
 
@@ -137,16 +112,19 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:delete', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const reason = body.reason
 
     const cancelled = await cancelRoute(session.user.tenantId, params.id, reason)
@@ -157,25 +135,17 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       message: 'Ruta cancelada correctamente',
     })
   } catch (error) {
-    console.error('[ROUTE_DELETE]', error)
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-routes.ts#cancelRoute).
+    if (error instanceof Error && error.message === 'Ruta no encontrada') {
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al cancelar ruta',
-      },
-      { status: 500 }
-    )
+    if (error instanceof Error && error.message === 'No se puede cancelar una ruta completada') {
+      return apiError(409, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'DELETE /api/catering/rutas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al cancelar la ruta',
+    })
   }
 }
-

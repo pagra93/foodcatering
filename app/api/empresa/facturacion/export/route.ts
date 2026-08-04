@@ -4,14 +4,12 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  getRequiredSession,
-  getScopedTenantId,
-  TenantMismatchError,
-} from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
+import { getScopedTenantId } from '@/lib/auth/session'
 import { permittedAction } from '@/lib/auth/permissions'
 import { exportRateLimiter } from '@/lib/ratelimit'
 import { exportToERP, type ERPFormat } from '@/lib/db/queries/empresa-facturacion'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 /**
  * GET /api/empresa/facturacion/export
@@ -27,7 +25,11 @@ import { exportToERP, type ERPFormat } from '@/lib/db/queries/empresa-facturacio
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'FINANZAS']
     if (
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
         allowedRoles
       )
     ) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     const tenantId = await getScopedTenantId(request)
@@ -64,7 +66,7 @@ export async function GET(request: NextRequest) {
 
     // Validar
     if (isNaN(year) || isNaN(month) || month < 1 || month > 12) {
-      return NextResponse.json({ error: 'Parámetros inválidos' }, { status: 400 })
+      return apiError(400, 'Parámetros inválidos')
     }
 
     // Generar export
@@ -78,14 +80,10 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    if (error instanceof TenantMismatchError) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    }
-
-    console.error('Error al exportar:', error)
-    return NextResponse.json(
-      { error: 'Error al generar exportación' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/empresa/facturacion/export',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al generar la exportación',
+    })
   }
 }

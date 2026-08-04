@@ -8,23 +8,26 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { reportDeliveryIncident } from '@/lib/db/queries/catering-delivery'
 import { reportIncidentSchema } from '@/lib/validations/delivery'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'cat-incident:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = reportIncidentSchema.parse(body)
 
@@ -36,36 +39,14 @@ export async function POST(request: NextRequest) {
       message: 'Incidencia reportada correctamente',
     })
   } catch (error) {
-    console.error('[REPORT_INCIDENT_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensaje de negocio conocido (lib/db/queries/catering-delivery.ts#reportDeliveryIncident).
+    if (error instanceof Error && error.message === 'Pedido no encontrado') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al reportar incidencia',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/entregas/incidencia',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al reportar la incidencia',
+    })
   }
 }
-

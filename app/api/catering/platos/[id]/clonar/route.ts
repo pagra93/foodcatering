@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { cloneDish } from '@/lib/db/queries/catering-dishes'
 import { cloneDishSchema } from '@/lib/validations/dish'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -28,14 +28,14 @@ export async function POST(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:clone', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear body (opcional: puede incluir newName)
@@ -60,36 +60,14 @@ export async function POST(
       { status: 201 }
     )
   } catch (error) {
-    console.error('[DISH_CLONE]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
+    // Mensaje de negocio conocido (lib/db/queries/catering-dishes.ts#cloneDish).
     if (error instanceof Error && error.message === 'Dish not found') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Plato no encontrado',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Plato no encontrado')
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al clonar plato',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/platos/[id]/clonar',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al clonar el plato',
+    })
   }
 }
-

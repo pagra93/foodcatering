@@ -5,8 +5,8 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { updateTenantStatusSchema } from '@/lib/validations/tenant'
 import { updateTenantStatus } from '@/lib/db/queries/tenants'
-import { getRequiredSession } from '@/lib/auth/session'
-import { ZodError } from 'zod'
+import { auth } from '@/lib/auth'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type Params = {
   params: {
@@ -16,16 +16,20 @@ type Params = {
 
 export async function POST(request: NextRequest, { params }: Params) {
   try {
-    const session = await getRequiredSession()
-    
-    if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permisos' },
-        { status: 403 }
-      )
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
     }
 
-    const body = await request.json()
+    if (session.user.role !== 'SUPER_ADMIN') {
+      return apiError(403, 'No tienes permisos')
+    }
+
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const data = updateTenantStatusSchema.parse({ ...body, id: params.id })
 
     const tenant = await updateTenantStatus(data, session.user.id)
@@ -36,24 +40,10 @@ export async function POST(request: NextRequest, { params }: Params) {
       message: `Tenant ${data.status.toLowerCase()} exitosamente`
     })
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/admin/tenants/[id]/status',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al cambiar el estado del tenant',
+    })
   }
 }
-

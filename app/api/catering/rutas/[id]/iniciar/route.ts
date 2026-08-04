@@ -7,6 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { startRoute } from '@/lib/db/queries/catering-routes'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -14,18 +15,18 @@ type RouteContext = {
   }
 }
 
-export async function POST(_request: NextRequest, { params }: RouteContext) {
+export async function POST(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:start', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     const started = await startRoute(session.user.tenantId, params.id)
@@ -36,25 +37,23 @@ export async function POST(_request: NextRequest, { params }: RouteContext) {
       message: 'Ruta iniciada correctamente',
     })
   } catch (error) {
-    console.error('[START_ROUTE_POST]', error)
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-routes.ts#startRoute).
+    if (error instanceof Error && error.message === 'Ruta no encontrada') {
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al iniciar ruta',
-      },
-      { status: 500 }
-    )
+    if (error instanceof Error && error.message === 'La ruta ya está en curso o completada') {
+      return apiError(409, error.message)
+    }
+    if (error instanceof Error && error.message === 'No hay repartidor asignado') {
+      return apiError(400, error.message)
+    }
+    if (error instanceof Error && error.message === 'No hay pedidos en la ruta') {
+      return apiError(400, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/rutas/[id]/iniciar',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al iniciar la ruta',
+    })
   }
 }
-

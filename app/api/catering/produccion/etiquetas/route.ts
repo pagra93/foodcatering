@@ -1,7 +1,7 @@
 /**
  * API: Generar Etiquetas
  * POST /api/catering/produccion/etiquetas
- * 
+ *
  * Genera PDF con etiquetas para impresora térmica
  */
 
@@ -10,7 +10,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getOrdersForLabels } from '@/lib/db/queries/catering-production'
 import { generateLabelsSchema } from '@/lib/validations/production'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Imprimir etiquetas es exclusivo de ADMIN_CATERING (production:print-labels
@@ -26,11 +26,14 @@ export async function POST(request: NextRequest) {
     const allowedRoles = ['ADMIN_CATERING']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'production:print-labels', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Validar datos
     const validatedData = generateLabelsSchema.parse({
@@ -65,26 +68,10 @@ export async function POST(request: NextRequest) {
       // pdfUrl: '/path/to/generated/labels.pdf',
     })
   } catch (error) {
-    console.error('[GENERATE_LABELS_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al generar etiquetas',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/produccion/etiquetas',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al generar las etiquetas',
+    })
   }
 }
-
