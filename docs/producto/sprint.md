@@ -40,7 +40,22 @@ Last updated: 2026-08-04
       (`scripts/setup-prod-backups.md`).
 - [ ] Crear primer super-admin en prod (RUNBOOK sección 7).
 
-## 🚧 En curso — Fase A del análisis prototipo→producción (2026-08-04)
+## 🚧 En curso — Fase B del análisis prototipo→producción (2026-08-04)
+
+Rama `feat/fase-b-produccion` (apilada sobre Fase A / PR #13).
+
+- [x] B1 Contrato único de `Order.selection` (canónico + parser tolerante a legacy en `lib/orders/selection.ts`) + facturar `order.price` (no precios actuales) + aviso IRPF en notas/snapshot + migración de datos `20260804110000` + tests de contrato. Además: las 2 rutas de empleado que derivaban tenant de cabecera (pedidos, cambiar-password) ahora usan la sesión — crear pedido volvía a estar roto por eso.
+- [x] B2 Scheduler: `JobRun` (lock por índice único parcial + stale >2h) + `/api/cron/[job]` con `CRON_SECRET` + jobs `lock-orders` / `monthly-billing` / `mrr-snapshot` / `retention`; facturación y snapshot extraídos a `lib/billing/generate-month.ts` y `lib/business-plan/snapshot.ts` (compartidos con los botones de admin); producción/rutas aceptan `LOCKED_AFTER_CUTOFF`; crontab en RUNBOOK §17.
+- [x] B3 Observabilidad: pino con redact de PII (`lib/log.ts`) + `x-request-id` (middleware) + `instrumentation.ts` con `onRequestError` (Sentry opt-in por `SENTRY_DSN`) + `apiErrorFrom`/`DomainError` en las ~45 rutas API (sin fugas de Prisma/Zod, mensajes de negocio conservados) + auditoría de dinero DENTRO de transacción (settlements, SaaS, pagos).
+- [x] B4 Concurrencia: cuotas de plan en tx con `FOR UPDATE` (empleados, sedes), tokens de reset/invitación y códigos MFA de consumo atómico, lock optimista de pedido + `@@unique(orderId, version)`, penalizaciones con transición condicionada, policy+historial en una tx, PRIMARY único (parcial + validación).
+- [x] B5 Índices calientes (10, cruzados con queries reales) + `connection_limit` documentado (env.example + SETUP-COOLIFY) + RUNBOOK §16 con el baseline de migraciones (squash SUPERVISADO — deliberadamente NO ejecutado en esta rama).
+- [x] B6 `deletedAt` automático en el cliente guardado (opt-out por presencia de la clave; fiscal ya no suma borrados) + N+1 de admin: `/admin/caterings` ~402→5 queries con paginación real, `/admin/empresas` 82→5, empleados 60→2 + todos los `distinct` en memoria → `groupBy`/SQL + fix del KPI "empleados activos" (siempre daba 0/1).
+- [x] B7 `unstable_cache`: branding por tenant (tag `branding:<id>`) y avisos activos (tag `announcements` + `revalidateTag` en sus actions). Aplazado conscientemente: caché de `getCurrentTenant`/entitlements (staleness de cuotas) y de la ventana de mantenimiento (serialización de fechas) → Fase C.
+- [x] B8 `EmailLog` persistente (todo envío queda registrado; purga a 180 días vía retención) + `BackupEvent` desde `backup-prod.sh` + off-site rclone y dead-man's switch opcionales + RUNBOOK §0/§13-§17 (triaje, migración fallida, restore parcial, incidente RGPD, baseline, cron) + `withAction`/`ActionResult` (patrón en CLAUDE.md) + botones admin sin `.catch(() => {})`.
+
+Validación Fase B: type-check ✅ · lint 0 errores ✅ · 224 tests ✅ · build ✅ · migraciones `20260804110000` y `20260804120000` aplicadas en `comidas_dev` ✅.
+
+## ✅ Hecho — Fase A del análisis prototipo→producción (2026-08-04)
 
 Rama `fix/fase-a-produccion`. Informe completo:
 `docs/general/diagnostico/ANALISIS-PROTOTIPO-VS-PRODUCCION-2026-08.md`.

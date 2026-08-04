@@ -6,12 +6,16 @@
  * `{ ok: false, skipped: true }`. Así los flujos que envían email (reset de
  * contraseña, etc.) siguen funcionando en local sin romper.
  *
+ * Cada intento de envío (enviado, fallido o saltado) se persiste en `EmailLog`
+ * vía `prismaAdmin` — best-effort, nunca rompe el envío.
+ *
  * Configuración (env):
  *   RESEND_API_KEY  — clave de Resend (obligatoria para enviar de verdad).
  *   EMAIL_FROM      — remitente, ej. "Plati <no-reply@plati.es>".
  */
 
 import { Resend } from 'resend'
+import { prismaAdmin } from '@/lib/db/prisma-admin'
 
 const DEFAULT_FROM = 'Plati <no-reply@plati.es>'
 
@@ -30,6 +34,11 @@ export type SendEmailInput = {
   html: string
   text?: string
   replyTo?: string
+  /**
+   * Id de la plantilla del registro (`lib/email/registry.ts`), p. ej.
+   * 'password-reset' o 'welcome'. Solo trazabilidad: se persiste en `EmailLog`.
+   */
+  template?: string
 }
 
 export type SendEmailResult = {
@@ -48,6 +57,37 @@ function maskEmailForLog(to: string): string {
     .join(', ')
 }
 
+type EmailLogEntry = {
+  to: string
+  template: string | undefined
+  subject: string
+  status: 'SENT' | 'FAILED' | 'SKIPPED'
+  providerId?: string | undefined
+  error?: string | undefined
+}
+
+/**
+ * Persiste el resultado de cada intento de envío en `EmailLog` (auditoría de
+ * deliverability). Usa `prismaAdmin` (sin guard de tenant: EmailLog no es un
+ * modelo multi-tenant). Best-effort: el log NUNCA rompe el envío.
+ */
+async function persistEmailLog(entry: EmailLogEntry): Promise<void> {
+  try {
+    await prismaAdmin.emailLog.create({
+      data: {
+        to: entry.to,
+        template: entry.template ?? null,
+        subject: entry.subject,
+        status: entry.status,
+        providerId: entry.providerId ?? null,
+        error: entry.error ?? null,
+      },
+    })
+  } catch (e) {
+    console.error('[email] no se pudo persistir el registro en EmailLog:', e)
+  }
+}
+
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const resend = getClient()
   const to = Array.isArray(input.to) ? input.to.join(', ') : input.to
@@ -56,6 +96,13 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     console.warn(
       `[email] RESEND_API_KEY no configurada — email NO enviado a "${maskEmailForLog(to)}" (asunto: "${input.subject}")`
     )
+    await persistEmailLog({
+      to,
+      template: input.template,
+      subject: input.subject,
+      status: 'SKIPPED',
+      error: 'RESEND_API_KEY no configurada',
+    })
     return { ok: false, skipped: true }
   }
 
@@ -70,12 +117,34 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     })
     if (error) {
       console.error('[email] Resend devolvió error:', error)
+      await persistEmailLog({
+        to,
+        template: input.template,
+        subject: input.subject,
+        status: 'FAILED',
+        error: error.message,
+      })
       return { ok: false, error: error.message }
     }
+    await persistEmailLog({
+      to,
+      template: input.template,
+      subject: input.subject,
+      status: 'SENT',
+      providerId: data?.id,
+    })
     return { ok: true, id: data?.id }
   } catch (e) {
+    const message = e instanceof Error ? e.message : 'error desconocido'
     console.error('[email] fallo enviando email:', e)
-    return { ok: false, error: e instanceof Error ? e.message : 'error desconocido' }
+    await persistEmailLog({
+      to,
+      template: input.template,
+      subject: input.subject,
+      status: 'FAILED',
+      error: message,
+    })
+    return { ok: false, error: message }
   }
 }
 

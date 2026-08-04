@@ -8,6 +8,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { setCateringStatus } from '@/components/admin/caterings/actions'
 import {
   Building2,
@@ -81,8 +82,19 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
 
   const toggleStatus = (id: string, current: string) => {
     startTransition(async () => {
-      await setCateringStatus(id, current === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE')
-      router.refresh()
+      const next = current === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
+      try {
+        const res = await setCateringStatus(id, next)
+        if (res.error) {
+          toast.error(`No se pudo cambiar el estado del catering: ${res.error}`)
+          return
+        }
+        router.refresh()
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : 'No se pudo cambiar el estado del catering.'
+        )
+      }
     })
   }
 

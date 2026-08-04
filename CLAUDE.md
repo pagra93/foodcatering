@@ -229,15 +229,19 @@ memory/MEMORY.md       Observaciones entre sesiones
    filtro tenant siempre.
 3. Page → Server Component por defecto; interactividad → sub-componente client.
 4. Mutación → Server Action en `components/<portal>/<feature>/actions.ts`.
-5. **Permisos (obligatorio):** toda sección/acción no pública se controla con el
+5. **Errores de Server Actions:** las actions nuevas devuelven `ActionResult`
+   vía `withAction` ([`lib/actions/with-action.ts`](./lib/actions/with-action.ts))
+   y el cliente inspecciona el resultado (toast/estado). Prohibido
+   `.catch(() => {})`: los errores nunca se tragan en silencio.
+6. **Permisos (obligatorio):** toda sección/acción no pública se controla con el
    RBAC, no con `if (role === 'X')`. Declara el permiso `recurso:accion` en
    [`lib/auth/permission-catalog.ts`](./lib/auth/permission-catalog.ts), siémbralo
    (`pnpm tsx prisma/seed-rbac.ts`), cablea la sección (sidebar + regla en
    [`lib/auth/section-permissions.ts`](./lib/auth/section-permissions.ts)) y
    protege la acción con `permittedAction(...)`. **Checklist completo:**
    [`docs/general/desarrollo/RBAC-PERMISOS.md`](./docs/general/desarrollo/RBAC-PERMISOS.md).
-6. Tests → unit en `tests/unit/...`, E2E solo si el flujo cruza procesos.
-7. Artefactos de la feature → `docs/producto/features/<feature>/`.
+7. Tests → unit en `tests/unit/...`, E2E solo si el flujo cruza procesos.
+8. Artefactos de la feature → `docs/producto/features/<feature>/`.
 
 ## Core Principle
 
