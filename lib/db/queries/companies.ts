@@ -7,7 +7,10 @@
 import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import { subDays, startOfMonth, startOfDay, endOfDay } from 'date-fns'
 import { decryptNameSafe } from '@/lib/crypto/pii'
-import { getCompanyAdoption } from '@/lib/db/queries/company-metrics'
+import {
+  getCompaniesAdoption,
+  getCompanyAdoption,
+} from '@/lib/db/queries/company-metrics'
 
 // ============================================================================
 // KPIs GLOBALES DE EMPRESAS
@@ -81,15 +84,15 @@ export async function getCompaniesGlobalKPIs() {
       },
     }),
 
-    // Empleados que han pedido este mes (únicos) — definición canónica de adopción
-    prisma.order.findMany({
-      where: {
-        serviceDate: { gte: startOfCurrentMonth },
-        deletedAt: null,
-      },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
+    // Empleados que han pedido este mes (únicos) — definición canónica de
+    // adopción. COUNT(DISTINCT) agregado en Postgres: `findMany({ distinct })`
+    // sin el preview nativeDistinct traería todos los pedidos del mes a Node.
+    prisma.$queryRaw<{ count: number }[]>`
+      SELECT COUNT(DISTINCT employee_id)::int AS count
+      FROM orders
+      WHERE service_date >= ${startOfCurrentMonth}
+        AND deleted_at IS NULL
+    `.then((rows) => rows[0]?.count ?? 0),
 
     // Pedidos de hoy (rango del día completo, no timestamp exacto)
     prisma.order.count({
@@ -275,78 +278,95 @@ export async function getCompanies({
     prisma.tenant.count({ where }),
   ])
 
-  // Enriquecer cada empresa con KPIs
-  const companiesWithKPIs = await Promise.all(
-    tenants.map(async (tenant) => {
-      const company = tenant.companies[0]
-      if (!company) return null
-
-      // KPIs de pedidos, incidencias y adopción (definición canónica única)
-      const [ordersLast30Days, incidents, adoption] = await Promise.all([
-        prisma.order.count({
-          where: {
-            tenantEmpresa: tenant.id,
-            serviceDate: { gte: thirtyDaysAgo },
-            deletedAt: null,
-          },
-        }),
-        prisma.incident.count({
-          where: {
-            tenantEmpresa: tenant.id,
-            status: { in: ['OPEN', 'IN_PROGRESS'] },
-          },
-        }),
-        getCompanyAdoption(tenant.id),
-      ])
-
-      const totalEmployees = adoption.totalEmployees
-      const activeEmployees = adoption.activeEmployees
-      const adoptionRate = adoption.adoptionRate
-
-      const hasDeductibilityIssue = company.policy && Number(company.policy.limitPerDay) > 11.00
-
-      return {
-        id: tenant.id,
-        name: tenant.name,
-        subdomain: tenant.subdomain,
-        status: tenant.status,
-        company: {
-          id: company.id,
-          legalName: company.legalName,
-          cif: company.cif,
-          plan: company.saasPlan?.name ?? '—',
-          saasPlanId: company.saasPlanId,
-          sector: company.sector,
+  // Enriquecer con KPIs en bloque (groupBy agregado + merge con Map). Antes se
+  // lanzaban 4 queries POR empresa (pedidos, incidencias y adopción con 2).
+  const tenantIds = tenants.map((tenant) => tenant.id)
+  const [ordersByTenant, incidentsByTenant, adoptionByTenant] =
+    await Promise.all([
+      prisma.order.groupBy({
+        by: ['tenantEmpresa'],
+        where: {
+          tenantEmpresa: { in: tenantIds },
+          serviceDate: { gte: thirtyDaysAgo },
+          deletedAt: null,
         },
-        policy: company.policy ? {
-          cutoffTime: company.policy.cutoffTime,
-          limitPerDay: Number(company.policy.limitPerDay),
-          daysActive: company.policy.daysActive,
-        } : null,
-        sites: company.sites.length,
-        employees: {
-          total: totalEmployees,
-          active: activeEmployees,
-          adoptionRate,
+        _count: { _all: true },
+      }),
+      prisma.incident.groupBy({
+        by: ['tenantEmpresa'],
+        where: {
+          tenantEmpresa: { in: tenantIds },
+          status: { in: ['OPEN', 'IN_PROGRESS'] },
         },
-        orders: {
-          last30Days: ordersLast30Days,
-        },
-        incidents: {
-          open: incidents,
-        },
-        catering: company.cateringAssignments[0] ? {
-          tenantId: company.cateringAssignments[0].tenantCatering,
-        } : null,
-        alerts: {
-          deductibilityIssue: hasDeductibilityIssue,
-          lowAdoption: adoptionRate < 50,
-          highIncidents: incidents > 5,
-        },
-        createdAt: tenant.createdAt,
-      }
-    })
+        _count: { _all: true },
+      }),
+      // Adopción: misma definición canónica (denominador empleados ACTIVE,
+      // mes natural) agregada en SQL — ver lib/db/queries/company-metrics.ts.
+      getCompaniesAdoption(tenantIds),
+    ])
+  const ordersMap = new Map(
+    ordersByTenant.map((o) => [o.tenantEmpresa, o._count._all])
   )
+  const incidentsMap = new Map(
+    incidentsByTenant.map((i) => [i.tenantEmpresa, i._count._all])
+  )
+
+  const companiesWithKPIs = tenants.map((tenant) => {
+    const company = tenant.companies[0]
+    if (!company) return null
+
+    // KPIs de pedidos, incidencias y adopción (definición canónica única)
+    const ordersLast30Days = ordersMap.get(tenant.id) ?? 0
+    const incidents = incidentsMap.get(tenant.id) ?? 0
+    const adoption = adoptionByTenant.get(tenant.id)
+
+    const totalEmployees = adoption?.totalEmployees ?? 0
+    const activeEmployees = adoption?.activeEmployees ?? 0
+    const adoptionRate = adoption?.adoptionRate ?? 0
+
+    const hasDeductibilityIssue = company.policy && Number(company.policy.limitPerDay) > 11.00
+
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      subdomain: tenant.subdomain,
+      status: tenant.status,
+      company: {
+        id: company.id,
+        legalName: company.legalName,
+        cif: company.cif,
+        plan: company.saasPlan?.name ?? '—',
+        saasPlanId: company.saasPlanId,
+        sector: company.sector,
+      },
+      policy: company.policy ? {
+        cutoffTime: company.policy.cutoffTime,
+        limitPerDay: Number(company.policy.limitPerDay),
+        daysActive: company.policy.daysActive,
+      } : null,
+      sites: company.sites.length,
+      employees: {
+        total: totalEmployees,
+        active: activeEmployees,
+        adoptionRate,
+      },
+      orders: {
+        last30Days: ordersLast30Days,
+      },
+      incidents: {
+        open: incidents,
+      },
+      catering: company.cateringAssignments[0] ? {
+        tenantId: company.cateringAssignments[0].tenantCatering,
+      } : null,
+      alerts: {
+        deductibilityIssue: hasDeductibilityIssue,
+        lowAdoption: adoptionRate < 50,
+        highIncidents: incidents > 5,
+      },
+      createdAt: tenant.createdAt,
+    }
+  })
 
   // Filtrar nulos y aplicar filtros adicionales
   let filteredCompanies = companiesWithKPIs.filter((c) => c !== null)
@@ -828,16 +848,16 @@ export async function getCompanyById(tenantId: string) {
       },
     }),
 
-    // Empleados activos (que han pedido en los últimos 30 días)
-    prisma.order.findMany({
+    // Empleados activos (que han pedido en los últimos 30 días). groupBy
+    // agrega en SQL; `findMany({ distinct })` deduplicaría en JS.
+    prisma.order.groupBy({
+      by: ['employeeId'],
       where: {
         tenantEmpresa: tenantId,
         serviceDate: { gte: thirtyDaysAgo },
         deletedAt: null,
       },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
+    }).then((rows) => rows.length),
 
     // Incidencias de los últimos 30 días
     prisma.incident.findMany({

@@ -100,16 +100,17 @@ export async function getDashboardKPIs() {
       },
     }),
     
-    // Pedidos de hoy
+    // Pedidos de hoy (sin borrados, para cuadrar con el portal empresa)
     prisma.order.count({
       where: {
         serviceDate: {
           gte: startOfToday,
           lte: endOfToday,
         },
+        deletedAt: null,
       },
     }),
-    
+
     // Pedidos entregados hoy
     prisma.order.count({
       where: {
@@ -118,9 +119,10 @@ export async function getDashboardKPIs() {
           lte: endOfToday,
         },
         status: 'DELIVERED',
+        deletedAt: null,
       },
     }),
-    
+
     // Pedidos pendientes hoy
     prisma.order.count({
       where: {
@@ -131,9 +133,10 @@ export async function getDashboardKPIs() {
         status: {
           in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'],
         },
+        deletedAt: null,
       },
     }),
-    
+
     // Pedidos cancelados hoy
     prisma.order.count({
       where: {
@@ -144,6 +147,7 @@ export async function getDashboardKPIs() {
         status: {
           in: ['CANCELLED_BEFORE_CUTOFF', 'NO_SHOW'],
         },
+        deletedAt: null,
       },
     }),
     
@@ -192,14 +196,20 @@ export async function getDashboardKPIs() {
       },
     }),
 
-    // Empleados activos (que han pedido al menos 2 días en las últimas 2 semanas)
+    // Empleados activos (que han pedido al menos 2 días en las últimas 2
+    // semanas). El GROUP BY va en subconsulta: la versión anterior devolvía
+    // una fila POR empleado y el KPI leía solo la primera (siempre 0 o 1).
     prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(DISTINCT employee_id) as count
-      FROM orders
-      WHERE service_date >= ${subDays(today, 14)}
-        AND status IN ('delivered', 'confirmed', 'locked_after_cutoff')
-      GROUP BY employee_id
-      HAVING COUNT(*) >= 2
+      SELECT COUNT(*) as count
+      FROM (
+        SELECT employee_id
+        FROM orders
+        WHERE service_date >= ${subDays(today, 14)}
+          AND status IN ('delivered', 'confirmed', 'locked_after_cutoff')
+          AND deleted_at IS NULL
+        GROUP BY employee_id
+        HAVING COUNT(*) >= 2
+      ) actives
     `,
     
     // Total de empleados
@@ -258,66 +268,57 @@ export async function getDashboardKPIs() {
 export async function getDashboardCharts() {
   const today = new Date()
   const last30Days = subDays(today, 30)
-
-  // Pedidos por día (últimos 30 días)
-  const ordersPerDay = await prisma.$queryRaw<
-    { date: Date; count: bigint }[]
-  >`
-    SELECT 
-      DATE(service_date) as date,
-      COUNT(*) as count
-    FROM orders
-    WHERE service_date >= ${last30Days}
-      AND service_date <= ${today}
-    GROUP BY DATE(service_date)
-    ORDER BY date ASC
-  `
-
   // Nuevas empresas vs churn (últimos 6 meses)
   const last6Months = subDays(today, 180)
-  
-  const newCompanies = await prisma.$queryRaw<
-    { month: string; count: bigint }[]
-  >`
-    SELECT 
-      TO_CHAR(created_at, 'YYYY-MM') as month,
-      COUNT(*) as count
-    FROM tenants
-    WHERE type = 'empresa'
-      AND created_at >= ${last6Months}
-    GROUP BY TO_CHAR(created_at, 'YYYY-MM')
-    ORDER BY month ASC
-  `
-
-  const churnedCompanies = await prisma.$queryRaw<
-    { month: string; count: bigint }[]
-  >`
-    SELECT 
-      TO_CHAR(deleted_at, 'YYYY-MM') as month,
-      COUNT(*) as count
-    FROM tenants
-    WHERE type = 'empresa'
-      AND deleted_at IS NOT NULL
-      AND deleted_at >= ${last6Months}
-    GROUP BY TO_CHAR(deleted_at, 'YYYY-MM')
-    ORDER BY month ASC
-  `
-
   // Ingresos por mes (últimos 12 meses)
   const last12Months = subDays(today, 365)
-  
-  const revenuePerMonth = await prisma.$queryRaw<
-    { month: string; total: number }[]
-  >`
-    SELECT 
-      period as month,
-      SUM(total) as total
-    FROM invoices
-    WHERE issue_date >= ${last12Months}
-      AND status IN ('paid', 'issued', 'sent')
-    GROUP BY period
-    ORDER BY period ASC
-  `
+
+  // Las 4 agregaciones son independientes → en paralelo.
+  const [ordersPerDay, newCompanies, churnedCompanies, revenuePerMonth] =
+    await Promise.all([
+      // Pedidos por día (últimos 30 días)
+      prisma.$queryRaw<{ date: Date; count: bigint }[]>`
+        SELECT
+          DATE(service_date) as date,
+          COUNT(*) as count
+        FROM orders
+        WHERE service_date >= ${last30Days}
+          AND service_date <= ${today}
+        GROUP BY DATE(service_date)
+        ORDER BY date ASC
+      `,
+      prisma.$queryRaw<{ month: string; count: bigint }[]>`
+        SELECT
+          TO_CHAR(created_at, 'YYYY-MM') as month,
+          COUNT(*) as count
+        FROM tenants
+        WHERE type = 'empresa'
+          AND created_at >= ${last6Months}
+        GROUP BY TO_CHAR(created_at, 'YYYY-MM')
+        ORDER BY month ASC
+      `,
+      prisma.$queryRaw<{ month: string; count: bigint }[]>`
+        SELECT
+          TO_CHAR(deleted_at, 'YYYY-MM') as month,
+          COUNT(*) as count
+        FROM tenants
+        WHERE type = 'empresa'
+          AND deleted_at IS NOT NULL
+          AND deleted_at >= ${last6Months}
+        GROUP BY TO_CHAR(deleted_at, 'YYYY-MM')
+        ORDER BY month ASC
+      `,
+      prisma.$queryRaw<{ month: string; total: number }[]>`
+        SELECT
+          period as month,
+          SUM(total) as total
+        FROM invoices
+        WHERE issue_date >= ${last12Months}
+          AND status IN ('paid', 'issued', 'sent')
+        GROUP BY period
+        ORDER BY period ASC
+      `,
+    ])
 
   return {
     ordersPerDay: ordersPerDay.map((row) => ({
@@ -347,126 +348,138 @@ export async function getDashboardCharts() {
 export async function getDashboardAlerts() {
   const today = new Date()
   const next30Days = addDays(today, 30)
+  // Caterings/empresas inactivos = sin pedidos en los últimos 7 días
+  const last7Days = subDays(today, 7)
+  const startOfToday = startOfDay(today)
+  const endOfToday = endOfDay(today)
 
-  // Documentos a punto de vencer (próximos 30 días)
-  const expiringDocuments = await prisma.restaurantDocument.findMany({
-    where: {
-      expiresAt: {
-        lte: next30Days,
-        gte: today,
+  // Primera ola: todo lo independiente en paralelo. Los sets de tenants con
+  // pedidos recientes se agregan en SQL (groupBy) — `findMany({ distinct })`
+  // sin el preview nativeDistinct traería TODOS los pedidos de la semana a
+  // Node para deduplicar en JS.
+  const [
+    expiringDocuments,
+    activeCateringTenants,
+    activeCompanyTenants,
+    cancellationSpikes,
+    failedInvoices,
+  ] = await Promise.all([
+    // Documentos a punto de vencer (próximos 30 días)
+    prisma.restaurantDocument.findMany({
+      where: {
+        expiresAt: {
+          lte: next30Days,
+          gte: today,
+        },
       },
-    },
-    include: {
-      restaurant: {
-        include: {
-          tenant: {
-            select: {
-              name: true,
+      include: {
+        restaurant: {
+          include: {
+            tenant: {
+              select: {
+                name: true,
+              },
             },
           },
         },
       },
-    },
-    orderBy: {
-      expiresAt: 'asc',
-    },
-    take: 10,
-  })
-
-  // Caterings inactivos (sin pedidos en los últimos 7 días)
-  const last7Days = subDays(today, 7)
-  
-  // Obtener IDs de caterings con pedidos recientes
-  const activeCateringIds = await prisma.order.findMany({
-    where: {
-      serviceDate: {
-        gte: last7Days,
+      orderBy: {
+        expiresAt: 'asc',
       },
-    },
-    select: {
-      tenantCatering: true,
-    },
-    distinct: ['tenantCatering'],
-  })
+      take: 10,
+    }),
 
-  const activeCateringIdSet = new Set(activeCateringIds.map(o => o.tenantCatering))
-
-  const inactiveCaterings = await prisma.tenant.findMany({
-    where: {
-      type: 'CATERING',
-      status: 'ACTIVE',
-      deletedAt: null,
-      id: {
-        notIn: Array.from(activeCateringIdSet),
+    // Caterings con pedidos recientes
+    prisma.order.groupBy({
+      by: ['tenantCatering'],
+      where: {
+        serviceDate: {
+          gte: last7Days,
+        },
       },
-    },
-    select: {
-      id: true,
-      name: true,
-      createdAt: true,
-    },
-    take: 10,
-  })
+    }),
 
-  // Empresas sin pedidos (últimos 7 días)
-  const activeCompanyIds = await prisma.order.findMany({
-    where: {
-      serviceDate: {
-        gte: last7Days,
+    // Empresas con pedidos recientes
+    prisma.order.groupBy({
+      by: ['tenantEmpresa'],
+      where: {
+        serviceDate: {
+          gte: last7Days,
+        },
       },
-    },
-    select: {
-      tenantEmpresa: true,
-    },
-    distinct: ['tenantEmpresa'],
-  })
+    }),
 
-  const activeCompanyIdSet = new Set(activeCompanyIds.map(o => o.tenantEmpresa))
+    // Picos de cancelaciones (si >20% de pedidos cancelados hoy)
+    prisma.$queryRaw<
+      { tenant_id: string; tenant_name: string; total: bigint; cancelled: bigint }[]
+    >`
+      SELECT
+        t.id as tenant_id,
+        t.name as tenant_name,
+        COUNT(*) as total,
+        SUM(CASE WHEN o.status IN ('cancelled_before_cutoff', 'no_show') THEN 1 ELSE 0 END) as cancelled
+      FROM orders o
+      JOIN tenants t ON o.tenant_empresa = t.id
+      WHERE o.service_date >= ${startOfToday}
+        AND o.service_date <= ${endOfToday}
+      GROUP BY t.id, t.name
+      HAVING (SUM(CASE WHEN o.status IN ('cancelled_before_cutoff', 'no_show') THEN 1 ELSE 0 END)::float / COUNT(*)) > 0.2
+      ORDER BY cancelled DESC
+      LIMIT 5
+    `,
 
-  const inactiveCompanies = await prisma.tenant.findMany({
-    where: {
-      type: 'EMPRESA',
-      status: 'ACTIVE',
-      deletedAt: null,
-      id: {
-        notIn: Array.from(activeCompanyIdSet),
+    // Errores de facturación (facturas anuladas)
+    prisma.invoice.count({
+      where: {
+        status: 'VOID',
       },
-    },
-    select: {
-      id: true,
-      name: true,
-    },
-    take: 10,
-  })
+    }),
+  ])
 
-  // Picos de cancelaciones (si >20% de pedidos cancelados hoy)
-  const startOfToday = startOfDay(today)
-  const endOfToday = endOfDay(today)
-  
-  const cancellationSpikes = await prisma.$queryRaw<
-    { tenant_id: string; tenant_name: string; total: bigint; cancelled: bigint }[]
-  >`
-    SELECT 
-      t.id as tenant_id,
-      t.name as tenant_name,
-      COUNT(*) as total,
-      SUM(CASE WHEN o.status IN ('cancelled_before_cutoff', 'no_show') THEN 1 ELSE 0 END) as cancelled
-    FROM orders o
-    JOIN tenants t ON o.tenant_empresa = t.id
-    WHERE o.service_date >= ${startOfToday}
-      AND o.service_date <= ${endOfToday}
-    GROUP BY t.id, t.name
-    HAVING (SUM(CASE WHEN o.status IN ('cancelled_before_cutoff', 'no_show') THEN 1 ELSE 0 END)::float / COUNT(*)) > 0.2
-    ORDER BY cancelled DESC
-    LIMIT 5
-  `
+  const activeCateringIdSet = new Set(
+    activeCateringTenants.map((o) => o.tenantCatering)
+  )
+  const activeCompanyIdSet = new Set(
+    activeCompanyTenants.map((o) => o.tenantEmpresa)
+  )
 
-  // Errores de facturación (facturas anuladas)
-  const failedInvoices = await prisma.invoice.count({
-    where: {
-      status: 'VOID',
-    },
-  })
+  // Segunda ola: depende de los sets anteriores.
+  const [inactiveCaterings, inactiveCompanies] = await Promise.all([
+    // Caterings inactivos (sin pedidos en los últimos 7 días)
+    prisma.tenant.findMany({
+      where: {
+        type: 'CATERING',
+        status: 'ACTIVE',
+        deletedAt: null,
+        id: {
+          notIn: Array.from(activeCateringIdSet),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        createdAt: true,
+      },
+      take: 10,
+    }),
+
+    // Empresas sin pedidos (últimos 7 días)
+    prisma.tenant.findMany({
+      where: {
+        type: 'EMPRESA',
+        status: 'ACTIVE',
+        deletedAt: null,
+        id: {
+          notIn: Array.from(activeCompanyIdSet),
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+      },
+      take: 10,
+    }),
+  ])
 
   return {
     expiringDocuments: expiringDocuments.map((doc) => ({
@@ -505,63 +518,66 @@ export async function getDashboardAlerts() {
  * Obtener actividad reciente del sistema
  */
 export async function getRecentActivity() {
-  // Últimos 10 registros de tenants
-  const recentTenants = await prisma.tenant.findMany({
-    where: {
-      deletedAt: null,
-      id: { not: 'ROOT' },
-    },
-    select: {
-      id: true,
-      name: true,
-      type: true,
-      status: true,
-      createdAt: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 5,
-  })
+  // Las 3 lecturas son independientes → en paralelo.
+  const [recentTenants, recentIncidents, recentUsers] = await Promise.all([
+    // Últimos registros de tenants
+    prisma.tenant.findMany({
+      where: {
+        deletedAt: null,
+        id: { not: 'ROOT' },
+      },
+      select: {
+        id: true,
+        name: true,
+        type: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 5,
+    }),
 
-  // Últimas 10 incidencias
-  const recentIncidents = await prisma.incident.findMany({
-    select: {
-      id: true,
-      type: true,
-      severity: true,
-      status: true,
-      createdAt: true,
-      tenantEmpresa: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 5,
-  })
+    // Últimas incidencias
+    prisma.incident.findMany({
+      select: {
+        id: true,
+        type: true,
+        severity: true,
+        status: true,
+        createdAt: true,
+        tenantEmpresa: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 5,
+    }),
 
-  // Últimos 10 usuarios creados
-  const recentUsers = await prisma.user.findMany({
-    where: {
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      nameEnc: true,
-      email: true,
-      role: true,
-      createdAt: true,
-      tenant: {
-        select: {
-          name: true,
+    // Últimos usuarios creados
+    prisma.user.findMany({
+      where: {
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        nameEnc: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        tenant: {
+          select: {
+            name: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-    take: 5,
-  })
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 5,
+    }),
+  ])
 
   return {
     tenants: recentTenants,

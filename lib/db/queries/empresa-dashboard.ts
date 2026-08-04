@@ -47,27 +47,26 @@ export async function getCompanyDashboardData(tenantId: string) {
       where: { tenantId, status: 'ACTIVE', deletedAt: null },
     }),
     
-    // Empleados con al menos 1 pedido este mes
-    prisma.order.findMany({
+    // Empleados con al menos 1 pedido este mes. groupBy agrega en SQL;
+    // `findMany({ distinct })` traería todos los pedidos del mes a Node.
+    prisma.order.groupBy({
+      by: ['employeeId'],
       where: {
         tenantEmpresa: tenantId,
         serviceDate: { gte: startOfCurrentMonth },
         deletedAt: null,
       },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
-    
+    }).then((rows) => rows.length),
+
     // Empleados con pedidos esta semana
-    prisma.order.findMany({
+    prisma.order.groupBy({
+      by: ['employeeId'],
       where: {
         tenantEmpresa: tenantId,
         serviceDate: { gte: startOfCurrentWeek },
         deletedAt: null,
       },
-      select: { employeeId: true },
-      distinct: ['employeeId'],
-    }).then((orders) => orders.length),
+    }).then((rows) => rows.length),
     
     // Pedidos hoy (rango del día completo, no timestamp exacto)
     prisma.order.count({

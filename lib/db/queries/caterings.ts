@@ -358,6 +358,7 @@ export async function getCaterings({
   pageSize = 20,
   search,
   status,
+  docsAtRisk,
 }: {
   page?: number
   pageSize?: number
@@ -365,6 +366,8 @@ export async function getCaterings({
   status?: string
   operationalStatus?: string
   documentsStatus?: string
+  /** Solo caterings con documentación en riesgo (WARNING/BLOCKED). */
+  docsAtRisk?: boolean
 }) {
   const where: any = {
     type: 'CATERING',
@@ -380,6 +383,14 @@ export async function getCaterings({
 
   if (status) {
     where.status = status
+  }
+
+  if (docsAtRisk) {
+    // documentsStatus vive en Restaurant → filtrable en la query (paginación
+    // y total consistentes con el filtro, sin post-filtrado en JS).
+    where.restaurants = {
+      some: { documentsStatus: { in: ['WARNING', 'BLOCKED'] } },
+    }
   }
 
   const [caterings, total] = await Promise.all([

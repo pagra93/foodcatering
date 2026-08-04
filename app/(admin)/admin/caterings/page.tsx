@@ -8,11 +8,14 @@ import Link from 'next/link'
 import { Plus, AlertCircle, FileText } from 'lucide-react'
 import { getRequiredSession } from '@/lib/auth/session'
 import { getCaterings, getCateringsGlobalKPIs } from '@/lib/db/queries/caterings'
-import { getCateringQualityMetrics } from '@/lib/db/queries/catering-metrics'
+import { getCateringsQualityMetrics } from '@/lib/db/queries/catering-metrics'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { CateringsGlobalKPIs } from '@/components/admin/caterings/CateringsGlobalKPIs'
 import { CateringsTable } from '@/components/admin/caterings/CateringsTable'
+
+const PAGE_SIZE = 25
 
 // Skeletons de carga
 function KPIsSkeleton() {
@@ -42,11 +45,19 @@ async function CateringsKPIsData() {
 }
 
 // Componente que carga la tabla
-async function CateringsTableData({ filter }: { filter?: string }) {
-  // Obtener caterings reales de la BD
-  const { caterings } = await getCaterings({
-    page: 1,
-    pageSize: 100, // Traer todos para la tabla (sin paginación por ahora)
+async function CateringsTableData({
+  filter,
+  page,
+}: {
+  filter?: string
+  page: number
+}) {
+  // Paginación real de servidor. El filtro "expiring" (estado de documentos)
+  // vive en Restaurant → se aplica en el where del listado.
+  const { caterings, pagination } = await getCaterings({
+    page,
+    pageSize: PAGE_SIZE,
+    docsAtRisk: filter === 'expiring',
   })
 
   // Mapear DocumentStatus (OK/WARNING/BLOCKED) al formato esperado por la UI
@@ -57,54 +68,102 @@ async function CateringsTableData({ filter }: { filter?: string }) {
     return 'OK'
   }
 
-  // Mapear a formato esperado por el componente. Puntualidad/incidencias/rating
-  // EN VIVO (mismo helper que el detalle) para que cuadren entre pantallas.
-  const cateringsFormatted = await Promise.all(
-    caterings.map(async (catering) => {
-      const restaurant = catering.restaurants[0]
-      const quality = await getCateringQualityMetrics(catering.id)
-
-      return {
-        id: catering.id,
-        name: catering.subdomain,
-        displayName: catering.name,
-        status: catering.status as 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW',
-        zones: (restaurant?.zones as Array<{ name: string }>) || [],
-        dailyCapacity: restaurant?.dailyCapacity || 0,
-        punctuality: quality.punctualityRate,
-        incidentRate: quality.incidentRate,
-        avgRating: quality.averageRating,
-        documentsStatus: restaurant?.documentsStatus ? mapDocStatus(restaurant.documentsStatus) : 'OK',
-        lastInvoiceDate: null,
-        // Cobro derivado del plan del catering (comisión % o precio fijo).
-        pricing: (() => {
-          const plan = restaurant?.saasPlan
-          if (!plan) return 'Sin plan'
-          if (plan.pricingModel === 'FIXED') return `${Number(plan.flatMonthlyFee ?? 0).toFixed(0)}€/mes`
-          return `${(Number(plan.commissionPct ?? 0) * 100).toFixed(1)}%`
-        })(),
-      }
-    })
+  // Puntualidad/incidencias/rating EN VIVO en bloque (misma definición que el
+  // detalle): una query agregada por métrica para toda la página, en vez de
+  // 4 queries POR catering.
+  const qualityByCatering = await getCateringsQualityMetrics(
+    caterings.map((c) => c.id)
   )
 
-  // Filtros rápidos desde los botones de cabecera
+  const cateringsFormatted = caterings.map((catering) => {
+    const restaurant = catering.restaurants[0]
+    const quality = qualityByCatering.get(catering.id)
+
+    return {
+      id: catering.id,
+      name: catering.subdomain,
+      displayName: catering.name,
+      status: catering.status as 'ACTIVE' | 'SUSPENDED' | 'UNDER_REVIEW',
+      zones: (restaurant?.zones as Array<{ name: string }>) || [],
+      dailyCapacity: restaurant?.dailyCapacity || 0,
+      punctuality: quality?.punctualityRate ?? 100,
+      incidentRate: quality?.incidentRate ?? 0,
+      avgRating: quality?.averageRating ?? null,
+      documentsStatus: restaurant?.documentsStatus ? mapDocStatus(restaurant.documentsStatus) : 'OK',
+      lastInvoiceDate: null,
+      // Cobro derivado del plan del catering (comisión % o precio fijo).
+      pricing: (() => {
+        const plan = restaurant?.saasPlan
+        if (!plan) return 'Sin plan'
+        if (plan.pricingModel === 'FIXED') return `${Number(plan.flatMonthlyFee ?? 0).toFixed(0)}€/mes`
+        return `${(Number(plan.commissionPct ?? 0) * 100).toFixed(1)}%`
+      })(),
+    }
+  })
+
+  // Filtro por métrica CALCULADA (tasa de incidencias 30d): no vive en BD, se
+  // aplica en JS SOBRE la página actual (no sobre el total de caterings).
   let rows = cateringsFormatted
-  if (filter === 'expiring') {
-    rows = rows.filter((c) => c.documentsStatus !== 'OK')
-  } else if (filter === 'incidents') {
+  if (filter === 'incidents') {
     rows = rows.filter((c) => c.incidentRate > 5)
   }
 
-  return <CateringsTable caterings={rows} />
+  return (
+    <>
+      <CateringsTable caterings={rows} />
+
+      {pagination.totalPages > 1 && (
+        <div className="flex items-center justify-between text-sm text-gray-600">
+          <p>
+            Página {pagination.page} de {pagination.totalPages} ·{' '}
+            {pagination.total} caterings
+          </p>
+          <div className="flex gap-2">
+            {pagination.page > 1 && (
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  href={{
+                    pathname: '/admin/caterings',
+                    query: {
+                      ...(filter ? { filter } : {}),
+                      page: String(pagination.page - 1),
+                    },
+                  }}
+                >
+                  Anterior
+                </Link>
+              </Button>
+            )}
+            {pagination.page < pagination.totalPages && (
+              <Button variant="outline" size="sm" asChild>
+                <Link
+                  href={{
+                    pathname: '/admin/caterings',
+                    query: {
+                      ...(filter ? { filter } : {}),
+                      page: String(pagination.page + 1),
+                    },
+                  }}
+                >
+                  Siguiente
+                </Link>
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export default async function CateringsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>
+  searchParams: Promise<{ filter?: string; page?: string }>
 }) {
   await getRequiredSession()
-  const { filter } = await searchParams
+  const { filter, page } = await searchParams
+  const pageNum = parsePageParam(page)
 
   return (
     <div className="space-y-6">
@@ -159,10 +218,9 @@ export default async function CateringsPage({
       )}
 
       {/* Tabla de caterings */}
-      <Suspense key={filter ?? 'all'} fallback={<TableSkeleton />}>
-        <CateringsTableData filter={filter} />
+      <Suspense key={`${filter ?? 'all'}-${pageNum}`} fallback={<TableSkeleton />}>
+        <CateringsTableData filter={filter} page={pageNum} />
       </Suspense>
     </div>
   )
 }
-

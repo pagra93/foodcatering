@@ -171,6 +171,33 @@ prisma.$use(async (params, next) => {
   return next(params)
 })
 
+// ─── Soft delete por defecto (B6) ──────────────────────────────────────────
+//
+// Modelos con `deletedAt`: las lecturas de lista/agregado del cliente de
+// PORTAL excluyen borrados salvo que la query mencione `deletedAt`
+// explícitamente (opt-out por presencia de la clave). Corrige de raíz las ~64
+// queries que lo omitían — KPIs que no cuadraban entre portales y, peor,
+// pedidos borrados sumando en el reporte fiscal IRPF.
+//
+// `findUnique` (acceso directo por id) queda fuera a propósito, y el cliente
+// admin (prismaAdmin) NO lo aplica: las vistas de compliance ven lo borrado.
+const SOFT_DELETE_MODELS = new Set(['Tenant', 'User', 'Employee', 'Dish', 'Order'])
+
+prisma.$use(async (params, next) => {
+  if (
+    params.model &&
+    SOFT_DELETE_MODELS.has(params.model) &&
+    params.action &&
+    READ_ACTIONS.has(params.action)
+  ) {
+    const args = (params.args ?? {}) as { where?: Record<string, unknown> }
+    if (!args.where || !('deletedAt' in args.where)) {
+      params.args = { ...args, where: { ...(args.where ?? {}), deletedAt: null } }
+    }
+  }
+  return next(params)
+})
+
 // ─── Descifrado automático de PII en lectura (C4) ──────────────────────────
 //
 // Los campos `nameEnc` / `phoneEnc` del modelo User se guardan cifrados
