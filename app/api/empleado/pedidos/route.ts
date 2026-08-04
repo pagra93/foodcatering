@@ -5,8 +5,9 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getTenant } from '@/lib/tenant/get-tenant'
+import { prisma } from '@/lib/db/prisma'
 import { createOrUpdateOrder } from '@/lib/db/queries/empleado-menus'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 import { z } from 'zod'
 
 // ============================================================================
@@ -29,44 +30,34 @@ const orderSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Verificar autenticación
     const session = await auth()
-    if (!session) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    if (!session?.user) return apiError(401, 'No autenticado')
+
+    // El tenant sale SIEMPRE de la sesión (JWT firmado), nunca de cabeceras:
+    // la antigua lectura de `x-tenant-id` era manipulable y además el
+    // middleware ni siquiera la inyecta en /api (la ruta devolvía 500).
+    if (session.user.tenantType !== 'EMPRESA') {
+      return apiError(403, 'Este endpoint solo está disponible para empresas')
     }
 
-    // Verificar tenant
-    const tenant = await getTenant()
-    if (tenant.type !== 'EMPRESA') {
-      return NextResponse.json(
-        { error: 'Este endpoint solo está disponible para empresas' },
-        { status: 403 }
-      )
-    }
-
-    // Parsear y validar body
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) return apiError(400, 'Cuerpo JSON inválido')
     const validated = orderSchema.parse(body)
 
-    // Verificar que el empleado pertenece al usuario autenticado y al tenant
-    const { prisma } = await import('@/lib/db/prisma')
+    // El empleado debe pertenecer al usuario autenticado y a su tenant
     const employee = await prisma.employee.findFirst({
       where: {
         id: validated.employeeId,
         userId: session.user.id,
-        tenantId: tenant.id,
+        tenantId: session.user.tenantId,
         status: 'ACTIVE',
       },
     })
 
     if (!employee && session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permiso para crear pedidos para este empleado' },
-        { status: 403 }
-      )
+      return apiError(403, 'No tienes permiso para crear pedidos para este empleado')
     }
 
-    // Crear o actualizar pedido
     const order = await createOrUpdateOrder({
       employeeId: validated.employeeId,
       date: new Date(validated.date),
@@ -82,20 +73,11 @@ export async function POST(req: NextRequest) {
         price: Number(order.price),
       },
     })
-  } catch (error: any) {
-    console.error('Error creating order:', error)
-
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: error.message || 'Error al crear el pedido' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'POST /api/empleado/pedidos',
+      requestId: requestIdFrom(req),
+      fallback: 'Error al guardar el pedido',
+    })
   }
 }
-

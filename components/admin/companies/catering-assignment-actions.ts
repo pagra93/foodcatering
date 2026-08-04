@@ -8,6 +8,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { getRequiredSession } from '@/lib/auth/session'
 import { permissionsInclude } from '@/lib/auth/permissions'
@@ -72,31 +73,66 @@ export async function assignCateringAction(input: unknown): Promise<ActionResult
     }
   }
 
-  if (existing) {
-    await prisma.companyCateringAssignment.update({
-      where: { id: existing.id },
-      data: {
-        active: true,
-        type: d.type,
-        priority: d.priority,
-        assignedBy: session.user.id,
-        assignedAt: new Date(),
-        deactivatedAt: null,
-        deactivatedBy: null,
-        deactivationReason: null,
-      },
-    })
-  } else {
-    await prisma.companyCateringAssignment.create({
-      data: {
-        companyId: d.companyId,
+  // Solo puede haber UN catering PRINCIPAL activo por empresa (además lo
+  // garantiza el índice único parcial en BD): validar aquí da un mensaje
+  // claro en vez de un error de constraint. El pedido del empleado elige el
+  // PRIMARY, así que dos activos repartirían pedidos de forma no determinista.
+  if (d.type === 'PRIMARY') {
+    const currentPrimary = await prisma.companyCateringAssignment.findFirst({
+      where: {
         tenantEmpresa: company.tenantId,
-        tenantCatering: d.tenantCatering,
-        type: d.type,
-        priority: d.priority,
-        assignedBy: session.user.id,
+        companyId: d.companyId,
+        active: true,
+        type: 'PRIMARY',
+        ...(existing ? { id: { not: existing.id } } : {}),
       },
+      select: { id: true },
     })
+    if (currentPrimary) {
+      return {
+        error:
+          'La empresa ya tiene un catering principal activo. Desactívalo antes o asigna este como BACKUP.',
+      }
+    }
+  }
+
+  try {
+    if (existing) {
+      await prisma.companyCateringAssignment.update({
+        where: { id: existing.id },
+        data: {
+          active: true,
+          type: d.type,
+          priority: d.priority,
+          assignedBy: session.user.id,
+          assignedAt: new Date(),
+          deactivatedAt: null,
+          deactivatedBy: null,
+          deactivationReason: null,
+        },
+      })
+    } else {
+      await prisma.companyCateringAssignment.create({
+        data: {
+          companyId: d.companyId,
+          tenantEmpresa: company.tenantId,
+          tenantCatering: d.tenantCatering,
+          type: d.type,
+          priority: d.priority,
+          assignedBy: session.user.id,
+        },
+      })
+    }
+  } catch (e) {
+    // Carrera con otra asignación PRIMARY simultánea: el índice único parcial
+    // la corta; se traduce a mensaje de dominio.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
+      return {
+        error:
+          'La empresa ya tiene un catering principal activo (asignación simultánea). Recarga y reintenta.',
+      }
+    }
+    throw e
   }
 
   await logAudit({

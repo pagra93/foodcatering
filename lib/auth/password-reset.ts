@@ -51,10 +51,14 @@ export async function consumePasswordResetToken(
   })
   if (!token) return null
 
-  await prisma.passwordResetToken.update({
-    where: { id: token.id },
+  // Consumo ATÓMICO: condicionado a usedAt:null en el WHERE. Dos POST en
+  // paralelo con el mismo enlace → solo uno consume; el otro recibe null
+  // (antes ambos pasaban el check y fijaban contraseñas distintas).
+  const res = await prisma.passwordResetToken.updateMany({
+    where: { id: token.id, usedAt: null },
     data: { usedAt: new Date() },
   })
+  if (res.count !== 1) return null
 
   return { userId: token.userId }
 }

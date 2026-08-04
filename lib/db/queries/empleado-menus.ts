@@ -16,6 +16,7 @@ import {
   isPastCutoff,
   serviceDayFromDate,
 } from '@/lib/orders/cutoff'
+import { DomainError } from '@/lib/errors'
 
 // ============================================================================
 // OBTENER MENÚS DE LA SEMANA PARA EMPLEADO
@@ -52,7 +53,7 @@ export async function getWeekMenusForEmployee(
   })
 
   if (!employee) {
-    throw new Error('Empleado no encontrado')
+    throw new DomainError('Empleado no encontrado', 404)
   }
 
   const cateringAssignment = employee.site.company.cateringAssignments[0]
@@ -223,7 +224,7 @@ export async function getDayMenuForEmployee(
   })
 
   if (!employee) {
-    throw new Error('Empleado no encontrado')
+    throw new DomainError('Empleado no encontrado', 404)
   }
 
   const cateringAssignment = employee.site.company.cateringAssignments[0]
@@ -373,7 +374,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   })
 
   if (!employee) {
-    throw new Error('Empleado no encontrado')
+    throw new DomainError('Empleado no encontrado', 404)
   }
 
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
@@ -382,7 +383,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   // servidor: en un contenedor UTC el corte de las 11:00 se movería a las
   // 13:00 reales en verano. Ver lib/orders/cutoff.
   if (isPastCutoff(serviceDayFromDate(date), cutoffTime)) {
-    throw new Error('No se pueden realizar cambios después del cutoff')
+    throw new DomainError('No se pueden realizar cambios después del cutoff')
   }
 
   // Calcular precio total — los platos deben pertenecer a un catering asignado
@@ -414,7 +415,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   })
 
   if (dishes.length !== requestedDishIds.length) {
-    throw new Error('Algún plato no está disponible en tu catering asignado')
+    throw new DomainError('Algún plato no está disponible en tu catering asignado')
   }
 
   const totalPrice = dishes.reduce((sum, dish) => sum + Number(dish.basePrice), 0)
@@ -423,7 +424,9 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   const dailyLimit = employee.site.company.policy?.limitPerDay ? Number(employee.site.company.policy.limitPerDay) : 11
 
   if (totalPrice > dailyLimit) {
-    throw new Error(`El precio total (${totalPrice}€) excede el límite diario de ${dailyLimit}€`)
+    throw new DomainError(
+      `El precio total (${totalPrice}€) excede el límite diario de ${dailyLimit}€`
+    )
   }
 
   // Buscar pedido existente
@@ -454,8 +457,11 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     })
 
     return prisma.$transaction(async (tx) => {
-      const updated = await tx.order.update({
-        where: { id: existingOrder.id },
+      // Lock optimista: el update solo aplica si nadie tocó el pedido desde
+      // que lo leímos (misma versión). Dos ediciones concurrentes ya no pueden
+      // duplicar versión en OrderHistory ni pisarse el integrityHash.
+      const res = await tx.order.updateMany({
+        where: { id: existingOrder.id, version: existingOrder.version },
         data: {
           selection,
           price: totalPrice,
@@ -464,6 +470,15 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
           lastModifiedBy: employee.userId,
           integrityHash,
         },
+      })
+      if (res.count !== 1) {
+        throw new DomainError(
+          'El pedido ha cambiado en otra pestaña; recarga e inténtalo de nuevo',
+          409
+        )
+      }
+      const updated = await tx.order.findUniqueOrThrow({
+        where: { id: existingOrder.id },
       })
 
       await recordOrderHistory(
@@ -503,7 +518,7 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
     })
     const tenantCatering = companyWithCatering?.cateringAssignments[0]?.tenantCatering
     if (!tenantCatering) {
-      throw new Error('La empresa no tiene catering asignado')
+      throw new DomainError('La empresa no tiene catering asignado', 409)
     }
 
     const integrityHash = computeOrderIntegrityHash({
@@ -574,7 +589,7 @@ export async function cancelOrder(employeeId: string, orderId: string) {
   })
 
   if (!order) {
-    throw new Error('Pedido no encontrado')
+    throw new DomainError('Pedido no encontrado', 404)
   }
 
   // Obtener employee para verificar cutoff
@@ -594,14 +609,14 @@ export async function cancelOrder(employeeId: string, orderId: string) {
   })
 
   if (!employee) {
-    throw new Error('Empleado no encontrado')
+    throw new DomainError('Empleado no encontrado', 404)
   }
 
   // Verificar cutoff
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
   // En TZ de negocio, igual que la creación (ver lib/orders/cutoff).
   if (isPastCutoff(serviceDayFromDate(order.serviceDate), cutoffTime)) {
-    throw new Error('No se puede cancelar después del cutoff')
+    throw new DomainError('No se puede cancelar después del cutoff')
   }
 
   // Cancelar pedido (nueva versión + hash real + fila de historial).
@@ -620,8 +635,10 @@ export async function cancelOrder(employeeId: string, orderId: string) {
   })
 
   return prisma.$transaction(async (tx) => {
-    const cancelled = await tx.order.update({
-      where: { id: orderId },
+    // Lock optimista (mismo patrón que la edición): cancela solo si el pedido
+    // sigue en la versión leída.
+    const res = await tx.order.updateMany({
+      where: { id: orderId, version: order.version },
       data: {
         status: 'CANCELLED_BEFORE_CUTOFF',
         statusChangedAt: new Date(),
@@ -630,6 +647,13 @@ export async function cancelOrder(employeeId: string, orderId: string) {
         integrityHash,
       },
     })
+    if (res.count !== 1) {
+      throw new DomainError(
+        'El pedido ha cambiado en otra pestaña; recarga e inténtalo de nuevo',
+        409
+      )
+    }
+    const cancelled = await tx.order.findUniqueOrThrow({ where: { id: orderId } })
 
     await recordOrderHistory(
       tx,

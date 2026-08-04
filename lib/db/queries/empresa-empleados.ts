@@ -137,59 +137,59 @@ export async function getEmployees(tenantId: string, filters: EmployeeFilters = 
     })
     .then((depts) => depts.map((d) => d.department).filter(Boolean))
 
-  // Enriquecer con métricas de cada empleado
-  const employeesWithMetrics = await Promise.all(
-    employees.map(async (emp) => {
-      const [ordersLast30Days, totalSpent, lastOrder] = await Promise.all([
-        prisma.order.count({
-          where: {
-            tenantEmpresa: tenantId,
-            employeeId: emp.id,
-            serviceDate: { gte: thirtyDaysAgo },
-            deletedAt: null,
-          },
-        }),
-        prisma.order.aggregate({
-          where: {
-            tenantEmpresa: tenantId,
-            employeeId: emp.id,
-            deletedAt: null,
-          },
-          _sum: { price: true },
-        }).then((result) => result._sum.price || 0),
-        prisma.order.findFirst({
-          where: {
-            tenantEmpresa: tenantId,
-            employeeId: emp.id,
-            deletedAt: null,
-          },
-          select: { serviceDate: true },
-          orderBy: { serviceDate: 'desc' },
-        }),
-      ])
-
-      return {
-        id: emp.id,
-        employeeNumber: emp.employeeNumber,
-        name: emp.user.nameEnc,
-        email: emp.user.email,
-        department: emp.department,
-        position: emp.position,
-        site: emp.site,
-        status: emp.status,
-        startDate: emp.startDate,
-        endDate: emp.endDate,
-        weeklyMenuDays: emp.weeklyMenuDays,
-        monthlyLimit: emp.monthlyLimit ? Number(emp.monthlyLimit) : null,
-        metrics: {
-          ordersLast30Days,
-          totalSpent: Number(totalSpent),
-          lastOrderDate: lastOrder?.serviceDate,
-        },
-        createdAt: emp.createdAt,
-      }
-    })
+  // Enriquecer con métricas — 2 queries agregadas TOTALES (groupBy por
+  // empleado) en vez de 3 por empleado (antes: 60+ queries por página).
+  const employeeIds = employees.map((emp) => emp.id)
+  const [last30ByEmployee, totalsByEmployee] = await Promise.all([
+    prisma.order.groupBy({
+      by: ['employeeId'],
+      where: {
+        tenantEmpresa: tenantId,
+        employeeId: { in: employeeIds },
+        serviceDate: { gte: thirtyDaysAgo },
+        deletedAt: null,
+      },
+      _count: { _all: true },
+    }),
+    prisma.order.groupBy({
+      by: ['employeeId'],
+      where: {
+        tenantEmpresa: tenantId,
+        employeeId: { in: employeeIds },
+        deletedAt: null,
+      },
+      _sum: { price: true },
+      _max: { serviceDate: true },
+    }),
+  ])
+  const last30Map = new Map(
+    last30ByEmployee.map((r) => [r.employeeId, r._count._all])
   )
+  const totalsMap = new Map(totalsByEmployee.map((r) => [r.employeeId, r]))
+
+  const employeesWithMetrics = employees.map((emp) => {
+    const totals = totalsMap.get(emp.id)
+    return {
+      id: emp.id,
+      employeeNumber: emp.employeeNumber,
+      name: emp.user.nameEnc,
+      email: emp.user.email,
+      department: emp.department,
+      position: emp.position,
+      site: emp.site,
+      status: emp.status,
+      startDate: emp.startDate,
+      endDate: emp.endDate,
+      weeklyMenuDays: emp.weeklyMenuDays,
+      monthlyLimit: emp.monthlyLimit ? Number(emp.monthlyLimit) : null,
+      metrics: {
+        ordersLast30Days: last30Map.get(emp.id) ?? 0,
+        totalSpent: Number(totals?._sum.price ?? 0),
+        lastOrderDate: totals?._max.serviceDate ?? undefined,
+      },
+      createdAt: emp.createdAt,
+    }
+  })
 
   return {
     employees: employeesWithMetrics,
@@ -396,18 +396,10 @@ export async function createEmployee(
     sendInvitation?: boolean
   }
 ) {
-  // Cuota del plan: nº de empleados activos vs maxEmployees.
-  const [entitlements, activeCount] = await Promise.all([
-    getCompanyEntitlements(tenantId),
-    prisma.employee.count({ where: { tenantId, status: 'ACTIVE' } }),
-  ])
-  if (!withinLimit(entitlements, 'maxEmployees', activeCount)) {
-    throw new PlanLimitError(
-      'maxEmployees',
-      entitlements.limits.maxEmployees ?? activeCount,
-      `Has alcanzado el límite de empleados de tu plan (${entitlements.limits.maxEmployees}). Mejora tu plan para añadir más.`
-    )
-  }
+  // Cuota del plan: se valida DENTRO de la transacción de alta, con lock de la
+  // fila de la empresa — el check-then-act de antes dejaba colarse dos altas
+  // simultáneas por encima de maxEmployees.
+  const entitlements = await getCompanyEntitlements(tenantId)
 
   // Verificar que el email no exista
   const existingUser = await prisma.user.findFirst({
@@ -431,6 +423,20 @@ export async function createEmployee(
 
   // Crear en transacción
   const result = await prisma.$transaction(async (tx) => {
+    // Lock de la empresa: serializa las altas del tenant para que la cuota
+    // no pueda superarse con dos peticiones concurrentes.
+    await tx.$queryRaw`SELECT id FROM companies WHERE tenant_id = ${tenantId} FOR UPDATE`
+    const activeCount = await tx.employee.count({
+      where: { tenantId, status: 'ACTIVE' },
+    })
+    if (!withinLimit(entitlements, 'maxEmployees', activeCount)) {
+      throw new PlanLimitError(
+        'maxEmployees',
+        entitlements.limits.maxEmployees ?? activeCount,
+        `Has alcanzado el límite de empleados de tu plan (${entitlements.limits.maxEmployees}). Mejora tu plan para añadir más.`
+      )
+    }
+
     // Crear usuario
     const user = await tx.user.create({
       data: {
@@ -501,6 +507,7 @@ export async function createEmployee(
       expiresDays: 7,
     })
     await sendEmail({
+      template: 'employee-invitation',
       to: data.email,
       subject: email.subject,
       html: email.html,

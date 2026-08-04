@@ -719,9 +719,23 @@ export async function getEmployeePendingRatings(
     take: limit,
     select: { id: true, serviceDate: true, selection: true },
   })
+  // La forma canónica de `selection` solo lleva ids: hidratar los nombres de
+  // BD para el diálogo de valoración (lookup acotado por id, exento del guard).
+  const allDishIds = new Set<string>()
+  for (const o of orders) {
+    for (const d of dishesFromSelection(o.selection)) allDishIds.add(d.dishId)
+  }
+  const dishRows = allDishIds.size
+    ? await prisma.dish.findMany({
+        where: { id: { in: Array.from(allDishIds) } },
+        select: { id: true, name: true },
+      })
+    : []
+  const dishNames = new Map(dishRows.map((d) => [d.id, d.name]))
+
   return orders.map((o) => ({
     orderId: o.id,
     serviceDate: o.serviceDate,
-    dishes: dishesFromSelection(o.selection),
+    dishes: dishesFromSelection(o.selection, dishNames),
   }))
 }

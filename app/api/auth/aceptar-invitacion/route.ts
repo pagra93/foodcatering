@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
 import { BCRYPT_COST } from '@/lib/auth/password'
 import { getAppBaseUrl } from '@/lib/email/client'
+import { DomainError } from '@/lib/errors'
 
 const schema = z
   .object({
@@ -75,20 +76,28 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcryptHash(parsed.data.password, BCRYPT_COST)
-    await prisma.$transaction([
-      prisma.user.update({
+    // Consumo ATÓMICO de la invitación: la transición PENDING→ACCEPTED va
+    // condicionada en el WHERE. Dos envíos paralelos del mismo formulario no
+    // pueden aceptarla dos veces (el segundo no encuentra PENDING y revierte
+    // sin tocar la contraseña).
+    await prisma.$transaction(async (tx) => {
+      const consumed = await tx.userInvitation.updateMany({
+        where: { id: invitation.id, status: 'PENDING' },
+        data: { status: 'ACCEPTED', acceptedAt: new Date(), userId: user.id },
+      })
+      if (consumed.count !== 1) {
+        throw new DomainError('La invitación ya fue utilizada', 409)
+      }
+      await tx.user.update({
         where: { id: user.id },
         // tokenVersion++ invalida cualquier sesión previa (H7).
         data: { passwordHash, status: 'ACTIVE', tokenVersion: { increment: 1 } },
-      }),
-      prisma.userInvitation.update({
-        where: { id: invitation.id },
-        data: { status: 'ACCEPTED', acceptedAt: new Date(), userId: user.id },
-      }),
-    ])
+      })
+    })
 
     return NextResponse.redirect(new URL('/login?invite=success', base), 303)
   } catch (e) {
+    if (e instanceof DomainError) return backToForm(base, token, e.message)
     console.error('[aceptar-invitacion] error:', e)
     return backToForm(base, token, 'No se pudo activar la cuenta')
   }

@@ -411,6 +411,7 @@ model Employee {
   dishRatings DishRating[]  // Valoraciones por plato (nuevo)
 
   @@index([tenantId, status])
+  @@index([tenantId, createdAt])
   @@index([userId])
   @@index([siteId])
   @@index([department])
@@ -460,6 +461,9 @@ model CompanyCateringAssignment {
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@unique([companyId, tenantCatering])
+  // Además existe un ÍNDICE ÚNICO PARCIAL creado por migración SQL
+  // (company_catering_assignments_primary_active_key): una empresa solo puede
+  // tener UN catering PRIMARY activo. Prisma no puede expresarlo en el schema.
   @@index([tenantEmpresa])
   @@index([tenantCatering])
   @@index([companyId, active])
@@ -735,6 +739,7 @@ model AuditLog {
 
   @@index([tenantId, entity, entityId])
   @@index([timestamp])
+  @@index([tenantId, timestamp])
   @@map("audit_logs")
 }
 
@@ -812,6 +817,10 @@ model Order {
   @@index([tenantEmpresa, serviceDate])
   @@index([serviceDate, status])
   @@index([employeeId, serviceDate])
+  @@index([tenantEmpresa, status, serviceDate])
+  @@index([tenantCatering, serviceDate, status])
+  @@index([tenantEmpresa, createdAt])
+  @@index([tenantCatering, createdAt])
   @@index([routeId])
   @@index([invoiceId])
   @@map("orders")
@@ -847,7 +856,9 @@ model OrderHistory {
   // Relación
   order Order @relation(fields: [orderId], references: [id])
 
-  @@index([orderId, version])
+  // Unique real (no solo índice): dos ediciones concurrentes no pueden
+  // registrar la misma versión — sostiene el lock optimista de Order.version.
+  @@unique([orderId, version])
   @@index([changedAt])
   @@map("order_history")
 }
@@ -920,6 +931,7 @@ model Invoice {
   // índices parciales en el schema, por eso aquí solo queda el índice normal.
   @@unique([tenantCatering, number])
   @@index([tenantCatering, tenantEmpresa, period])
+  @@index([tenantCatering, period])
   @@index([tenantEmpresa, period])
   @@index([companyId])
   @@index([status])
@@ -1010,6 +1022,8 @@ model Incident {
 
   @@index([tenantEmpresa, status])
   @@index([tenantCatering, status])
+  @@index([tenantEmpresa, createdAt])
+  @@index([tenantCatering, createdAt])
   @@index([orderId])
   @@index([reasonId])
   @@map("incidents")
@@ -1253,6 +1267,8 @@ model Notification {
   @@index([userId])
   @@index([read])
   @@index([createdAt(sort: Desc)])
+  // La query de la campana (layout, 2×/render): no leídas por tenant+fecha.
+  @@index([tenantId, read, createdAt(sort: Desc)])
   @@map("notifications")
 }
 
@@ -2189,4 +2205,52 @@ model MrrSnapshot {
   capturedAt      DateTime @default(now()) @map("captured_at")
 
   @@map("mrr_snapshots")
+}
+
+// ============================================================================
+// OPERACIÓN — SCHEDULER Y TRAZABILIDAD (Fase B)
+// ============================================================================
+
+/// Ejecución de un job programado (/api/cron/*). Cada arranque crea una fila;
+/// al terminar se rellenan finishedAt/ok/summary. Observabilidad del scheduler:
+/// "¿corrió la facturación del día 1?" se responde consultando esta tabla.
+/// Además, un índice ÚNICO PARCIAL (job_runs_running_key, en la migración SQL)
+/// impide dos ejecuciones vivas del mismo job — es el lock del scheduler.
+model JobRun {
+  id         String    @id @default(uuid())
+  job        String
+  startedAt  DateTime  @default(now()) @map("started_at")
+  finishedAt DateTime? @map("finished_at")
+  ok         Boolean?
+  summary    Json?
+  error      String?
+
+  @@index([job, startedAt(sort: Desc)])
+  @@map("job_runs")
+}
+
+enum EmailSendStatus {
+  SENT    @map("sent")
+  FAILED  @map("failed")
+  SKIPPED @map("skipped")
+
+  @@map("email_send_status")
+}
+
+/// Rastro persistente de cada intento de envío de email (soporte: "¿se envió
+/// la invitación a X?"). Contiene el destinatario (PII operativa): el job de
+/// retención lo purga a los 180 días.
+model EmailLog {
+  id         String          @id @default(uuid())
+  to         String
+  template   String?
+  subject    String
+  status     EmailSendStatus
+  providerId String?         @map("provider_id")
+  error      String?
+  createdAt  DateTime        @default(now()) @map("created_at")
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@map("email_logs")
 }

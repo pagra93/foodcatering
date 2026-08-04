@@ -12,6 +12,8 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { Prisma } from '@prisma/client'
+import { DomainError } from '@/lib/errors'
+import { parseOrderSelection, selectionDishIds } from '@/lib/orders/selection'
 import type { GenerateInvoiceInput, InvoiceFilters } from '@/lib/validations/invoice'
 import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
 import { invoiceIssuedEmail } from '@/lib/email/templates'
@@ -58,12 +60,15 @@ export async function generateInvoice(
         legalName: true,
         cif: true,
         billingAddress: true,
+        policy: { select: { limitPerDay: true } },
       },
     })
 
     if (!company) {
-      throw new Error('Empresa no encontrada')
+      throw new DomainError('Empresa no encontrada', 404)
     }
+
+    const limitPerDay = company.policy ? Number(company.policy.limitPerDay) : null
 
     // 2. No puede existir otra factura no cancelada para el mismo período
     const existing = await tx.invoice.findFirst({
@@ -75,7 +80,7 @@ export async function generateInvoice(
       },
     })
     if (existing) {
-      throw new Error('Ya existe una factura para este período')
+      throw new DomainError('Ya existe una factura para este período', 409)
     }
 
     // 3. Rango de fechas del período
@@ -97,19 +102,16 @@ export async function generateInvoice(
     })
 
     if (orders.length === 0) {
-      throw new Error('No hay pedidos entregados en este período')
+      throw new DomainError(
+        'No hay pedidos entregados sin facturar en este período',
+        400
+      )
     }
 
-    // 5. IDs de platos involucrados en las selecciones JSON
+    // 5. IDs de platos de las selecciones (parser canónico + formas legacy)
     const allDishIds = new Set<string>()
     for (const order of orders) {
-      const selection = order.selection as Record<string, unknown>
-      const firstId = selection['firstId']
-      const secondId = selection['secondId']
-      const dessertId = selection['dessertId']
-      if (typeof firstId === 'string') allDishIds.add(firstId)
-      if (typeof secondId === 'string') allDishIds.add(secondId)
-      if (typeof dessertId === 'string') allDishIds.add(dessertId)
+      for (const id of selectionDishIds(order.selection)) allDishIds.add(id)
     }
 
     const dishes = await tx.dish.findMany({
@@ -118,21 +120,9 @@ export async function generateInvoice(
     })
     const dishMap = new Map(dishes.map((d) => [d.id, d]))
 
-    // 6. Precio overrides por día (si existen en DishSchedule)
-    const schedules = await tx.dishSchedule.findMany({
-      where: {
-        tenantId,
-        dishId: { in: Array.from(allDishIds) },
-        date: { gte: startDate, lte: endDate },
-      },
-      select: { dishId: true, date: true, priceOverride: true },
-    })
-    const overrideMap = new Map<string, number>()
-    for (const s of schedules) {
-      if (!s.priceOverride) continue
-      const day = s.date.toISOString().slice(0, 10)
-      overrideMap.set(`${s.dishId}|${day}`, Number(s.priceOverride))
-    }
+    // 6. (Eliminado el recálculo por Dish/DishSchedule: se factura Order.price,
+    // el importe confirmado por el empleado y validado contra el límite diario.
+    // Los platos solo se cargan para nombres/cursos del concepto y snapshot.)
 
     // 7. Precargar info de empleados y sedes (Order no tiene esas relaciones)
     const employeeIds = Array.from(new Set(orders.map((o) => o.employeeId)))
@@ -165,33 +155,28 @@ export async function generateInvoice(
       serviceDate: string
       siteName: string
       employeeName: string
-      dishes: Array<{ name: string; course: string; price: number }>
+      dishes: Array<{ name: string; course: string }>
       subtotal: number
     }> = []
     let totalSubtotal = 0
+    let overLimitCount = 0
 
     for (const order of orders) {
-      const selection = order.selection as Record<string, unknown>
-      const dayKey = order.serviceDate.toISOString().slice(0, 10)
-      const dishLines: Array<{ name: string; course: string; price: number }> = []
-      let orderSubtotal = 0
-
-      for (const key of ['firstId', 'secondId', 'dessertId'] as const) {
-        const id = selection[key]
-        if (typeof id !== 'string') continue
+      const sel = parseOrderSelection(order.selection)
+      const dishLines: Array<{ name: string; course: string }> = []
+      for (const id of [sel.starterId, sel.mainId, sel.dessertId]) {
+        if (!id) continue
         const dish = dishMap.get(id)
-        if (!dish) continue
-        const price =
-          overrideMap.get(`${id}|${dayKey}`) ?? Number(dish.basePrice)
-        dishLines.push({
-          name: dish.name,
-          course: dish.course,
-          price: roundToTwoDecimals(price),
-        })
-        orderSubtotal += price
+        if (dish) dishLines.push({ name: dish.name, course: dish.course })
       }
 
-      const rounded = roundToTwoDecimals(orderSubtotal)
+      // El importe facturado es SIEMPRE Order.price: lo que el empleado
+      // confirmó y lo que pasó la validación del límite diario (IRPF) al
+      // pedir. Recalcular con precios ACTUALES de Dish/DishSchedule facturaba
+      // importes distintos de los pactados y hacía la factura irreproducible.
+      const amount = roundToTwoDecimals(Number(order.price))
+      if (limitPerDay !== null && amount > limitPerDay) overLimitCount += 1
+
       const employee = employeeMap.get(order.employeeId)
       const site = siteMap.get(order.siteId)
       const employeeName = employee?.user.nameEnc ?? 'Desconocido'
@@ -202,7 +187,7 @@ export async function generateInvoice(
         employeeId: order.employeeId,
         date: order.serviceDate,
         concept,
-        amount: rounded,
+        amount,
       })
 
       snapshotOrders.push({
@@ -211,11 +196,18 @@ export async function generateInvoice(
         siteName: site?.name ?? 'Desconocida',
         employeeName,
         dishes: dishLines,
-        subtotal: rounded,
+        subtotal: amount,
       })
 
-      totalSubtotal += orderSubtotal
+      totalSubtotal += amount
     }
+
+    // Aviso IRPF: pedidos por encima del límite diario exento. No bloquea la
+    // factura (el importe es el real), pero queda visible en notas y snapshot.
+    const irpfWarning =
+      overLimitCount > 0 && limitPerDay !== null
+        ? `⚠ ${overLimitCount} pedido(s) superan el límite diario exento de ${limitPerDay.toFixed(2)} € (IRPF)`
+        : null
 
     // 9. Totales — el IVA se lee del catálogo fiscal editable en admin
     // (categoría 'food' = hostelería, 10%), no hardcodeado. Fallback al 10%.
@@ -272,7 +264,7 @@ export async function generateInvoice(
         total: new Prisma.Decimal(totalAmount),
         status: 'DRAFT',
         integrityHash,
-        notes: notes ?? null,
+        notes: [notes, irpfWarning].filter(Boolean).join('\n') || null,
         snapshot: {
           company: {
             id: company.id,
@@ -292,6 +284,7 @@ export async function generateInvoice(
             taxRate: taxRatePct,
             taxAmount,
             totalAmount,
+            overLimitCount,
           },
           generatedAt: new Date().toISOString(),
           integrityHash,
@@ -475,7 +468,7 @@ export async function updateInvoiceStatus(
     })
 
     if (!invoice) {
-      throw new Error('Factura no encontrada')
+      throw new DomainError('Factura no encontrada', 404)
     }
 
     // Notificar a la empresa solo la PRIMERA vez que la factura pasa a "enviada".
@@ -485,7 +478,7 @@ export async function updateInvoiceStatus(
     // que fija paidAt y bloquea el doble pago); no se reabren facturas en estado
     // terminal (PAID/CANCELLED/VOID). Antes se aceptaba cualquier estado.
     if (status === 'PAID') {
-      throw new Error(
+      throw new DomainError(
         'Para marcar como pagada usa la acción de pago, no el cambio de estado.'
       )
     }
@@ -502,8 +495,9 @@ export async function updateInvoiceStatus(
       status !== invoice.status &&
       !(allowedNext[invoice.status] ?? []).includes(status)
     ) {
-      throw new Error(
-        `Transición de estado no permitida: ${invoice.status} → ${status}`
+      throw new DomainError(
+        `Transición de estado no permitida: ${invoice.status} → ${status}`,
+        409
       )
     }
 
@@ -561,6 +555,7 @@ export async function updateInvoiceStatus(
         url: `${getAppBaseUrl()}/empresa/facturacion`,
       })
       await sendEmail({
+        template: 'invoice-issued',
         to,
         subject: email.subject,
         html: email.html,
@@ -590,11 +585,11 @@ export async function markInvoiceAsPaid(
     })
 
     if (!invoice) {
-      throw new Error('Factura no encontrada')
+      throw new DomainError('Factura no encontrada', 404)
     }
 
     if (invoice.status === 'PAID') {
-      throw new Error('La factura ya está marcada como pagada')
+      throw new DomainError('La factura ya está marcada como pagada', 409)
     }
 
     const updated = await tx.invoice.update({
@@ -649,11 +644,11 @@ export async function cancelInvoice(
     })
 
     if (!invoice) {
-      throw new Error('Factura no encontrada')
+      throw new DomainError('Factura no encontrada', 404)
     }
 
     if (invoice.status === 'PAID') {
-      throw new Error('No se puede cancelar una factura pagada')
+      throw new DomainError('No se puede cancelar una factura pagada', 409)
     }
 
     const updated = await tx.invoice.update({

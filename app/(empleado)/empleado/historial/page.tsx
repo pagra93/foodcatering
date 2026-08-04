@@ -11,6 +11,7 @@ import {
   getOrderHistory,
   getOrderHistoryKPIs,
   getAvailableMonths,
+  getDishNamesForSelections,
 } from '@/lib/db/queries/empleado-historial'
 import { HistorialKPIs } from '@/components/empleado/historial/HistorialKPIs'
 import { HistorialFilters } from '@/components/empleado/historial/HistorialFilters'
@@ -83,6 +84,12 @@ async function HistorialData({ searchParams }: PageProps) {
     getAvailableMonths(employee.id),
   ])
 
+  // La selección canónica solo lleva ids de plato: hidratar nombres para el
+  // diálogo de valoración.
+  const dishNames = await getDishNamesForSelections(
+    history.orders.map((o) => o.selection)
+  )
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
@@ -106,6 +113,7 @@ async function HistorialData({ searchParams }: PageProps) {
       <HistorialTable
         orders={history.orders}
         pagination={history.pagination}
+        dishNames={dishNames}
       />
     </div>
   )
