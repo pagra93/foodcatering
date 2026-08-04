@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { startRoute } from '@/lib/db/queries/catering-routes'
 import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
@@ -30,6 +31,16 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     }
 
     const started = await startRoute(session.user.tenantId, params.id)
+
+    // Best-effort tras el éxito: logAudit nunca rompe el flujo.
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: session.user.id,
+      action: 'ROUTE_STARTED',
+      entity: 'DeliveryRoute',
+      entityId: params.id,
+      diff: { after: { status: started.status } },
+    })
 
     return NextResponse.json({
       success: true,

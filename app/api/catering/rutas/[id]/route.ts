@@ -7,6 +7,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import {
   getRouteById,
@@ -128,6 +129,16 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const reason = body.reason
 
     const cancelled = await cancelRoute(session.user.tenantId, params.id, reason)
+
+    // Best-effort tras el éxito: logAudit nunca rompe el flujo.
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: session.user.id,
+      action: 'ROUTE_CANCELLED',
+      entity: 'DeliveryRoute',
+      entityId: params.id,
+      diff: { after: { status: cancelled.status } },
+    })
 
     return NextResponse.json({
       success: true,

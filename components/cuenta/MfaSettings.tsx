@@ -26,41 +26,41 @@ export function MfaSettings({ enabled: initialEnabled }: { enabled: boolean }) {
 
   const begin = () =>
     startTransition(async () => {
-      try {
-        const { qrDataUrl, secret } = await startMfaEnrollment()
-        setQr(qrDataUrl)
-        setSecret(secret)
-        setCode('')
-        setStage('enrolling')
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Error')
+      const res = await startMfaEnrollment()
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      setQr(res.data.qrDataUrl)
+      setSecret(res.data.secret)
+      setCode('')
+      setStage('enrolling')
     })
 
   const confirm = () =>
     startTransition(async () => {
-      try {
-        const { backupCodes } = await confirmMfaEnrollment(code)
-        setBackupCodes(backupCodes)
-        setEnabled(true)
-        setStage('showingBackup')
-        toast.success('Verificación en dos pasos activada')
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Error')
+      const res = await confirmMfaEnrollment(code)
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      setBackupCodes(res.data.backupCodes)
+      setEnabled(true)
+      setStage('showingBackup')
+      toast.success('Verificación en dos pasos activada')
     })
 
   const turnOff = () =>
     startTransition(async () => {
-      try {
-        await disableMfa(code)
-        setEnabled(false)
-        setCode('')
-        setStage('idle')
-        toast.success('Verificación en dos pasos desactivada')
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Error')
+      const res = await disableMfa(code)
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      setEnabled(false)
+      setCode('')
+      setStage('idle')
+      toast.success('Verificación en dos pasos desactivada')
     })
 
   // Códigos de recuperación recién generados (mostrar una sola vez).

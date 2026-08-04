@@ -57,7 +57,7 @@ export function ActivityThread({ entity, entityId, messages, canPostInternal }: 
         body: text,
         isInternal: internal,
       })
-      if (res.error) {
+      if (!res.success) {
         toast.error(res.error)
         return
       }

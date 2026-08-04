@@ -33,13 +33,13 @@ export function PenaltyDetailActions({
     )
       return
     startTransition(async () => {
-      try {
-        await applyPenaltyAction({ penaltyId })
-        toast.success('Penalización aplicada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await applyPenaltyAction({ penaltyId })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Penalización aplicada')
+      router.refresh()
     })
   }
 
@@ -47,13 +47,13 @@ export function PenaltyDetailActions({
     const reason = prompt('Motivo para perdonar la penalización:')
     if (!reason || reason.length < 5) return
     startTransition(async () => {
-      try {
-        await waivePenaltyAction({ penaltyId, reason })
-        toast.success('Penalización perdonada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await waivePenaltyAction({ penaltyId, reason })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Penalización perdonada')
+      router.refresh()
     })
   }
 

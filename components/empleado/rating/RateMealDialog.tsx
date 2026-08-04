@@ -104,7 +104,7 @@ export function RateMealDialog({
           rating: scores[d.dishId]!,
         })),
       })
-      if (res.error) {
+      if (!res.success) {
         toast.error(res.error)
         return
       }

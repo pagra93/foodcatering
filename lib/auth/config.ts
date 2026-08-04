@@ -467,15 +467,25 @@ export const authConfig = {
     },
   },
 
-  // Events (para logging)
+  // Events — auditoría de sesión (logLogin/logLogout llevaban definidos y sin
+  // cablear desde el principio). Import dinámico: audit.ts importa '@/lib/auth'
+  // y un import estático aquí crearía un ciclo config → audit → index → config.
   events: {
-    async signIn() {
-      // Auditoría de login se registra fuera (lib/auth/audit.ts#logLogin)
+    async signIn({ user }) {
+      const u = user as { id?: string; tenantId?: string }
+      if (u.id && u.tenantId) {
+        const { logLogin } = await import('./audit')
+        await logLogin(u.id, u.tenantId)
+      }
     },
     async signOut(message) {
       // 'token' sólo existe con sesión JWT; con DB session se pasa 'session'
       if ('token' in message && message.token) {
-        // Auditoría de logout se registra fuera (lib/auth/audit.ts#logLogout)
+        const t = message.token as { id?: string; tenantId?: string }
+        if (t.id && t.tenantId) {
+          const { logLogout } = await import('./audit')
+          await logLogout(t.id, t.tenantId)
+        }
       }
     },
   },

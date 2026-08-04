@@ -53,23 +53,21 @@ export function EditUserForm({ user, tenant, roles, currentUserId }: Props) {
     }
 
     startTransition(async () => {
-      try {
-        await updateUserAction({
-          userId: user.id,
-          email,
-          name,
-          phone: phone || undefined,
-          roleId,
-        })
-        toast.success('Usuario actualizado')
-        router.push(`/admin/users/${user.id}`)
-        router.refresh()
-      } catch (err) {
-        const message =
-          err instanceof Error ? err.message : 'Error al actualizar'
-        setError(message)
-        toast.error(message)
+      const res = await updateUserAction({
+        userId: user.id,
+        email,
+        name,
+        phone: phone || undefined,
+        roleId,
+      })
+      if (!res.success) {
+        setError(res.error)
+        toast.error(res.error)
+        return
       }
+      toast.success('Usuario actualizado')
+      router.push(`/admin/users/${user.id}`)
+      router.refresh()
     })
   }
 

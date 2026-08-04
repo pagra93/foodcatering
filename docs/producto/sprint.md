@@ -40,6 +40,22 @@ Last updated: 2026-08-04
       (`scripts/setup-prod-backups.md`).
 - [ ] Crear primer super-admin en prod (RUNBOOK sección 7).
 
+## 🚧 En curso — Fase C del análisis prototipo→producción (2026-08-04)
+
+Rama `feat/fase-c-produccion` (apilada sobre Fase B / PR #14).
+
+- [x] C1 Contrato `ActionResult`/`withAction` en TODAS las server actions: 70 actions migradas (43 admin + 27 portales) con sus 41 consumidores — los mensajes de negocio por fin se ven en producción (Next redacta los `throw`). Excluidas a propósito: gdpr (tx delicada) y las inline de páginas de alta de catering/empresa (devuelven `{error}`, no lanzan — candidatas a barrido posterior). Bonus: `<Toaster />` montado en catering y empleado (sus toasts no se renderizaban).
+- [x] C2 Rate limiting multi-réplica: backend Redis opcional (`REDIS_URL`, ioredis) con fallback in-memory ante fallo de Redis (mejor límite local que bloquear logins) — la interfaz `RateLimiter` no cambia.
+- [x] C3 Export de pedidos en STREAMING con cursor (`exportOrdersCSVStream`): sin tope silencioso de 10.000 filas ni CSV entero en RAM; totales por cabeceras X-Total-*.
+- [x] C4 Auditoría del ciclo de vida: ORDER_DELIVERED e INCIDENT_REPORTED (intra-tx), ROUTE_STARTED/COMPLETED/CANCELLED, POLICY_CHANGE (intra-tx), BILLING_RUN, logLogin/logLogout (events de NextAuth), cambios/reset de contraseña, alta/edición de empleados y MFA — el enum muerto queda cableado entero, sin PII en los diffs.
+- [x] C5 Jobs visibles en `/admin/operations/health`: últimas ejecuciones de `job_runs` con estado/duración/resumen.
+- [x] C6 Cachés aplazadas de B7: entitlements con `unstable_cache` (Set→array serializable, tags `entitlements:<tenant>`+global invalidados desde plan-actions, techo 300 s) y ventana de mantenimiento (fechas ISO reconstruidas, tag `maintenance` desde sus actions) + tags de branding cableados en las 3 actions.
+- [x] C7 RUNBOOK §18: particionado de AuditLog/OrderHistory/Notification PREPARADO con señal de disparo (~5M filas) — no ejecutado a propósito.
+
+Validación Fase C: type-check ✅ · lint 0 errores ✅ · 224 tests ✅ · build ✅ (sin cambios de schema).
+
+FUERA de esta rama, deliberadamente: squash/baseline de migraciones (operación supervisada con paso en prod — RUNBOOK §16), Next 16 / Prisma 7 / ESLint 10 / resolvers 5 (regla del proyecto: rama dedicada por major; Next 16 es lo que cierra los 15 CVEs high de `next@15.5.15`), búsqueda PII indexada (contradice la decisión del PM de mantener búsqueda por fragmento — re-decidir antes), retención de AuditLog (decisión legal), particionado real y PDF en worker (sin tráfico que lo justifique).
+
 ## 🚧 En curso — Fase B del análisis prototipo→producción (2026-08-04)
 
 Rama `feat/fase-b-produccion` (apilada sobre Fase A / PR #13).

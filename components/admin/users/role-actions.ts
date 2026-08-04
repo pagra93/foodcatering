@@ -13,10 +13,10 @@ import { permissionsInclude } from '@/lib/auth/permissions'
 import { logAudit } from '@/lib/auth/audit'
 import { ALL_PERMISSION_KEYS } from '@/lib/auth/permission-catalog'
 import { rolesByTenantType } from '@/lib/auth/permissions'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 import { slugify } from '@/lib/validations/catering'
 import type { TenantType, UserRole } from '@prisma/client'
-
-type ActionResult = { ok?: boolean; error?: string; id?: string }
 
 const roleSchema = z.object({
   name: z.string().min(2, 'El nombre es obligatorio'),
@@ -55,116 +55,127 @@ async function uniqueRoleKey(name: string): Promise<string> {
   return key
 }
 
-export async function createRole(input: unknown): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'role:create')) {
-    return { error: 'No tienes permiso para crear roles.' }
-  }
-  const parsed = roleSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
+export async function createRole(input: unknown): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'role:create')) {
+      throw new DomainError('No tienes permiso para crear roles.', 403)
+    }
+    const { name, description, category, baseRole, permissionKeys } =
+      roleSchema.parse(input)
+    if (!baseRoleValid(category, baseRole)) {
+      throw new DomainError('El rol base no corresponde a la categoría elegida.', 400)
+    }
+    const key = await uniqueRoleKey(name)
+    const permIds = await permIdsForKeys(permissionKeys)
 
-  const { name, description, category, baseRole, permissionKeys } = parsed.data
-  if (!baseRoleValid(category, baseRole)) {
-    return { error: 'El rol base no corresponde a la categoría elegida.' }
-  }
-  const key = await uniqueRoleKey(name)
-  const permIds = await permIdsForKeys(permissionKeys)
+    const role = await prisma.role.create({
+      data: {
+        key,
+        name,
+        description: description || null,
+        category,
+        baseRole: baseRole as UserRole,
+        isSystem: false,
+        permissions: { create: permIds.map((permissionId) => ({ permissionId })) },
+      },
+    })
 
-  const role = await prisma.role.create({
-    data: {
-      key,
-      name,
-      description: description || null,
-      category,
-      baseRole: baseRole as UserRole,
-      isSystem: false,
-      permissions: { create: permIds.map((permissionId) => ({ permissionId })) },
-    },
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'CREATE',
+      entity: 'role',
+      entityId: role.id,
+      diff: { name, category, permissions: permIds.length },
+    })
+    revalidatePath('/admin/users/roles')
+    return { id: role.id }
   })
-
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'CREATE',
-    entity: 'role',
-    entityId: role.id,
-    diff: { name, category, permissions: permIds.length },
-  })
-  revalidatePath('/admin/users/roles')
-  return { ok: true, id: role.id }
 }
 
-export async function updateRole(roleId: string, input: unknown): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'role:edit')) {
-    return { error: 'No tienes permiso para editar roles.' }
-  }
-  const role = await prisma.role.findUnique({
-    where: { id: roleId },
-    select: { id: true, isSystem: true },
-  })
-  if (!role) return { error: 'El rol no existe.' }
-
-  const parsed = roleSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  const { name, description, category, baseRole, permissionKeys } = parsed.data
-  if (!role.isSystem && !baseRoleValid(category, baseRole)) {
-    return { error: 'El rol base no corresponde a la categoría elegida.' }
-  }
-
-  const permIds = await permIdsForKeys(permissionKeys)
-
-  await prisma.$transaction([
-    prisma.rolePermission.deleteMany({ where: { roleId } }),
-    prisma.rolePermission.createMany({
-      data: permIds.map((permissionId) => ({ roleId, permissionId })),
-      skipDuplicates: true,
-    }),
-    // En roles del sistema solo se editan los permisos (nombre/categoría/base bloqueados).
-    prisma.role.update({
+export async function updateRole(
+  roleId: string,
+  input: unknown
+): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'role:edit')) {
+      throw new DomainError('No tienes permiso para editar roles.', 403)
+    }
+    const role = await prisma.role.findUnique({
       where: { id: roleId },
-      data: role.isSystem
-        ? {}
-        : { name, description: description || null, category, baseRole: baseRole as UserRole },
-    }),
-  ])
+      select: { id: true, isSystem: true },
+    })
+    if (!role) throw new DomainError('El rol no existe.', 404)
 
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'UPDATE',
-    entity: 'role',
-    entityId: roleId,
-    diff: { permissions: permIds.length, isSystem: role.isSystem },
+    const { name, description, category, baseRole, permissionKeys } =
+      roleSchema.parse(input)
+    if (!role.isSystem && !baseRoleValid(category, baseRole)) {
+      throw new DomainError('El rol base no corresponde a la categoría elegida.', 400)
+    }
+
+    const permIds = await permIdsForKeys(permissionKeys)
+
+    await prisma.$transaction([
+      prisma.rolePermission.deleteMany({ where: { roleId } }),
+      prisma.rolePermission.createMany({
+        data: permIds.map((permissionId) => ({ roleId, permissionId })),
+        skipDuplicates: true,
+      }),
+      // En roles del sistema solo se editan los permisos (nombre/categoría/base bloqueados).
+      prisma.role.update({
+        where: { id: roleId },
+        data: role.isSystem
+          ? {}
+          : { name, description: description || null, category, baseRole: baseRole as UserRole },
+      }),
+    ])
+
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'UPDATE',
+      entity: 'role',
+      entityId: roleId,
+      diff: { permissions: permIds.length, isSystem: role.isSystem },
+    })
+    revalidatePath('/admin/users/roles')
+    revalidatePath(`/admin/users/roles/${roleId}`)
+    return { id: roleId }
   })
-  revalidatePath('/admin/users/roles')
-  revalidatePath(`/admin/users/roles/${roleId}`)
-  return { ok: true }
 }
 
-export async function deleteRole(roleId: string): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'role:delete')) {
-    return { error: 'No tienes permiso para eliminar roles.' }
-  }
-  const role = await prisma.role.findUnique({
-    where: { id: roleId },
-    select: { isSystem: true, _count: { select: { users: true } } },
-  })
-  if (!role) return { error: 'El rol no existe.' }
-  if (role.isSystem) return { error: 'No se puede eliminar un rol del sistema.' }
-  if (role._count.users > 0) {
-    return { error: 'El rol tiene usuarios asignados; reasígnalos antes de borrarlo.' }
-  }
+export async function deleteRole(roleId: string): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'role:delete')) {
+      throw new DomainError('No tienes permiso para eliminar roles.', 403)
+    }
+    const role = await prisma.role.findUnique({
+      where: { id: roleId },
+      select: { isSystem: true, _count: { select: { users: true } } },
+    })
+    if (!role) throw new DomainError('El rol no existe.', 404)
+    if (role.isSystem) {
+      throw new DomainError('No se puede eliminar un rol del sistema.', 409)
+    }
+    if (role._count.users > 0) {
+      throw new DomainError(
+        'El rol tiene usuarios asignados; reasígnalos antes de borrarlo.',
+        409
+      )
+    }
 
-  await prisma.role.delete({ where: { id: roleId } })
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'DELETE',
-    entity: 'role',
-    entityId: roleId,
+    await prisma.role.delete({ where: { id: roleId } })
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'DELETE',
+      entity: 'role',
+      entityId: roleId,
+    })
+    revalidatePath('/admin/users/roles')
+    return { id: roleId }
   })
-  revalidatePath('/admin/users/roles')
-  return { ok: true }
 }

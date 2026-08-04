@@ -43,39 +43,39 @@ export function AuditDetailForm({ audit }: Props) {
   const save = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        const scoreNum = Number(score)
-        if (!Number.isInteger(scoreNum) || scoreNum < 0 || scoreNum > 100) {
-          toast.error('Score debe ser 0-100')
-          return
-        }
-        await updateAuditAction({
-          auditId: audit.id,
-          auditType,
-          score: scoreNum,
-          auditedAt: new Date(auditedAt),
-          reportUrl: reportUrl || undefined,
-          notes: notes || undefined,
-        })
-        toast.success('Auditoría actualizada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const scoreNum = Number(score)
+      if (!Number.isInteger(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+        toast.error('Score debe ser 0-100')
+        return
       }
+      const res = await updateAuditAction({
+        auditId: audit.id,
+        auditType,
+        score: scoreNum,
+        auditedAt: new Date(auditedAt),
+        reportUrl: reportUrl || undefined,
+        notes: notes || undefined,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
+      toast.success('Auditoría actualizada')
+      router.refresh()
     })
   }
 
   const remove = () => {
     if (!confirm('¿Eliminar esta auditoría? Esta acción no se puede deshacer.')) return
     startTransition(async () => {
-      try {
-        await deleteAuditAction({ auditId: audit.id })
-        toast.success('Auditoría eliminada')
-        router.push('/admin/quality/audits')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteAuditAction({ auditId: audit.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Auditoría eliminada')
+      router.push('/admin/quality/audits')
+      router.refresh()
     })
   }
 

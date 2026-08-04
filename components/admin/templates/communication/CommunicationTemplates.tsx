@@ -44,19 +44,19 @@ export function CommunicationTemplates({
   const sendTest = () => {
     if (!selected) return
     startTransition(async () => {
-      try {
-        const res = await sendTestEmailAction(selected.id)
-        if (res.skipped) {
-          toast.warning(
-            'Email no enviado: falta configurar RESEND_API_KEY en el servidor.'
-          )
-        } else if (res.ok) {
-          toast.success(`Email de prueba enviado a ${res.email}`)
-        } else {
-          toast.error('No se pudo enviar el email de prueba.')
-        }
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await sendTestEmailAction(selected.id)
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
+      if (res.data.skipped) {
+        toast.warning(
+          'Email no enviado: falta configurar RESEND_API_KEY en el servidor.'
+        )
+      } else if (res.data.sent) {
+        toast.success(`Email de prueba enviado a ${res.data.email}`)
+      } else {
+        toast.error('No se pudo enviar el email de prueba.')
       }
     })
   }

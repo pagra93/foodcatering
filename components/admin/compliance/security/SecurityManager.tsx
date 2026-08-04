@@ -131,9 +131,9 @@ export function SecurityManager({
         item: check.item.trim(),
         status: check.status,
         evidence: check.evidence.trim() || undefined,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setCheckOpen(false)
@@ -171,9 +171,9 @@ export function SecurityManager({
         pdfUrl: report.pdfUrl.trim(),
         severity: report.severity,
         notes: report.notes.trim() || undefined,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setReportOpen(false)

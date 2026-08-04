@@ -6,20 +6,20 @@
  * Espejo de role-actions.ts (roles ↔ planes, permisos ↔ features).
  */
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
 import { getRequiredSession } from '@/lib/auth/session'
 import { permissionsInclude } from '@/lib/auth/permissions'
 import { logAudit } from '@/lib/auth/audit'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 import { slugify } from '@/lib/validations/catering'
 import {
   CORE_FEATURE_KEYS,
   keysForPortal,
   type PlanPortal,
 } from '@/lib/plans/feature-catalog'
-
-type ActionResult = { ok?: boolean; error?: string; id?: string }
 
 const planSchema = z.object({
   name: z.string().min(2, 'El nombre es obligatorio'),
@@ -96,114 +96,130 @@ async function uniquePlanCode(name: string): Promise<string> {
   return code
 }
 
-export async function createPlan(input: unknown): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'plan:create')) {
-    return { error: 'No tienes permiso para crear planes.' }
-  }
-  const parsed = planSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  const d = parsed.data
+export async function createPlan(input: unknown): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'plan:create')) {
+      throw new DomainError('No tienes permiso para crear planes.', 403)
+    }
+    const d = planSchema.parse(input)
 
-  const code = await uniquePlanCode(d.name)
-  const featureKeys = cleanFeatureKeys(d.featureKeys, d.planType)
+    const code = await uniquePlanCode(d.name)
+    const featureKeys = cleanFeatureKeys(d.featureKeys, d.planType)
 
-  const plan = await prisma.saasPlan.create({
-    data: {
-      code,
-      name: d.name,
-      description: d.description || null,
-      scope: 'CUSTOM',
-      tenantEmpresa: d.tenantEmpresa || null,
-      ...planFields(d),
-      planFeatures: { create: featureKeys.map((featureKey) => ({ featureKey })) },
-    },
-  })
-
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'CREATE',
-    entity: 'SaasPlan',
-    entityId: plan.id,
-    diff: { name: d.name, features: featureKeys.length, custom: true },
-  })
-  revalidatePath('/admin/billing/plans')
-  return { ok: true, id: plan.id }
-}
-
-export async function updatePlan(planId: string, input: unknown): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'plan:edit')) {
-    return { error: 'No tienes permiso para editar planes.' }
-  }
-  const plan = await prisma.saasPlan.findUnique({
-    where: { id: planId },
-    select: { id: true, scope: true, planType: true },
-  })
-  if (!plan) return { error: 'El plan no existe.' }
-
-  const parsed = planSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  const d = parsed.data
-  // El tipo del plan (EMPRESA/CATERING) no cambia al editar; usa el existente.
-  const portal = plan.planType as PlanPortal
-  const featureKeys = cleanFeatureKeys(d.featureKeys, portal)
-
-  await prisma.$transaction([
-    prisma.planFeature.deleteMany({ where: { planId } }),
-    prisma.planFeature.createMany({
-      data: featureKeys.map((featureKey) => ({ planId, featureKey })),
-      skipDuplicates: true,
-    }),
-    prisma.saasPlan.update({
-      where: { id: planId },
+    const plan = await prisma.saasPlan.create({
       data: {
+        code,
         name: d.name,
         description: d.description || null,
-        ...planFields({ ...d, planType: portal }),
-        // El code y el scope (SYSTEM/CUSTOM) no se cambian al editar.
-        ...(plan.scope === 'CUSTOM' ? { tenantEmpresa: d.tenantEmpresa || null } : {}),
+        scope: 'CUSTOM',
+        tenantEmpresa: d.tenantEmpresa || null,
+        ...planFields(d),
+        planFeatures: { create: featureKeys.map((featureKey) => ({ featureKey })) },
       },
-    }),
-  ])
+    })
 
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'UPDATE',
-    entity: 'SaasPlan',
-    entityId: planId,
-    diff: { features: featureKeys.length, scope: plan.scope },
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'CREATE',
+      entity: 'SaasPlan',
+      entityId: plan.id,
+      diff: { name: d.name, features: featureKeys.length, custom: true },
+    })
+    revalidatePath('/admin/billing/plans')
+    // Los planes definen los entitlements cacheados de las empresas.
+    revalidateTag('entitlements')
+    return { id: plan.id }
   })
-  revalidatePath('/admin/billing/plans')
-  revalidatePath(`/admin/billing/plans/${planId}`)
-  return { ok: true }
 }
 
-export async function deletePlan(planId: string): Promise<ActionResult> {
-  const session = await getRequiredSession()
-  if (!permissionsInclude(session.user.permissions, 'plan:delete')) {
-    return { error: 'No tienes permiso para eliminar planes.' }
-  }
-  const plan = await prisma.saasPlan.findUnique({
-    where: { id: planId },
-    select: { scope: true, _count: { select: { companies: true } } },
-  })
-  if (!plan) return { error: 'El plan no existe.' }
-  if (plan.scope === 'SYSTEM') return { error: 'No se puede eliminar un plan de sistema.' }
-  if (plan._count.companies > 0) {
-    return { error: 'El plan tiene empresas asignadas; cámbialas de plan antes de borrarlo.' }
-  }
+export async function updatePlan(
+  planId: string,
+  input: unknown
+): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'plan:edit')) {
+      throw new DomainError('No tienes permiso para editar planes.', 403)
+    }
+    const plan = await prisma.saasPlan.findUnique({
+      where: { id: planId },
+      select: { id: true, scope: true, planType: true },
+    })
+    if (!plan) throw new DomainError('El plan no existe.', 404)
 
-  await prisma.saasPlan.delete({ where: { id: planId } })
-  await logAudit({
-    tenantId: null,
-    actorId: session.user.id,
-    action: 'DELETE',
-    entity: 'SaasPlan',
-    entityId: planId,
+    const d = planSchema.parse(input)
+    // El tipo del plan (EMPRESA/CATERING) no cambia al editar; usa el existente.
+    const portal = plan.planType as PlanPortal
+    const featureKeys = cleanFeatureKeys(d.featureKeys, portal)
+
+    await prisma.$transaction([
+      prisma.planFeature.deleteMany({ where: { planId } }),
+      prisma.planFeature.createMany({
+        data: featureKeys.map((featureKey) => ({ planId, featureKey })),
+        skipDuplicates: true,
+      }),
+      prisma.saasPlan.update({
+        where: { id: planId },
+        data: {
+          name: d.name,
+          description: d.description || null,
+          ...planFields({ ...d, planType: portal }),
+          // El code y el scope (SYSTEM/CUSTOM) no se cambian al editar.
+          ...(plan.scope === 'CUSTOM' ? { tenantEmpresa: d.tenantEmpresa || null } : {}),
+        },
+      }),
+    ])
+
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'UPDATE',
+      entity: 'SaasPlan',
+      entityId: planId,
+      diff: { features: featureKeys.length, scope: plan.scope },
+    })
+    revalidatePath('/admin/billing/plans')
+    // Los planes definen los entitlements cacheados de las empresas.
+    revalidateTag('entitlements')
+    revalidatePath(`/admin/billing/plans/${planId}`)
+    return { id: planId }
   })
-  revalidatePath('/admin/billing/plans')
-  return { ok: true }
+}
+
+export async function deletePlan(planId: string): Promise<ActionResult<{ id: string }>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!permissionsInclude(session.user.permissions, 'plan:delete')) {
+      throw new DomainError('No tienes permiso para eliminar planes.', 403)
+    }
+    const plan = await prisma.saasPlan.findUnique({
+      where: { id: planId },
+      select: { scope: true, _count: { select: { companies: true } } },
+    })
+    if (!plan) throw new DomainError('El plan no existe.', 404)
+    if (plan.scope === 'SYSTEM') {
+      throw new DomainError('No se puede eliminar un plan de sistema.', 409)
+    }
+    if (plan._count.companies > 0) {
+      throw new DomainError(
+        'El plan tiene empresas asignadas; cámbialas de plan antes de borrarlo.',
+        409
+      )
+    }
+
+    await prisma.saasPlan.delete({ where: { id: planId } })
+    await logAudit({
+      tenantId: null,
+      actorId: session.user.id,
+      action: 'DELETE',
+      entity: 'SaasPlan',
+      entityId: planId,
+    })
+    revalidatePath('/admin/billing/plans')
+    // Los planes definen los entitlements cacheados de las empresas.
+    revalidateTag('entitlements')
+    return { id: planId }
+  })
 }

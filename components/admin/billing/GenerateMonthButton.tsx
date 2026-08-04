@@ -29,17 +29,18 @@ export function GenerateMonthButton() {
       return
 
     startTransition(async () => {
-      try {
-        const r = await generateMonthBillingAction({ period, dryRun })
-        const prefix = r.dryRun ? '(simulación)' : ''
-        toast.success(
-          `${prefix} Liquidaciones: ${r.settlementsCreated} creadas / ${r.settlementsSkipped} saltadas. SaaS: ${r.saasCreated} / ${r.saasSkipped}.`,
-          { duration: 6000 }
-        )
-        if (!r.dryRun) router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await generateMonthBillingAction({ period, dryRun })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      const r = res.data
+      const prefix = r.dryRun ? '(simulación)' : ''
+      toast.success(
+        `${prefix} Liquidaciones: ${r.settlementsCreated} creadas / ${r.settlementsSkipped} saltadas. SaaS: ${r.saasCreated} / ${r.saasSkipped}.`,
+        { duration: 6000 }
+      )
+      if (!r.dryRun) router.refresh()
     })
   }
 

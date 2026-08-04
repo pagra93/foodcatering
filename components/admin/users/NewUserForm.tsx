@@ -94,23 +94,22 @@ export function NewUserForm({
       return
     }
     startTransition(async () => {
-      try {
-        const result = await createUserAction({
-          tenantId,
-          email,
-          name,
-          phone: phone || undefined,
-          roleId,
-          password,
-        })
-        toast.success(`Usuario creado: ${result.email}`)
-        router.push(`/admin/users/${result.id}`)
-        router.refresh()
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Error al crear usuario'
-        setError(message)
-        toast.error(message)
+      const res = await createUserAction({
+        tenantId,
+        email,
+        name,
+        phone: phone || undefined,
+        roleId,
+        password,
+      })
+      if (!res.success) {
+        setError(res.error)
+        toast.error(res.error)
+        return
       }
+      toast.success(`Usuario creado: ${res.data.email}`)
+      router.push(`/admin/users/${res.data.id}`)
+      router.refresh()
     })
   }
 

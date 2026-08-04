@@ -6,7 +6,9 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import type { Prisma } from '@prisma/client'
 import type { ConfirmDeliveryInput, ReportIncidentInput } from '@/lib/validations/delivery'
+import { buildAuditIntegrityHash } from '@/lib/auth/audit'
 import { createHash } from 'crypto'
 import {
   computeOrderIntegrityHash,
@@ -108,6 +110,26 @@ export async function confirmDelivery(tenantId: string, data: ConfirmDeliveryInp
       })
     }
 
+    // Hecho fiscal (el pedido pasa a facturable): el rastro de auditoría va en
+    // la MISMA transacción que el cambio de estado. La función no recibe el
+    // usuario que confirma; se registra el mismo actor que OrderHistory
+    // (changedBy: 'DELIVERY').
+    const auditBase = {
+      tenantId,
+      actorId: 'DELIVERY',
+      action: 'ORDER_DELIVERED' as const,
+      entity: 'Order',
+      entityId: order.id,
+    }
+    await tx.auditLog.create({
+      data: {
+        ...auditBase,
+        impersonatorId: null,
+        diff: { after: { status: 'DELIVERED' } } as Prisma.InputJsonValue,
+        hash: buildAuditIntegrityHash(auditBase),
+      },
+    })
+
     return updatedOrder
   })
 }
@@ -205,6 +227,24 @@ export async function reportDeliveryIncident(
         },
       })
     }
+
+    // Rastro de auditoría en la MISMA transacción que la incidencia y el
+    // cambio de estado del pedido. Mismo actor que Incident.openedBy.
+    const auditBase = {
+      tenantId,
+      actorId: reportedByUserId ?? 'DELIVERY',
+      action: 'INCIDENT_REPORTED' as const,
+      entity: 'Incident',
+      entityId: incident.id,
+    }
+    await tx.auditLog.create({
+      data: {
+        ...auditBase,
+        impersonatorId: null,
+        diff: { orderId: data.orderId, type: data.type } as Prisma.InputJsonValue,
+        hash: buildAuditIntegrityHash(auditBase),
+      },
+    })
 
       return {
         incident,

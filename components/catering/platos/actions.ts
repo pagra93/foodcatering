@@ -10,9 +10,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { ZodError } from 'zod'
 import { getRequiredSession } from '@/lib/auth/session'
 import { permittedAction } from '@/lib/auth/permissions'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 import {
   cloneDish,
   createDish,
@@ -27,26 +28,40 @@ import {
   type UpdateDishInput,
 } from '@/lib/validations/dish'
 
-type ActionResult<T = undefined> =
-  | { success: true; data?: T }
-  | { success: false; error: string }
-
 const ADMIN_ROLES = new Set(['ADMIN_CATERING', 'CHEF'])
+
+/**
+ * La capa de queries (`lib/db/queries/catering-dishes`) lanza `Error` planos
+ * con mensajes de negocio que el usuario debe ver ('Dish not found'…). Hasta
+ * que esa capa emita `DomainError`, aquí se traducen los `Error` planos
+ * (constructor exacto `Error`, sin `digest` de Next) para que `withAction` no
+ * los degrade al mensaje genérico. Los errores de infraestructura (Prisma,
+ * TypeError…) son subclases y siguen su camino hacia el genérico + log.
+ */
+async function fromQueries<T>(fn: () => Promise<T>): Promise<T> {
+  try {
+    return await fn()
+  } catch (error) {
+    if (
+      error instanceof Error &&
+      error.constructor === Error &&
+      !('digest' in error)
+    ) {
+      throw new DomainError(error.message, 400)
+    }
+    throw error
+  }
+}
 
 async function requireCateringAdmin() {
   const session = await getRequiredSession()
   if (session.user.tenantType !== 'CATERING') {
-    throw new Error('Tenant no autorizado')
+    throw new DomainError('Tenant no autorizado', 403)
   }
   if (!ADMIN_ROLES.has(session.user.role)) {
-    throw new Error('Acceso denegado')
+    throw new DomainError('Acceso denegado', 403)
   }
   return session
-}
-
-function formatZodError(error: ZodError): string {
-  const first = error.errors[0]
-  return first ? first.message : 'Datos inválidos'
 }
 
 /**
@@ -55,7 +70,7 @@ function formatZodError(error: ZodError): string {
 export async function createDishAction(
   input: CreateDishInput
 ): Promise<ActionResult<{ id: string }>> {
-  try {
+  return withAction(async () => {
     const session = await requireCateringAdmin()
     if (
       !permittedAction(
@@ -65,27 +80,21 @@ export async function createDishAction(
         [...ADMIN_ROLES]
       )
     ) {
-      return { success: false, error: 'No tienes permiso para crear platos' }
+      throw new DomainError('No tienes permiso para crear platos', 403)
     }
     const parsed = createDishSchema.parse(input)
 
     const exists = await dishNameExists(session.user.tenantId, parsed.name)
     if (exists) {
-      return { success: false, error: 'Ya existe un plato con ese nombre' }
+      throw new DomainError('Ya existe un plato con ese nombre', 409)
     }
 
-    const dish = await createDish(session.user.tenantId, parsed)
+    const dish = await fromQueries(() =>
+      createDish(session.user.tenantId, parsed)
+    )
     revalidatePath('/catering/platos')
-    return { success: true, data: { id: dish.id } }
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return { success: false, error: formatZodError(error) }
-    }
-    if (error instanceof Error) {
-      return { success: false, error: error.message }
-    }
-    return { success: false, error: 'Error al crear el plato' }
-  }
+    return { id: dish.id }
+  })
 }
 
 /**
@@ -94,8 +103,8 @@ export async function createDishAction(
 export async function updateDishAction(
   dishId: string,
   input: UpdateDishInput
-): Promise<ActionResult> {
-  try {
+): Promise<ActionResult<void>> {
+  return withAction(async () => {
     const session = await requireCateringAdmin()
     if (
       !permittedAction(
@@ -105,7 +114,7 @@ export async function updateDishAction(
         [...ADMIN_ROLES]
       )
     ) {
-      return { success: false, error: 'No tienes permiso para editar platos' }
+      throw new DomainError('No tienes permiso para editar platos', 403)
     }
     const parsed = updateDishSchema.parse(input)
 
@@ -116,30 +125,23 @@ export async function updateDishAction(
         dishId
       )
       if (exists) {
-        return { success: false, error: 'Ya existe otro plato con ese nombre' }
+        throw new DomainError('Ya existe otro plato con ese nombre', 409)
       }
     }
 
-    await updateDish(dishId, session.user.tenantId, parsed)
+    await fromQueries(() => updateDish(dishId, session.user.tenantId, parsed))
     revalidatePath('/catering/platos')
     revalidatePath(`/catering/platos/${dishId}`)
-    return { success: true }
-  } catch (error) {
-    if (error instanceof ZodError) {
-      return { success: false, error: formatZodError(error) }
-    }
-    if (error instanceof Error) {
-      return { success: false, error: error.message }
-    }
-    return { success: false, error: 'Error al actualizar el plato' }
-  }
+  })
 }
 
 /**
  * Eliminar un plato (soft delete)
  */
-export async function deleteDishAction(dishId: string): Promise<ActionResult> {
-  try {
+export async function deleteDishAction(
+  dishId: string
+): Promise<ActionResult<void>> {
+  return withAction(async () => {
     const session = await requireCateringAdmin()
     if (
       !permittedAction(
@@ -149,17 +151,11 @@ export async function deleteDishAction(dishId: string): Promise<ActionResult> {
         [...ADMIN_ROLES]
       )
     ) {
-      return { success: false, error: 'No tienes permiso para eliminar platos' }
+      throw new DomainError('No tienes permiso para eliminar platos', 403)
     }
-    await deleteDish(dishId, session.user.tenantId)
+    await fromQueries(() => deleteDish(dishId, session.user.tenantId))
     revalidatePath('/catering/platos')
-    return { success: true }
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message }
-    }
-    return { success: false, error: 'Error al eliminar el plato' }
-  }
+  })
 }
 
 /**
@@ -169,7 +165,7 @@ export async function cloneDishAction(
   dishId: string,
   newName?: string
 ): Promise<ActionResult<{ id: string }>> {
-  try {
+  return withAction(async () => {
     const session = await requireCateringAdmin()
     if (
       !permittedAction(
@@ -179,17 +175,14 @@ export async function cloneDishAction(
         [...ADMIN_ROLES]
       )
     ) {
-      return { success: false, error: 'No tienes permiso para clonar platos' }
+      throw new DomainError('No tienes permiso para clonar platos', 403)
     }
-    const dish = await cloneDish(dishId, session.user.tenantId, newName)
+    const dish = await fromQueries(() =>
+      cloneDish(dishId, session.user.tenantId, newName)
+    )
     revalidatePath('/catering/platos')
-    return { success: true, data: { id: dish.id } }
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message }
-    }
-    return { success: false, error: 'Error al clonar el plato' }
-  }
+    return { id: dish.id }
+  })
 }
 
 /**
@@ -198,8 +191,11 @@ export async function cloneDishAction(
 export async function toggleDishActiveAction(
   dishId: string,
   active: boolean
-): Promise<ActionResult> {
-  try {
+): Promise<ActionResult<void>> {
+  // Primero la puerta de permiso específica del toggle; después se delega en
+  // `updateDishAction` (que aplica su propio permiso `dish:edit`), igual que
+  // hacía la implementación anterior.
+  const gate = await withAction(async () => {
     const session = await requireCateringAdmin()
     if (
       !permittedAction(
@@ -209,16 +205,12 @@ export async function toggleDishActiveAction(
         [...ADMIN_ROLES]
       )
     ) {
-      return {
-        success: false,
-        error: 'No tienes permiso para activar o desactivar platos',
-      }
+      throw new DomainError(
+        'No tienes permiso para activar o desactivar platos',
+        403
+      )
     }
-  } catch (error) {
-    if (error instanceof Error) {
-      return { success: false, error: error.message }
-    }
-    return { success: false, error: 'Error al cambiar el estado del plato' }
-  }
+  })
+  if (!gate.success) return gate
   return updateDishAction(dishId, { active })
 }

@@ -25,17 +25,16 @@ export function MarkPaidButton({
     if (ref === null) return
 
     startTransition(async () => {
-      try {
-        if (kind === 'settlement') {
-          await markSettlementPaidAction({ id, paymentRef: ref || undefined })
-        } else {
-          await markSaasInvoicePaidAction({ id, paymentRef: ref || undefined })
-        }
-        toast.success('Marcada como pagada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res =
+        kind === 'settlement'
+          ? await markSettlementPaidAction({ id, paymentRef: ref || undefined })
+          : await markSaasInvoicePaidAction({ id, paymentRef: ref || undefined })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Marcada como pagada')
+      router.refresh()
     })
   }
 

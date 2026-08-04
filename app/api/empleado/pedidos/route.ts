@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { prisma } from '@/lib/db/prisma'
 import { createOrUpdateOrder } from '@/lib/db/queries/empleado-menus'
 import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
@@ -62,6 +63,22 @@ export async function POST(req: NextRequest) {
       employeeId: validated.employeeId,
       date: new Date(validated.date),
       selection: validated.selection,
+    })
+
+    // Best-effort tras el éxito: logAudit nunca rompe el flujo.
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: session.user.id,
+      action: order.version > 1 ? 'UPDATE' : 'CREATE',
+      entity: 'Order',
+      entityId: order.id,
+      diff: {
+        after: {
+          serviceDate: order.serviceDate.toISOString(),
+          price: Number(order.price),
+          version: order.version,
+        },
+      },
     })
 
     return NextResponse.json({

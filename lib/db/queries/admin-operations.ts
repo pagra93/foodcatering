@@ -2,6 +2,7 @@
  * Queries para /admin/operations/*. Scope global SUPER_ADMIN.
  */
 
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 
 // ─── Impersonación ─────────────────────────────────────────────────────
@@ -122,14 +123,56 @@ export async function getPrismaMigrations(): Promise<PrismaMigrationRow[]> {
 
 // ─── Maintenance ───────────────────────────────────────────────────────
 
-export async function getActiveMaintenanceWindow() {
+async function loadActiveMaintenanceWindow() {
   const now = new Date()
-  return prisma.maintenanceWindow.findFirst({
+  const row = await prisma.maintenanceWindow.findFirst({
     where: {
       startsAt: { lte: now },
       endsAt: { gte: now },
       disabledAt: null,
     },
+  })
+  if (!row) return null
+  // unstable_cache serializa a JSON: las fechas viajan como ISO strings y el
+  // wrapper público las reconstruye (si no, un caller que haga .getTime()
+  // sobre el valor cacheado reventaría).
+  return {
+    ...row,
+    startsAt: row.startsAt.toISOString(),
+    endsAt: row.endsAt.toISOString(),
+    disabledAt: row.disabledAt?.toISOString() ?? null,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  }
+}
+
+/**
+ * Ventana de mantenimiento activa. Cacheada (C6) con tag 'maintenance' (las
+ * actions de programar/cancelar la invalidan) + revalidate 60 s: la consultan
+ * los layouts de portal en cada navegación.
+ */
+export async function getActiveMaintenanceWindow() {
+  const cached = await unstable_cache(
+    loadActiveMaintenanceWindow,
+    ['active-maintenance-window'],
+    { tags: ['maintenance'], revalidate: 60 }
+  )()
+  if (!cached) return null
+  return {
+    ...cached,
+    startsAt: new Date(cached.startsAt),
+    endsAt: new Date(cached.endsAt),
+    disabledAt: cached.disabledAt ? new Date(cached.disabledAt) : null,
+    createdAt: new Date(cached.createdAt),
+    updatedAt: new Date(cached.updatedAt),
+  }
+}
+
+/** Últimas ejecuciones de jobs programados (/api/cron/*) para el panel. */
+export async function getRecentJobRuns(limit = 20) {
+  return prisma.jobRun.findMany({
+    orderBy: { startedAt: 'desc' },
+    take: limit,
   })
 }
 

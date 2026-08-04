@@ -100,20 +100,20 @@ export function CateringUsersTable({
   const submitCreate = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        await createCateringUserAction({
-          email: cEmail,
-          name: cName,
-          phone: cPhone || undefined,
-          role: cRole as CateringRoleLiteral,
-          password: cPassword,
-        })
-        toast.success(`${cName} añadido como ${cRole}`)
-        resetCreateForm()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await createCateringUserAction({
+        email: cEmail,
+        name: cName,
+        phone: cPhone || undefined,
+        role: cRole as CateringRoleLiteral,
+        password: cPassword,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(`${cName} añadido como ${cRole}`)
+      resetCreateForm()
+      router.refresh()
     })
   }
 
@@ -125,13 +125,13 @@ export function CateringUsersTable({
     )
       return
     startTransition(async () => {
-      try {
-        await toggleCateringUserStatusAction({ userId: u.id })
-        toast.success('Estado actualizado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleCateringUserStatusAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Estado actualizado')
+      router.refresh()
     })
   }
 
@@ -143,52 +143,51 @@ export function CateringUsersTable({
     )
       return
     startTransition(async () => {
-      try {
-        const { emailed, email } = await resetCateringUserPasswordAction({
-          userId: u.id,
-        })
-        setResetNotice({
-          ok: emailed,
-          text: emailed
-            ? `Enlace de restablecimiento enviado a ${email}.`
-            : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
-        })
-        toast[emailed ? 'success' : 'error'](
-          emailed ? 'Email enviado' : 'Email no enviado'
-        )
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await resetCateringUserPasswordAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      const { emailed, email } = res.data
+      setResetNotice({
+        ok: emailed,
+        text: emailed
+          ? `Enlace de restablecimiento enviado a ${email}.`
+          : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
+      })
+      toast[emailed ? 'success' : 'error'](
+        emailed ? 'Email enviado' : 'Email no enviado'
+      )
     })
   }
 
   const deleteUser = (u: UserRow) => {
     if (!confirm(`¿Eliminar a ${u.nameEnc}? Se hará soft-delete.`)) return
     startTransition(async () => {
-      try {
-        await deleteCateringUserAction({ userId: u.id })
-        toast.success('Usuario eliminado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteCateringUserAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Usuario eliminado')
+      router.refresh()
     })
   }
 
   const changeRole = (u: UserRow, newRole: UserRole) => {
     if (newRole === u.role) return
     startTransition(async () => {
-      try {
-        await updateCateringUserAction({
-          userId: u.id,
-          role: newRole as CateringRoleLiteral,
-        })
-        toast.success('Rol actualizado')
-        setEditingId(null)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await updateCateringUserAction({
+        userId: u.id,
+        role: newRole as CateringRoleLiteral,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Rol actualizado')
+      setEditingId(null)
+      router.refresh()
     })
   }
 

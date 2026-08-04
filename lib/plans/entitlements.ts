@@ -10,6 +10,7 @@
  */
 
 import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 import { prisma } from '@/lib/db/prisma'
 import {
   EMPRESA_CORE_KEYS,
@@ -45,51 +46,80 @@ function defaultEntitlements(): CompanyEntitlements {
   }
 }
 
+/** Shape serializable para unstable_cache (Set no sobrevive a JSON). */
+type CachedCompanyEntitlements = Omit<CompanyEntitlements, 'features'> & {
+  features: string[]
+}
+
+async function loadCompanyEntitlements(
+  tenantEmpresa: string
+): Promise<CachedCompanyEntitlements> {
+  const company = await prisma.company.findUnique({
+    where: { tenantId: tenantEmpresa },
+    select: {
+      saasPlan: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          active: true,
+          maxEmployees: true,
+          maxSites: true,
+          maxCaterings: true,
+          planFeatures: { select: { featureKey: true } },
+        },
+      },
+    },
+  })
+
+  const plan = company?.saasPlan
+  // Sin plan, o con el plan DESACTIVADO, la empresa solo tiene las features
+  // core (M2: un plan desactivado deja de dar acceso premium gratis; queda
+  // alineado con la facturación, que solo factura planes activos).
+  if (!plan || !plan.active) {
+    const def = defaultEntitlements()
+    return { ...def, features: Array.from(def.features) }
+  }
+
+  // Las core están siempre; el resto salen del plan.
+  const features = new Set<string>(EMPRESA_CORE_KEYS)
+  for (const f of plan.planFeatures) features.add(f.featureKey)
+
+  return {
+    planId: plan.id,
+    planCode: plan.code,
+    planName: plan.name,
+    features: Array.from(features),
+    limits: {
+      maxEmployees: plan.maxEmployees,
+      maxSites: plan.maxSites,
+      maxCaterings: plan.maxCaterings,
+    },
+  }
+}
+
 /**
  * Resuelve las features + límites de una empresa por su `tenantId` (el
- * `tenantEmpresa`). Memoizado por request con React `cache`.
+ * `tenantEmpresa`).
+ *
+ * - `unstable_cache` (C6): el layout y los guards dejan de pagar la query en
+ *   cada navegación. Tags `entitlements:<tenant>` + `entitlements` global (las
+ *   actions de planes invalidan la global al editar/borrar un plan) y
+ *   `revalidate` 300 s como techo de staleness — un cambio de plan tarda como
+ *   MUCHO 5 min en reflejarse; las cuotas duras además recuentan en su tx.
+ * - `cache()` de React sigue deduplicando dentro del request.
  */
 export const getCompanyEntitlements = cache(
   async (tenantEmpresa: string): Promise<CompanyEntitlements> => {
-    const company = await prisma.company.findUnique({
-      where: { tenantId: tenantEmpresa },
-      select: {
-        saasPlan: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            active: true,
-            maxEmployees: true,
-            maxSites: true,
-            maxCaterings: true,
-            planFeatures: { select: { featureKey: true } },
-          },
-        },
-      },
-    })
-
-    const plan = company?.saasPlan
-    // Sin plan, o con el plan DESACTIVADO, la empresa solo tiene las features
-    // core (M2: un plan desactivado deja de dar acceso premium gratis; queda
-    // alineado con la facturación, que solo factura planes activos).
-    if (!plan || !plan.active) return defaultEntitlements()
-
-    // Las core están siempre; el resto salen del plan.
-    const features = new Set<string>(EMPRESA_CORE_KEYS)
-    for (const f of plan.planFeatures) features.add(f.featureKey)
-
-    return {
-      planId: plan.id,
-      planCode: plan.code,
-      planName: plan.name,
-      features,
-      limits: {
-        maxEmployees: plan.maxEmployees,
-        maxSites: plan.maxSites,
-        maxCaterings: plan.maxCaterings,
-      },
-    }
+    const cached = await unstable_cache(
+      () => loadCompanyEntitlements(tenantEmpresa),
+      ['company-entitlements', tenantEmpresa],
+      {
+        tags: [`entitlements:${tenantEmpresa}`, 'entitlements'],
+        revalidate: 300,
+      }
+    )()
+    return { ...cached, features: new Set(cached.features) }
   }
 )
 

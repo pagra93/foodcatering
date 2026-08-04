@@ -93,7 +93,7 @@ export function RoleForm({ mode, roleId, catalog, initial }: Props) {
         mode === 'create'
           ? await createRole(payload)
           : await updateRole(roleId!, payload)
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }
@@ -108,7 +108,7 @@ export function RoleForm({ mode, roleId, catalog, initial }: Props) {
     setError(null)
     startTransition(async () => {
       const res = await deleteRole(roleId)
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }

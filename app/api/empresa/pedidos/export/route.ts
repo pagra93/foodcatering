@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { getScopedTenantId } from '@/lib/auth/session'
-import { exportOrdersCSV, type OrderFilters } from '@/lib/db/queries/empresa-pedidos'
+import { exportOrdersCSVStream, type OrderFilters } from '@/lib/db/queries/empresa-pedidos'
 import { permittedAction } from '@/lib/auth/permissions'
 import { exportRateLimiter } from '@/lib/ratelimit'
 import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
@@ -46,9 +46,10 @@ export async function GET(request: NextRequest) {
       siteId: searchParams.get('siteId') || undefined,
     }
 
-    const result = await exportOrdersCSV(tenantId, filters)
+    // Streaming con cursor: sin tope de filas y sin construir el CSV en RAM.
+    const result = await exportOrdersCSVStream(tenantId, filters)
 
-    return new NextResponse(result.content, {
+    return new NextResponse(result.stream, {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',

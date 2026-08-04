@@ -75,9 +75,9 @@ export function TenantBrandingManager({ tenants }: { tenants: TenantBrandingRow[
         secondaryColor: form.secondaryColor.trim() || null,
         logoUrl: form.logoUrl.trim() || null,
         faviconUrl: form.faviconUrl.trim() || null,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setOpen(false)

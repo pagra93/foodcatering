@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { Prisma, type InvoiceStatus } from '@prisma/client'
 // Generación cross-tenant (todos los caterings/empresas) → cliente sin guard.
 import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
-import { buildAuditIntegrityHash } from '@/lib/auth/audit'
+import { buildAuditIntegrityHash, logAudit } from '@/lib/auth/audit'
 import { isAnnualBillingDue } from '@/lib/billing/cycle'
 import { DEFAULT_DUE_DAYS } from '@/lib/validations/billing'
 
@@ -324,6 +324,27 @@ export async function generateMonthBilling(input: {
     }
 
     saasCreated++
+  }
+
+  // Rastro agregado de la ejecución (BILLING_RUN, acción del enum que estaba
+  // muerta): quién y cuándo generó el mes, con el resumen. Best-effort.
+  if (!dryRun) {
+    await logAudit({
+      tenantId: null,
+      actorId,
+      action: 'BILLING_RUN',
+      entity: 'BillingRun',
+      entityId: period,
+      diff: {
+        after: {
+          period,
+          settlementsCreated,
+          settlementsSkipped,
+          saasCreated,
+          saasSkipped,
+        },
+      },
+    })
   }
 
   return {

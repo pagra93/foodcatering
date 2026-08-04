@@ -21,15 +21,15 @@ export function DisputePenaltyButton({ penaltyId }: { penaltyId: string }) {
       return
     }
     startTransition(async () => {
-      try {
-        await disputePenaltyAction({ penaltyId, reason })
-        toast.success('Disputa enviada. Plati revisará tu caso.')
-        setOpen(false)
-        setReason('')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await disputePenaltyAction({ penaltyId, reason })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Disputa enviada. Plati revisará tu caso.')
+      setOpen(false)
+      setReason('')
+      router.refresh()
     })
   }
 

@@ -21,13 +21,13 @@ export function ResetLimiterKeyButton({
     if (!confirm(`¿Resetear la ventana de rate limit para "${limiterKey}"?`))
       return
     startTransition(async () => {
-      try {
-        await resetRateLimiterKeyAction({ limiter, key: limiterKey })
-        toast.success('Ventana reseteada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await resetRateLimiterKeyAction({ limiter, key: limiterKey })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Ventana reseteada')
+      router.refresh()
     })
   }
 

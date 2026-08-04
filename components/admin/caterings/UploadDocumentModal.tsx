@@ -78,7 +78,7 @@ export function UploadDocumentModal({ isOpen, onClose, cateringId, onSuccess }: 
     const result = await addCateringDocument(cateringId, fd)
     setIsSaving(false)
 
-    if (result.error) {
+    if (!result.success) {
       setServerError(result.error)
       return
     }

@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import type { Prisma } from '@prisma/client'
+import { buildAuditIntegrityHash } from '@/lib/auth/audit'
 import { DomainError } from '@/lib/errors'
 
 // ============================================================================
@@ -215,6 +216,35 @@ export async function updateCompanyPolicy(
         version: currentPolicy.version + 1,
         changedBy: data.changedBy,
         changeReason: data.changeReason,
+      },
+    })
+
+    // POLICY_CHANGE en la MISMA transacción que la política y su historial:
+    // un cambio de política aplicado nunca queda sin rastro en audit_logs.
+    const auditBase = {
+      tenantId,
+      actorId: data.changedBy,
+      action: 'POLICY_CHANGE' as const,
+      entity: 'CompanyPolicy',
+      entityId: currentPolicy.id,
+    }
+    await tx.auditLog.create({
+      data: {
+        ...auditBase,
+        impersonatorId: null,
+        diff: {
+          before: {
+            limitPerDay: Number(currentPolicy.limitPerDay),
+            cutoffTime: currentPolicy.cutoffTime,
+            version: currentPolicy.version,
+          },
+          after: {
+            limitPerDay: data.limitPerDay ?? Number(currentPolicy.limitPerDay),
+            cutoffTime: data.cutoffTime ?? currentPolicy.cutoffTime,
+            version: currentPolicy.version + 1,
+          },
+        } as Prisma.InputJsonValue,
+        hash: buildAuditIntegrityHash(auditBase),
       },
     })
 

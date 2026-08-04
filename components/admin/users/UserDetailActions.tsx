@@ -40,13 +40,13 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
     if (!confirm(`¿Seguro que quieres ${actionLabel} este usuario?`)) return
 
     startTransition(async () => {
-      try {
-        await setUserStatusAction({ userId, status: next })
-        toast.success(next === 'ACTIVE' ? 'Usuario reactivado' : 'Usuario suspendido')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await setUserStatusAction({ userId, status: next })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(next === 'ACTIVE' ? 'Usuario reactivado' : 'Usuario suspendido')
+      router.refresh()
     })
   }
 
@@ -59,20 +59,21 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
       return
 
     startTransition(async () => {
-      try {
-        const { emailed, email } = await resetPasswordAction({ userId })
-        setResetNotice({
-          ok: emailed,
-          text: emailed
-            ? `Enlace de restablecimiento enviado a ${email}.`
-            : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
-        })
-        toast[emailed ? 'success' : 'error'](
-          emailed ? 'Email enviado' : 'Email no enviado'
-        )
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await resetPasswordAction({ userId })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      const { emailed, email } = res.data
+      setResetNotice({
+        ok: emailed,
+        text: emailed
+          ? `Enlace de restablecimiento enviado a ${email}.`
+          : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
+      })
+      toast[emailed ? 'success' : 'error'](
+        emailed ? 'Email enviado' : 'Email no enviado'
+      )
     })
   }
 
@@ -85,13 +86,13 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
       return
 
     startTransition(async () => {
-      try {
-        await resetMfaAction({ userId })
-        toast.success('MFA reseteado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await resetMfaAction({ userId })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('MFA reseteado')
+      router.refresh()
     })
   }
 
@@ -104,14 +105,14 @@ export function UserDetailActions({ userId, currentStatus, isSelf }: Props) {
       return
 
     startTransition(async () => {
-      try {
-        await deleteUserAction({ userId })
-        toast.success('Usuario eliminado')
-        router.push('/admin/users')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteUserAction({ userId })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Usuario eliminado')
+      router.push('/admin/users')
+      router.refresh()
     })
   }
 

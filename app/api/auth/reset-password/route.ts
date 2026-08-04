@@ -10,6 +10,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { hash as bcryptHash } from 'bcryptjs'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
+import { logAudit } from '@/lib/auth/audit'
 import { consumePasswordResetToken } from '@/lib/auth/password-reset'
 import { BCRYPT_COST } from '@/lib/auth/password'
 import { getAppBaseUrl } from '@/lib/email/client'
@@ -60,10 +61,22 @@ export async function POST(req: NextRequest) {
     }
 
     const passwordHash = await bcryptHash(parsed.data.password, BCRYPT_COST)
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: consumed.userId },
       // tokenVersion++ invalida las sesiones activas (H7).
       data: { passwordHash, tokenVersion: { increment: 1 } },
+      select: { tenantId: true },
+    })
+
+    // Best-effort tras el éxito: rastro del reset sin datos sensibles (ni
+    // token ni email ni contraseña en el diff). logAudit nunca rompe el flujo.
+    await logAudit({
+      tenantId: updatedUser.tenantId,
+      actorId: consumed.userId,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: consumed.userId,
+      diff: { after: { passwordChanged: true, via: 'reset' } },
     })
 
     return NextResponse.redirect(new URL('/login?reset=success', base), 303)

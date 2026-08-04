@@ -53,18 +53,18 @@ export function BrandingEditor({ tenantName, initial, systemDefaults }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await updateOwnBrandingAction({
-          primaryColor: primaryColor || null,
-          secondaryColor: secondaryColor || null,
-          logoUrl: logoUrl || null,
-          faviconUrl: faviconUrl || null,
-        })
-        toast.success('Branding guardado. Recarga la página para ver los cambios completos.')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await updateOwnBrandingAction({
+        primaryColor: primaryColor || null,
+        secondaryColor: secondaryColor || null,
+        logoUrl: logoUrl || null,
+        faviconUrl: faviconUrl || null,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Branding guardado. Recarga la página para ver los cambios completos.')
+      router.refresh()
     })
   }
 

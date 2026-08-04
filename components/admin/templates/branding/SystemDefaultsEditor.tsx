@@ -32,19 +32,19 @@ export function SystemDefaultsEditor({ initial }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await updateSystemSettingsAction({
-          defaultPrimaryColor: primary,
-          defaultSecondaryColor: secondary || null,
-          defaultLogoUrl: logo || null,
-          defaultFaviconUrl: favicon || null,
-          brandName,
-        })
-        toast.success('Defaults del sistema actualizados')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await updateSystemSettingsAction({
+        defaultPrimaryColor: primary,
+        defaultSecondaryColor: secondary || null,
+        defaultLogoUrl: logo || null,
+        defaultFaviconUrl: favicon || null,
+        brandName,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Defaults del sistema actualizados')
+      router.refresh()
     })
   }
 

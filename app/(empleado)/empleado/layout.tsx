@@ -6,6 +6,7 @@ import { EmpleadoNavbar } from '@/components/empleado/EmpleadoNavbar'
 import { withBranding } from '@/components/shared/BrandProvider'
 import { getActiveAnnouncements } from '@/lib/db/queries/admin-announcements'
 import { AnnouncementBanner } from '@/components/shared/AnnouncementBanner'
+import { Toaster } from '@/components/ui/sonner'
 
 export default async function EmpleadoLayout({
   children,
@@ -44,6 +45,8 @@ export default async function EmpleadoLayout({
       />
       <AnnouncementBanner announcements={announcements} />
       <main className="pb-20">{children}</main>
+      {/* Sin esto, los toast de sonner del portal empleado no se renderizaban. */}
+      <Toaster />
     </div>
   )
 }

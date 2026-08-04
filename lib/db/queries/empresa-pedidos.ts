@@ -4,8 +4,9 @@
  */
 
 import { prisma } from '@/lib/db/prisma'
+import type { Prisma } from '@prisma/client'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays } from 'date-fns'
-import { buildCsv } from '@/lib/utils/csv'
+import { csvCell } from '@/lib/utils/csv'
 
 // ============================================================================
 // LISTADO DE PEDIDOS CON FILTROS
@@ -23,17 +24,11 @@ export type OrderFilters = {
   pageSize?: number
 }
 
-export async function getOrders(tenantId: string, filters: OrderFilters = {}) {
-  const {
-    status,
-    dateFrom,
-    dateTo,
-    employeeId,
-    siteId,
-    period = 'month',
-    page = 1,
-    pageSize = 20,
-  } = filters
+function buildOrdersWhere(
+  tenantId: string,
+  filters: OrderFilters = {}
+): Prisma.OrderWhereInput {
+  const { status, dateFrom, dateTo, employeeId, siteId, period = 'month' } = filters
 
   const today = new Date()
   let startDate: Date
@@ -62,7 +57,7 @@ export async function getOrders(tenantId: string, filters: OrderFilters = {}) {
       endDate = endOfMonth(today)
   }
 
-  const where: any = {
+  const where: Prisma.OrderWhereInput = {
     tenantEmpresa: tenantId,
     serviceDate: {
       gte: startDate,
@@ -71,20 +66,22 @@ export async function getOrders(tenantId: string, filters: OrderFilters = {}) {
     deletedAt: null,
   }
 
-  // Filtro de estado
   if (status && status !== 'all') {
-    where.status = status
+    where.status = status as Prisma.OrderWhereInput['status']
   }
-
-  // Filtro por empleado
   if (employeeId && employeeId !== 'all') {
     where.employeeId = employeeId
   }
-
-  // Filtro por sede
   if (siteId && siteId !== 'all') {
     where.siteId = siteId
   }
+
+  return where
+}
+
+export async function getOrders(tenantId: string, filters: OrderFilters = {}) {
+  const { page = 1, pageSize = 20 } = filters
+  const where = buildOrdersWhere(tenantId, filters)
 
   const [orders, total, stats] = await Promise.all([
     prisma.order.findMany({
@@ -306,15 +303,23 @@ export async function getOrderById(orderId: string, tenantId: string) {
 // EXPORT CSV
 // ============================================================================
 
-export async function exportOrdersCSV(tenantId: string, filters: OrderFilters = {}) {
-  // Obtener todos los pedidos sin paginación
-  const result = await getOrders(tenantId, {
-    ...filters,
-    page: 1,
-    pageSize: 10000, // Máximo razonable
+/**
+ * Export CSV de pedidos en STREAMING con paginación por cursor: sin tope
+ * silencioso de filas (antes se cortaba en 10.000 sin avisar) y sin construir
+ * el fichero entero en memoria. Los totales van en cabeceras X-Total-*.
+ */
+export async function exportOrdersCSVStream(
+  tenantId: string,
+  filters: OrderFilters = {}
+) {
+  const where = buildOrdersWhere(tenantId, filters)
+
+  const stats = await prisma.order.aggregate({
+    where,
+    _sum: { price: true },
+    _count: true,
   })
 
-  // Generar CSV
   const headers = [
     'ID',
     'Fecha Servicio',
@@ -329,27 +334,104 @@ export async function exportOrdersCSV(tenantId: string, filters: OrderFilters = 
     'Fecha Creación',
   ]
 
-  const rows = result.orders.map((order) => [
-    order.id,
-    order.serviceDate.toISOString().split('T')[0],
-    order.employee?.name || 'N/A',
-    order.employee?.email || 'N/A',
-    order.employee?.employeeNumber || 'N/A',
-    order.employee?.department || 'N/A',
-    order.employee?.site || 'N/A',
-    order.status,
-    order.menuType,
-    order.price.toFixed(2),
-    order.createdAt.toISOString(),
-  ])
+  const BATCH_SIZE = 1000
 
-  // Convertir a CSV (escapado + anti inyección de fórmulas + BOM UTF-8)
-  const csvContent = buildCsv(headers, rows)
+  async function* csvChunks(): AsyncGenerator<string> {
+    // BOM UTF-8 + cabecera (celdas escapadas + anti inyección de fórmulas).
+    yield '﻿' + headers.map((h) => csvCell(h)).join(',') + '\n'
+
+    let cursor: string | null = null
+    for (;;) {
+      // Anotación explícita: el uso de `cursor` dentro del initializer crearía
+      // una inferencia circular batch → cursor → batch (TS7022).
+      const batch: Prisma.OrderGetPayload<{
+        select: {
+          id: true
+          employeeId: true
+          serviceDate: true
+          status: true
+          price: true
+          menuType: true
+          createdAt: true
+        }
+      }>[] = await prisma.order.findMany({
+        where,
+        select: {
+          id: true,
+          employeeId: true,
+          serviceDate: true,
+          status: true,
+          price: true,
+          menuType: true,
+          createdAt: true,
+        },
+        orderBy: [{ serviceDate: 'desc' }, { id: 'asc' }],
+        take: BATCH_SIZE,
+        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      })
+      if (batch.length === 0) return
+
+      const employeeIds: string[] = [...new Set(batch.map((o) => o.employeeId))]
+      const employees = await prisma.employee.findMany({
+        where: { id: { in: employeeIds } },
+        select: {
+          id: true,
+          employeeNumber: true,
+          department: true,
+          user: { select: { nameEnc: true, email: true } },
+          site: { select: { name: true } },
+        },
+      })
+      const employeeMap = new Map(employees.map((e) => [e.id, e]))
+
+      let chunk = ''
+      for (const order of batch) {
+        const employee = employeeMap.get(order.employeeId)
+        const row = [
+          order.id,
+          order.serviceDate.toISOString().split('T')[0],
+          employee?.user.nameEnc || 'N/A',
+          employee?.user.email || 'N/A',
+          employee?.employeeNumber || 'N/A',
+          employee?.department || 'N/A',
+          employee?.site.name || 'N/A',
+          order.status,
+          order.menuType,
+          Number(order.price).toFixed(2),
+          order.createdAt.toISOString(),
+        ]
+        chunk += row.map((cell) => csvCell(cell)).join(',') + '\n'
+      }
+      yield chunk
+
+      cursor = batch[batch.length - 1]?.id ?? null
+      if (batch.length < BATCH_SIZE || !cursor) return
+    }
+  }
+
+  const encoder = new TextEncoder()
+  const iterator = csvChunks()
+  const stream = new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      const { value, done } = await iterator.next()
+      if (done) {
+        controller.close()
+        return
+      }
+      controller.enqueue(encoder.encode(value))
+    },
+    cancel() {
+      void iterator.return(undefined)
+    },
+  })
 
   return {
-    content: csvContent,
+    stream,
     filename: `pedidos_${filters.period || 'export'}_${new Date().toISOString().split('T')[0]}.csv`,
-    stats: result.stats,
+    stats: {
+      totalOrders: stats._count,
+      totalAmount: Number(stats._sum.price || 0),
+    },
   }
 }
 

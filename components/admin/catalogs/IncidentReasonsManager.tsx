@@ -81,35 +81,35 @@ export function IncidentReasonsManager({ reasons }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await upsertIncidentReasonAction({
-          id: editing?.id,
-          code: code.trim().toLowerCase(),
-          name: name.trim(),
-          category: category.trim(),
-          description: description.trim() || undefined,
-          defaultSeverity: severity,
-          requiresCompensation,
-          active: editing?.active ?? true,
-        })
-        toast.success(editing ? 'Motivo actualizado' : 'Motivo creado')
-        setOpen(false)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertIncidentReasonAction({
+        id: editing?.id,
+        code: code.trim().toLowerCase(),
+        name: name.trim(),
+        category: category.trim(),
+        description: description.trim() || undefined,
+        defaultSeverity: severity,
+        requiresCompensation,
+        active: editing?.active ?? true,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(editing ? 'Motivo actualizado' : 'Motivo creado')
+      setOpen(false)
+      router.refresh()
     })
   }
 
   const toggle = (r: IncidentReason) => {
     startTransition(async () => {
-      try {
-        await toggleIncidentReasonAction({ id: r.id, active: !r.active })
-        toast.success(r.active ? 'Desactivado' : 'Reactivado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleIncidentReasonAction({ id: r.id, active: !r.active })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(r.active ? 'Desactivado' : 'Reactivado')
+      router.refresh()
     })
   }
 

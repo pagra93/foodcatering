@@ -67,6 +67,9 @@ const envSchema = z.object({
   // Observabilidad (opt-in): DSN de Sentry para errores de servidor.
   SENTRY_DSN: z.string().url().optional(),
 
+  // Rate limiting compartido entre réplicas (opt-in). Sin ella, in-memory.
+  REDIS_URL: z.string().url().optional(),
+
   // Logging
   LOG_LEVEL: z
     .enum(['debug', 'info', 'warn', 'error'])

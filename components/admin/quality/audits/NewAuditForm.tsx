@@ -45,26 +45,26 @@ export function NewAuditForm({ caterings }: { caterings: CateringOption[] }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        const scoreNum = Number(score)
-        if (!Number.isInteger(scoreNum) || scoreNum < 0 || scoreNum > 100) {
-          toast.error('Score debe ser 0-100')
-          return
-        }
-        await createAuditAction({
-          tenantCatering,
-          auditType,
-          score: scoreNum,
-          auditedAt: new Date(auditedAt),
-          reportUrl: reportUrl || undefined,
-          notes: notes || undefined,
-        })
-        toast.success('Auditoría registrada')
-        reset()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const scoreNum = Number(score)
+      if (!Number.isInteger(scoreNum) || scoreNum < 0 || scoreNum > 100) {
+        toast.error('Score debe ser 0-100')
+        return
       }
+      const res = await createAuditAction({
+        tenantCatering,
+        auditType,
+        score: scoreNum,
+        auditedAt: new Date(auditedAt),
+        reportUrl: reportUrl || undefined,
+        notes: notes || undefined,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
+      toast.success('Auditoría registrada')
+      reset()
+      router.refresh()
     })
   }
 

@@ -135,9 +135,9 @@ export function AnnouncementManager({ announcements }: { announcements: Announce
         endsAt: form.endsAt || null,
         dismissible: form.dismissible,
         active: form.active,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setOpen(false)
@@ -147,33 +147,23 @@ export function AnnouncementManager({ announcements }: { announcements: Announce
 
   const toggle = (a: AnnouncementRow) =>
     startTransition(async () => {
-      try {
-        const res = await toggleAnnouncementAction(a.id, !a.active)
-        if (res.error) {
-          toast.error(`No se pudo cambiar el estado del aviso: ${res.error}`)
-          return
-        }
-        router.refresh()
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : 'No se pudo cambiar el estado del aviso.'
-        )
+      const res = await toggleAnnouncementAction(a.id, !a.active)
+      if (!res.success) {
+        toast.error(`No se pudo cambiar el estado del aviso: ${res.error}`)
+        return
       }
+      router.refresh()
     })
 
   const remove = (a: AnnouncementRow) => {
     if (!window.confirm(`¿Eliminar el aviso "${a.title}"?`)) return
     startTransition(async () => {
-      try {
-        const res = await deleteAnnouncementAction(a.id)
-        if (res.error) {
-          toast.error(`No se pudo eliminar el aviso: ${res.error}`)
-          return
-        }
-        router.refresh()
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'No se pudo eliminar el aviso.')
+      const res = await deleteAnnouncementAction(a.id)
+      if (!res.success) {
+        toast.error(`No se pudo eliminar el aviso: ${res.error}`)
+        return
       }
+      router.refresh()
     })
   }
 

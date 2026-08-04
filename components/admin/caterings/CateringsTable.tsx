@@ -83,18 +83,12 @@ export function CateringsTable({ caterings }: CateringsTableProps) {
   const toggleStatus = (id: string, current: string) => {
     startTransition(async () => {
       const next = current === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE'
-      try {
-        const res = await setCateringStatus(id, next)
-        if (res.error) {
-          toast.error(`No se pudo cambiar el estado del catering: ${res.error}`)
-          return
-        }
-        router.refresh()
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : 'No se pudo cambiar el estado del catering.'
-        )
+      const res = await setCateringStatus(id, next)
+      if (!res.success) {
+        toast.error(`No se pudo cambiar el estado del catering: ${res.error}`)
+        return
       }
+      router.refresh()
     })
   }
 
