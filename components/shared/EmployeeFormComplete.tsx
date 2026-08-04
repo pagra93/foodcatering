@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2, User, Briefcase, Calendar, Utensils } from 'lucide-react'
 
 // Schema de validación completo
@@ -116,8 +117,7 @@ export function EmployeeFormComplete({
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || error.message || 'Error al guardar')
+        throw new Error(await readApiError(res, 'Error al guardar'))
       }
 
       toast.success(

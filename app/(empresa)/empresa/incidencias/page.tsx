@@ -5,6 +5,7 @@
 
 import Link from 'next/link'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
+import { parsePageParam } from '@/lib/utils/search-params'
 import {
   getIncidentsKPIs,
   getIncidents,
@@ -25,7 +26,7 @@ async function IncidentsData({ searchParams }: { searchParams: any }) {
   const tenant = await getCurrentTenant()
   const tenantId = tenant.id
 
-  const page = searchParams.page ? parseInt(searchParams.page) : 1
+  const page = parsePageParam(searchParams.page)
 
   // Fetch en paralelo
   const [kpis, incidentsData] = await Promise.all([

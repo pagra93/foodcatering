@@ -7,6 +7,7 @@ import {
   getFiscalAuditKPIs,
   getGlobalFiscalReports,
 } from '@/lib/db/queries/admin-compliance'
+import { parseIntParam, parsePageParam } from '@/lib/utils/search-params'
 
 type SP = { year?: string; page?: string }
 
@@ -34,8 +35,12 @@ export default async function FiscalAuditPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const year = Number(params.year ?? new Date().getFullYear())
-  const pageNum = Number(params.page ?? '1')
+  const year = parseIntParam(params.year, {
+    min: 2000,
+    max: 2100,
+    fallback: new Date().getFullYear(),
+  })
+  const pageNum = parsePageParam(params.page)
 
   const [kpis, { reports, total, pageSize }] = await Promise.all([
     getFiscalAuditKPIs(),

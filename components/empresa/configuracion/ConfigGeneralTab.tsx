@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2, Building2, Users, MapPin, Plus } from 'lucide-react'
 import { SiteDialog } from './SiteDialog'
 
@@ -104,8 +105,7 @@ export function ConfigGeneralTab({ company, sites }: ConfigGeneralTabProps) {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al actualizar')
+        throw new Error(await readApiError(response, 'Error al actualizar'))
       }
 
       toast.success('Configuración actualizada', {

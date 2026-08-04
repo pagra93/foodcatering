@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2 } from 'lucide-react'
 
 const siteSchema = z.object({
@@ -109,8 +110,7 @@ export function SiteDialog({ open, onOpenChange, onSuccess, site }: SiteDialogPr
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al guardar sede')
+        throw new Error(await readApiError(response, 'Error al guardar sede'))
       }
 
       toast.success(isEdit ? 'Sede actualizada' : 'Sede creada', {

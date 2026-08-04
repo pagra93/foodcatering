@@ -19,6 +19,7 @@ import {
   Info,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 
 /** Alérgeno del catálogo global (tabla Allergen). El empleado guarda `code`. */
 type AllergenOption = { code: string; name: string }
@@ -66,8 +67,7 @@ export function AllergenSelector({
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.message || 'Error al guardar las alergias')
+        throw new Error(await readApiError(res, 'Error al guardar las alergias'))
       }
 
       toast.success('Alergias actualizadas correctamente')

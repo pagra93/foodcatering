@@ -4,6 +4,7 @@
  */
 
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
+import { parsePageParam } from '@/lib/utils/search-params'
 import {
   getActivityLog,
   getActivityStats,
@@ -39,7 +40,7 @@ async function ActividadData({ searchParams }: { searchParams: any }) {
   const locked = await requireCompanyFeature(tenantId, 'activity-log')
   if (locked) return locked
 
-  const page = searchParams.page ? parseInt(searchParams.page) : 1
+  const page = parsePageParam(searchParams.page)
 
   // Fetch en paralelo
   const [activityLog, stats] = await Promise.all([

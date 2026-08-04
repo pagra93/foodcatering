@@ -11,6 +11,7 @@ import {
   getAuditsKPIs,
   getRestaurantAudits,
 } from '@/lib/db/queries/admin-audits'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { NewAuditForm } from '@/components/admin/quality/audits/NewAuditForm'
 
 const TYPE_LABEL: Record<AuditType, string> = {
@@ -43,7 +44,7 @@ export default async function AuditsPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [kpis, { audits, total, pageSize }, caterings] = await Promise.all([
     getAuditsKPIs(),

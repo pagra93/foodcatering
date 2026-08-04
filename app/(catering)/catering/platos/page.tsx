@@ -15,6 +15,7 @@ import {
   dishFiltersSchema,
   type DishFilters,
 } from '@/lib/validations/dish'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { DishesView } from '@/components/catering/platos/DishesView'
 
 type SearchParams = {
@@ -33,7 +34,7 @@ function parseFilters(params: SearchParams): DishFilters {
     search: params.search || undefined,
     course: params.course && params.course !== 'all' ? params.course : undefined,
     active: params.active || 'all',
-    page: params.page ? parseInt(params.page, 10) : 1,
+    page: parsePageParam(params.page),
     pageSize: 20,
     sortBy: 'createdAt',
     sortOrder: 'desc',

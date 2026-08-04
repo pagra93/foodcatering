@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2, Euro, Clock } from 'lucide-react'
 import type { Prisma } from '@prisma/client'
 
@@ -103,8 +104,7 @@ export function ConfigPlanTab({ policy }: ConfigPlanTabProps) {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al actualizar')
+        throw new Error(await readApiError(response, 'Error al actualizar'))
       }
 
       toast.success('Plan actualizado', {
