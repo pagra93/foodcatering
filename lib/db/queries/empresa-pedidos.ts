@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, subDays } from 'date-fns'
+import { buildCsv } from '@/lib/utils/csv'
 
 // ============================================================================
 // LISTADO DE PEDIDOS CON FILTROS
@@ -342,13 +343,8 @@ export async function exportOrdersCSV(tenantId: string, filters: OrderFilters = 
     order.createdAt.toISOString(),
   ])
 
-  // Convertir a CSV
-  const csvContent = [
-    headers.join(','),
-    ...rows.map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ),
-  ].join('\n')
+  // Convertir a CSV (escapado + anti inyección de fórmulas + BOM UTF-8)
+  const csvContent = buildCsv(headers, rows)
 
   return {
     content: csvContent,

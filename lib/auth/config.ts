@@ -17,8 +17,9 @@ import { prismaAdmin } from '@/lib/db/prisma-admin'
 import type { UserRole, TenantType } from '@prisma/client'
 import type { ImpersonationToken } from './impersonation'
 import { resolveUserPermissions } from './resolve-permissions'
-import { authRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
+import { authRateLimiter, authEmailRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
 import { BCRYPT_COST } from './password'
+import type { JWT } from 'next-auth/jwt'
 
 /**
  * Schema de validación para login
@@ -38,6 +39,48 @@ const IMPERSONATION_DURATION_MINUTES = 15
 // cuando el usuario no existe (M7 — anti-enumeración por timing). Coste 10 para
 // igualar el de los hashes almacenados hoy.
 let dummyPasswordHash: string | null = null
+
+/**
+ * Restaura en el token la identidad original tras una impersonación (fin
+ * explícito vía update() o expiración del TTL). Rol/tenant/permisos se releen
+ * SIEMPRE de BD. Devuelve false si el usuario original ya no existe (la sesión
+ * debe invalidarse). Borra siempre el impersonationToken del JWT.
+ */
+async function restoreOriginalIdentity(token: JWT): Promise<boolean> {
+  const impToken = token.impersonationToken as ImpersonationToken | undefined
+  delete token.impersonationToken
+  if (!impToken) return true
+
+  const originalUser = await prisma.user.findUnique({
+    where: { id: impToken.originalUserId },
+    select: {
+      nameEnc: true,
+      email: true,
+      role: true,
+      roleId: true,
+      tenantId: true,
+      tokenVersion: true,
+      tenant: { select: { type: true } },
+    },
+  })
+
+  if (!originalUser) return false
+
+  token.id = impToken.originalUserId
+  token.name = originalUser.nameEnc
+  token.email = originalUser.email
+  token.role = originalUser.role
+  token.tenantId = originalUser.tenantId
+  token.tenantType = originalUser.tenant.type
+  token.roleId = originalUser.roleId
+  token.permissions = await resolveUserPermissions(
+    originalUser.roleId,
+    originalUser.role
+  )
+  token.tokenVersion = originalUser.tokenVersion
+  token.checkedAt = Date.now()
+  return true
+}
 
 /**
  * Configuración de NextAuth
@@ -86,6 +129,12 @@ export const authConfig = {
             )
             if (!rl.allowed) return null
           }
+
+          // H6b: bucket por email, independiente de la IP y de cabeceras que el
+          // cliente pueda manipular (X-Forwarded-For): corta el password
+          // spraying distribuido contra una misma cuenta.
+          const rlEmail = await authEmailRateLimiter.check(`login-email:${email}`)
+          if (!rlEmail.allowed) return null
 
           // bcryptjs se importa dinámicamente (problemas con Edge Runtime).
           const { compare, hash } = await import('bcryptjs')
@@ -219,6 +268,18 @@ export const authConfig = {
         token.checkedAt = Date.now()
       }
 
+      // TTL de impersonación: si expiró, restaurar la identidad real ANTES de
+      // cualquier otra lógica. Sin esto, la impersonación duraría los 30 días
+      // del JWT (el banner desaparece a los 15 min, pero la sesión seguiría
+      // siendo la del usuario objetivo — problema RGPD).
+      if (token.impersonationToken) {
+        const imp = token.impersonationToken as ImpersonationToken
+        if (typeof imp.expiresAt === 'number' && imp.expiresAt <= Date.now()) {
+          const restored = await restoreOriginalIdentity(token)
+          if (!restored) return null
+        }
+      }
+
       // Update session (cuando se llama a update())
       if (trigger === 'update' && session) {
         token.name = session.name
@@ -293,41 +354,10 @@ export const authConfig = {
             }
           }
         } else if (token.impersonationToken) {
-          // Si se removió el token de impersonación, restaurar usuario original
-          const impToken = token.impersonationToken as ImpersonationToken
-          
-          // Restaurar datos del usuario original
-          const originalUser = await prisma.user.findUnique({
-            where: { id: impToken.originalUserId },
-            select: {
-              nameEnc: true,
-              email: true,
-              role: true,
-              roleId: true,
-              tenantId: true,
-              tokenVersion: true,
-              tenant: { select: { type: true } },
-            },
-          })
-
-          if (originalUser) {
-            token.id = impToken.originalUserId
-            token.name = originalUser.nameEnc
-            token.email = originalUser.email
-            token.role = originalUser.role
-            token.tenantId = originalUser.tenantId
-            token.tenantType = originalUser.tenant.type
-            token.roleId = originalUser.roleId
-            token.permissions = await resolveUserPermissions(
-              originalUser.roleId,
-              originalUser.role
-            )
-            token.tokenVersion = originalUser.tokenVersion
-            token.checkedAt = Date.now()
-          }
-          
-          // Remover token de impersonación
-          delete token.impersonationToken
+          // Fin explícito de la impersonación (update() sin token): restaurar
+          // el usuario original desde BD.
+          const restored = await restoreOriginalIdentity(token)
+          if (!restored) return null
         }
       }
 

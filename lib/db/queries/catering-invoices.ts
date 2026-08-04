@@ -48,7 +48,7 @@ export async function generateInvoice(
   const { year, month } = period
   const periodStr = formatPeriod(year, month)
 
-  return prisma.$transaction(async (tx) => {
+  const attemptGenerate = () => prisma.$transaction(async (tx) => {
     // 1. Empresa debe existir
     const company = await tx.company.findFirst({
       where: { id: companyId },
@@ -89,6 +89,9 @@ export async function generateInvoice(
         serviceDate: { gte: startDate, lte: endDate },
         status: 'DELIVERED',
         deletedAt: null,
+        // Un pedido ya vinculado a otra factura no puede cobrarse dos veces
+        // (p. ej. facturas de rangos corregidos que se solapan).
+        invoiceId: null,
       },
       orderBy: { serviceDate: 'asc' },
     })
@@ -343,6 +346,24 @@ export async function generateInvoice(
       },
     }
   })
+
+  // La numeración correlativa es read-then-insert dentro de la transacción; el
+  // unique (tenantCatering, number) convierte la carrera de dos generaciones
+  // simultáneas en un P2002, que se reintenta recalculando la secuencia
+  // (mismo patrón que la facturación SaaS en admin/billing/actions.ts). Si el
+  // P2002 viene del unique parcial de período, el reintento acaba en el error
+  // de dominio "Ya existe una factura para este período".
+  const MAX_UNIQUE_RETRIES = 5
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await attemptGenerate()
+    } catch (error) {
+      const isUniqueViolation =
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      if (!isUniqueViolation || attempt >= MAX_UNIQUE_RETRIES) throw error
+    }
+  }
 }
 
 /**

@@ -109,7 +109,8 @@ export async function middleware(req: NextRequest) {
         },
       })
     } else {
-      console.error('[ERROR] User without tenantId:', session.user.email)
+      // Sin PII en logs: se identifica por userId, no por email.
+      console.error('[ERROR] Usuario sin tenantId en sesión (userId: %s)', session.user.id)
       return NextResponse.redirect(new URL('/login?error=NoTenant', req.url))
     }
   }

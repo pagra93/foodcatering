@@ -40,13 +40,21 @@ export type SendEmailResult = {
   error?: string
 }
 
+/** Enmascara direcciones para logs (RGPD): "p***@dominio.com". */
+function maskEmailForLog(to: string): string {
+  return to
+    .split(',')
+    .map((addr) => addr.trim().replace(/^(.).*?(@.*)$/, '$1***$2'))
+    .join(', ')
+}
+
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
   const resend = getClient()
   const to = Array.isArray(input.to) ? input.to.join(', ') : input.to
 
   if (!resend) {
     console.warn(
-      `[email] RESEND_API_KEY no configurada — email NO enviado a "${to}" (asunto: "${input.subject}")`
+      `[email] RESEND_API_KEY no configurada — email NO enviado a "${maskEmailForLog(to)}" (asunto: "${input.subject}")`
     )
     return { ok: false, skipped: true }
   }

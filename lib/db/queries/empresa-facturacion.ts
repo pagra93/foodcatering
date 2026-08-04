@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
+import { buildCsv } from '@/lib/utils/csv'
 
 // ♻️ REUTILIZAR mapeo de estados (mismo que en admin)
 export const INVOICE_STATUS_MAP = {
@@ -148,11 +149,14 @@ export async function getMonthlyBreakdown(
     // Catering asignado
     prisma.companyCateringAssignment.findFirst({
       where: {
+        // tenantEmpresa es obligatorio: el guard de tenant (lib/db/prisma.ts)
+        // bloquea lecturas de lista sin filtro de tenant explícito.
+        tenantEmpresa: tenantId,
         companyId: tenantId,
         active: true,
         type: 'PRIMARY',
       },
-          select: {
+      select: {
         tenantCatering: true,
       },
     }),
@@ -343,13 +347,8 @@ export async function exportToERP(
       })
   }
 
-  // Generar CSV
-  const csvContent = [
-    headers.join(','),
-    ...rows.map((row) =>
-      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-    ),
-  ].join('\n')
+  // Generar CSV (escapado + anti inyección de fórmulas + BOM UTF-8)
+  const csvContent = buildCsv(headers, rows)
 
   return {
     content: csvContent,

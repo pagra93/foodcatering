@@ -11,13 +11,11 @@ import {
   computeOrderIntegrityHash,
   recordOrderHistory,
 } from '@/lib/db/queries/order-history'
-
-function parseCutoffTime(cutoff: string): { hours: number; minutes: number } {
-  const [hStr, mStr] = cutoff.split(':')
-  const hours = hStr ? Number(hStr) : 11
-  const minutes = mStr ? Number(mStr) : 0
-  return { hours: Number.isFinite(hours) ? hours : 11, minutes: Number.isFinite(minutes) ? minutes : 0 }
-}
+import {
+  parseCutoffTime,
+  isPastCutoff,
+  serviceDayFromDate,
+} from '@/lib/orders/cutoff'
 
 // ============================================================================
 // OBTENER MENÚS DE LA SEMANA PARA EMPLEADO
@@ -379,11 +377,11 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   }
 
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-  const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
-  const cutoffDate = new Date(date)
-  cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
 
-  if (new Date() > cutoffDate) {
+  // El cutoff se evalúa en la TZ del negocio (Europe/Madrid), no en la del
+  // servidor: en un contenedor UTC el corte de las 11:00 se movería a las
+  // 13:00 reales en verano. Ver lib/orders/cutoff.
+  if (isPastCutoff(serviceDayFromDate(date), cutoffTime)) {
     throw new Error('No se pueden realizar cambios después del cutoff')
   }
 
@@ -397,7 +395,13 @@ export async function createOrUpdateOrder(input: CreateOrderInput) {
   ].filter(Boolean) as string[]
 
   const assignments = await prisma.companyCateringAssignment.findMany({
-    where: { companyId: employee.site.company.id, active: true },
+    where: {
+      // tenantEmpresa es obligatorio: el guard de tenant (lib/db/prisma.ts)
+      // bloquea lecturas de lista sin filtro de tenant; companyId solo no basta.
+      tenantEmpresa: employee.site.company.tenantId,
+      companyId: employee.site.company.id,
+      active: true,
+    },
     select: { tenantCatering: true },
   })
   const allowedCateringTenants = assignments.map((a) => a.tenantCatering)
@@ -595,11 +599,8 @@ export async function cancelOrder(employeeId: string, orderId: string) {
 
   // Verificar cutoff
   const cutoffTime = employee.site.company.policy?.cutoffTime || '11:00:00'
-  const { hours: cutoffHours, minutes: cutoffMinutes } = parseCutoffTime(cutoffTime)
-  const cutoffDate = new Date(order.serviceDate)
-  cutoffDate.setHours(cutoffHours, cutoffMinutes, 0, 0)
-
-  if (new Date() > cutoffDate) {
+  // En TZ de negocio, igual que la creación (ver lib/orders/cutoff).
+  if (isPastCutoff(serviceDayFromDate(order.serviceDate), cutoffTime)) {
     throw new Error('No se puede cancelar después del cutoff')
   }
 

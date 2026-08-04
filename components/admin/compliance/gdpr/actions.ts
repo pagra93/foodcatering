@@ -135,6 +135,8 @@ export async function resolveGdprRequestAction(input: {
     orderCount = dump.orders.length
   }
 
+  let updated: { id: string }
+
   if (request.type === 'ERASURE') {
     // Anonimización: sustituimos PII del usuario por hashes.
     const user = await prisma.user.findUnique({
@@ -142,36 +144,7 @@ export async function resolveGdprRequestAction(input: {
     })
     if (!user) throw new Error('Usuario no existe')
 
-    const hash = (v: string) =>
-      createHash('sha256').update(v).digest('hex').slice(0, 16)
-
-    const anonEmail = `anon-${hash(user.email)}@anonimizado.plati.es`
-    const anonName = 'Empleado anonimizado'
-
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: request.userId },
-        data: {
-          email: anonEmail,
-          nameEnc: anonName,
-          phoneEnc: null,
-          status: 'DISABLED',
-          deletedAt: new Date(),
-          passwordHash: null,
-        },
-      }),
-      // Los pedidos permanecen (obligación fiscal 5 años) pero se marcan
-      // vía `notes` que el usuario está anonimizado.
-      prisma.employee.updateMany({
-        where: { userId: request.userId },
-        data: {
-          notes: '[ANONIMIZADO RGPD]',
-          deletedAt: new Date(),
-        },
-      }),
-    ])
-
-    // Contamos pedidos conservados para evidencia.
+    // Contamos pedidos conservados (evidencia) ANTES de tocar nada.
     const employee = await prisma.employee.findFirst({
       where: { userId: request.userId },
     })
@@ -180,20 +153,72 @@ export async function resolveGdprRequestAction(input: {
         where: { employeeId: employee.id },
       })
     }
-  }
 
-  const updated = await prisma.gdprRequest.update({
-    where: { id: request.id },
-    data: {
-      status: 'RESOLVED',
-      resolvedAt: new Date(),
-      resolvedBy: actor.id,
-      deliveryUrl,
-      notes: request.notes
-        ? `${request.notes}\n\n[Resuelto] ${request.type} — ${orderCount} pedidos afectados`
-        : `[Resuelto] ${request.type} — ${orderCount} pedidos afectados`,
-    },
-  })
+    const hash = (v: string) =>
+      createHash('sha256').update(v).digest('hex').slice(0, 16)
+
+    // Idempotencia: si un intento anterior anonimizó pero falló antes de cerrar
+    // la solicitud, NO re-anonimizar (volvería a hashear el email ya anónimo).
+    const alreadyAnonymized = user.email.endsWith('@anonimizado.plati.es')
+    const anonEmail = `anon-${hash(user.email)}@anonimizado.plati.es`
+    const anonName = 'Empleado anonimizado'
+
+    // Anonimización + cierre de la solicitud en UNA transacción: la
+    // anonimización es irreversible, así que no puede quedar hecha con la
+    // solicitud aún PENDING (reintentos partirían de un estado a medias).
+    const results = await prisma.$transaction([
+      ...(alreadyAnonymized
+        ? []
+        : [
+            prisma.user.update({
+              where: { id: request.userId },
+              data: {
+                email: anonEmail,
+                nameEnc: anonName,
+                phoneEnc: null,
+                status: 'DISABLED' as const,
+                deletedAt: new Date(),
+                passwordHash: null,
+              },
+            }),
+            // Los pedidos permanecen (obligación fiscal 5 años) pero se marcan
+            // vía `notes` que el usuario está anonimizado.
+            prisma.employee.updateMany({
+              where: { userId: request.userId },
+              data: {
+                notes: '[ANONIMIZADO RGPD]',
+                deletedAt: new Date(),
+              },
+            }),
+          ]),
+      prisma.gdprRequest.update({
+        where: { id: request.id },
+        data: {
+          status: 'RESOLVED' as const,
+          resolvedAt: new Date(),
+          resolvedBy: actor.id,
+          deliveryUrl,
+          notes: request.notes
+            ? `${request.notes}\n\n[Resuelto] ${request.type} — ${orderCount} pedidos afectados`
+            : `[Resuelto] ${request.type} — ${orderCount} pedidos afectados`,
+        },
+      }),
+    ])
+    updated = results[results.length - 1] as { id: string }
+  } else {
+    updated = await prisma.gdprRequest.update({
+      where: { id: request.id },
+      data: {
+        status: 'RESOLVED',
+        resolvedAt: new Date(),
+        resolvedBy: actor.id,
+        deliveryUrl,
+        notes: request.notes
+          ? `${request.notes}\n\n[Resuelto] ${request.type} — ${orderCount} pedidos afectados`
+          : `[Resuelto] ${request.type} — ${orderCount} pedidos afectados`,
+      },
+    })
+  }
 
   await logAudit({
     tenantId: request.tenantId,

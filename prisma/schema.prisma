@@ -913,7 +913,13 @@ model Invoice {
   lines   InvoiceLine[]
   orders  Order[]
 
-  @@unique([tenantCatering, tenantEmpresa, period])
+  // Número único por catering (RD 1619/2012: numeración correlativa y única
+  // por serie). La unicidad de período vive en un índice ÚNICO PARCIAL creado
+  // por migración SQL (invoices_active_period_key: excluye cancelled/void para
+  // poder re-facturar un período tras cancelar) — Prisma no puede expresar
+  // índices parciales en el schema, por eso aquí solo queda el índice normal.
+  @@unique([tenantCatering, number])
+  @@index([tenantCatering, tenantEmpresa, period])
   @@index([tenantEmpresa, period])
   @@index([companyId])
   @@index([status])

@@ -145,7 +145,7 @@ const TENANT_GUARD_ENFORCE = process.env['TENANT_GUARD_ENFORCE'] !== 'false'
  * El riesgo real de fuga está en listados/agregados por atributo (status, fecha…)
  * sin acotar, no en estos lookups por entidad.
  */
-function isBoundedLookup(where: unknown): boolean {
+export function isBoundedLookup(where: unknown): boolean {
   if (!where || typeof where !== 'object') return false
   const w = where as object
   return 'id' in w || 'employeeId' in w || 'token' in w

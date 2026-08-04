@@ -116,6 +116,16 @@ class InMemoryRateLimiter implements RateLimiter {
 /** Login / autenticación: 5 intentos por minuto por IP. */
 export const authRateLimiter: RateLimiter = new InMemoryRateLimiter(5, 60_000, 'auth')
 
+/**
+ * Login por EMAIL (independiente de la IP): corta el password spraying
+ * distribuido contra una misma cuenta aunque el atacante rote IPs/cabeceras.
+ */
+export const authEmailRateLimiter: RateLimiter = new InMemoryRateLimiter(
+  10,
+  15 * 60_000,
+  'auth-email'
+)
+
 /** Impersonación (administrativa): 3 por hora por usuario. */
 export const impersonationRateLimiter: RateLimiter = new InMemoryRateLimiter(
   3,
@@ -133,17 +143,29 @@ export const exportRateLimiter: RateLimiter = new InMemoryRateLimiter(
 /** Lista de todos los limiters activos (para inspector global). */
 export const ALL_RATE_LIMITERS: Record<string, RateLimiter> = {
   auth: authRateLimiter,
+  'auth-email': authEmailRateLimiter,
   impersonation: impersonationRateLimiter,
   export: exportRateLimiter,
 }
 
 /**
  * Extrae una clave de rate limiting razonable para un request.
- * Usa el primer IP de `x-forwarded-for`, `x-real-ip` o la conexión.
+ *
+ * Usa el ÚLTIMO elemento de `x-forwarded-for`: es el que añade NUESTRO proxy
+ * (Traefik en Coolify) con la IP real del peer. El primer elemento lo controla
+ * el cliente (puede enviar la cabecera ya rellena) y usarlo permitiría rotar
+ * la clave en cada request para evadir el límite.
  */
 export function getRateLimitKey(req: Request): string {
   const xff = req.headers.get('x-forwarded-for')
-  if (xff) return xff.split(',')[0]?.trim() || 'unknown'
+  if (xff) {
+    const parts = xff
+      .split(',')
+      .map((p) => p.trim())
+      .filter(Boolean)
+    const last = parts[parts.length - 1]
+    if (last) return last
+  }
   const real = req.headers.get('x-real-ip')
   if (real) return real.trim()
   return 'unknown'
