@@ -9,7 +9,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import { runHealthChecks } from '@/lib/db/queries/admin-operations'
+import { runHealthChecks, getRecentJobRuns } from '@/lib/db/queries/admin-operations'
 
 // Forzar recálculo en cada visita.
 export const dynamic = 'force-dynamic'
@@ -39,7 +39,10 @@ const STATUS_META: Record<
 }
 
 export default async function HealthPage() {
-  const { results, totalMs } = await runHealthChecks()
+  const [{ results, totalMs }, jobRuns] = await Promise.all([
+    runHealthChecks(),
+    getRecentJobRuns(15),
+  ])
   const overall = results.some((r) => r.status === 'FAIL')
     ? 'FAIL'
     : results.some((r) => r.status === 'WARN')
@@ -111,6 +114,54 @@ export default async function HealthPage() {
           )
         })}
       </div>
+
+      <div>
+        <h2 className="text-lg font-semibold">Jobs programados</h2>
+        <p className="mt-1 text-sm text-gray-500">
+          Últimas ejecuciones de <code>/api/cron/*</code> (tabla{' '}
+          <code>job_runs</code>). Si no hay filas recientes, el crontab del
+          host no está llamando a los jobs (RUNBOOK §17).
+        </p>
+      </div>
+
+      <Card className="divide-y p-0">
+        {jobRuns.length === 0 && (
+          <p className="p-4 text-sm text-gray-500">
+            Sin ejecuciones registradas todavía.
+          </p>
+        )}
+        {jobRuns.map((run) => {
+          const state =
+            run.finishedAt == null ? 'RUNNING' : run.ok ? 'OK' : 'FAIL'
+          const stateMeta =
+            state === 'OK'
+              ? STATUS_META.OK
+              : state === 'FAIL'
+                ? STATUS_META.FAIL
+                : STATUS_META.WARN
+          const durationMs =
+            run.finishedAt != null
+              ? run.finishedAt.getTime() - run.startedAt.getTime()
+              : null
+          return (
+            <div key={run.id} className="flex items-center gap-3 p-3 text-sm">
+              <span
+                className={`rounded-full px-2 py-0.5 text-xs font-medium ${stateMeta.bg} ${stateMeta.color}`}
+              >
+                {state === 'RUNNING' ? 'EN CURSO' : stateMeta.label}
+              </span>
+              <span className="font-mono font-medium">{run.job}</span>
+              <span className="text-gray-500">
+                {run.startedAt.toLocaleString('es-ES')}
+                {durationMs != null && ` · ${durationMs} ms`}
+              </span>
+              <span className="ml-auto max-w-[45%] truncate text-xs text-gray-500">
+                {run.error ?? (run.summary ? JSON.stringify(run.summary) : '')}
+              </span>
+            </div>
+          )
+        })}
+      </Card>
 
       <Card className="bg-gray-50/60 p-4 text-xs text-gray-600">
         <p>

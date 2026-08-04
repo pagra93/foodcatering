@@ -548,3 +548,37 @@ Problemas típicos:
   Coolify.
 - Un job no aparece en `job_runs` → el cron del host no lo está disparando:
   revisa `crontab -l` y el log del cron del sistema.
+
+---
+
+## 18. Particionado de tablas de histórico (PREPARADO — ejecutar solo con volumen real)
+
+`audit_logs`, `order_history` y `notifications` crecen sin cota (~3M filas/año
+por tabla con 3.000 pedidos/día). El job `retention` (§17) ya poda
+`notifications` y `order_history` según las políticas de admin; el particionado
+solo compensa cuando la poda no basta (retenciones legales largas + volumen
+alto). **Señal para ejecutarlo:** cualquiera de las tres tablas supera ~5M
+filas o el visor de auditoría/compliance se degrada pese a los índices.
+
+Postgres NO permite convertir una tabla existente en particionada: hay que
+recrear y copiar. Procedimiento (misma filosofía que el restore del §5 —
+reversible en cada paso, y SUPERVISADO como el §16):
+
+1. Congelar deploys + backup (§4).
+2. Crear la tabla nueva particionada por rango mensual sobre la columna de
+   fecha (`timestamp` / `changed_at` / `created_at`):
+   `CREATE TABLE audit_logs_p (LIKE audit_logs INCLUDING ALL) PARTITION BY RANGE ("timestamp");`
+   + una partición por mes existente y la `DEFAULT`.
+3. Copiar por lotes (`INSERT INTO audit_logs_p SELECT * FROM audit_logs WHERE
+   timestamp >= ... AND timestamp < ...` mes a mes, con pausas).
+4. En ventana de mantenimiento (§10): copiar el delta desde el inicio de la
+   copia, `ALTER TABLE audit_logs RENAME TO audit_logs_old;` +
+   `ALTER TABLE audit_logs_p RENAME TO audit_logs;`, re-`GRANT` al usuario de
+   la app, smoke del visor de auditoría.
+5. Conservar `audit_logs_old` 48 h y borrarla después.
+6. Mantenimiento continuo: crear la partición del mes siguiente por
+   adelantado (añadir al cron mensual) y archivar/`DETACH` particiones
+   antiguas a almacenamiento frío si aplica.
+
+Prisma no gestiona particiones: quedan fuera del schema (como los índices
+parciales) y las migraciones futuras sobre esas tablas deben revisarse a mano.

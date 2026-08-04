@@ -1,9 +1,12 @@
 /**
- * Rate limiting con ventana fija en memoria.
+ * Rate limiting con ventana fija. Dos backends tras la misma interfaz:
  *
- * Adecuado para **single-instance** (dev, Docker en Coolify con 1 replica).
- * Para clusters / múltiples instancias sustituir por Upstash Ratelimit + Redis
- * (dejamos la interfaz `RateLimiter` estable para que el swap sea trivial).
+ * - **In-memory** (default): válido para una réplica. Los buckets se pierden
+ *   en cada deploy.
+ * - **Redis** (si `REDIS_URL` está definida): contadores compartidos entre
+ *   réplicas — precondición para escalar horizontalmente. Ante cualquier fallo
+ *   de Redis se DEGRADA al limitador in-memory del propio proceso (mejor un
+ *   límite local que bloquear logins por una caída de Redis).
  *
  * Uso en una API route:
  *
@@ -20,6 +23,8 @@
  *     // ... lógica normal
  *   }
  */
+
+import Redis from 'ioredis'
 
 export type RateLimitResult = {
   allowed: boolean
@@ -38,7 +43,11 @@ export type RateLimitEntry = {
 
 export interface RateLimiter {
   check(key: string): Promise<RateLimitResult>
-  /** Devuelve snapshot de buckets activos. Útil para /admin/operations. */
+  /**
+   * Devuelve snapshot de buckets activos. Útil para /admin/operations.
+   * Con backend Redis solo refleja los buckets del PROCESO local (los de
+   * fallback); el estado compartido vive en Redis.
+   */
   inspect(): RateLimitEntry[]
   /** Elimina la ventana para una key concreta (desbloqueo manual). */
   reset(key: string): void
@@ -113,28 +122,126 @@ class InMemoryRateLimiter implements RateLimiter {
   }
 }
 
+// ─── Backend Redis (opcional) ───────────────────────────────────────────────
+
+let redisClient: Redis | null = null
+let redisWarned = false
+
+function getRedis(): Redis | null {
+  const url = process.env['REDIS_URL']
+  if (!url) return null
+  if (!redisClient) {
+    redisClient = new Redis(url, {
+      lazyConnect: true,
+      maxRetriesPerRequest: 1,
+      // Sin cola offline: si Redis no está, el comando falla rápido y se
+      // degrada al limitador in-memory en vez de encolar indefinidamente.
+      enableOfflineQueue: false,
+      retryStrategy: (times) => Math.min(times * 500, 10_000),
+    })
+    redisClient.on('error', (err) => {
+      if (!redisWarned) {
+        redisWarned = true
+        // eslint-disable-next-line no-console
+        console.warn(
+          `[ratelimit] Redis no disponible (${err.message}); degradando a in-memory`
+        )
+      }
+    })
+  }
+  return redisClient
+}
+
+class RedisRateLimiter implements RateLimiter {
+  constructor(
+    private readonly limit: number,
+    private readonly windowMs: number,
+    private readonly name: string,
+    private readonly fallback: InMemoryRateLimiter
+  ) {}
+
+  get config() {
+    return {
+      limit: this.limit,
+      windowSeconds: Math.round(this.windowMs / 1000),
+      name: this.name,
+    }
+  }
+
+  async check(key: string): Promise<RateLimitResult> {
+    const client = getRedis()
+    if (!client) return this.fallback.check(key)
+    try {
+      const redisKey = `rl:${this.name}:${key}`
+      const results = await client
+        .multi()
+        .incr(redisKey)
+        .pttl(redisKey)
+        .exec()
+      const count = Number(results?.[0]?.[1] ?? 1)
+      let ttlMs = Number(results?.[1]?.[1] ?? -1)
+      if (ttlMs < 0) {
+        // Primera petición de la ventana (o expiry perdido): fijarlo.
+        await client.pexpire(redisKey, this.windowMs)
+        ttlMs = this.windowMs
+      }
+      const resetIn = Math.max(1, Math.ceil(ttlMs / 1000))
+      if (count > this.limit) {
+        return { allowed: false, remaining: 0, resetIn }
+      }
+      return { allowed: true, remaining: Math.max(0, this.limit - count), resetIn }
+    } catch {
+      // Redis caído/inaccesible → límite local del proceso (fail-open parcial).
+      return this.fallback.check(key)
+    }
+  }
+
+  inspect(): RateLimitEntry[] {
+    return this.fallback.inspect()
+  }
+
+  reset(key: string): void {
+    const client = getRedis()
+    if (client) {
+      void client.del(`rl:${this.name}:${key}`).catch(() => undefined)
+    }
+    this.fallback.reset(key)
+  }
+}
+
+/** Elige backend según entorno: Redis compartido si hay REDIS_URL. */
+function createRateLimiter(
+  limit: number,
+  windowMs: number,
+  name: string
+): RateLimiter {
+  const memory = new InMemoryRateLimiter(limit, windowMs, name)
+  if (!process.env['REDIS_URL']) return memory
+  return new RedisRateLimiter(limit, windowMs, name, memory)
+}
+
 /** Login / autenticación: 5 intentos por minuto por IP. */
-export const authRateLimiter: RateLimiter = new InMemoryRateLimiter(5, 60_000, 'auth')
+export const authRateLimiter: RateLimiter = createRateLimiter(5, 60_000, 'auth')
 
 /**
  * Login por EMAIL (independiente de la IP): corta el password spraying
  * distribuido contra una misma cuenta aunque el atacante rote IPs/cabeceras.
  */
-export const authEmailRateLimiter: RateLimiter = new InMemoryRateLimiter(
+export const authEmailRateLimiter: RateLimiter = createRateLimiter(
   10,
   15 * 60_000,
   'auth-email'
 )
 
 /** Impersonación (administrativa): 3 por hora por usuario. */
-export const impersonationRateLimiter: RateLimiter = new InMemoryRateLimiter(
+export const impersonationRateLimiter: RateLimiter = createRateLimiter(
   3,
   60 * 60_000,
   'impersonation'
 )
 
 /** Exports pesados (CSV/ERP): 10 por hora por tenant. */
-export const exportRateLimiter: RateLimiter = new InMemoryRateLimiter(
+export const exportRateLimiter: RateLimiter = createRateLimiter(
   10,
   60 * 60_000,
   'export'
