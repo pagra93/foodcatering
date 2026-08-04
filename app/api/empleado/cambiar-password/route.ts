@@ -5,6 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { prisma } from '@/lib/db/prisma'
 import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 import { z } from 'zod'
@@ -73,6 +74,17 @@ export async function POST(req: NextRequest) {
         // tokenVersion++ invalida las demás sesiones activas (H7).
         tokenVersion: { increment: 1 },
       },
+    })
+
+    // Best-effort tras el éxito: rastro del cambio de credenciales sin datos
+    // sensibles (ni contraseñas ni hashes en el diff).
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: user.id,
+      action: 'UPDATE',
+      entity: 'User',
+      entityId: user.id,
+      diff: { after: { passwordChanged: true, via: 'change' } },
     })
 
     return NextResponse.json({

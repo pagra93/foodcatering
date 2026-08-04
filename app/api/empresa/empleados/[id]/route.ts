@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { prisma } from '@/lib/db/prisma'
 import { encryptPII } from '@/lib/crypto/pii'
 import { permittedAction } from '@/lib/auth/permissions'
@@ -90,6 +91,22 @@ export async function PUT(
             id: true,
             name: true,
           },
+        },
+      },
+    })
+
+    // Best-effort tras el éxito. Diff sin PII (nada de nombre/email/teléfono).
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Employee',
+      entityId: params.id,
+      diff: {
+        after: {
+          department: updated.department,
+          siteId: updated.siteId,
+          status: updated.status,
         },
       },
     })
@@ -232,6 +249,22 @@ export async function PATCH(
           },
         },
       })
+    })
+
+    // Best-effort tras el éxito. Diff sin PII (nada de nombre/email/teléfono).
+    await logAudit({
+      tenantId: session.user.tenantId,
+      actorId: session.user.id,
+      action: 'UPDATE',
+      entity: 'Employee',
+      entityId: params.id,
+      diff: {
+        after: {
+          department: updated.department,
+          siteId: updated.siteId,
+          status: updated.status,
+        },
+      },
     })
 
     return NextResponse.json(updated)

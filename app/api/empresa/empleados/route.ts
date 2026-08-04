@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { logAudit } from '@/lib/auth/audit'
 import { getScopedTenantId } from '@/lib/auth/session'
 import { createEmployee } from '@/lib/db/queries/empresa-empleados'
 import { permittedAction } from '@/lib/auth/permissions'
@@ -54,6 +55,22 @@ export async function POST(request: NextRequest) {
     const validated = createEmployeeSchema.parse(body)
 
     const employee = await createEmployee(tenantId, validated)
+
+    // Best-effort tras el éxito. Diff sin PII (nada de nombre/email/teléfono).
+    await logAudit({
+      tenantId,
+      actorId: session.user.id,
+      action: 'CREATE',
+      entity: 'Employee',
+      entityId: employee.id,
+      diff: {
+        after: {
+          department: employee.department,
+          siteId: employee.siteId,
+          status: employee.status,
+        },
+      },
+    })
 
     return NextResponse.json(employee, { status: 201 })
   } catch (error) {
