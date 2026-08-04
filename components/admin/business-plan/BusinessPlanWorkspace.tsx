@@ -116,9 +116,9 @@ export function BusinessPlanWorkspace({
         startMonth: working.startMonth,
         horizonMonths: working.horizonMonths,
         assumptions: working.assumptions,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setDirty(false)

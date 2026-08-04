@@ -108,9 +108,9 @@ export function TaxRuleManager({ rules }: { rules: TaxRuleRow[] }) {
         validFrom: form.validFrom,
         validTo: form.validTo || undefined,
         active: form.active,
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       setOpen(false)

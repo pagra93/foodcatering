@@ -10,6 +10,7 @@
 
 import { CateringNavbar } from '@/components/catering/CateringNavbar'
 import { CateringSidebar } from '@/components/catering/CateringSidebar'
+import { Toaster } from '@/components/ui/sonner'
 import { ImpersonationBanner } from '@/components/ImpersonationBanner'
 import { withBranding } from '@/components/shared/BrandProvider'
 import { auth } from '@/lib/auth'
@@ -108,6 +109,8 @@ export default async function CateringInnerLayout({
           {children}
         </main>
       </div>
+      {/* Sin esto, los toast de sonner del portal catering no se renderizaban. */}
+      <Toaster />
     </div>
   )
 }

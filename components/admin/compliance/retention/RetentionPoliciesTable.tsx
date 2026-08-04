@@ -53,22 +53,22 @@ export function RetentionPoliciesTable({
   const save = (e: RetentionEntity) => {
     const v = valueFor(e)
     startTransition(async () => {
-      try {
-        await upsertRetentionPolicyAction({
-          entity: e,
-          retentionDays: v.days,
-          deleteMode: v.mode,
-        })
-        toast.success(`Política actualizada: ${e}`)
-        setDraft((d) => {
-          const next = { ...d }
-          delete next[e]
-          return next
-        })
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertRetentionPolicyAction({
+        entity: e,
+        retentionDays: v.days,
+        deleteMode: v.mode,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(`Política actualizada: ${e}`)
+      setDraft((d) => {
+        const next = { ...d }
+        delete next[e]
+        return next
+      })
+      router.refresh()
     })
   }
 
@@ -76,13 +76,13 @@ export function RetentionPoliciesTable({
     if (!confirm('¿Crear políticas por defecto para las entidades que no tengan?'))
       return
     startTransition(async () => {
-      try {
-        const { created } = await seedRetentionDefaultsAction()
-        toast.success(`${created} políticas creadas`)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await seedRetentionDefaultsAction()
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(`${res.data.created} políticas creadas`)
+      router.refresh()
     })
   }
 

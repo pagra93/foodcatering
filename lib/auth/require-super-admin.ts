@@ -1,6 +1,7 @@
 import type { Session } from 'next-auth'
 import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
+import { DomainError } from '@/lib/errors'
 
 /**
  * Exige que el llamante sea SUPER_ADMIN (o que lleve el permiso en su lista RBAC).
@@ -16,7 +17,7 @@ export async function requireSuperAdmin(
   permission: string
 ): Promise<Session['user']> {
   const session = (await auth()) as Session | null
-  if (!session?.user) throw new Error('Sesión requerida')
+  if (!session?.user) throw new DomainError('Sesión requerida', 403)
   if (
     !permittedAction(
       session.user.permissions,
@@ -25,7 +26,7 @@ export async function requireSuperAdmin(
       ['SUPER_ADMIN']
     )
   ) {
-    throw new Error('No tienes permiso para esta acción')
+    throw new DomainError('No tienes permiso para esta acción', 403)
   }
   return session.user
 }

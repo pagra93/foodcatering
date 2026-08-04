@@ -66,27 +66,27 @@ export function NewPenaltyForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        const n = Number(amount)
-        if (!Number.isFinite(n) || n <= 0) {
-          toast.error('Importe inválido')
-          return
-        }
-        await createPenaltyAction({
-          tenantCatering,
-          type,
-          reason,
-          amount: n,
-          notes: notes || undefined,
-          linkedIncidentId: linkedIncidentId || undefined,
-          linkedAuditId: linkedAuditId || undefined,
-        })
-        toast.success('Penalización creada en estado PENDING')
-        reset()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const n = Number(amount)
+      if (!Number.isFinite(n) || n <= 0) {
+        toast.error('Importe inválido')
+        return
       }
+      const res = await createPenaltyAction({
+        tenantCatering,
+        type,
+        reason,
+        amount: n,
+        notes: notes || undefined,
+        linkedIncidentId: linkedIncidentId || undefined,
+        linkedAuditId: linkedAuditId || undefined,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
+      toast.success('Penalización creada en estado PENDING')
+      reset()
+      router.refresh()
     })
   }
 

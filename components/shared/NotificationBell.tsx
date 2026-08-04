@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Bell } from 'lucide-react'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -31,7 +32,11 @@ export function NotificationBell({ items, count }: { items: Item[]; count: numbe
 
   const open = (it: Item) => {
     startTransition(async () => {
-      await markNotificationReadAction({ id: it.id })
+      const res = await markNotificationReadAction({ id: it.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
       if (it.actionUrl) router.push(it.actionUrl)
       else router.refresh()
     })
@@ -39,7 +44,11 @@ export function NotificationBell({ items, count }: { items: Item[]; count: numbe
 
   const markAll = () => {
     startTransition(async () => {
-      await markAllNotificationsReadAction()
+      const res = await markAllNotificationsReadAction()
+      if (!res.success) {
+        toast.error(res.error)
+        return
+      }
       router.refresh()
     })
   }

@@ -41,20 +41,20 @@ export function ScheduleForm() {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        await scheduleMaintenanceAction({
-          startsAt: new Date(startsAt),
-          endsAt: new Date(endsAt),
-          reason,
-          message,
-          allowedRoles: ['SUPER_ADMIN'],
-        })
-        toast.success('Ventana programada')
-        reset()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await scheduleMaintenanceAction({
+        startsAt: new Date(startsAt),
+        endsAt: new Date(endsAt),
+        reason,
+        message,
+        allowedRoles: ['SUPER_ADMIN'],
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Ventana programada')
+      reset()
+      router.refresh()
     })
   }
 

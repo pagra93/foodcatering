@@ -70,9 +70,9 @@ export function ActualsEditor({ rows, currentMonth }: { rows: ActualRow[]; curre
         opexRnd: num(form.opexRnd),
         opexGna: num(form.opexGna),
         headcount: num(form.headcount),
-      }).catch((e) => ({ error: e instanceof Error ? e.message : 'Error' }))
-      if (res && 'error' in res && res.error) {
-        setError(String(res.error))
+      })
+      if (!res.success) {
+        setError(res.error)
         return
       }
       router.refresh()
@@ -81,18 +81,12 @@ export function ActualsEditor({ rows, currentMonth }: { rows: ActualRow[]; curre
 
   const capture = () =>
     startTransition(async () => {
-      try {
-        const res = await captureMrrSnapshotAction()
-        if (res.error) {
-          toast.error(`No se pudo capturar el snapshot MRR: ${res.error}`)
-          return
-        }
-        router.refresh()
-      } catch (e) {
-        toast.error(
-          e instanceof Error ? e.message : 'No se pudo capturar el snapshot MRR.'
-        )
+      const res = await captureMrrSnapshotAction()
+      if (!res.success) {
+        toast.error(`No se pudo capturar el snapshot MRR: ${res.error}`)
+        return
       }
+      router.refresh()
     })
 
   return (

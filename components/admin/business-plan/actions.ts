@@ -12,90 +12,98 @@ import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 import { saveScenarioSchema, actualsSchema } from '@/lib/validations/finance'
 import { captureMrrSnapshot } from '@/lib/business-plan/snapshot'
 
-type ActionResult = { ok?: boolean; error?: string; key?: string }
-
 async function requireEdit() {
   const session = (await auth()) as Session | null
-  if (!session?.user) throw new Error('Sesión requerida')
+  if (!session?.user) throw new DomainError('Sesión requerida', 403)
   if (
     !permittedAction(session.user.permissions, session.user.role, 'business-plan:edit', ['SUPER_ADMIN'])
   ) {
-    throw new Error('No tienes permiso para editar el modelo financiero')
+    throw new DomainError('No tienes permiso para editar el modelo financiero', 403)
   }
   return session.user
 }
 
-export async function saveScenarioAction(input: unknown): Promise<ActionResult> {
-  const actor = await requireEdit()
-  const parsed = saveScenarioSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  const d = parsed.data
+export async function saveScenarioAction(
+  input: unknown
+): Promise<ActionResult<{ key: string }>> {
+  return withAction(async () => {
+    const actor = await requireEdit()
+    const d = saveScenarioSchema.parse(input)
 
-  const data = {
-    name: d.name,
-    description: d.description ?? null,
-    kind: d.kind,
-    startMonth: d.startMonth,
-    horizonMonths: d.horizonMonths,
-    assumptions: d.assumptions as unknown as Prisma.InputJsonValue,
-    updatedBy: actor.id,
-  }
+    const data = {
+      name: d.name,
+      description: d.description ?? null,
+      kind: d.kind,
+      startMonth: d.startMonth,
+      horizonMonths: d.horizonMonths,
+      assumptions: d.assumptions as unknown as Prisma.InputJsonValue,
+      updatedBy: actor.id,
+    }
 
-  const row = await prisma.financialScenario.upsert({
-    where: { key: d.key },
-    create: { key: d.key, ...data },
-    update: data,
+    const row = await prisma.financialScenario.upsert({
+      where: { key: d.key },
+      create: { key: d.key, ...data },
+      update: data,
+    })
+
+    await logAudit({
+      actorId: actor.id,
+      action: 'UPDATE',
+      entity: 'FinancialScenario',
+      entityId: row.id,
+      diff: { after: { key: d.key, horizonMonths: d.horizonMonths } },
+    })
+
+    revalidatePath('/admin/business-plan')
+    return { key: d.key }
   })
-
-  await logAudit({
-    actorId: actor.id,
-    action: 'UPDATE',
-    entity: 'FinancialScenario',
-    entityId: row.id,
-    diff: { after: { key: d.key, horizonMonths: d.horizonMonths } },
-  })
-
-  revalidatePath('/admin/business-plan')
-  return { ok: true, key: d.key }
 }
 
-export async function saveActualsAction(input: unknown): Promise<ActionResult> {
-  const actor = await requireEdit()
-  const parsed = actualsSchema.safeParse(input)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  const d = parsed.data
+export async function saveActualsAction(
+  input: unknown
+): Promise<ActionResult<{ period: string }>> {
+  return withAction(async () => {
+    const actor = await requireEdit()
+    const d = actualsSchema.parse(input)
 
-  const data = {
-    cogsHosting: d.cogsHosting ?? null,
-    cogsPayments: d.cogsPayments ?? null,
-    cogsSupport: d.cogsSupport ?? null,
-    opexSales: d.opexSales ?? null,
-    opexRnd: d.opexRnd ?? null,
-    opexGna: d.opexGna ?? null,
-    headcount: d.headcount ?? null,
-    notes: d.notes ?? null,
-    updatedBy: actor.id,
-  }
-  const row = await prisma.financialActual.upsert({
-    where: { period: d.period },
-    create: { period: d.period, ...data },
-    update: data,
+    const data = {
+      cogsHosting: d.cogsHosting ?? null,
+      cogsPayments: d.cogsPayments ?? null,
+      cogsSupport: d.cogsSupport ?? null,
+      opexSales: d.opexSales ?? null,
+      opexRnd: d.opexRnd ?? null,
+      opexGna: d.opexGna ?? null,
+      headcount: d.headcount ?? null,
+      notes: d.notes ?? null,
+      updatedBy: actor.id,
+    }
+    const row = await prisma.financialActual.upsert({
+      where: { period: d.period },
+      create: { period: d.period, ...data },
+      update: data,
+    })
+    await logAudit({ actorId: actor.id, action: 'UPDATE', entity: 'FinancialActual', entityId: row.id, diff: { after: { period: d.period } } })
+    revalidatePath('/admin/business-plan')
+    return { period: d.period }
   })
-  await logAudit({ actorId: actor.id, action: 'UPDATE', entity: 'FinancialActual', entityId: row.id, diff: { after: { period: d.period } } })
-  revalidatePath('/admin/business-plan')
-  return { ok: true }
 }
 
 /** Captura la foto de MRR/empresas/caterings del período dado (o el actual). */
-export async function captureMrrSnapshotAction(period?: string): Promise<ActionResult> {
-  const actor = await requireEdit()
-  // La captura vive en lib/business-plan/snapshot.ts (compartida con el job
-  // diario `mrr-snapshot` de /api/cron).
-  const snap = await captureMrrSnapshot(period)
-  await logAudit({ actorId: actor.id, action: 'CREATE', entity: 'MrrSnapshot', entityId: snap.id, diff: { after: { period: snap.period, mrr: snap.mrr } } })
-  revalidatePath('/admin/business-plan')
-  return { ok: true }
+export async function captureMrrSnapshotAction(
+  period?: string
+): Promise<ActionResult<{ period: string }>> {
+  return withAction(async () => {
+    const actor = await requireEdit()
+    // La captura vive en lib/business-plan/snapshot.ts (compartida con el job
+    // diario `mrr-snapshot` de /api/cron).
+    const snap = await captureMrrSnapshot(period)
+    await logAudit({ actorId: actor.id, action: 'CREATE', entity: 'MrrSnapshot', entityId: snap.id, diff: { after: { period: snap.period, mrr: snap.mrr } } })
+    revalidatePath('/admin/business-plan')
+    return { period: snap.period }
+  })
 }

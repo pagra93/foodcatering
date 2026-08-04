@@ -14,13 +14,13 @@ export function CancelMaintenanceButton({ id }: { id: string }) {
   const cancel = () => {
     if (!confirm('¿Cancelar esta ventana de mantenimiento?')) return
     startTransition(async () => {
-      try {
-        await cancelMaintenanceAction({ id })
-        toast.success('Ventana cancelada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await cancelMaintenanceAction({ id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Ventana cancelada')
+      router.refresh()
     })
   }
 

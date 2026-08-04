@@ -49,23 +49,23 @@ export function NewDpaForm({ tenants }: { tenants: TenantOption[] }) {
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        await createDpaAgreementAction({
-          tenantId,
-          version,
-          pdfUrl,
-          signedAt: new Date(signedAt),
-          signedByName,
-          effectiveFrom: new Date(effectiveFrom),
-          effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
-          notes: notes || undefined,
-        })
-        toast.success('DPA registrado')
-        reset()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await createDpaAgreementAction({
+        tenantId,
+        version,
+        pdfUrl,
+        signedAt: new Date(signedAt),
+        signedByName,
+        effectiveFrom: new Date(effectiveFrom),
+        effectiveTo: effectiveTo ? new Date(effectiveTo) : undefined,
+        notes: notes || undefined,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('DPA registrado')
+      reset()
+      router.refresh()
     })
   }
 

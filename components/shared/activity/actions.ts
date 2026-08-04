@@ -10,9 +10,9 @@ import { z } from 'zod'
 import type { ActivityEntity } from '@prisma/client'
 import { prisma } from '@/lib/db/prisma'
 import { getRequiredSession } from '@/lib/auth/session'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 import { canAccessEntity, notifyEntityParties } from '@/lib/notifications'
-
-type Result = { ok?: boolean; error?: string }
 
 const postSchema = z.object({
   entity: z.enum(['PENALTY', 'INCIDENT']),
@@ -34,80 +34,92 @@ function pathsFor(entity: ActivityEntity, entityId: string): string[] {
   ]
 }
 
-export async function postMessageAction(input: unknown): Promise<Result> {
-  const session = await getRequiredSession()
-  const parsed = postSchema.safeParse(input)
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  }
-  const { entity, entityId, body } = parsed.data
+export async function postMessageAction(
+  input: unknown
+): Promise<ActionResult<void>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    const { entity, entityId, body, isInternal: wantsInternal } =
+      postSchema.parse(input)
 
-  const access = await canAccessEntity(session, entity, entityId)
-  if (!access.allowed) return { error: 'No tienes acceso a este hilo.' }
-  // Las notas internas solo las escribe el equipo Plati (ROOT).
-  const isInternal = Boolean(parsed.data.isInternal) && access.canSeeInternal
+    const access = await canAccessEntity(session, entity, entityId)
+    if (!access.allowed) {
+      throw new DomainError('No tienes acceso a este hilo.', 403)
+    }
+    // Las notas internas solo las escribe el equipo Plati (ROOT).
+    const isInternal = Boolean(wantsInternal) && access.canSeeInternal
 
-  if (!session.user.tenantId) return { error: 'Tenant no resuelto' }
+    if (!session.user.tenantId) {
+      throw new DomainError('Tenant no resuelto', 403)
+    }
 
-  await prisma.activityMessage.create({
-    data: {
-      entity,
-      entityId,
-      authorId: session.user.id,
-      authorTenant: session.user.tenantId,
-      authorRole: session.user.role,
-      body,
-      isInternal,
-    },
-  })
-
-  // Las notas internas NO notifican a la otra parte.
-  if (!isInternal) {
-    const author = session.user.name || 'Un participante'
-    await notifyEntityParties(entity, entityId, {
-      excludeTenantId: session.user.tenantId,
-      title:
-        entity === 'PENALTY'
-          ? 'Nuevo mensaje en una penalización'
-          : 'Nuevo mensaje en una incidencia',
-      message: `${author}: ${body.slice(0, 140)}`,
+    await prisma.activityMessage.create({
+      data: {
+        entity,
+        entityId,
+        authorId: session.user.id,
+        authorTenant: session.user.tenantId,
+        authorRole: session.user.role,
+        body,
+        isInternal,
+      },
     })
-  }
 
-  for (const p of pathsFor(entity, entityId)) revalidatePath(p)
-  return { ok: true }
+    // Las notas internas NO notifican a la otra parte.
+    if (!isInternal) {
+      const author = session.user.name || 'Un participante'
+      await notifyEntityParties(entity, entityId, {
+        excludeTenantId: session.user.tenantId,
+        title:
+          entity === 'PENALTY'
+            ? 'Nuevo mensaje en una penalización'
+            : 'Nuevo mensaje en una incidencia',
+        message: `${author}: ${body.slice(0, 140)}`,
+      })
+    }
+
+    for (const p of pathsFor(entity, entityId)) revalidatePath(p)
+  })
 }
 
 export async function markNotificationReadAction(input: {
   id: string
-}): Promise<Result> {
-  const session = await getRequiredSession()
-  const notif = await prisma.notification.findUnique({ where: { id: input.id } })
-  if (!notif) return { error: 'Notificación no encontrada' }
-  // Solo puede marcarla quien la puede ver (su tenant + suya o de todos).
-  if (
-    notif.tenantId !== session.user.tenantId ||
-    (notif.userId !== null && notif.userId !== session.user.id)
-  ) {
-    return { error: 'Sin acceso' }
-  }
-  await prisma.notification.update({
-    where: { id: input.id },
-    data: { read: true, readAt: new Date() },
+}): Promise<ActionResult<void>> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    const notif = await prisma.notification.findUnique({
+      where: { id: input.id },
+    })
+    if (!notif) throw new DomainError('Notificación no encontrada', 404)
+    // Solo puede marcarla quien la puede ver (su tenant + suya o de todos).
+    if (
+      notif.tenantId !== session.user.tenantId ||
+      (notif.userId !== null && notif.userId !== session.user.id)
+    ) {
+      throw new DomainError('Sin acceso', 403)
+    }
+    await prisma.notification.update({
+      where: { id: input.id },
+      data: { read: true, readAt: new Date() },
+    })
   })
-  return { ok: true }
 }
 
-export async function markAllNotificationsReadAction(): Promise<Result> {
-  const session = await getRequiredSession()
-  if (!session.user.tenantId) return { error: 'Tenant no resuelto' }
-  await prisma.notification.updateMany({
-    where: {
-      tenantId: session.user.tenantId,
-      read: false,
-      OR: [{ userId: null }, { userId: session.user.id }],
-    },
-    data: { read: true, readAt: new Date() },
+export async function markAllNotificationsReadAction(): Promise<
+  ActionResult<void>
+> {
+  return withAction(async () => {
+    const session = await getRequiredSession()
+    if (!session.user.tenantId) {
+      throw new DomainError('Tenant no resuelto', 403)
+    }
+    await prisma.notification.updateMany({
+      where: {
+        tenantId: session.user.tenantId,
+        read: false,
+        OR: [{ userId: null }, { userId: session.user.id }],
+      },
+      data: { read: true, readAt: new Date() },
+    })
   })
-  return { ok: true }
 }

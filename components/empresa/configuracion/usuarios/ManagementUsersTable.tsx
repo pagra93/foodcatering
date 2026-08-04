@@ -93,33 +93,33 @@ export function ManagementUsersTable({
   const submitCreate = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(async () => {
-      try {
-        await createEmpresaUserAction({
-          email: cEmail,
-          name: cName,
-          phone: cPhone || undefined,
-          role: cRole as 'ADMIN_EMPRESA' | 'RRHH' | 'FINANZAS' | 'MANAGER_SEDE',
-          password: cPassword,
-        })
-        toast.success(`${cName} añadido como ${cRole}`)
-        resetCreateForm()
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await createEmpresaUserAction({
+        email: cEmail,
+        name: cName,
+        phone: cPhone || undefined,
+        role: cRole as 'ADMIN_EMPRESA' | 'RRHH' | 'FINANZAS' | 'MANAGER_SEDE',
+        password: cPassword,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(`${cName} añadido como ${cRole}`)
+      resetCreateForm()
+      router.refresh()
     })
   }
 
   const toggleStatus = (u: UserRow) => {
     if (!confirm(`¿${u.status === 'ACTIVE' ? 'Suspender' : 'Reactivar'} a ${u.nameEnc}?`)) return
     startTransition(async () => {
-      try {
-        await toggleEmpresaUserStatusAction({ userId: u.id })
-        toast.success('Estado actualizado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleEmpresaUserStatusAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Estado actualizado')
+      router.refresh()
     })
   }
 
@@ -131,52 +131,51 @@ export function ManagementUsersTable({
     )
       return
     startTransition(async () => {
-      try {
-        const { emailed, email } = await resetEmpresaUserPasswordAction({
-          userId: u.id,
-        })
-        setResetNotice({
-          ok: emailed,
-          text: emailed
-            ? `Enlace de restablecimiento enviado a ${email}.`
-            : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
-        })
-        toast[emailed ? 'success' : 'error'](
-          emailed ? 'Email enviado' : 'Email no enviado'
-        )
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await resetEmpresaUserPasswordAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      const { emailed, email } = res.data
+      setResetNotice({
+        ok: emailed,
+        text: emailed
+          ? `Enlace de restablecimiento enviado a ${email}.`
+          : `No se pudo enviar el email a ${email}. Revisa la configuración de correo (RESEND_API_KEY).`,
+      })
+      toast[emailed ? 'success' : 'error'](
+        emailed ? 'Email enviado' : 'Email no enviado'
+      )
     })
   }
 
   const deleteUser = (u: UserRow) => {
     if (!confirm(`¿Eliminar a ${u.nameEnc}? Se hará soft-delete.`)) return
     startTransition(async () => {
-      try {
-        await deleteEmpresaUserAction({ userId: u.id })
-        toast.success('Usuario eliminado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteEmpresaUserAction({ userId: u.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Usuario eliminado')
+      router.refresh()
     })
   }
 
   const changeRole = (u: UserRow, newRole: UserRole) => {
     if (newRole === u.role) return
     startTransition(async () => {
-      try {
-        await updateEmpresaUserAction({
-          userId: u.id,
-          role: newRole as 'ADMIN_EMPRESA' | 'RRHH' | 'FINANZAS' | 'MANAGER_SEDE',
-        })
-        toast.success('Rol actualizado')
-        setEditingId(null)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await updateEmpresaUserAction({
+        userId: u.id,
+        role: newRole as 'ADMIN_EMPRESA' | 'RRHH' | 'FINANZAS' | 'MANAGER_SEDE',
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Rol actualizado')
+      setEditingId(null)
+      router.refresh()
     })
   }
 

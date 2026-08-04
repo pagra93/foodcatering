@@ -91,22 +91,22 @@ export function OfficialHolidaysManager({ holidays }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await upsertOfficialHolidayAction({
-          id: editing?.id,
-          date: new Date(date),
-          name: name.trim(),
-          scope,
-          regionCode:
-            scope === 'REGION' ? regionCode.trim().toUpperCase() : undefined,
-          description: description.trim() || undefined,
-        })
-        toast.success(editing ? 'Festivo actualizado' : 'Festivo creado')
-        setOpen(false)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertOfficialHolidayAction({
+        id: editing?.id,
+        date: new Date(date),
+        name: name.trim(),
+        scope,
+        regionCode:
+          scope === 'REGION' ? regionCode.trim().toUpperCase() : undefined,
+        description: description.trim() || undefined,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(editing ? 'Festivo actualizado' : 'Festivo creado')
+      setOpen(false)
+      router.refresh()
     })
   }
 
@@ -114,13 +114,13 @@ export function OfficialHolidaysManager({ holidays }: Props) {
     if (!confirm(`¿Borrar "${h.name}" del ${format(h.date, 'PPP', { locale: es })}?`))
       return
     startTransition(async () => {
-      try {
-        await deleteOfficialHolidayAction({ id: h.id })
-        toast.success('Festivo borrado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteOfficialHolidayAction({ id: h.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Festivo borrado')
+      router.refresh()
     })
   }
 

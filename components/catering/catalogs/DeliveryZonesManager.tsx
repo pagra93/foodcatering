@@ -74,45 +74,45 @@ export function DeliveryZonesManager({ zones }: Props) {
     }
 
     startTransition(async () => {
-      try {
-        await upsertDeliveryZoneAction({
-          id: editing?.id,
-          name: name.trim(),
-          postalCodes: codes,
-          maxDistanceKm: maxKm ? Number(maxKm) : undefined,
-          notes: notes.trim() || undefined,
-          active: editing?.active ?? true,
-        })
-        toast.success(editing ? 'Zona actualizada' : 'Zona creada')
-        setOpen(false)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertDeliveryZoneAction({
+        id: editing?.id,
+        name: name.trim(),
+        postalCodes: codes,
+        maxDistanceKm: maxKm ? Number(maxKm) : undefined,
+        notes: notes.trim() || undefined,
+        active: editing?.active ?? true,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(editing ? 'Zona actualizada' : 'Zona creada')
+      setOpen(false)
+      router.refresh()
     })
   }
 
   const toggle = (z: DeliveryZone) => {
     startTransition(async () => {
-      try {
-        await toggleDeliveryZoneAction({ id: z.id, active: !z.active })
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleDeliveryZoneAction({ id: z.id, active: !z.active })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      router.refresh()
     })
   }
 
   const remove = (z: DeliveryZone) => {
     if (!confirm(`¿Borrar la zona "${z.name}"?`)) return
     startTransition(async () => {
-      try {
-        await deleteDeliveryZoneAction({ id: z.id })
-        toast.success('Zona borrada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteDeliveryZoneAction({ id: z.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Zona borrada')
+      router.refresh()
     })
   }
 

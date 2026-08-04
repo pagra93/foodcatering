@@ -121,44 +121,44 @@ export function MenuTemplatesManager({ templates }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await upsertMenuTemplateAction({
-          id: editing?.id,
-          name: name.trim(),
-          description: description.trim() || undefined,
-          structure,
-          active: editing?.active ?? true,
-        })
-        toast.success(editing ? 'Plantilla actualizada' : 'Plantilla creada')
-        setOpen(false)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertMenuTemplateAction({
+        id: editing?.id,
+        name: name.trim(),
+        description: description.trim() || undefined,
+        structure,
+        active: editing?.active ?? true,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(editing ? 'Plantilla actualizada' : 'Plantilla creada')
+      setOpen(false)
+      router.refresh()
     })
   }
 
   const toggle = (t: MenuTemplate) => {
     startTransition(async () => {
-      try {
-        await toggleMenuTemplateAction({ id: t.id, active: !t.active })
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleMenuTemplateAction({ id: t.id, active: !t.active })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      router.refresh()
     })
   }
 
   const remove = (t: MenuTemplate) => {
     if (!confirm(`¿Borrar la plantilla "${t.name}"?`)) return
     startTransition(async () => {
-      try {
-        await deleteMenuTemplateAction({ id: t.id })
-        toast.success('Plantilla borrada')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await deleteMenuTemplateAction({ id: t.id })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success('Plantilla borrada')
+      router.refresh()
     })
   }
 

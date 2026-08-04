@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/db/prisma'
 import { requireSuperAdmin } from '@/lib/auth/require-super-admin'
+import { DomainError } from '@/lib/errors'
+import { withAction, type ActionResult } from '@/lib/actions/with-action'
 
 const addDocumentSchema = z.object({
   type: z.enum(['REGISTRO_SANITARIO', 'RC', 'MANIPULADORES', 'OTROS']),
@@ -23,48 +25,46 @@ const addDocumentSchema = z.object({
 export async function addCateringDocument(
   tenantId: string,
   formData: FormData
-): Promise<{ error?: string; ok?: boolean }> {
-  await requireSuperAdmin('catering:add-document')
+): Promise<ActionResult<null>> {
+  return withAction(async () => {
+    await requireSuperAdmin('catering:add-document')
 
-  const parsed = addDocumentSchema.safeParse({
-    type: formData.get('type'),
-    fileUrl: formData.get('fileUrl'),
-    issuedAt: formData.get('issuedAt'),
-    expiresAt: formData.get('expiresAt'),
+    const parsed = addDocumentSchema.parse({
+      type: formData.get('type'),
+      fileUrl: formData.get('fileUrl'),
+      issuedAt: formData.get('issuedAt'),
+      expiresAt: formData.get('expiresAt'),
+    })
+
+    const restaurant = await prisma.restaurant.findFirst({
+      where: { tenantId },
+      select: { id: true },
+    })
+    if (!restaurant) {
+      throw new DomainError('No se encontró el restaurante del catering.', 404)
+    }
+
+    const issuedAt = new Date(parsed.issuedAt)
+    const expiresAt = new Date(parsed.expiresAt)
+    const now = new Date()
+    const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const status = expiresAt < now ? 'EXPIRED' : expiresAt <= in30 ? 'EXPIRING' : 'VALID'
+
+    await prisma.restaurantDocument.create({
+      data: {
+        tenantId,
+        restaurantId: restaurant.id,
+        type: parsed.type,
+        fileUrl: parsed.fileUrl,
+        issuedAt,
+        expiresAt,
+        status,
+      },
+    })
+
+    revalidatePath(`/admin/caterings/${tenantId}`)
+    return null
   })
-
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Datos inválidos' }
-  }
-
-  const restaurant = await prisma.restaurant.findFirst({
-    where: { tenantId },
-    select: { id: true },
-  })
-  if (!restaurant) {
-    return { error: 'No se encontró el restaurante del catering.' }
-  }
-
-  const issuedAt = new Date(parsed.data.issuedAt)
-  const expiresAt = new Date(parsed.data.expiresAt)
-  const now = new Date()
-  const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000)
-  const status = expiresAt < now ? 'EXPIRED' : expiresAt <= in30 ? 'EXPIRING' : 'VALID'
-
-  await prisma.restaurantDocument.create({
-    data: {
-      tenantId,
-      restaurantId: restaurant.id,
-      type: parsed.data.type,
-      fileUrl: parsed.data.fileUrl,
-      issuedAt,
-      expiresAt,
-      status,
-    },
-  })
-
-  revalidatePath(`/admin/caterings/${tenantId}`)
-  return { ok: true }
 }
 
 /**
@@ -73,20 +73,22 @@ export async function addCateringDocument(
 export async function setCateringStatus(
   tenantId: string,
   status: 'ACTIVE' | 'SUSPENDED'
-): Promise<{ error?: string; ok?: boolean }> {
-  await requireSuperAdmin('catering:edit-status')
+): Promise<ActionResult<null>> {
+  return withAction(async () => {
+    await requireSuperAdmin('catering:edit-status')
 
-  const tenant = await prisma.tenant.findFirst({
-    where: { id: tenantId, type: 'CATERING' },
-    select: { id: true },
+    const tenant = await prisma.tenant.findFirst({
+      where: { id: tenantId, type: 'CATERING' },
+      select: { id: true },
+    })
+    if (!tenant) {
+      throw new DomainError('Catering no encontrado.', 404)
+    }
+
+    await prisma.tenant.update({ where: { id: tenantId }, data: { status } })
+
+    revalidatePath('/admin/caterings')
+    revalidatePath(`/admin/caterings/${tenantId}`)
+    return null
   })
-  if (!tenant) {
-    return { error: 'Catering no encontrado.' }
-  }
-
-  await prisma.tenant.update({ where: { id: tenantId }, data: { status } })
-
-  revalidatePath('/admin/caterings')
-  revalidatePath(`/admin/caterings/${tenantId}`)
-  return { ok: true }
 }

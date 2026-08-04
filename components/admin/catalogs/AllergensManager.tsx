@@ -84,33 +84,33 @@ export function AllergensManager({ allergens }: Props) {
 
   const save = () => {
     startTransition(async () => {
-      try {
-        await upsertAllergenAction({
-          id: editing?.id,
-          code: code.trim().toLowerCase(),
-          name: name.trim(),
-          category,
-          description: description.trim() || undefined,
-          active: editing?.active ?? true,
-        })
-        toast.success(editing ? 'Alérgeno actualizado' : 'Alérgeno creado')
-        setOpen(false)
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await upsertAllergenAction({
+        id: editing?.id,
+        code: code.trim().toLowerCase(),
+        name: name.trim(),
+        category,
+        description: description.trim() || undefined,
+        active: editing?.active ?? true,
+      })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(editing ? 'Alérgeno actualizado' : 'Alérgeno creado')
+      setOpen(false)
+      router.refresh()
     })
   }
 
   const toggle = (a: Allergen) => {
     startTransition(async () => {
-      try {
-        await toggleAllergenAction({ id: a.id, active: !a.active })
-        toast.success(a.active ? 'Desactivado' : 'Reactivado')
-        router.refresh()
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'Error')
+      const res = await toggleAllergenAction({ id: a.id, active: !a.active })
+      if (!res.success) {
+        toast.error(res.error)
+        return
       }
+      toast.success(a.active ? 'Desactivado' : 'Reactivado')
+      router.refresh()
     })
   }
 

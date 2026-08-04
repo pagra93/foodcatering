@@ -70,7 +70,7 @@ export function CompanyCateringsTab({ companyId, assignments, assignable, canMan
     }
     startTransition(async () => {
       const res = await assignCateringAction({ companyId, tenantCatering, type, priority })
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }
@@ -86,7 +86,7 @@ export function CompanyCateringsTab({ companyId, assignments, assignable, canMan
     const reason = window.prompt(`Motivo para dejar de servir con "${name}" (opcional):`) ?? undefined
     startTransition(async () => {
       const res = await deactivateCateringAssignmentAction({ assignmentId, reason })
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }

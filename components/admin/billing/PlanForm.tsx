@@ -147,7 +147,7 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
     startTransition(async () => {
       const res =
         mode === 'create' ? await createPlan(payload) : await updatePlan(planId!, payload)
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }
@@ -162,7 +162,7 @@ export function PlanForm({ mode, planId, catalog, initial }: Props) {
     setError(null)
     startTransition(async () => {
       const res = await deletePlan(planId)
-      if (res.error) {
+      if (!res.success) {
         setError(res.error)
         return
       }
