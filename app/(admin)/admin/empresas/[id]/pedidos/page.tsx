@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getCompanyById } from '@/lib/db/queries/companies'
 import { getOrders } from '@/lib/db/queries/empresa-pedidos'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { decryptNameSafe } from '@/lib/crypto/pii'
 import { formatPrice } from '@/lib/utils'
 
@@ -35,7 +36,7 @@ export default async function CompanyOrdersPage({
   const company = await getCompanyById(id)
   if (!company) notFound()
 
-  const pageNum = Number(sp.page ?? '1')
+  const pageNum = parsePageParam(sp.page)
   const { orders, pagination, stats } = await getOrders(id, {
     period: 'month',
     page: pageNum,

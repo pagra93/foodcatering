@@ -60,7 +60,13 @@ if [ "$HAS_VALID_MIGRATIONS" = true ]; then
         sleep 5
       else
         echo "⚠️  No se pudieron aplicar las migraciones después de $MAX_RETRIES intentos"
-        echo "   Continuando con el inicio del servidor..."
+        if [ "${NODE_ENV:-}" = "production" ]; then
+          echo "❌ ERROR: en producción NO se arranca con el schema desactualizado."
+          echo "   (El contenedor parecería sano mientras sirve errores 500.)"
+          echo "   Diagnostica con 'prisma migrate status' y resuelve con 'prisma migrate resolve'."
+          exit 1
+        fi
+        echo "   Continuando con el inicio del servidor (entorno no-prod)..."
         echo "   Verifica los logs anteriores para más detalles"
       fi
     fi

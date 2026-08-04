@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { getAdminUsersKPIs, getAllUsers } from '@/lib/db/queries/admin-users'
 import { ROLE_DESCRIPTIONS, getRoleCategory } from '@/lib/auth/permissions'
 import { decryptNameSafe } from '@/lib/crypto/pii'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 type SP = {
   search?: string
@@ -49,7 +50,7 @@ export default async function AdminUsersPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [kpis, { users, total, pageSize }] = await Promise.all([
     getAdminUsersKPIs(),

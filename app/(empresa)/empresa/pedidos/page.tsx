@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { FileDown, FileSpreadsheet } from 'lucide-react'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getOrders, type OrderFilters } from '@/lib/db/queries/empresa-pedidos'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
@@ -107,7 +108,7 @@ function buildFilters(searchParams: SearchParams): OrderFilters {
     dateTo: searchParams.dateTo,
     employeeId: searchParams.employeeId,
     siteId: searchParams.siteId,
-    page: searchParams.page ? parseInt(searchParams.page) : 1,
+    page: parsePageParam(searchParams.page),
     pageSize: 20,
   }
 }

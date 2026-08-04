@@ -7,11 +7,12 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db/prisma'
+import { prismaAdmin } from '@/lib/db/prisma-admin'
 import { createPasswordResetToken, TOKEN_TTL_MINUTES } from '@/lib/auth/password-reset'
 import { sendEmail, getAppBaseUrl } from '@/lib/email/client'
 import { passwordResetEmail } from '@/lib/email/templates'
 import { decryptNameSafe } from '@/lib/crypto/pii'
+import { authRateLimiter, getRateLimitKey } from '@/lib/ratelimit'
 
 export async function POST(req: NextRequest) {
   const base = getAppBaseUrl()
@@ -23,9 +24,18 @@ export async function POST(req: NextRequest) {
     // ignore: se responde genérico igualmente
   }
 
-  if (email) {
+  // Endpoint público: rate limit por IP+email para no permitir bombardeo de
+  // correo (coste Resend + reputación de dominio). Si se supera, se responde
+  // el mismo redirect genérico (anti-enumeración) sin enviar nada.
+  const limited =
+    email &&
+    !(await authRateLimiter.check(`forgot:${getRateLimitKey(req)}:${email}`)).allowed
+
+  if (email && !limited) {
     try {
-      const user = await prisma.user.findFirst({
+      // La búsqueda de usuario por email es cross-tenant por diseño (igual que
+      // el login): el guard de tenant del cliente `prisma` la bloquearía.
+      const user = await prismaAdmin.user.findFirst({
         where: { email, status: 'ACTIVE', deletedAt: null },
         select: { id: true, email: true, nameEnc: true },
       })

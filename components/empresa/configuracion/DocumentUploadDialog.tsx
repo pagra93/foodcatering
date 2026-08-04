@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2, Upload, FileText } from 'lucide-react'
 
 type DocumentUploadDialogProps = {
@@ -85,8 +86,7 @@ export function DocumentUploadDialog({
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al subir documento')
+        throw new Error(await readApiError(response, 'Error al subir documento'))
       }
 
       toast.success('Documento subido', {

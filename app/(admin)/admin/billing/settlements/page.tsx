@@ -12,6 +12,7 @@ import {
   getSettlementsKPIs,
   getCommissionsByCatering,
 } from '@/lib/db/queries/admin-settlements'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { effectiveStatus, statusMeta, SETTLEMENT_STATUS } from '@/lib/billing/status'
 import { MarkPaidButton } from '@/components/admin/billing/MarkPaidButton'
 
@@ -47,7 +48,7 @@ export default async function SettlementsPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
   const view: 'detalle' | 'catering' = params.view === 'catering' ? 'catering' : 'detalle'
 
   const [{ settlements, total, pageSize }, kpis, byCatering] = await Promise.all([

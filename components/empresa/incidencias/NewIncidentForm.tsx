@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 
 type ReasonOption = {
   id: string
@@ -51,8 +52,7 @@ export function NewIncidentForm({ reasons }: { reasons: ReasonOption[] }) {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.message || 'Error al crear incidencia')
+        throw new Error(await readApiError(res, 'Error al crear incidencia'))
       }
 
       toast.success('Incidencia creada correctamente')

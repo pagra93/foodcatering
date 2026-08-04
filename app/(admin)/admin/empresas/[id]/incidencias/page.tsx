@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getCompanyById } from '@/lib/db/queries/companies'
 import { getGlobalIncidents } from '@/lib/db/queries/admin-quality'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { SEVERITY_META, STATUS_META, incidentTypeLabel } from '@/lib/incidents/constants'
 
 type SP = { severity?: string; status?: string; search?: string; page?: string }
@@ -25,7 +26,7 @@ export default async function CompanyIncidentsPage({
   const company = await getCompanyById(id)
   if (!company) notFound()
 
-  const pageNum = Number(sp.page ?? '1')
+  const pageNum = parsePageParam(sp.page)
   const { incidents, total, pageSize } = await getGlobalIncidents({
     tenantEmpresa: id,
     severity: (sp.severity as IncidentSeverity) || undefined,

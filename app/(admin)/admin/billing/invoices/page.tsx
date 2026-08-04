@@ -12,6 +12,7 @@ import {
   getInvoiceFilterOptions,
 } from '@/lib/db/queries/admin-invoices'
 import { effectiveStatus, statusMeta, INVOICE_STATUS } from '@/lib/billing/status'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 type SP = {
   status?: string
@@ -27,7 +28,7 @@ export default async function AdminInvoicesPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ invoices, total, pageSize }, kpis, options] = await Promise.all([
     getAdminInvoices({

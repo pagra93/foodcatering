@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { getGdprKPIs, getGdprRequests } from '@/lib/db/queries/admin-gdpr'
 import { GdprRequestsTable } from '@/components/admin/compliance/gdpr/GdprRequestsTable'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 type SP = { status?: string; type?: string; page?: string }
 
@@ -14,7 +15,7 @@ export default async function GdprPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ requests, total, pageSize }, kpis] = await Promise.all([
     getGdprRequests({

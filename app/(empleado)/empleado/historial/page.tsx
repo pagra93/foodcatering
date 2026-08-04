@@ -6,6 +6,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenant } from '@/lib/tenant/get-tenant'
+import { parsePageParam } from '@/lib/utils/search-params'
 import {
   getOrderHistory,
   getOrderHistoryKPIs,
@@ -69,7 +70,7 @@ async function HistorialData({ searchParams }: PageProps) {
     month: searchParams.month ? new Date(searchParams.month) : undefined,
     status: searchParams.status || undefined,
     search: searchParams.search || undefined,
-    page: searchParams.page ? parseInt(searchParams.page) : 1,
+    page: parsePageParam(searchParams.page),
   }
 
   // Obtener datos

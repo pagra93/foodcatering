@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import { Loader2, Bell, Globe, Shield, FileText } from 'lucide-react'
 
 const preferencesSchema = z.object({
@@ -136,8 +137,7 @@ export function ConfigPreferencesTab({ settings }: ConfigPreferencesTabProps) {
       })
 
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.message || 'Error al actualizar')
+        throw new Error(await readApiError(response, 'Error al actualizar'))
       }
 
       toast.success('Preferencias actualizadas', {

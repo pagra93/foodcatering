@@ -13,6 +13,7 @@ import {
 } from '@/lib/db/queries/admin-saas-invoices'
 import { effectiveStatus, statusMeta, SAAS_STATUS } from '@/lib/billing/status'
 import { MarkPaidButton } from '@/components/admin/billing/MarkPaidButton'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 type SP = { status?: string; period?: string; page?: string }
 
@@ -22,7 +23,7 @@ export default async function SaasInvoicesPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ invoices, total, pageSize }, kpis] = await Promise.all([
     getSaasInvoices({

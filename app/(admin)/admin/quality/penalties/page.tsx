@@ -11,6 +11,7 @@ import {
   getPenaltiesKPIs,
 } from '@/lib/db/queries/admin-penalties'
 import { incidentTypeLabel } from '@/lib/incidents/constants'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { PenaltiesTable } from '@/components/admin/quality/penalties/PenaltiesTable'
 import { NewPenaltyForm } from '@/components/admin/quality/penalties/NewPenaltyForm'
 
@@ -32,7 +33,7 @@ export default async function PenaltiesPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ penalties, total, pageSize }, kpis, caterings, recentIncidents, recentAudits] =
     await Promise.all([

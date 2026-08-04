@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 import type { DietPrefs } from '@/lib/types/diet-prefs'
 import type { Prisma } from '@prisma/client'
 
@@ -132,8 +133,7 @@ export function DaySelector({ data, employeeId }: DaySelectorProps) {
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.message || 'Error al guardar el pedido')
+        throw new Error(await readApiError(res, 'Error al guardar el pedido'))
       }
 
       toast.success('¡Menú guardado correctamente!')

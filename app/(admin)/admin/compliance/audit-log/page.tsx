@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getAuditLog, getAuditEntities } from '@/lib/db/queries/admin-audit'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 const ACTION_LABEL: Record<string, string> = {
   CREATE: 'Alta',
@@ -36,7 +37,7 @@ export default async function AuditLogPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ rows, total, pageSize }, entities] = await Promise.all([
     getAuditLog({

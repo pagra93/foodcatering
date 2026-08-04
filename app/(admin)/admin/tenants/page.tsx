@@ -7,6 +7,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getTenants } from '@/lib/db/queries/tenants'
+import { parseIntParam, parsePageParam } from '@/lib/utils/search-params'
 import type { TenantFiltersInput } from '@/lib/validations/tenant'
 import { TenantsTable } from '@/components/admin/tenants/TenantsTable'
 import { TenantsFilters } from '@/components/admin/tenants/TenantsFilters'
@@ -43,8 +44,12 @@ async function TenantsTableData({ searchParams }: PageProps) {
     status: (searchParams.status as any) || 'ALL',
     sortBy: (searchParams.sortBy as any) || 'createdAt',
     sortOrder: (searchParams.sortOrder as any) || 'desc',
-    page: searchParams.page ? parseInt(searchParams.page) : 1,
-    pageSize: searchParams.pageSize ? parseInt(searchParams.pageSize) : 20,
+    page: parsePageParam(searchParams.page),
+    pageSize: parseIntParam(searchParams.pageSize, {
+      min: 1,
+      max: 100,
+      fallback: 20,
+    }),
   }
 
   const { tenants, pagination } = await getTenants(filters)

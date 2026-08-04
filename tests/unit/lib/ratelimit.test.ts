@@ -54,11 +54,21 @@ describe('authRateLimiter (5 req / 60s)', () => {
 })
 
 describe('getRateLimitKey', () => {
-  it('usa la primera IP de x-forwarded-for', () => {
+  it('usa la ÚLTIMA IP de x-forwarded-for (la que añade nuestro proxy)', () => {
+    // El primer elemento lo controla el cliente: si se usara, bastaría rotar
+    // la cabecera para evadir el rate limit (fue el hallazgo P0 de la Fase A).
     const req = new Request('http://x', {
       headers: { 'x-forwarded-for': '1.2.3.4, 5.6.7.8' },
     })
-    expect(getRateLimitKey(req)).toBe('1.2.3.4')
+    expect(getRateLimitKey(req)).toBe('5.6.7.8')
+  })
+
+  it('no se deja envenenar por una XFF prellenada por el atacante', () => {
+    // Traefik AÑADE la IP real del peer al final de la cadena entrante.
+    const req = new Request('http://x', {
+      headers: { 'x-forwarded-for': 'fake-1, fake-2, 203.0.113.7' },
+    })
+    expect(getRateLimitKey(req)).toBe('203.0.113.7')
   })
 
   it('cae a x-real-ip si no hay x-forwarded-for', () => {

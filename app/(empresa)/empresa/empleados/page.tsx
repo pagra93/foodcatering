@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Plus, Upload } from 'lucide-react'
 import { getCurrentTenant } from '@/lib/tenant/get-tenant'
 import { getEmployees, type EmployeeFilters } from '@/lib/db/queries/empresa-empleados'
+import { parsePageParam } from '@/lib/utils/search-params'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card } from '@/components/ui/card'
@@ -121,7 +122,7 @@ function buildFilters(searchParams: SearchParams): EmployeeFilters {
     status: (searchParams.status as any) || 'all',
     department: searchParams.department,
     siteId: searchParams.siteId,
-    page: searchParams.page ? parseInt(searchParams.page) : 1,
+    page: parsePageParam(searchParams.page),
     pageSize: 20,
   }
 }

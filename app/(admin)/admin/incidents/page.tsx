@@ -10,6 +10,7 @@ import {
   getGlobalIncidentsKPIs,
 } from '@/lib/db/queries/admin-quality'
 import { incidentDisplayName, incidentTypeLabel } from '@/lib/incidents/constants'
+import { parsePageParam } from '@/lib/utils/search-params'
 
 const SEVERITY_META: Record<
   IncidentSeverity,
@@ -46,7 +47,7 @@ export default async function GlobalIncidentsPage({
   searchParams: Promise<SP>
 }) {
   const params = await searchParams
-  const pageNum = Number(params.page ?? '1')
+  const pageNum = parsePageParam(params.page)
 
   const [{ incidents, total, pageSize }, kpis] = await Promise.all([
     getGlobalIncidents({

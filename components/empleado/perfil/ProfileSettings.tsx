@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
+import { readApiError } from '@/lib/utils/api-error'
 
 type ProfileSettingsProps = {
   employeeId: string
@@ -61,8 +62,7 @@ export function ProfileSettings({ employeeId: _employeeId }: ProfileSettingsProp
       })
 
       if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.message || 'Error al cambiar la contraseña')
+        throw new Error(await readApiError(res, 'Error al cambiar la contraseña'))
       }
 
       toast.success('Contraseña actualizada correctamente')

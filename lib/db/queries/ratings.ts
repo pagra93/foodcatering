@@ -12,7 +12,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { prismaAdmin } from '@/lib/db/prisma-admin'
-import { Prisma, PrismaClient, type DishCourse } from '@prisma/client'
+import { Prisma, type PrismaClient, type DishCourse } from '@prisma/client'
 import { subDays, startOfDay } from 'date-fns'
 
 // Las funciones GLOBALES (admin, cross-tenant) leen sin filtro de tenant a

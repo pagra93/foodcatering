@@ -51,8 +51,13 @@ export async function submitDemoRequest(
     }
   }
 
-  // TODO: reemplazar por integración real (Resend / HubSpot / Prisma).
-  console.log('[demo-request]', JSON.stringify(parsed.data, null, 2))
+  // TODO: reemplazar por integración real (Resend / HubSpot / tabla Lead).
+  // Sin PII en logs (RGPD): los datos del lead NO se vuelcan a stdout; hasta
+  // que exista la integración solo queda constancia anónima de la solicitud.
+  console.log(
+    '[demo-request] solicitud recibida (empleados: %s)',
+    parsed.data.employees ?? 'n/d'
+  )
 
   return {
     success: true,
