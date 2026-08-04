@@ -58,6 +58,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# TZ del negocio: el cutoff y los rangos de día usan la hora local del proceso.
+# Sin esto Node corre en UTC y el corte de las 11:00 se evalúa a las 13:00 de
+# Madrid en verano (lib/orders/cutoff calcula además con TZ explícita).
+ENV TZ=Europe/Madrid
+
+# SHA del commit desplegado (Coolify lo pasa como build-arg SOURCE_COMMIT).
+# Lo expone /api/health para poder responder "¿qué versión corre en prod?".
+ARG SOURCE_COMMIT=unknown
+ENV BUILD_SHA=$SOURCE_COMMIT
+
 # Crear usuario no-root para seguridad (compatible con Debian)
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs --shell /bin/bash nextjs
@@ -118,6 +128,11 @@ ENV HOSTNAME="0.0.0.0"
 
 # Añadir node_modules/.bin al PATH para que prisma sea accesible
 ENV PATH="/app/node_modules/.bin:$PATH"
+
+# Healthcheck contra /api/health (BD accesible + migraciones completas).
+# start-period alto: el entrypoint aplica migraciones y seeds antes de arrancar.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=120s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 
 # Usar script de entrada con manejo de errores mejorado
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

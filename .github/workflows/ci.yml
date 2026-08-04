@@ -50,6 +50,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit de dependencias (bloquea solo criticals)
+        run: pnpm audit --prod --audit-level critical
+
       - name: Generate Prisma client
         run: pnpm db:generate
 
@@ -67,3 +70,21 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      # Gate de deploy: si se configura el secret COOLIFY_DEPLOY_WEBHOOK (y se
+      # desactiva el auto-deploy on-push en Coolify), el deploy solo ocurre con
+      # el CI en verde. Sin el secret este paso es un no-op y Coolify sigue
+      # desplegando por push, como hasta ahora.
+      - name: Deploy a Coolify (solo main, si hay webhook configurado)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          COOLIFY_DEPLOY_WEBHOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          COOLIFY_API_TOKEN: ${{ secrets.COOLIFY_API_TOKEN }}
+        run: |
+          if [ -z "$COOLIFY_DEPLOY_WEBHOOK" ]; then
+            echo "COOLIFY_DEPLOY_WEBHOOK no configurado — Coolify sigue en auto-deploy por push."
+            exit 0
+          fi
+          curl -fsSL -X POST "$COOLIFY_DEPLOY_WEBHOOK" \
+            ${COOLIFY_API_TOKEN:+-H "Authorization: Bearer $COOLIFY_API_TOKEN"}
+          echo "Deploy disparado tras CI verde."
