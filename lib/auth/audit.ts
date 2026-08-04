@@ -9,7 +9,7 @@ import { createHash } from 'crypto'
 import { Prisma } from '@prisma/client'
 import type { AuditAction } from '@prisma/client'
 
-type AuditLogInput = {
+export type AuditLogInput = {
   tenantId?: string | null
   actorId: string
   /** Admin real cuando la acción se hace bajo impersonación (H8). */
@@ -37,6 +37,15 @@ function createIntegrityHash(data: AuditLogInput): string {
   })
 
   return createHash('sha256').update(content).digest('hex')
+}
+
+/**
+ * Hash de integridad para escrituras DIRECTAS de `tx.auditLog.create` dentro
+ * de una transacción (mutaciones de dinero: el rastro debe ir en la MISMA tx
+ * que el dato, no best-effort — P0-5 del análisis prototipo→producción).
+ */
+export function buildAuditIntegrityHash(input: AuditLogInput): string {
+  return createIntegrityHash(input)
 }
 
 /**
