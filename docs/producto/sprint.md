@@ -1,7 +1,7 @@
 # Sprint — comidas-plataforma
 
 Status: **DEV OPERATIVO · REBRAND PLATI EN MAIN · PROD PENDIENTE**
-Last updated: 2026-06-28
+Last updated: 2026-08-04
 
 > El backlog vivo (Fase B + deuda técnica) está indexado por el PM en
 > `pm/tasks.json` (procesado desde `inbox.md`). Esta página queda como
@@ -39,6 +39,24 @@ Last updated: 2026-06-28
 - [ ] Configurar cron de backups automáticos
       (`scripts/setup-prod-backups.md`).
 - [ ] Crear primer super-admin en prod (RUNBOOK sección 7).
+
+## 🚧 En curso — Fase A del análisis prototipo→producción (2026-08-04)
+
+Rama `fix/fase-a-produccion`. Informe completo:
+`docs/general/diagnostico/ANALISIS-PROTOTIPO-VS-PRODUCCION-2026-08.md`.
+
+- [x] A1 Guard de tenant: fix crear pedido / forgot-password / facturación empresa + tests contra el guard real
+- [x] A2 Facturas catering: unique de número + retry P2002, unique parcial de período (regenerar tras cancelar), filtro `invoiceId: null` (migración `20260804100000`, aplicada en dev)
+- [x] A3 GDPR: cierre de solicitud dentro de la transacción + guarda de idempotencia
+- [x] A4 Rate limit sin confiar en XFF del cliente + bucket por email; TTL efectivo de impersonación
+- [x] A5 `/api/health` + HEALTHCHECK + SHA de build + entrypoint estricto + `pnpm audit` (bloquea criticals) y deploy-gate opcional en CI
+- [x] A6 next-auth → beta.32 exacto + @auth/prisma-adapter 2.11.3 → **0 criticals**. Los 15 high restantes son de `next@15.5.15` (última 15.x estable): solo se cierran con Next 16 (rama dedicada, Fase C)
+- [x] A7 `TZ=Europe/Madrid` en Docker + `lib/orders/cutoff.ts` zonificado (Intl) con tests de borde verano/invierno
+- [x] A8 Error boundaries (5 grupos + global + not-found) + saneo de searchParams en 19 páginas + `readApiError` en 10 componentes + fix `/acceso-denegado`
+- [x] A9 CSV escaping + BOM en exports + PII fuera de logs (demo, middleware, email)
+
+Validación: type-check ✅ · lint 0 errores ✅ · 216 tests ✅ · build ✅ · migración aplicada en `comidas_dev` ✅.
+Pasos manuales pendientes (Coolify/monitor): ver PR.
 
 ## 🚧 En curso — EPIC-003
 
