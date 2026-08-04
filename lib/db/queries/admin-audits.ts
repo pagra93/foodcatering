@@ -2,7 +2,9 @@
  * Queries para /admin/quality/audits y /catering/calidad tab Auditorías.
  */
 
-import { prisma } from '@/lib/db/prisma'
+// Vistas de admin cross-tenant (KPIs y listados globales de auditorías): el
+// cliente guardado bloquearía las lecturas sin filtro de tenant.
+import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import type { AuditType, Prisma } from '@prisma/client'
 
 export type AuditFilters = {
@@ -83,10 +85,11 @@ export async function getAuditsKPIs() {
   // Caterings sin auditoría en los últimos 12 meses
   const twelveMonthsAgo = new Date()
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-  const recent = await prisma.restaurantAudit.findMany({
+  // groupBy agrega en SQL; `findMany({ distinct })` sin el preview
+  // nativeDistinct traería todas las auditorías del año a Node.
+  const recent = await prisma.restaurantAudit.groupBy({
+    by: ['tenantCatering'],
     where: { auditedAt: { gte: twelveMonthsAgo } },
-    select: { tenantCatering: true },
-    distinct: ['tenantCatering'],
   })
   const totalCaterings = await prisma.tenant.count({
     where: { type: 'CATERING', status: 'ACTIVE' },

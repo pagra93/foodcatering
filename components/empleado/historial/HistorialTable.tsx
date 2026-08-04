@@ -52,6 +52,8 @@ type HistorialTableProps = {
     total: number
     totalPages: number
   }
+  /** dishId → nombre (la selección canónica solo lleva ids). */
+  dishNames?: Record<string, string>
 }
 
 function RatingCell({
@@ -118,10 +120,11 @@ const STATUS_CONFIG: Record<
   },
 }
 
-export function HistorialTable({ orders, pagination }: HistorialTableProps) {
+export function HistorialTable({ orders, pagination, dishNames }: HistorialTableProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [rating, setRating] = useState<HistorialOrder | null>(null)
+  const dishNamesMap = new Map(Object.entries(dishNames ?? {}))
 
   const handlePageChange = (newPage: number) => {
     const params = new URLSearchParams(searchParams.toString())
@@ -293,7 +296,7 @@ export function HistorialTable({ orders, pagination }: HistorialTableProps) {
           onOpenChange={(o) => !o && setRating(null)}
           orderId={rating.id}
           serviceDate={rating.serviceDate}
-          dishes={dishesFromSelection(rating.selection)}
+          dishes={dishesFromSelection(rating.selection, dishNamesMap)}
         />
       )}
     </div>

@@ -9,7 +9,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getDishes, createDish, dishNameExists } from '@/lib/db/queries/catering-dishes'
 import { createDishSchema, dishFiltersSchema } from '@/lib/validations/dish'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 /**
  * GET - Obtener lista de platos con filtros
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (todos los roles pueden ver platos)
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear query params
@@ -61,26 +61,11 @@ export async function GET(request: NextRequest) {
       data: result,
     })
   } catch (error) {
-    console.error('[DISHES_GET]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Filtros inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener platos',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/platos',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener los platos',
+    })
   }
 }
 
@@ -93,18 +78,21 @@ export async function POST(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:create', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Validar datos
     const validatedData = createDishSchema.parse(body)
@@ -116,13 +104,7 @@ export async function POST(request: NextRequest) {
     )
 
     if (nameExists) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Ya existe un plato con ese nombre',
-        },
-        { status: 409 }
-      )
+      return apiError(409, 'Ya existe un plato con ese nombre')
     }
 
     // Crear plato
@@ -137,36 +119,14 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('[DISHES_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
+    // Mensaje de negocio conocido (lib/db/queries/catering-dishes.ts#createDish).
     if (error instanceof Error && error.message === 'Restaurant not found for this tenant') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Restaurant no encontrado',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Restaurant no encontrado')
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al crear plato',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/platos',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear el plato',
+    })
   }
 }
-

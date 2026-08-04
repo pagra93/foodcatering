@@ -584,10 +584,11 @@ async function main() {
           serviceDate: fecha,
           menuType: 'FULL',
           price: precioTotal,
+          // Forma canónica (lib/orders/selection.ts): solo ids por curso.
           selection: {
-            first: { dishId: primero.id, name: primero.name },
-            second: { dishId: segundo.id, name: segundo.name },
-            dessert: { dishId: postre.id, name: postre.name },
+            starterId: primero.id,
+            mainId: segundo.id,
+            dessertId: postre.id,
           },
           status: estado,
           createdBy: empleado.userId,

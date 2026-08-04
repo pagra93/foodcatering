@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  getRequiredSession,
-  getScopedTenantId,
-  TenantMismatchError,
-} from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
+import { getScopedTenantId } from '@/lib/auth/session'
 import { permittedAction } from '@/lib/auth/permissions'
 import { prisma } from '@/lib/db/prisma'
 import { getWeeklyMenus } from '@/lib/db/queries/empresa-catering'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 /**
  * GET /api/empresa/catering/menus
@@ -28,7 +26,11 @@ const VIEW_ROLES = [
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
 
     if (
       !permittedAction(
@@ -38,7 +40,7 @@ export async function GET(request: NextRequest) {
         VIEW_ROLES
       )
     ) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     const searchParams = request.nextUrl.searchParams
@@ -47,10 +49,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
 
     if (!cateringId || !startDate || !endDate) {
-      return NextResponse.json(
-        { error: 'Missing required parameters' },
-        { status: 400 }
-      )
+      return apiError(400, 'Faltan parámetros obligatorios')
     }
 
     const tenantId = await getScopedTenantId(request)
@@ -72,10 +71,7 @@ export async function GET(request: NextRequest) {
       : null
 
     if (!assignment) {
-      return NextResponse.json(
-        { error: 'Catering no asignado a tu empresa' },
-        { status: 403 }
-      )
+      return apiError(403, 'Catering no asignado a tu empresa')
     }
 
     const menus = await getWeeklyMenus(
@@ -85,14 +81,11 @@ export async function GET(request: NextRequest) {
     )
 
     return NextResponse.json(menus)
-  } catch (error: any) {
-    if (error instanceof TenantMismatchError) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    }
-    console.error('Error fetching menus:', error)
-    return NextResponse.json(
-      { error: error.message || 'Error al obtener menús' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'GET /api/empresa/catering/menus',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener los menús',
+    })
   }
 }

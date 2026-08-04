@@ -1,17 +1,16 @@
 'use server'
 
-import { createHash } from 'node:crypto'
 import { revalidatePath } from 'next/cache'
 import type { Session } from 'next-auth'
-import { Prisma, type InvoiceStatus } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 // F5: generación de facturación es admin cross-tenant → cliente sin guard.
 import { prismaAdmin as prisma } from '@/lib/db/prisma-admin'
 import { auth } from '@/lib/auth'
-import { logAudit } from '@/lib/auth/audit'
+import { logAudit, buildAuditIntegrityHash } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
-import { isAnnualBillingDue } from '@/lib/billing/cycle'
+import { DomainError } from '@/lib/errors'
+import { generateMonthBilling } from '@/lib/billing/generate-month'
 import {
-  DEFAULT_DUE_DAYS,
   generateMonthSchema,
   markPaidSchema,
   updateTaxRuleSchema,
@@ -26,19 +25,10 @@ async function requireSuperAdmin(permission: string) {
   return session.user
 }
 
-function firstDayOfNextMonth(period: string): Date {
-  const [y, m] = period.split('-').map(Number)
-  return new Date(y!, m!, 1) // m es 1..12, new Date(y, m) = primer día mes siguiente
-}
-
-function sha256(value: string): string {
-  return createHash('sha256').update(value).digest('hex')
-}
-
 /**
  * Generación mensual: crea Settlements + SaasInvoices para el período
- * indicado. Las Invoice catering→empresa ya existen (generadas en el
- * flujo A existente), aquí solo se agregan.
+ * indicado. La lógica vive en lib/billing/generate-month.ts (compartida con
+ * el job `monthly-billing` de /api/cron); aquí solo authz + revalidación.
  */
 export async function generateMonthBillingAction(input: {
   period: string
@@ -47,273 +37,11 @@ export async function generateMonthBillingAction(input: {
   const actor = await requireSuperAdmin('settlement:create')
   const { period, dryRun } = generateMonthSchema.parse(input)
 
-  // ── Settlements (comisión catering → Plati) ────────────────────
-  const caterings = await prisma.tenant.findMany({
-    where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
-    include: {
-      restaurants: {
-        select: {
-          saasPlan: {
-            select: { pricingModel: true, commissionPct: true, flatMonthlyFee: true },
-          },
-        },
-      },
-    },
+  const result = await generateMonthBilling({
+    period,
+    dryRun,
+    actorId: actor.id,
   })
-
-  const dueBy = new Date(firstDayOfNextMonth(period))
-  dueBy.setDate(dueBy.getDate() + DEFAULT_DUE_DAYS)
-
-  let settlementsCreated = 0
-  let settlementsSkipped = 0
-
-  for (const c of caterings) {
-    const existing = await prisma.settlement.findUnique({
-      where: { tenantCatering_period: { tenantCatering: c.id, period } },
-    })
-    if (existing) {
-      settlementsSkipped++
-      continue
-    }
-
-    // La comisión se calcula sobre la BASE IMPONIBLE (subtotal, sin IVA): el IVA
-    // lo recauda el catering para Hacienda, no forma parte de su facturación.
-    // Base de la comisión: SOLO facturas realmente emitidas. Excluir borradores
-    // (DRAFT) y anuladas (CANCELLED/VOID) — antes se sumaban y el catering pagaba
-    // comisión de más.
-    const invoiceBilled: InvoiceStatus[] = ['ISSUED', 'SENT', 'PAID', 'OVERDUE']
-    const invoicesAgg = await prisma.invoice.aggregate({
-      where: { tenantCatering: c.id, period, status: { in: invoiceBilled } },
-      _sum: { subtotal: true },
-    })
-    const gross = Number(invoicesAgg._sum.subtotal ?? 0)
-
-    // El cobro sale del PLAN del catering (Restaurant.saasPlan):
-    //  · COMMISSION → comisión = base × commissionPct  (rate = commissionPct)
-    //  · FIXED      → comisión = flatMonthlyFee         (rate = 0)
-    // Sin plan asignado → no se cobra (rate 0). El alta siempre asigna plan.
-    const restaurant = c.restaurants[0]
-    const plan = restaurant?.saasPlan
-    let commissionRate: number
-    let commissionAmount: number
-    if (plan?.pricingModel === 'FIXED') {
-      commissionRate = 0
-      commissionAmount = Number(plan.flatMonthlyFee ?? 0)
-    } else if (plan?.pricingModel === 'COMMISSION') {
-      commissionRate = Number(plan.commissionPct ?? 0)
-      commissionAmount = Math.round(gross * commissionRate * 100) / 100
-    } else {
-      commissionRate = 0
-      commissionAmount = 0
-    }
-
-    // Se descuentan las penalizaciones que se APLICARON (settledAt) durante el
-    // mes liquidado — no las creadas (appliedAt). Así una penalización creada un
-    // mes y aplicada al siguiente se descuenta en el mes correcto, sin perderse.
-    const penaltiesAgg = await prisma.penalty.aggregate({
-      where: {
-        tenantCatering: c.id,
-        status: 'APPLIED',
-        settledAt: {
-          gte: new Date(`${period}-01T00:00:00.000Z`),
-          lt: firstDayOfNextMonth(period),
-        },
-      },
-      _sum: { amount: true },
-    })
-    const penalties = Number(penaltiesAgg._sum.amount ?? 0)
-
-    const netOwed = Math.max(0, commissionAmount - penalties)
-
-    if (dryRun) {
-      settlementsCreated++
-      continue
-    }
-
-    const created = await prisma.settlement.create({
-      data: {
-        tenantCatering: c.id,
-        period,
-        grossAmount: gross,
-        commissionRate,
-        commissionAmount,
-        penalties,
-        netOwed,
-        status: 'ISSUED',
-        issuedAt: new Date(),
-        dueBy,
-        integrityHash: sha256(
-          `${c.id}|${period}|${gross}|${commissionAmount}|${penalties}|${netOwed}`
-        ),
-      },
-    })
-
-    await logAudit({
-      tenantId: c.id,
-      actorId: actor.id,
-      action: 'CREATE',
-      entity: 'Settlement',
-      entityId: created.id,
-      diff: {
-        before: null,
-        after: {
-          period,
-          gross,
-          commissionAmount,
-          penalties,
-          netOwed,
-        },
-      },
-    })
-
-    settlementsCreated++
-  }
-
-  // ── SaasInvoices (plan Plati → empresa) ────────────────────────
-  const companies = await prisma.company.findMany({
-    where: {
-      tenant: { status: 'ACTIVE', deletedAt: null },
-    },
-    select: {
-      tenantId: true,
-      legalName: true,
-      saasPlanId: true,
-      billingCycle: true,
-      subscriptionStartedAt: true,
-    },
-  })
-
-
-  const plans = await prisma.saasPlan.findMany({ where: { active: true } })
-  const planById = new Map(plans.map((p) => [p.id, p]))
-
-  const taxRule = await prisma.taxRule.findFirst({
-    where: { code: 'IVA_GENERAL', active: true },
-  })
-  const taxRate = taxRule ? Number(taxRule.rate) : 21
-
-  // Último correlativo del año
-  const yearPrefix = `SAAS-${period.slice(0, 4)}-`
-  const lastInvoice = await prisma.saasInvoice.findFirst({
-    where: { number: { startsWith: yearPrefix } },
-    orderBy: { number: 'desc' },
-  })
-  let counter = lastInvoice
-    ? parseInt(lastInvoice.number.slice(yearPrefix.length), 10) + 1
-    : 1
-
-  let saasCreated = 0
-  let saasSkipped = 0
-
-  for (const c of companies) {
-    const plan = c.saasPlanId ? planById.get(c.saasPlanId) : undefined
-    if (!plan) {
-      saasSkipped++
-      continue
-    }
-
-    const existing = await prisma.saasInvoice.findUnique({
-      where: { tenantEmpresa_period: { tenantEmpresa: c.tenantId, period } },
-    })
-    if (existing) {
-      saasSkipped++
-      continue
-    }
-
-    // F3: ciclo de cobro. YEARLY cobra el precio anual UNA vez al año, en el mes
-    // de aniversario del alta (subscriptionStartedAt); el resto de meses se salta.
-    let subtotal: number
-    if (c.billingCycle === 'YEARLY') {
-      if (!isAnnualBillingDue(period, c.subscriptionStartedAt)) {
-        saasSkipped++
-        continue
-      }
-      subtotal = plan.yearlyPrice ? Number(plan.yearlyPrice) : 0
-    } else {
-      subtotal = Number(plan.monthlyPrice)
-    }
-    // No emitir facturas de 0€ (plan sin precio para el ciclo elegido).
-    if (subtotal <= 0) {
-      saasSkipped++
-      continue
-    }
-    const taxAmount = Math.round(subtotal * (taxRate / 100) * 100) / 100
-    const total = subtotal + taxAmount
-
-    if (dryRun) {
-      saasCreated++
-      continue
-    }
-
-    // Correlativo robusto: si otro proceso tomó el mismo número (unique [number]),
-    // recomputar el siguiente y reintentar. Si ya existe para (empresa, período),
-    // saltar. Evita numeración duplicada en ejecuciones concurrentes.
-    let created: Awaited<ReturnType<typeof prisma.saasInvoice.create>> | null = null
-    let skipDup = false
-    for (let attempt = 0; attempt < 6 && !created && !skipDup; attempt++) {
-      const number = `${yearPrefix}${String(counter).padStart(4, '0')}`
-      try {
-        created = await prisma.saasInvoice.create({
-          data: {
-            tenantEmpresa: c.tenantId,
-            period,
-            planCode: plan.code,
-            planName: plan.name,
-            number,
-            cycle: c.billingCycle,
-            subtotal,
-            taxRate,
-            taxAmount,
-            total,
-            status: 'ISSUED',
-            issuedAt: new Date(),
-            dueBy,
-            integrityHash: sha256(
-              `${c.tenantId}|${period}|${plan.code}|${total}|${number}`
-            ),
-          },
-        })
-        counter++
-      } catch (e) {
-        if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-          const dup = await prisma.saasInvoice.findUnique({
-            where: { tenantEmpresa_period: { tenantEmpresa: c.tenantId, period } },
-          })
-          if (dup) {
-            skipDup = true
-            break
-          }
-          const last = await prisma.saasInvoice.findFirst({
-            where: { number: { startsWith: yearPrefix } },
-            orderBy: { number: 'desc' },
-          })
-          counter = last
-            ? parseInt(last.number.slice(yearPrefix.length), 10) + 1
-            : 1
-          continue
-        }
-        throw e
-      }
-    }
-    if (!created) {
-      saasSkipped++
-      continue
-    }
-
-    await logAudit({
-      tenantId: c.tenantId,
-      actorId: actor.id,
-      action: 'CREATE',
-      entity: 'SaasInvoice',
-      entityId: created.id,
-      diff: {
-        before: null,
-        after: { period, plan: plan.code, total, number: created.number },
-      },
-    })
-
-    saasCreated++
-  }
 
   if (!dryRun) {
     revalidatePath('/admin/billing')
@@ -321,14 +49,7 @@ export async function generateMonthBillingAction(input: {
     revalidatePath('/admin/billing/saas-invoices')
   }
 
-  return {
-    dryRun: !!dryRun,
-    period,
-    settlementsCreated,
-    settlementsSkipped,
-    saasCreated,
-    saasSkipped,
-  }
+  return result
 }
 
 export async function markSettlementPaidAction(input: {
@@ -340,30 +61,46 @@ export async function markSettlementPaidAction(input: {
   const data = markPaidSchema.parse(input)
 
   const current = await prisma.settlement.findUnique({ where: { id: data.id } })
-  if (!current) throw new Error('Liquidación no encontrada')
+  if (!current) throw new DomainError('Liquidación no encontrada', 404)
   if (current.status === 'PAID') {
-    throw new Error('Ya está pagada')
+    throw new DomainError('Ya está pagada', 409)
   }
 
-  const updated = await prisma.settlement.update({
-    where: { id: data.id },
-    data: {
-      status: 'PAID',
-      paidAt: new Date(),
-      paymentRef: data.paymentRef,
-    },
-  })
+  // Cobro + auditoría en la MISMA transacción (dinero pagado nunca sin rastro)
+  // y transición condicionada al estado leído (doble click: solo uno gana).
+  const updated = await prisma.$transaction(async (tx) => {
+    const res = await tx.settlement.updateMany({
+      where: { id: data.id, status: current.status },
+      data: {
+        status: 'PAID',
+        paidAt: new Date(),
+        paymentRef: data.paymentRef,
+      },
+    })
+    if (res.count !== 1) {
+      throw new DomainError('La liquidación cambió de estado; recarga la página', 409)
+    }
+    const row = await tx.settlement.findUniqueOrThrow({ where: { id: data.id } })
 
-  await logAudit({
-    tenantId: current.tenantCatering,
-    actorId: actor.id,
-    action: 'INVOICE_PAID',
-    entity: 'Settlement',
-    entityId: updated.id,
-    diff: {
-      before: { status: current.status },
-      after: { status: 'PAID', paymentRef: data.paymentRef },
-    },
+    const auditBase = {
+      tenantId: current.tenantCatering,
+      actorId: actor.id,
+      action: 'INVOICE_PAID' as const,
+      entity: 'Settlement',
+      entityId: row.id,
+    }
+    await tx.auditLog.create({
+      data: {
+        ...auditBase,
+        impersonatorId: null,
+        diff: {
+          before: { status: current.status },
+          after: { status: 'PAID', paymentRef: data.paymentRef ?? null },
+        } as Prisma.InputJsonValue,
+        hash: buildAuditIntegrityHash(auditBase),
+      },
+    })
+    return row
   })
 
   revalidatePath('/admin/billing/settlements')
@@ -380,29 +117,44 @@ export async function markSaasInvoicePaidAction(input: {
   const data = markPaidSchema.parse(input)
 
   const current = await prisma.saasInvoice.findUnique({ where: { id: data.id } })
-  if (!current) throw new Error('Factura no encontrada')
-  if (current.status === 'PAID') throw new Error('Ya está pagada')
+  if (!current) throw new DomainError('Factura no encontrada', 404)
+  if (current.status === 'PAID') throw new DomainError('Ya está pagada', 409)
 
-  const updated = await prisma.saasInvoice.update({
-    where: { id: data.id },
-    data: {
-      status: 'PAID',
-      paidAt: new Date(),
-      paymentRef: data.paymentRef,
-      paymentMethod: data.paymentMethod,
-    },
-  })
+  // Cobro + auditoría en la MISMA transacción, condicionado al estado leído.
+  const updated = await prisma.$transaction(async (tx) => {
+    const res = await tx.saasInvoice.updateMany({
+      where: { id: data.id, status: current.status },
+      data: {
+        status: 'PAID',
+        paidAt: new Date(),
+        paymentRef: data.paymentRef,
+        paymentMethod: data.paymentMethod,
+      },
+    })
+    if (res.count !== 1) {
+      throw new DomainError('La factura cambió de estado; recarga la página', 409)
+    }
+    const row = await tx.saasInvoice.findUniqueOrThrow({ where: { id: data.id } })
 
-  await logAudit({
-    tenantId: current.tenantEmpresa,
-    actorId: actor.id,
-    action: 'INVOICE_PAID',
-    entity: 'SaasInvoice',
-    entityId: updated.id,
-    diff: {
-      before: { status: current.status },
-      after: { status: 'PAID' },
-    },
+    const auditBase = {
+      tenantId: current.tenantEmpresa,
+      actorId: actor.id,
+      action: 'INVOICE_PAID' as const,
+      entity: 'SaasInvoice',
+      entityId: row.id,
+    }
+    await tx.auditLog.create({
+      data: {
+        ...auditBase,
+        impersonatorId: null,
+        diff: {
+          before: { status: current.status },
+          after: { status: 'PAID' },
+        } as Prisma.InputJsonValue,
+        hash: buildAuditIntegrityHash(auditBase),
+      },
+    })
+    return row
   })
 
   revalidatePath('/admin/billing/saas-invoices')

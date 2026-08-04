@@ -115,6 +115,7 @@ export async function createEmpresaUserAction(
     subject: welcome.subject,
     html: welcome.html,
     text: welcome.text,
+    template: 'welcome',
   })
 
   revalidatePath('/empresa/configuracion/usuarios')
@@ -266,7 +267,7 @@ export async function resetEmpresaUserPasswordAction(input: {
     byAdmin: true,
     expiresMinutes: TOKEN_TTL_MINUTES,
   })
-  const result = await sendEmail({ to: current.email, subject, html, text })
+  const result = await sendEmail({ to: current.email, subject, html, text, template: 'password-reset' })
 
   await logAudit({
     tenantId: actor.tenantId,

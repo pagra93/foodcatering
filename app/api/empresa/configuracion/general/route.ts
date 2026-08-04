@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  getRequiredSession,
-  getScopedTenantId,
-  TenantMismatchError,
-} from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
+import { getScopedTenantId } from '@/lib/auth/session'
 import { updateCompanyGeneral } from '@/lib/db/queries/empresa-configuracion'
 import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 const updateGeneralSchema = z.object({
   // Campos del modelo Company
@@ -46,38 +44,40 @@ const updateGeneralSchema = z.object({
  */
 export async function PATCH(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA']
     if (!permittedAction(session.user.permissions, session.user.role as string, 'emp-config:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     const tenantId = await getScopedTenantId(request)
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const validated = updateGeneralSchema.parse(body)
 
     const company = await updateCompanyGeneral(tenantId, validated)
 
     return NextResponse.json(company)
   } catch (error) {
-    if (error instanceof TenantMismatchError) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
+    // Mensajes de negocio conocidos (transforms del schema updateGeneralSchema).
+    if (error instanceof Error && error.message === 'Email RRHH inválido') {
+      return apiError(400, error.message)
     }
-
-    console.error('Error updating company general:', error)
-
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: (error as unknown as { errors: unknown }).errors },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'Email Finanzas inválido') {
+      return apiError(400, error.message)
     }
-
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al actualizar' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/empresa/configuracion/general',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar la información de la empresa',
+    })
   }
 }

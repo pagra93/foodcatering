@@ -5,7 +5,8 @@
 
 import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getTenant } from '@/lib/tenant/get-tenant'
+import { prisma } from '@/lib/db/prisma'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 import { z } from 'zod'
 import bcrypt from 'bcryptjs'
 import { BCRYPT_COST } from '@/lib/auth/password'
@@ -29,27 +30,19 @@ const changePasswordSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Verificar autenticación
     const session = await auth()
-    if (!session) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+    if (!session?.user) return apiError(401, 'No autenticado')
+
+    // Tenant desde la sesión (la cabecera x-tenant-id ni llega a /api ni es
+    // de fiar). Solo usuarios de tenant EMPRESA usan este endpoint.
+    if (session.user.tenantType !== 'EMPRESA') {
+      return apiError(403, 'Este endpoint solo está disponible para empresas')
     }
 
-    // Verificar tenant
-    const tenant = await getTenant()
-    if (tenant.type !== 'EMPRESA') {
-      return NextResponse.json(
-        { error: 'Este endpoint solo está disponible para empresas' },
-        { status: 403 }
-      )
-    }
-
-    // Parsear y validar body
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) return apiError(400, 'Cuerpo JSON inválido')
     const validated = changePasswordSchema.parse(body)
 
-    // Obtener usuario actual
-    const { prisma } = await import('@/lib/db/prisma')
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
       select: {
@@ -59,29 +52,20 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user || !user.passwordHash) {
-      return NextResponse.json(
-        { error: 'Usuario no encontrado o sin contraseña configurada' },
-        { status: 404 }
-      )
+      return apiError(404, 'Usuario no encontrado o sin contraseña configurada')
     }
 
-    // Verificar contraseña actual
     const isPasswordValid = await bcrypt.compare(
       validated.currentPassword,
       user.passwordHash
     )
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'La contraseña actual es incorrecta' },
-        { status: 400 }
-      )
+      return apiError(400, 'La contraseña actual es incorrecta')
     }
 
-    // Hash de la nueva contraseña
     const hashedPassword = await bcrypt.hash(validated.newPassword, BCRYPT_COST)
 
-    // Actualizar contraseña
     await prisma.user.update({
       where: { id: user.id },
       data: {
@@ -95,20 +79,11 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Contraseña actualizada correctamente',
     })
-  } catch (error: any) {
-    console.error('Error changing password:', error)
-
-    if (error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: error.message || 'Error al cambiar la contraseña' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'POST /api/empleado/cambiar-password',
+      requestId: requestIdFrom(req),
+      fallback: 'Error al cambiar la contraseña',
+    })
   }
 }
-

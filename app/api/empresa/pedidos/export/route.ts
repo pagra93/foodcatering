@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { getRequiredSession, getScopedTenantId, TenantMismatchError } from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
+import { getScopedTenantId } from '@/lib/auth/session'
 import { exportOrdersCSV, type OrderFilters } from '@/lib/db/queries/empresa-pedidos'
 import { permittedAction } from '@/lib/auth/permissions'
 import { exportRateLimiter } from '@/lib/ratelimit'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 /**
  * GET /api/empresa/pedidos/export
@@ -10,11 +12,15 @@ import { exportRateLimiter } from '@/lib/ratelimit'
  */
 export async function GET(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH', 'FINANZAS']
     if (!permittedAction(session.user.permissions, session.user.role as string, 'emp-order:export', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     const tenantId = await getScopedTenantId(request)
@@ -52,15 +58,10 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    if (error instanceof TenantMismatchError) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    }
-
-    console.error('Error exporting orders:', error)
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al exportar pedidos' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/empresa/pedidos/export',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al exportar los pedidos',
+    })
   }
 }
-

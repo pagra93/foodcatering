@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { createIncident } from '@/lib/db/queries/empresa-incidencias'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 const createSchema = z
   .object({
@@ -22,10 +23,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
     if (session.user.tenantType !== 'EMPRESA') {
-      return NextResponse.json({ error: 'Solo empresas' }, { status: 403 })
+      return apiError(403, 'Solo empresas')
     }
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH', 'MANAGER_SEDE', 'SUPER_ADMIN']
     if (
@@ -36,10 +37,13 @@ export async function POST(request: NextRequest) {
         allowedRoles
       )
     ) {
-      return NextResponse.json({ error: 'Sin permiso' }, { status: 403 })
+      return apiError(403, 'Sin permiso')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const data = createSchema.parse(body)
 
     const incident = await createIncident(session.user.tenantId, {
@@ -49,13 +53,21 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(incident, { status: 201 })
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+    // Mensajes de negocio conocidos (lib/db/queries/empresa-incidencias.ts#createIncident).
+    if (error instanceof Error && error.message === 'Pedido no encontrado') {
+      return apiError(404, error.message)
     }
-    const message = error instanceof Error ? error.message : 'Error al crear incidencia'
-    // El "Pedido no encontrado" es un 400 de negocio, no un 500.
-    const status = message.includes('Pedido no encontrado') ? 400 : 500
-    return NextResponse.json({ error: message }, { status })
+    if (error instanceof Error && error.message === 'Motivo no encontrado') {
+      return apiError(400, error.message)
+    }
+    if (error instanceof Error && error.message === 'Falta el motivo de la incidencia') {
+      return apiError(400, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'POST /api/empresa/incidencias',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear la incidencia',
+    })
   }
 }
 

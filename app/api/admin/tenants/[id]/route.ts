@@ -9,8 +9,8 @@ import {
   updateTenant,
   deleteTenant
 } from '@/lib/db/queries/tenants'
-import { getRequiredSession } from '@/lib/auth/session'
-import { ZodError } from 'zod'
+import { auth } from '@/lib/auth'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type Params = {
   params: {
@@ -19,48 +19,51 @@ type Params = {
 }
 
 // GET: Obtener tenant por ID
-export async function GET(_request: NextRequest, { params }: Params) {
+export async function GET(request: NextRequest, { params }: Params) {
   try {
-    const session = await getRequiredSession()
-    
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
+
     if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permisos' },
-        { status: 403 }
-      )
+      return apiError(403, 'No tienes permisos')
     }
 
     const tenant = await getTenantById(params.id)
 
     return NextResponse.json({ tenant })
   } catch (error) {
+    // Mensaje de negocio conocido (lib/db/queries/tenants.ts#getTenantById).
     if (error instanceof Error && error.message === 'Tenant no encontrado') {
-      return NextResponse.json(
-        { error: 'Tenant no encontrado' },
-        { status: 404 }
-      )
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/admin/tenants/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener el tenant',
+    })
   }
 }
 
 // PATCH: Actualizar tenant
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
-    const session = await getRequiredSession()
-    
-    if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permisos' },
-        { status: 403 }
-      )
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
     }
 
-    const body = await request.json()
+    if (session.user.role !== 'SUPER_ADMIN') {
+      return apiError(403, 'No tienes permisos')
+    }
+
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const data = updateTenantSchema.parse({ ...body, id: params.id })
 
     const { id, ...updateData } = data
@@ -72,37 +75,32 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       message: 'Tenant actualizado exitosamente'
     })
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/tenants.ts#updateTenant).
+    if (error instanceof Error && error.message === 'Tenant no encontrado') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'El subdominio ya está en uso') {
+      return apiError(400, error.message)
     }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/admin/tenants/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar el tenant',
+    })
   }
 }
 
 // DELETE: Soft delete de tenant
-export async function DELETE(_request: NextRequest, { params }: Params) {
+export async function DELETE(request: NextRequest, { params }: Params) {
   try {
-    const session = await getRequiredSession()
-    
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
+
     if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permisos' },
-        { status: 403 }
-      )
+      return apiError(403, 'No tienes permisos')
     }
 
     await deleteTenant(params.id, session.user.id)
@@ -112,17 +110,10 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       message: 'Tenant eliminado exitosamente'
     })
   } catch (error) {
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'DELETE /api/admin/tenants/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al eliminar el tenant',
+    })
   }
 }
-

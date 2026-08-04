@@ -7,6 +7,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Pencil, Plus, Trash2 } from 'lucide-react'
@@ -146,15 +147,33 @@ export function AnnouncementManager({ announcements }: { announcements: Announce
 
   const toggle = (a: AnnouncementRow) =>
     startTransition(async () => {
-      await toggleAnnouncementAction(a.id, !a.active).catch(() => {})
-      router.refresh()
+      try {
+        const res = await toggleAnnouncementAction(a.id, !a.active)
+        if (res.error) {
+          toast.error(`No se pudo cambiar el estado del aviso: ${res.error}`)
+          return
+        }
+        router.refresh()
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : 'No se pudo cambiar el estado del aviso.'
+        )
+      }
     })
 
   const remove = (a: AnnouncementRow) => {
     if (!window.confirm(`¿Eliminar el aviso "${a.title}"?`)) return
     startTransition(async () => {
-      await deleteAnnouncementAction(a.id).catch(() => {})
-      router.refresh()
+      try {
+        const res = await deleteAnnouncementAction(a.id)
+        if (res.error) {
+          toast.error(`No se pudo eliminar el aviso: ${res.error}`)
+          return
+        }
+        router.refresh()
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'No se pudo eliminar el aviso.')
+      }
     })
   }
 

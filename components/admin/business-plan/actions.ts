@@ -13,7 +13,7 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { saveScenarioSchema, actualsSchema } from '@/lib/validations/finance'
-import { getBillingDashboardKPIs } from '@/lib/db/queries/admin-billing'
+import { captureMrrSnapshot } from '@/lib/business-plan/snapshot'
 
 type ActionResult = { ok?: boolean; error?: string; key?: string }
 
@@ -92,31 +92,10 @@ export async function saveActualsAction(input: unknown): Promise<ActionResult> {
 /** Captura la foto de MRR/empresas/caterings del período dado (o el actual). */
 export async function captureMrrSnapshotAction(period?: string): Promise<ActionResult> {
   const actor = await requireEdit()
-  const now = new Date()
-  const p = period ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-
-  const kpis = await getBillingDashboardKPIs()
-  const activeCaterings = await prisma.tenant.count({
-    where: { type: 'CATERING', status: 'ACTIVE', deletedAt: null },
-  })
-
-  const row = await prisma.mrrSnapshot.upsert({
-    where: { period: p },
-    create: {
-      period: p,
-      mrr: kpis.mrrSaas,
-      arr: kpis.arrSaas,
-      activeCompanies: kpis.activeCompanies,
-      activeCaterings,
-    },
-    update: {
-      mrr: kpis.mrrSaas,
-      arr: kpis.arrSaas,
-      activeCompanies: kpis.activeCompanies,
-      activeCaterings,
-    },
-  })
-  await logAudit({ actorId: actor.id, action: 'CREATE', entity: 'MrrSnapshot', entityId: row.id, diff: { after: { period: p, mrr: kpis.mrrSaas } } })
+  // La captura vive en lib/business-plan/snapshot.ts (compartida con el job
+  // diario `mrr-snapshot` de /api/cron).
+  const snap = await captureMrrSnapshot(period)
+  await logAudit({ actorId: actor.id, action: 'CREATE', entity: 'MrrSnapshot', entityId: snap.id, diff: { after: { period: snap.period, mrr: snap.mrr } } })
   revalidatePath('/admin/business-plan')
   return { ok: true }
 }

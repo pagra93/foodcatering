@@ -8,48 +8,48 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getInvoices } from '@/lib/db/queries/catering-invoices'
 import { invoiceFiltersSchema } from '@/lib/validations/invoice'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function GET(request: NextRequest) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'invoice:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear filtros
     const searchParams = request.nextUrl.searchParams
-    const filters: any = {}
+    const filters: Record<string, unknown> = {}
 
     if (searchParams.get('companyId')) {
-      filters.companyId = searchParams.get('companyId')
+      filters['companyId'] = searchParams.get('companyId')
     }
 
     if (searchParams.get('status')) {
-      filters.status = searchParams.get('status')
+      filters['status'] = searchParams.get('status')
     }
 
     if (searchParams.get('year')) {
-      filters.year = parseInt(searchParams.get('year')!)
+      filters['year'] = parseInt(searchParams.get('year')!)
     }
 
     if (searchParams.get('month')) {
-      filters.month = parseInt(searchParams.get('month')!)
+      filters['month'] = parseInt(searchParams.get('month')!)
     }
 
     if (searchParams.get('startDate')) {
-      filters.startDate = new Date(searchParams.get('startDate')!)
+      filters['startDate'] = new Date(searchParams.get('startDate')!)
     }
 
     if (searchParams.get('endDate')) {
-      filters.endDate = new Date(searchParams.get('endDate')!)
+      filters['endDate'] = new Date(searchParams.get('endDate')!)
     }
 
     // Validar filtros
@@ -63,26 +63,10 @@ export async function GET(request: NextRequest) {
       data: invoices,
     })
   } catch (error) {
-    console.error('[INVOICES_GET]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Filtros inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener facturas',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/facturas',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener las facturas',
+    })
   }
 }
-

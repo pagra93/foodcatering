@@ -83,7 +83,9 @@ export async function createRoute(tenantId: string, data: CreateRouteInput) {
           gte: startOfDay(data.date),
           lte: endOfDay(data.date),
         },
-        status: 'CONFIRMED',
+        // Tras el cutoff los pedidos quedan LOCKED_AFTER_CUTOFF (job
+        // lock-orders): para las rutas también son pedidos definitivos.
+        status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
       },
       select: { id: true },
     })

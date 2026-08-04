@@ -5,6 +5,27 @@
 
 import { prisma } from '@/lib/db/prisma'
 import { startOfMonth, endOfMonth, subMonths } from 'date-fns'
+import { selectionDishIds } from '@/lib/orders/selection'
+
+/**
+ * Nombres de plato para las selecciones de una lista de pedidos (hidratación
+ * de UI: la forma canónica de `Order.selection` solo lleva ids). Lookup
+ * acotado por id → exento del guard de tenant.
+ */
+export async function getDishNamesForSelections(
+  selections: unknown[]
+): Promise<Record<string, string>> {
+  const ids = new Set<string>()
+  for (const sel of selections) {
+    for (const id of selectionDishIds(sel)) ids.add(id)
+  }
+  if (ids.size === 0) return {}
+  const dishes = await prisma.dish.findMany({
+    where: { id: { in: Array.from(ids) } },
+    select: { id: true, name: true },
+  })
+  return Object.fromEntries(dishes.map((d) => [d.id, d.name]))
+}
 
 // ============================================================================
 // OBTENER HISTORIAL DE PEDIDOS CON FILTROS
@@ -199,25 +220,18 @@ export async function getOrderHistoryKPIs(employeeId: string) {
 // ============================================================================
 
 export async function getAvailableMonths(employeeId: string) {
-  const orders = await prisma.order.findMany({
-    where: { employeeId },
-    select: {
-      serviceDate: true,
-    },
-    orderBy: {
-      serviceDate: 'desc',
-    },
-  })
+  // Meses agregados en SQL (GROUP BY sobre el mes) — antes se traía TODO el
+  // historial del empleado a Node solo para deduplicar meses en JS.
+  // Mismo shape de retorno: Date[] (inicio de mes) en orden descendente.
+  const rows = await prisma.$queryRaw<{ month: Date }[]>`
+    SELECT date_trunc('month', service_date)::date AS month
+    FROM orders
+    WHERE employee_id = ${employeeId}
+    GROUP BY 1
+    ORDER BY 1 DESC
+  `
 
-  // Extraer meses únicos
-  const monthsSet = new Set<string>()
-  orders.forEach((order) => {
-    const month = startOfMonth(order.serviceDate)
-    monthsSet.add(month.toISOString())
-  })
-
-  return Array.from(monthsSet)
-    .map((monthStr) => new Date(monthStr))
-    .sort((a, b) => b.getTime() - a.getTime())
+  // Normalizar igual que antes (startOfMonth sobre la fecha que da Prisma).
+  return rows.map((row) => startOfMonth(row.month))
 }
 

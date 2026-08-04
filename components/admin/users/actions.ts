@@ -128,6 +128,7 @@ export async function createUserAction(input: z.infer<typeof createUserSchema>) 
     subject: welcome.subject,
     html: welcome.html,
     text: welcome.text,
+    template: 'welcome',
   })
 
   revalidatePath('/admin/users')
@@ -325,7 +326,7 @@ export async function resetPasswordAction(input: { userId: string }) {
     byAdmin: true,
     expiresMinutes: TOKEN_TTL_MINUTES,
   })
-  const result = await sendEmail({ to: current.email, subject, html, text })
+  const result = await sendEmail({ to: current.email, subject, html, text, template: 'password-reset' })
 
   const headers = AUDIT_HEADERS
   await logAudit({

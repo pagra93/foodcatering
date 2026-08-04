@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { permittedAction } from '@/lib/auth/permissions'
 import { z } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 const updateSiteSchema = z.object({
   name: z.string().min(2).optional(),
@@ -27,13 +28,13 @@ export async function PATCH(
     // 1. Verificar autenticación
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // 2. Verificar rol
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH']
     if (!permittedAction(session.user.permissions, session.user.role, 'emp-config-site:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     // 3. Obtener tenantId
@@ -48,11 +49,14 @@ export async function PATCH(
     })
 
     if (!existingSite) {
-      return NextResponse.json({ error: 'Sede no encontrada' }, { status: 404 })
+      return apiError(404, 'Sede no encontrada')
     }
 
     // 5. Validar datos
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const validated = updateSiteSchema.parse(body)
 
     // 6. Actualizar sede
@@ -70,20 +74,12 @@ export async function PATCH(
     })
 
     return NextResponse.json(site)
-  } catch (error: any) {
-    console.error('[UPDATE_SITE_ERROR]', error)
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Error al actualizar sede' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/empresa/configuracion/sedes/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar la sede',
+    })
   }
 }
 

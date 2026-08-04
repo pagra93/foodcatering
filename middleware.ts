@@ -16,10 +16,9 @@ export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
   const host = req.headers.get('host') || ''
 
-  // Ignorar assets, API y ficheros estáticos públicos (SEO/GEO)
+  // Ignorar assets y ficheros estáticos públicos (SEO/GEO)
   if (
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
     pathname.startsWith('/favicon') ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
@@ -32,6 +31,18 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/twitter-image')
   ) {
     return NextResponse.next()
+  }
+
+  // API: solo inyectar x-request-id (correlación de logs). La autenticación la
+  // valida cada ruta; el resto del middleware (sesión, permisos de sección) es
+  // para páginas. Se genera SIEMPRE uno propio (no se confía en el entrante).
+  if (pathname.startsWith('/api')) {
+    const requestId = crypto.randomUUID()
+    const requestHeaders = new Headers(req.headers)
+    requestHeaders.set('x-request-id', requestId)
+    const res = NextResponse.next({ request: { headers: requestHeaders } })
+    res.headers.set('x-request-id', requestId)
+    return res
   }
 
   // Extraer subdomain
@@ -98,16 +109,21 @@ export async function middleware(req: NextRequest) {
     if (session?.user?.tenantId) {
       const requestHeaders = new Headers(req.headers)
       requestHeaders.set('x-tenant-id', session.user.tenantId)
-      
+      // requestId para correlacionar los logs de este render con el usuario.
+      const requestId = crypto.randomUUID()
+      requestHeaders.set('x-request-id', requestId)
+
       if (session.user.tenantType) {
         requestHeaders.set('x-tenant-type', session.user.tenantType)
       }
 
-      return NextResponse.next({
+      const res = NextResponse.next({
         request: {
           headers: requestHeaders,
         },
       })
+      res.headers.set('x-request-id', requestId)
+      return res
     } else {
       // Sin PII en logs: se identifica por userId, no por email.
       console.error('[ERROR] Usuario sin tenantId en sesión (userId: %s)', session.user.id)

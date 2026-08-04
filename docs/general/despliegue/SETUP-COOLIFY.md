@@ -358,6 +358,21 @@ Añade parámetros de conexión:
 DATABASE_URL="postgresql://USER:PASS@SERVER:PORT/comidas?schema=public&connect_timeout=10&pool_timeout=10"
 ```
 
+### 📐 Pool de conexiones recomendado (`connection_limit`)
+
+Tanto en dev como en prod, limita el pool de Prisma en la propia URL:
+
+```env
+DATABASE_URL="postgresql://USER:PASS@SERVER:PORT/comidas?schema=public&connection_limit=10&pool_timeout=20"
+```
+
+**Por qué**: la app abre **dos** clientes Prisma — el normal con guard de
+tenant (`lib/db/prisma.ts`) y el de admin sin guard (`lib/db/prisma-admin.ts`)
+— y **cada uno tiene su propio pool**. El consumo real de conexiones es
+`2 × connection_limit`, y ese total (más psql, crons, backups…) debe caber en
+el `max_connections` de Postgres. Con `connection_limit=10` el tope de la app
+son 20 conexiones, holgado para el `max_connections=100` por defecto.
+
 ---
 
 ## 🔒 Seguridad (Importante)

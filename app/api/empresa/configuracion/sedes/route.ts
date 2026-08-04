@@ -8,6 +8,8 @@ import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getCompanyEntitlements, withinLimit } from '@/lib/plans/entitlements'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
+import { DomainError } from '@/lib/errors'
 import { z } from 'zod'
 
 const createSiteSchema = z.object({
@@ -22,80 +24,63 @@ const createSiteSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Verificar autenticación
     const session = await auth()
-    if (!session?.user) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
-    }
+    if (!session?.user) return apiError(401, 'No autenticado')
 
-    // 2. Verificar rol
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH']
     if (!permittedAction(session.user.permissions, session.user.role, 'emp-config-site:create', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
-    // 3. Obtener tenantId
     const tenantId = session.user.tenantId
 
-    // 4. Buscar la empresa
     const company = await prisma.company.findUnique({
       where: { tenantId },
     })
+    if (!company) return apiError(404, 'Empresa no encontrada')
 
-    if (!company) {
-      return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
-    }
-
-    // 4b. Cuota del plan: nº de sedes activas vs maxSites.
-    const [entitlements, siteCount] = await Promise.all([
-      getCompanyEntitlements(tenantId),
-      prisma.companySite.count({ where: { tenantId, active: true } }),
-    ])
-    if (!withinLimit(entitlements, 'maxSites', siteCount)) {
-      return NextResponse.json(
-        {
-          error: `Has alcanzado el límite de sedes de tu plan (${entitlements.limits.maxSites}). Mejora tu plan para añadir más.`,
-          code: 'PLAN_LIMIT',
-        },
-        { status: 403 }
-      )
-    }
-
-    // 5. Validar datos
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) return apiError(400, 'Cuerpo JSON inválido')
     const validated = createSiteSchema.parse(body)
 
-    // 6. Crear sede
-    const site = await prisma.companySite.create({
-      data: {
-        tenantId,
-        companyId: company.id,
-        name: validated.name,
-        address: validated.address,
-        city: validated.city,
-        postalCode: validated.postalCode || null,
-        contactName: validated.contactName || null,
-        contactPhone: validated.contactPhone || null,
-        deliveryNotes: validated.deliveryNotes || null,
-        active: true,
-      },
+    // Cuota del plan validada DENTRO de la transacción con lock de la fila de
+    // la empresa: dos altas simultáneas ya no pueden colarse por encima de
+    // maxSites (check-then-act).
+    const entitlements = await getCompanyEntitlements(tenantId)
+    const site = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM companies WHERE id = ${company.id} FOR UPDATE`
+      const siteCount = await tx.companySite.count({
+        where: { tenantId, active: true },
+      })
+      if (!withinLimit(entitlements, 'maxSites', siteCount)) {
+        throw new DomainError(
+          `Has alcanzado el límite de sedes de tu plan (${entitlements.limits.maxSites}). Mejora tu plan para añadir más.`,
+          403
+        )
+      }
+
+      return tx.companySite.create({
+        data: {
+          tenantId,
+          companyId: company.id,
+          name: validated.name,
+          address: validated.address,
+          city: validated.city,
+          postalCode: validated.postalCode || null,
+          contactName: validated.contactName || null,
+          contactPhone: validated.contactPhone || null,
+          deliveryNotes: validated.deliveryNotes || null,
+          active: true,
+        },
+      })
     })
 
     return NextResponse.json(site, { status: 201 })
-  } catch (error: any) {
-    console.error('[CREATE_SITE_ERROR]', error)
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Error al crear sede' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'POST /api/empresa/configuracion/sedes',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear sede',
+    })
   }
 }
-

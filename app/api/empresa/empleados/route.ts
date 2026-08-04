@@ -1,13 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import {
-  getRequiredSession,
-  getScopedTenantId,
-  TenantMismatchError,
-} from '@/lib/auth/session'
+import { auth } from '@/lib/auth'
+import { getScopedTenantId } from '@/lib/auth/session'
 import { createEmployee } from '@/lib/db/queries/empresa-empleados'
 import { permittedAction } from '@/lib/auth/permissions'
 import { PlanLimitError } from '@/lib/plans/entitlements'
 import { z } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 const createEmployeeSchema = z.object({
   email: z.string().email(),
@@ -36,45 +34,41 @@ const createEmployeeSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   try {
-    const session = await getRequiredSession()
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
 
     const allowedRoles = ['SUPER_ADMIN', 'ADMIN_EMPRESA', 'RRHH']
     if (!permittedAction(session.user.permissions, session.user.role as string, 'employee:create', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     const tenantId = await getScopedTenantId(request)
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const validated = createEmployeeSchema.parse(body)
 
     const employee = await createEmployee(tenantId, validated)
 
     return NextResponse.json(employee, { status: 201 })
   } catch (error) {
-    if (error instanceof TenantMismatchError) {
-      return NextResponse.json({ error: error.message }, { status: 403 })
-    }
-
+    // Cuota del plan superada: mensaje pensado para el usuario (CTA de upgrade).
     if (error instanceof PlanLimitError) {
-      return NextResponse.json(
-        { error: error.message, code: error.code },
-        { status: 403 }
-      )
+      return apiError(403, error.message)
     }
-
-    console.error('Error creating employee:', error)
-
-    if (error instanceof Error && error.name === 'ZodError') {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: (error as unknown as { errors: unknown }).errors },
-        { status: 400 }
-      )
+    // Mensaje de negocio conocido (lib/db/queries/empresa-empleados.ts#createEmployee).
+    if (error instanceof Error && error.message === 'Ya existe un usuario con ese email') {
+      return apiError(409, error.message)
     }
-
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Error al crear empleado' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/empresa/empleados',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear el empleado',
+    })
   }
 }

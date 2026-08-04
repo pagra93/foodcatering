@@ -15,7 +15,7 @@ import {
   dishNameExists,
 } from '@/lib/db/queries/catering-dishes'
 import { updateDishSchema } from '@/lib/validations/dish'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -27,7 +27,7 @@ type RouteContext = {
  * GET - Obtener detalle de un plato
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
   try {
@@ -35,7 +35,7 @@ export async function GET(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos
@@ -48,20 +48,14 @@ export async function GET(
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Obtener plato
     const dish = await getDishById(params.id, session.user.tenantId)
 
     if (!dish) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Plato no encontrado',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Plato no encontrado')
     }
 
     return NextResponse.json({
@@ -69,15 +63,11 @@ export async function GET(
       data: dish,
     })
   } catch (error) {
-    console.error('[DISH_GET]', error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener plato',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/platos/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener el plato',
+    })
   }
 }
 
@@ -93,18 +83,21 @@ export async function PATCH(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Validar datos
     const validatedData = updateDishSchema.parse(body)
@@ -118,13 +111,7 @@ export async function PATCH(
       )
 
       if (nameExists) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Ya existe otro plato con ese nombre',
-          },
-          { status: 409 }
-        )
+        return apiError(409, 'Ya existe otro plato con ese nombre')
       }
     }
 
@@ -141,36 +128,15 @@ export async function PATCH(
       message: 'Plato actualizado correctamente',
     })
   } catch (error) {
-    console.error('[DISH_PATCH]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
+    // Mensaje de negocio conocido (lib/db/queries/catering-dishes.ts#updateDish).
     if (error instanceof Error && error.message === 'Dish not found') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Plato no encontrado',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Plato no encontrado')
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al actualizar plato',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/catering/platos/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar el plato',
+    })
   }
 }
 
@@ -178,7 +144,7 @@ export async function PATCH(
  * DELETE - Eliminar un plato (soft delete)
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: RouteContext
 ) {
   try {
@@ -186,14 +152,14 @@ export async function DELETE(
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (solo ADMIN_CATERING y CHEF)
     const allowedRoles = ['ADMIN_CATERING', 'CHEF']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'dish:delete', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Eliminar plato
@@ -204,37 +170,20 @@ export async function DELETE(
       message: 'Plato eliminado correctamente',
     })
   } catch (error) {
-    console.error('[DISH_DELETE]', error)
-
-    if (error instanceof Error) {
-      if (error.message === 'Dish not found') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Plato no encontrado',
-          },
-          { status: 404 }
-        )
-      }
-
-      if (error.message.includes('está en') && error.message.includes('menú')) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: error.message,
-          },
-          { status: 409 }
-        )
-      }
+    // Mensajes de negocio conocidos (lib/db/queries/catering-dishes.ts#deleteDish).
+    if (error instanceof Error && error.message === 'Dish not found') {
+      return apiError(404, 'Plato no encontrado')
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al eliminar plato',
-      },
-      { status: 500 }
-    )
+    if (
+      error instanceof Error &&
+      error.message.startsWith('No se puede eliminar. El plato está en')
+    ) {
+      return apiError(409, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'DELETE /api/catering/platos/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al eliminar el plato',
+    })
   }
 }
-

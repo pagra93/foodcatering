@@ -1,7 +1,7 @@
 /**
  * API: Packing Display
  * GET /api/catering/produccion/empaquetado
- * 
+ *
  * Obtiene lista de pedidos para empaquetado
  */
 
@@ -10,7 +10,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getPackingDisplay } from '@/lib/db/queries/catering-production'
 import { packingDisplaySchema } from '@/lib/validations/production'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'production:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear query params
@@ -39,13 +39,7 @@ export async function GET(request: NextRequest) {
     const siteId = searchParams.get('siteId')
 
     if (!date) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Se requiere date',
-        },
-        { status: 400 }
-      )
+      return apiError(400, 'Se requiere date')
     }
 
     // Validar query
@@ -66,26 +60,10 @@ export async function GET(request: NextRequest) {
       data,
     })
   } catch (error) {
-    console.error('[PACKING_DISPLAY_GET]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Parámetros inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener datos de empaquetado',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/produccion/empaquetado',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener los datos de empaquetado',
+    })
   }
 }
-

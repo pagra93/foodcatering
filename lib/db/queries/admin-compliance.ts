@@ -52,13 +52,14 @@ export async function getComplianceDashboardKPIs() {
 
   // Calcula tenants sin DPA vigente (hoy entre effectiveFrom y effectiveTo).
   const now = new Date()
-  const tenantsWithDpa = await prisma.dpaAgreement.findMany({
+  // groupBy agrega en SQL; `findMany({ distinct })` sin el preview
+  // nativeDistinct traería todos los DPAs vigentes a Node para deduplicar.
+  const tenantsWithDpa = await prisma.dpaAgreement.groupBy({
+    by: ['tenantId'],
     where: {
       effectiveFrom: { lte: now },
       OR: [{ effectiveTo: null }, { effectiveTo: { gte: now } }],
     },
-    select: { tenantId: true },
-    distinct: ['tenantId'],
   })
   const withoutDpa = dpasWithoutAgreement - tenantsWithDpa.length
 

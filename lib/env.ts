@@ -60,6 +60,13 @@ const envSchema = z.object({
     .transform((val) => val === 'true')
     .default('false'),
 
+  // Secreto de los endpoints /api/cron/* (los invoca el cron del host).
+  // Sin él, los endpoints responden 503 y ningún job puede ejecutarse.
+  CRON_SECRET: z.string().min(16).optional(),
+
+  // Observabilidad (opt-in): DSN de Sentry para errores de servidor.
+  SENTRY_DSN: z.string().url().optional(),
+
   // Logging
   LOG_LEVEL: z
     .enum(['debug', 'info', 'warn', 'error'])

@@ -228,6 +228,7 @@ export async function reportDeliveryIncident(
       url: `${getAppBaseUrl()}/empresa/incidencias`,
     })
     await sendEmail({
+      template: 'incident-reported',
       to,
       subject: email.subject,
       html: email.html,

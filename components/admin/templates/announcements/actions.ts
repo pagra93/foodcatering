@@ -1,6 +1,6 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import type { Session } from 'next-auth'
 import { prisma } from '@/lib/db/prisma'
 import { auth } from '@/lib/auth'
@@ -21,6 +21,8 @@ async function requireSuperAdmin(permission: string) {
 
 /** Revalida el admin y los layouts de portal (para que el banner refresque). */
 function revalidateAll() {
+  // Invalida la caché de getActiveAnnouncements (B7) en todos los portales.
+  revalidateTag('announcements')
   revalidatePath('/admin/templates/announcements')
   revalidatePath('/empresa', 'layout')
   revalidatePath('/catering', 'layout')

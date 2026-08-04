@@ -9,39 +9,43 @@ import { type NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
 import { prisma } from '@/lib/db/prisma'
 import { permittedAction } from '@/lib/auth/permissions'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
     // 1. Verificar autenticación
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autenticado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // 2. Verificar rol
     const allowedRoles = ['ADMIN_EMPRESA', 'RRHH', 'FINANZAS']
     if (!permittedAction(session.user.permissions, session.user.role, 'emp-config-document:upload', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
     // 3. Obtener datos
-    const formData = await request.formData()
+    const formData = await request.formData().catch(() => null)
+    if (formData === null) {
+      return apiError(400, 'Formulario inválido')
+    }
     const file = formData.get('file') as File | null
     const documentType = formData.get('documentType') as string
 
     if (!file) {
-      return NextResponse.json({ error: 'Archivo requerido' }, { status: 400 })
+      return apiError(400, 'Archivo requerido')
     }
 
     // 4. Validar archivo
     const maxSize = 10 * 1024 * 1024 // 10MB
     if (file.size > maxSize) {
-      return NextResponse.json({ error: 'Archivo muy grande (máx 10MB)' }, { status: 400 })
+      return apiError(400, 'Archivo muy grande (máx 10MB)')
     }
 
     const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
     if (!allowedTypes.includes(file.type)) {
-      return NextResponse.json({ error: 'Tipo de archivo no permitido' }, { status: 400 })
+      return apiError(400, 'Tipo de archivo no permitido')
     }
 
     // =============================================================================
@@ -92,7 +96,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!company) {
-      return NextResponse.json({ error: 'Empresa no encontrada' }, { status: 404 })
+      return apiError(404, 'Empresa no encontrada')
     }
 
     // Actualizar campo correspondiente según tipo de documento
@@ -115,7 +119,7 @@ export async function POST(request: NextRequest) {
         updateData.contractAnnexes = [...currentAnnexes, file.name]
         break
       default:
-        return NextResponse.json({ error: 'Tipo de documento inválido' }, { status: 400 })
+        return apiError(400, 'Tipo de documento inválido')
     }
 
     await prisma.company.update({
@@ -128,12 +132,12 @@ export async function POST(request: NextRequest) {
       url: documentUrl,
       message: 'Documento subido correctamente',
     })
-  } catch (error: any) {
-    console.error('[UPLOAD_DOCUMENT_ERROR]', error)
-    return NextResponse.json(
-      { error: 'Error al subir documento' },
-      { status: 500 }
-    )
+  } catch (error) {
+    return apiErrorFrom(error, {
+      route: 'POST /api/empresa/configuracion/documentos',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al subir el documento',
+    })
   }
 }
 

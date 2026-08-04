@@ -20,6 +20,7 @@ export async function sendTestEmailAction(templateId: string) {
     subject: `[TEST] ${sample.subject}`,
     html: sample.html,
     text: sample.text,
+    template: templateId,
   })
 
   return {

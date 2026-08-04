@@ -1,7 +1,7 @@
 /**
  * API: Menús Semanales
  * GET /api/catering/menus/semanal
- * 
+ *
  * Obtiene los menús de una semana completa
  */
 
@@ -10,7 +10,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { getWeeklyMenu } from '@/lib/db/queries/catering-menus'
 import { weeklyMenuQuerySchema } from '@/lib/validations/menu'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar permisos (todos los roles pueden ver menús)
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     ]
 
     if (!permittedAction(session.user.permissions, session.user.role, 'menu:view', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
     // Parsear query params
@@ -40,13 +40,7 @@ export async function GET(request: NextRequest) {
     const endDate = searchParams.get('endDate')
 
     if (!startDate || !endDate) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Se requieren startDate y endDate',
-        },
-        { status: 400 }
-      )
+      return apiError(400, 'Se requieren startDate y endDate')
     }
 
     // Validar query
@@ -63,26 +57,10 @@ export async function GET(request: NextRequest) {
       data: menus,
     })
   } catch (error) {
-    console.error('[WEEKLY_MENU_GET]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Parámetros inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener menús',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/menus/semanal',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener los menús',
+    })
   }
 }
-

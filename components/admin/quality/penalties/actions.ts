@@ -7,6 +7,7 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/auth/audit'
 import { permittedAction } from '@/lib/auth/permissions'
 import { createNotification, notifyEntityParties } from '@/lib/notifications'
+import { DomainError } from '@/lib/errors'
 import {
   applyPenaltySchema,
   createPenaltySchema,
@@ -90,15 +91,19 @@ export async function applyPenaltyAction(input: { penaltyId: string }) {
   const { penaltyId } = applyPenaltySchema.parse(input)
 
   const current = await prisma.penalty.findUnique({ where: { id: penaltyId } })
-  if (!current) throw new Error('Penalización no encontrada')
+  if (!current) throw new DomainError('Penalización no encontrada', 404)
   if (current.status !== 'PENDING' && current.status !== 'DISPUTED') {
-    throw new Error(
-      `No se puede aplicar desde estado ${current.status}. Sólo PENDING o DISPUTED.`
+    throw new DomainError(
+      `No se puede aplicar desde estado ${current.status}. Sólo PENDING o DISPUTED.`,
+      409
     )
   }
 
-  const updated = await prisma.penalty.update({
-    where: { id: penaltyId },
+  // Transición CONDICIONADA al estado leído: un doble click ya no aplica dos
+  // veces (antes generaba 2 notificaciones + 2 entradas de auditoría y pisaba
+  // settledAt, moviendo el descuento de mes en el settlement).
+  const res = await prisma.penalty.updateMany({
+    where: { id: penaltyId, status: current.status },
     data: {
       status: 'APPLIED',
       settledAt: new Date(),
@@ -107,6 +112,12 @@ export async function applyPenaltyAction(input: { penaltyId: string }) {
         resolvedBy: actor.id,
       }),
     },
+  })
+  if (res.count !== 1) {
+    throw new DomainError('La penalización cambió de estado; recarga la página', 409)
+  }
+  const updated = await prisma.penalty.findUniqueOrThrow({
+    where: { id: penaltyId },
   })
 
   await logAudit({

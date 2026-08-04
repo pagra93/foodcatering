@@ -8,23 +8,26 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { confirmDelivery } from '@/lib/db/queries/catering-delivery'
 import { confirmDeliverySchema } from '@/lib/validations/delivery'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'CHEF', 'REPARTIDOR']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'route:confirm-delivery', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = confirmDeliverySchema.parse({
       ...body,
@@ -39,36 +42,17 @@ export async function POST(request: NextRequest) {
       message: 'Entrega confirmada correctamente',
     })
   } catch (error) {
-    console.error('[CONFIRM_DELIVERY_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-delivery.ts#confirmDelivery).
+    if (error instanceof Error && error.message === 'Pedido no encontrado') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'El pedido ya fue entregado') {
+      return apiError(409, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al confirmar entrega',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/entregas/confirmar',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al confirmar la entrega',
+    })
   }
 }
-

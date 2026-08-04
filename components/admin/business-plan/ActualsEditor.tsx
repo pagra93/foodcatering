@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { Camera, Save } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -80,8 +81,18 @@ export function ActualsEditor({ rows, currentMonth }: { rows: ActualRow[]; curre
 
   const capture = () =>
     startTransition(async () => {
-      await captureMrrSnapshotAction().catch(() => {})
-      router.refresh()
+      try {
+        const res = await captureMrrSnapshotAction()
+        if (res.error) {
+          toast.error(`No se pudo capturar el snapshot MRR: ${res.error}`)
+          return
+        }
+        router.refresh()
+      } catch (e) {
+        toast.error(
+          e instanceof Error ? e.message : 'No se pudo capturar el snapshot MRR.'
+        )
+      }
     })
 
   return (

@@ -80,10 +80,12 @@ export async function getAuditLog(filters: AuditFilters = {}) {
 
 /** Entidades distintas presentes en la traza, para el filtro. */
 export async function getAuditEntities() {
-  const rows = await prisma.auditLog.findMany({
-    distinct: ['entity'],
-    select: { entity: true },
-    orderBy: { entity: 'asc' },
-  })
+  // DISTINCT nativo en Postgres: `findMany({ distinct })` sin el preview
+  // nativeDistinct traería la tabla audit_logs ENTERA a Node para deduplicar.
+  const rows = await prisma.$queryRaw<{ entity: string }[]>`
+    SELECT DISTINCT entity
+    FROM audit_logs
+    ORDER BY entity ASC
+  `
   return rows.map((r) => r.entity)
 }

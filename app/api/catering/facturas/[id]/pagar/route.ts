@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { markInvoiceAsPaid } from '@/lib/db/queries/catering-invoices'
 import { markInvoiceAsPaidSchema } from '@/lib/validations/invoice'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -21,16 +21,19 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'invoice:pay', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = markInvoiceAsPaidSchema.parse({
       ...body,
@@ -53,36 +56,17 @@ export async function POST(request: NextRequest, { params }: RouteContext) {
       message: 'Factura marcada como pagada',
     })
   } catch (error) {
-    console.error('[MARK_PAID_POST]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-invoices.ts#markInvoiceAsPaid).
+    if (error instanceof Error && error.message === 'Factura no encontrada') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    if (error instanceof Error && error.message === 'La factura ya está marcada como pagada') {
+      return apiError(409, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al marcar factura como pagada',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/catering/facturas/[id]/pagar',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al marcar la factura como pagada',
+    })
   }
 }
-

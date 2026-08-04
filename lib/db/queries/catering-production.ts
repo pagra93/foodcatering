@@ -9,7 +9,9 @@ import { startOfDay, endOfDay } from 'date-fns'
 
 /**
  * Consolidar producción del día
- * Agrupa pedidos CONFIRMED por plato para saber cuánto cocinar
+ * Agrupa pedidos CONFIRMED y LOCKED_AFTER_CUTOFF por plato para saber cuánto
+ * cocinar (tras el cutoff, el job lock-orders congela CONFIRMED → LOCKED; para
+ * cocina ambos son pedidos definitivos).
  */
 export async function consolidateProduction(tenantId: string, date: Date) {
   const dayStart = startOfDay(date)
@@ -23,7 +25,7 @@ export async function consolidateProduction(tenantId: string, date: Date) {
         gte: dayStart,
         lte: dayEnd,
       },
-      status: 'CONFIRMED',
+      status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
       deletedAt: null,
     },
     select: {
@@ -137,7 +139,7 @@ export async function getKitchenDisplay(
         gte: dayStart,
         lte: dayEnd,
       },
-      status: 'CONFIRMED',
+      status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
       deletedAt: null,
     },
     select: {
@@ -218,7 +220,7 @@ export async function getPackingDisplay(
       gte: dayStart,
       lte: dayEnd,
     },
-    status: 'CONFIRMED',
+    status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
     deletedAt: null,
   }
 
@@ -285,7 +287,7 @@ export async function getOrdersForLabels(
       gte: dayStart,
       lte: dayEnd,
     },
-    status: 'CONFIRMED',
+    status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
     deletedAt: null,
   }
 
@@ -375,7 +377,7 @@ export async function getProductionStats(tenantId: string, date: Date) {
           gte: dayStart,
           lte: dayEnd,
         },
-        status: 'CONFIRMED',
+        status: { in: ['CONFIRMED', 'LOCKED_AFTER_CUTOFF'] },
         deletedAt: null,
       },
     }),

@@ -5,6 +5,7 @@ import { encryptPII } from '@/lib/crypto/pii'
 import { permittedAction } from '@/lib/auth/permissions'
 import type { Prisma } from '@prisma/client'
 import { z } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 // Schema de validación para actualización de empleado
 const updateEmployeeSchema = z.object({
@@ -32,16 +33,19 @@ export async function PUT(
   try {
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar rol
     const allowedRoles = ['RRHH', 'ADMIN_EMPRESA', 'ROOT']
     if (!permittedAction(session.user.permissions, session.user.role, 'employee:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const data = updateEmployeeSchema.parse(body)
 
     // Verificar que el empleado existe y pertenece al tenant
@@ -54,10 +58,7 @@ export async function PUT(
     })
 
     if (!employee) {
-      return NextResponse.json(
-        { error: 'Empleado no encontrado' },
-        { status: 404 }
-      )
+      return apiError(404, 'Empleado no encontrado')
     }
 
     // La sede destino debe pertenecer al mismo tenant (evita apuntar a una sede
@@ -68,7 +69,7 @@ export async function PUT(
         select: { id: true },
       })
       if (!site) {
-        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+        return apiError(400, 'Sede no válida')
       }
     }
 
@@ -95,17 +96,11 @@ export async function PUT(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('[EMPLOYEE_UPDATE]', error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-    return NextResponse.json(
-      { error: 'Error al actualizar empleado' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PUT /api/empresa/empleados/[id]',
+      requestId: requestIdFrom(req),
+      fallback: 'Error al actualizar el empleado',
+    })
   }
 }
 
@@ -148,16 +143,19 @@ export async function PATCH(
   try {
     const session = await auth()
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     // Verificar rol
     const allowedRoles = ['RRHH', 'ADMIN_EMPRESA', 'ROOT']
     if (!permittedAction(session.user.permissions, session.user.role, 'employee:edit', allowedRoles)) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
-    const body = await req.json()
+    const body = await req.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     // Verificar que el empleado existe y pertenece al tenant
     const employee = await prisma.employee.findFirst({
@@ -172,10 +170,7 @@ export async function PATCH(
     })
 
     if (!employee) {
-      return NextResponse.json(
-        { error: 'Empleado no encontrado' },
-        { status: 404 }
-      )
+      return apiError(404, 'Empleado no encontrado')
     }
 
     const validated = updateFullEmployeeSchema.parse(body)
@@ -188,7 +183,7 @@ export async function PATCH(
         select: { id: true },
       })
       if (!site) {
-        return NextResponse.json({ error: 'Sede no válida' }, { status: 400 })
+        return apiError(400, 'Sede no válida')
       }
     }
 
@@ -241,17 +236,11 @@ export async function PATCH(
 
     return NextResponse.json(updated)
   } catch (error) {
-    console.error('[EMPLOYEE_UPDATE]', error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
-    }
-    return NextResponse.json(
-      { error: 'Error al actualizar empleado' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/empresa/empleados/[id]',
+      requestId: requestIdFrom(req),
+      fallback: 'Error al actualizar el empleado',
+    })
   }
 }
 

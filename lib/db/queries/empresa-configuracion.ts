@@ -5,6 +5,7 @@
 
 import { prisma } from '@/lib/db/prisma'
 import type { Prisma } from '@prisma/client'
+import { DomainError } from '@/lib/errors'
 
 // ============================================================================
 // OBTENER CONFIGURACIÓN COMPLETA
@@ -184,28 +185,40 @@ export async function updateCompanyPolicy(
     throw new Error('Company policy not found')
   }
 
-  // Crear historial antes de actualizar
-  await prisma.companyPolicyHistory.create({
-    data: {
-      policyId: currentPolicy.id,
-      companyId: tenantId,
-      previousValues: currentPolicy as any,
-      newValues: data as any,
-      version: currentPolicy.version + 1,
-      changedBy: data.changedBy,
-      changeReason: data.changeReason,
-    },
-  })
+  // Historial + política en UNA transacción, condicionado a la versión leída:
+  // (a) no puede quedar historial de un cambio que nunca se aplicó (antes eran
+  // dos escrituras sueltas); (b) dos ediciones simultáneas ya no duplican
+  // versión — la segunda recibe conflicto y recarga.
+  return prisma.$transaction(async (tx) => {
+    const res = await tx.companyPolicy.updateMany({
+      where: { companyId: tenantId, version: currentPolicy.version },
+      data: {
+        ...data,
+        effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
+        effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
+        version: currentPolicy.version + 1,
+      } as Prisma.CompanyPolicyUncheckedUpdateManyInput,
+    })
+    if (res.count !== 1) {
+      throw new DomainError(
+        'La política cambió mientras editabas; recarga e inténtalo de nuevo',
+        409
+      )
+    }
 
-  // Actualizar política
-  return prisma.companyPolicy.update({
-    where: { companyId: tenantId },
-    data: {
-      ...data,
-      effectiveFrom: data.effectiveFrom ? new Date(data.effectiveFrom) : undefined,
-      effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : undefined,
-      version: currentPolicy.version + 1,
-    } as Prisma.CompanyPolicyUncheckedUpdateInput,
+    await tx.companyPolicyHistory.create({
+      data: {
+        policyId: currentPolicy.id,
+        companyId: tenantId,
+        previousValues: currentPolicy as unknown as Prisma.InputJsonValue,
+        newValues: data as unknown as Prisma.InputJsonValue,
+        version: currentPolicy.version + 1,
+        changedBy: data.changedBy,
+        changeReason: data.changeReason,
+      },
+    })
+
+    return tx.companyPolicy.findUniqueOrThrow({ where: { companyId: tenantId } })
   })
 }
 

@@ -198,17 +198,17 @@ export const authConfig = {
             // Si el TOTP no valida, probar código de recuperación (un solo uso).
             if (!ok) {
               const codeHash = hashBackupCode(otp)
-              if (user.mfaBackupCodes.includes(codeHash)) {
-                ok = true
-                await prisma.user.update({
-                  where: { id: user.id },
-                  data: {
-                    mfaBackupCodes: user.mfaBackupCodes.filter(
-                      (c) => c !== codeHash
-                    ),
-                  },
-                })
-              }
+              // Consumo ATÓMICO en SQL (array_remove + condición en el WHERE):
+              // dos logins simultáneos con el MISMO código → solo uno pasa; y
+              // consumir códigos DISTINTOS en paralelo ya no "resucita"
+              // ninguno (antes se reescribía el array leído completo y las
+              // escrituras se pisaban).
+              const consumed = await prismaAdmin.$executeRaw`
+                UPDATE users
+                SET mfa_backup_codes = array_remove(mfa_backup_codes, ${codeHash})
+                WHERE id = ${user.id} AND ${codeHash} = ANY(mfa_backup_codes)
+              `
+              ok = consumed === 1
             }
 
             if (!ok) throw new MfaError('mfa_invalid')

@@ -5,64 +5,55 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { createTenantSchema } from '@/lib/validations/tenant'
 import { createTenant, checkSubdomainAvailability } from '@/lib/db/queries/tenants'
-import { getRequiredSession } from '@/lib/auth/session'
-import { ZodError } from 'zod'
+import { auth } from '@/lib/auth'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 export async function POST(request: NextRequest) {
   try {
     // Verificar autenticación y permisos
-    const session = await getRequiredSession()
-    
+    const session = await auth()
+
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
+    }
+
     if (session.user.role !== 'SUPER_ADMIN') {
-      return NextResponse.json(
-        { error: 'No tienes permisos para esta acción' },
-        { status: 403 }
-      )
+      return apiError(403, 'No tienes permisos para esta acción')
     }
 
     // Parsear y validar body
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const data = createTenantSchema.parse(body)
 
     // Verificar disponibilidad del subdominio
     const isAvailable = await checkSubdomainAvailability(data.subdomain)
     if (!isAvailable) {
-      return NextResponse.json(
-        { error: 'El subdominio ya está en uso' },
-        { status: 400 }
-      )
+      return apiError(400, 'El subdominio ya está en uso')
     }
 
     // Crear tenant
     const tenant = await createTenant(data, session.user.id)
 
     return NextResponse.json(
-      { 
-        success: true, 
+      {
+        success: true,
         tenant,
         message: 'Tenant creado exitosamente'
       },
       { status: 201 }
     )
   } catch (error) {
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        { error: 'Datos inválidos', details: error.errors },
-        { status: 400 }
-      )
+    // Mensaje de negocio conocido (lib/db/queries/tenants.ts#createTenant).
+    if (error instanceof Error && error.message === 'El subdominio ya está en uso') {
+      return apiError(400, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      )
-    }
-
-    return NextResponse.json(
-      { error: 'Error interno del servidor' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'POST /api/admin/tenants',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al crear el tenant',
+    })
   }
 }
-

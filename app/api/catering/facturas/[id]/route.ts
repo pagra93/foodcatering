@@ -14,7 +14,7 @@ import {
   cancelInvoice,
 } from '@/lib/db/queries/catering-invoices'
 import { updateInvoiceStatusSchema } from '@/lib/validations/invoice'
-import { ZodError } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 type RouteContext = {
   params: {
@@ -25,24 +25,18 @@ type RouteContext = {
 /**
  * GET - Obtener factura
  */
-export async function GET(_request: NextRequest, { params }: RouteContext) {
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const invoice = await getInvoiceById(session.user.tenantId, params.id)
 
     if (!invoice) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Factura no encontrada',
-        },
-        { status: 404 }
-      )
+      return apiError(404, 'Factura no encontrada')
     }
 
     return NextResponse.json({
@@ -50,15 +44,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       data: invoice,
     })
   } catch (error) {
-    console.error('[INVOICE_GET]', error)
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al obtener factura',
-      },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'GET /api/catering/facturas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al obtener la factura',
+    })
   }
 }
 
@@ -70,16 +60,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'invoice:pay', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
 
     const validatedData = updateInvoiceStatusSchema.parse(body)
 
@@ -97,36 +90,24 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
       message: 'Estado actualizado correctamente',
     })
   } catch (error) {
-    console.error('[INVOICE_PATCH]', error)
-
-    if (error instanceof ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Datos inválidos',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-invoices.ts#updateInvoiceStatus).
+    if (error instanceof Error && error.message === 'Factura no encontrada') {
+      return apiError(404, error.message)
     }
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    if (
+      error instanceof Error &&
+      error.message === 'Para marcar como pagada usa la acción de pago, no el cambio de estado.'
+    ) {
+      return apiError(400, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al actualizar estado',
-      },
-      { status: 500 }
-    )
+    if (error instanceof Error && error.message.startsWith('Transición de estado no permitida')) {
+      return apiError(400, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/catering/facturas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar el estado',
+    })
   }
 }
 
@@ -138,16 +119,19 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
     const session = await auth()
 
     if (!session?.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+      return apiError(401, 'No autenticado')
     }
 
     const allowedRoles = ['ADMIN_CATERING', 'FINANZAS_CATERING']
 
     if (!permittedAction(session.user.permissions, session.user.role, 'invoice:generate', allowedRoles)) {
-      return NextResponse.json({ error: 'Acceso denegado' }, { status: 403 })
+      return apiError(403, 'Acceso denegado')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const reason = body.reason || 'Sin motivo especificado'
 
     const cancelled = await cancelInvoice(
@@ -163,25 +147,17 @@ export async function DELETE(request: NextRequest, { params }: RouteContext) {
       message: 'Factura cancelada correctamente',
     })
   } catch (error) {
-    console.error('[INVOICE_DELETE]', error)
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: error.message,
-        },
-        { status: 400 }
-      )
+    // Mensajes de negocio conocidos (lib/db/queries/catering-invoices.ts#cancelInvoice).
+    if (error instanceof Error && error.message === 'Factura no encontrada') {
+      return apiError(404, error.message)
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Error al cancelar factura',
-      },
-      { status: 500 }
-    )
+    if (error instanceof Error && error.message === 'No se puede cancelar una factura pagada') {
+      return apiError(409, error.message)
+    }
+    return apiErrorFrom(error, {
+      route: 'DELETE /api/catering/facturas/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al cancelar la factura',
+    })
   }
 }
-

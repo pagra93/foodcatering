@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { permittedAction } from '@/lib/auth/permissions'
 import { resolveIncident } from '@/lib/db/queries/catering-incidencias'
 import { z } from 'zod'
+import { apiError, apiErrorFrom, requestIdFrom } from '@/lib/api/respond'
 
 // ============================================================================
 // PATCH /api/catering/incidencias/[id] - Actualizar/Resolver incidencia
@@ -22,8 +23,8 @@ export async function PATCH(
   try {
     const session = await auth()
 
-    if (!session || !session.user) {
-      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    if (!session?.user) {
+      return apiError(401, 'No autenticado')
     }
 
     // Autorización (M9): resolver/compensar una incidencia es acción de gestión,
@@ -36,10 +37,13 @@ export async function PATCH(
         ['SUPER_ADMIN', 'ADMIN_CATERING']
       )
     ) {
-      return NextResponse.json({ error: 'Sin permisos' }, { status: 403 })
+      return apiError(403, 'Sin permisos')
     }
 
-    const body = await request.json()
+    const body = await request.json().catch(() => null)
+    if (body === null) {
+      return apiError(400, 'Cuerpo JSON inválido')
+    }
     const validated = updateIncidentSchema.parse(body)
 
     const incident = await resolveIncident(
@@ -55,14 +59,14 @@ export async function PATCH(
 
     return NextResponse.json(incident)
   } catch (error) {
-    console.error('[INCIDENT_UPDATE]', error)
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: error.errors }, { status: 400 })
+    // Mensaje de negocio conocido (lib/db/queries/catering-incidencias.ts#resolveIncident).
+    if (error instanceof Error && error.message === 'Incidencia no encontrada') {
+      return apiError(404, error.message)
     }
-    return NextResponse.json(
-      { error: 'Error al actualizar incidencia' },
-      { status: 500 }
-    )
+    return apiErrorFrom(error, {
+      route: 'PATCH /api/catering/incidencias/[id]',
+      requestId: requestIdFrom(request),
+      fallback: 'Error al actualizar la incidencia',
+    })
   }
 }
-
